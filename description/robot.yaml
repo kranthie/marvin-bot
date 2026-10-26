@@ -11,7 +11,7 @@
 robot:
   name: marvin_bot
   version: "0.2"
-  height: 1.286           # sole to the top of the head, standing straight
+  height: 1.288           # sole to the top of the head, standing straight
   mass_target_kg: 35.0
   mass_limit_kg: 40.0
 

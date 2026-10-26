@@ -9,7 +9,7 @@ items:
   torso:             {mass: 1.319, basis: cad, note: "cad/torso.py: waist flange, base plate, two uprights (service-cut), neck bridge, printed chest shell"}
   arm_structure:     {mass: 1.439, basis: cad, note: "two arms, cad/arm.py: two-plate shoulder brackets, 7 mm shoulder plates, aluminium motor rings and flanges, printed upper-arm and forearm shells; no fasteners yet"}
   grippers:          {mass: 0.180, basis: cad, note: "two 1-DOF grippers, cad/arm.py: printed palm with a fixed jaw, moving jaw on the servo horn; excluding servos"}
-  head:              {mass: 0.391, basis: cad, note: "cad/head.py: neck bracket, printed head frame, egg shell and visor, depth camera (0.133 kg)"}
+  head:              {mass: 0.4055, basis: cad, note: "cad/head.py: neck bracket, printed head frame, helmet shell, visor and camera window, depth camera (0.133 kg)"}
   compute:           {mass: 1.5, basis: estimate, note: "Jetson AGX Orin developer kit as shipped; to be weighed"}
   battery:           {mass: 3.4, basis: estimate, note: "13S3P 21700 pack with BMS and housing, ~630 Wh"}
   keep_alive:        {mass: 0.4, basis: estimate, note: "50-100 Wh battery for the computer during swaps"}

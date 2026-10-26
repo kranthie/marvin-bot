@@ -2,6 +2,10 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: head profile; hip and upper-thigh shells
+
+The head is now deeper than it is wide (160 x 142 mm), sitting forward of the neck with the chin forward and low and the crown back and high; the visor face leans back 18°, and its underside rises from the chin to where the neck enters. The camera sits behind a flush window (optical-grade, IR-transparent tinted polycarbonate) instead of an open slot, so the visor reads as one smooth face; the window's effect on depth noise is a phase 6 test. Shells now cover the hip roll motor behind each hip (a dark glute, rounded over the yoke plates, above the roll axis where the roll bracket never swings) and the hip yaw motor at the top of each thigh. Shells thinned to 1.4 mm to stay inside the 40 kg limit with them on (39.93 kg).
+
 ## 2026-10-26: narrower shoulders
 
 The arms hung ~188 mm off the centre line (a person this height: ~150 mm), set by the shoulder roll RS03 (Ø100 mm) sitting outside the shoulder pitch RS03. Putting the roll motor behind the pitch motor, as at the hip, does not help: it would sweep through the torso as the arm pitches. Instead both shoulder pitch motors sit 30 mm deeper in the torso (centres at ±80 mm, joints at ±110 mm), so the arms hang 158 mm off the centre line and the shoulders are 416 mm across (was 476). The battery (140 mm wide) is wider than the space now left between the shoulder motors, so each side frame is two plates: a lower A-frame outside the battery and an upper plate on the shoulder motor's inner face, above the battery and computer, joined by two spacers clear of the motor; the battery sits 4.5 mm lower, the electronics and keep-alive bays are narrower. With the arms closer, below 0° of shoulder roll the forearm meets the hip motor, so the roll range is now 0-120° (was -5-120°); the default stance uses 8°. Robot 38.80 kg bare, 39.88 kg with shells (0.12 kg under the 40 kg limit).

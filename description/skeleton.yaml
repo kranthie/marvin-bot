@@ -91,7 +91,7 @@ collisions:
   - {link: left_shin_link,    xyz: [-0.010, 0, -0.213], size: [0.104, 0.09, 0.097]}  # lower ankle motor
   - {link: left_foot_link,    xyz: [0.030, 0, -0.045], size: [0.24, 0.11, 0.03]}
   - {link: torso_link,        xyz: [-0.020, 0, 0.135], size: [0.16, 0.20, 0.25]}  # top below the head box
-  - {link: head_link,         xyz: [0.002, 0, 0.087],  size: [0.15, 0.16, 0.162]}  # helmet, above the neck cut
+  - {link: head_link,         xyz: [0.004, 0, 0.099],  size: [0.16, 0.142, 0.158]}  # helmet, above the neck cut
   - {link: left_upper_arm_link, xyz: [0, 0, -0.060],   size: [0.08, 0.08, 0.14]}
   - {link: left_forearm_link, xyz: [0, 0, -0.080],     size: [0.07, 0.07, 0.17]}
   - {link: left_gripper_link, xyz: [0, 0, -0.040],     size: [0.06, 0.08, 0.09]}

@@ -10,8 +10,9 @@ servos (STS3250, 45.3 x 35.8 x 24.8 mm) and the depth camera (Orbbec Gemini 335L
   the camera and a top bar that carries the shell;
 - head shell: a helmet, taller than it is wide and narrowing to the chin (the hull of two
   ellipsoids), 2.5 mm wall, open at the bottom for the neck;
-- visor: the whole face, a separate glossy part, with a narrow slot in front of the camera's
-  lenses and projector (no material in front of the optics);
+- visor: the whole face, a separate glossy part, with a flush window in front of the camera
+  (optical-grade, IR-transparent tinted polycarbonate, so the depth camera sees through it;
+  its effect on depth noise is a phase 6 test);
 - the camera, as a bought part.
 
 The helmet sits on a dark neck sleeve (cad/covers.py). No fasteners yet.
@@ -21,6 +22,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import yaml
 
 from .lib import Part, box, ellipsoid, hull, union
@@ -31,12 +33,17 @@ _acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
 _skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
 WALL = 2.5
 # helmet: the hull of a crown ellipsoid and a smaller chin ellipsoid (centre, semi-axes; head frame)
-CROWN = (-2.0, 0.0, 90.0), (76.0, 71.0, 86.0)
-CHIN = (12.0, 0.0, 40.0), (54.0, 48.0, 44.0)
+# deeper than it is wide, sitting forward of the neck, the chin forward and low, the crown
+# back and high
+CROWN = (4.0, 0.0, 94.0), (82.0, 71.0, 84.0)
+CHIN = (28.0, 0.0, 42.0), (50.0, 46.0, 40.0)
 CAMERA = (124.0, 29.0, 27.0, 133.0)  # width, height, depth (mm), mass (g)
-CAMERA_AT = (12.5, 0.0, 92.0)  # its centre, at eye height: half way up the head
-VISOR_X = 25.0  # the visor is the whole face ahead of this plane
-NECK_CUT_Z = 6.0  # the shell's open bottom; the neck sleeve (cad/covers.py) runs up inside it
+CAMERA_AT = (21.0, 0.0, 92.0)  # its centre, at eye height: half way up the head
+VISOR_X = 34.0  # the visor is the whole face ahead of this plane (at eye height) ...
+VISOR_TILT = 18.0  # ... leaning back this far (degrees), following the face
+NECK_CUT_Z = 20.0  # the shell's open bottom over the neck axis; the neck sleeve
+NECK_CUT_SLOPE = 0.35  # (cad/covers.py) runs up inside it. The underside rises towards the
+# back of the head (mm up per mm back), from the chin up to where the neck enters
 
 
 def parts() -> list[Part]:
@@ -71,14 +78,22 @@ def parts() -> list[Part]:
         ellipsoid([x - WALL for x in CHIN[1]], CHIN[0]),
     )
     big = 400.0
-    skin = outer - inner
-    shell = skin - box((big, big, big), (VISOR_X + big / 2, 0, 0))
-    shell = shell - box((big, big, big), (0, 0, NECK_CUT_Z - big / 2))
-    out.append(Part("head_shell", "head_link", "pa_cf", shell, "print"))
-    visor = skin ^ box((big, big, big), (VISOR_X + big / 2, 0, 0))
-    visor = visor - box((big, big, big), (0, 0, NECK_CUT_Z - big / 2))
-    visor = visor - box((80, cw - 4, ch - 9), (cx + 40, 0, cz))  # optics slot
+    under = (
+        box((big, big, big), (0, 0, -big / 2))
+        .rotate([0, np.degrees(np.arctan(NECK_CUT_SLOPE)), 0])
+        .translate([0, 0, NECK_CUT_Z])
+    )
+    skin = (outer - inner) - under
+    face = (
+        box((big, big, big), (big / 2, 0, 0))
+        .rotate([0, -VISOR_TILT, 0])
+        .translate([VISOR_X, 0, cz])
+    )
+    out.append(Part("head_shell", "head_link", "pa_cf", skin - face, "print"))
+    window = box((80, cw - 14, ch - 9), (cx + 40, 0, cz))  # in front of lenses and projector
+    visor = (skin ^ face) - window
     out.append(Part("head_visor", "head_link", "pa_cf", visor, "print"))
+    out.append(Part("head_window", "head_link", "pa_cf", skin ^ face ^ window, "print"))
     cam = box((cd, cw, ch), CAMERA_AT)
     out.append(Part("head_camera", "head_link", "bought", cam, "bought", mass_g=cmass))
     return out

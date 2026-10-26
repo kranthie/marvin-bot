@@ -6,7 +6,7 @@ torso tapering to the waist, a dark hip girdle, long leg shells, arm sleeves, to
 dark neck sleeve under the helmet head, with the joints left visible between them. They add
 some fall protection.
 
-Each shell is a 1.6 mm printed skin following its link's parts and motors at a 4 mm gap: the
+Each shell is a 1.4 mm printed skin following its link's parts and motors at a 4 mm gap: the
 hull of everything on the link, grown outward (rounded), kept only where it cannot reach the
 next link, and split where it must come off for service. Shells clip onto the parts under them
 (clip and boss details come with the fastener pass), so every one comes off without tools,
@@ -29,7 +29,7 @@ from . import arm, head, leg, torso
 from .lib import Part, box, cyl, hull, union
 
 ROOT = Path(__file__).resolve().parent.parent
-GAP, SKIN = 4.0, 1.6
+GAP, SKIN = 4.0, 1.4
 
 
 def _sphere_dirs() -> list[np.ndarray]:
@@ -120,9 +120,11 @@ def lofted(solids, gap: float, corner: float, step: float = 10.0, neck=None, slo
     )
 
 
-def wrap(solids, keep, cut=()):
-    """A cover skin around `solids`, kept inside the `keep` region, minus the `cut` regions."""
-    skin = offset_hull(solids, GAP + SKIN) - offset_hull(solids, GAP)
+def wrap(solids, keep, cut=(), extra: float = 0.0):
+    """A cover skin around `solids`, kept inside the `keep` region, minus the `cut` regions;
+    `extra` mm more gap gives a fuller, rounder shape over boxy parts."""
+    g = GAP + extra
+    skin = offset_hull(solids, g + SKIN) - offset_hull(solids, g)
     skin = skin ^ keep
     for c in cut:
         skin = skin - c
@@ -211,8 +213,8 @@ def parts() -> list[Part]:
     # into the helmet, turning with neck yaw; the head pitches over it
     nz = j["neck_pitch"][2]
     bot = -22.0  # just above the torso bridge; flaring towards the collar
-    sleeve = hull(cyl(88, 2, "z", (0, 0, bot)), cyl(66, 2, "z", (0, 0, nz + 2))) - hull(
-        cyl(84, 2, "z", (0, 0, bot - 2)), cyl(62, 2, "z", (0, 0, nz + 4))
+    sleeve = hull(cyl(88, 2, "z", (0, 0, bot)), cyl(60, 2, "z", (0, 0, nz + 26))) - hull(
+        cyl(84, 2, "z", (0, 0, bot - 2)), cyl(56, 2, "z", (0, 0, nz + 28))
     )
     add("neck_cover", "neck_link", sleeve)
 
@@ -235,7 +237,7 @@ def parts() -> list[Part]:
     knee_z = j["left_knee"][2]
     yaw_out = -t03 / 2
     thigh = on("left_thigh_link")
-    upper = half("z", -1, yaw_out - 10) ^ half("z", 1, knee_z + d04 / 2 + 10)
+    upper = half("z", -1, yaw_out - 5) ^ half("z", 1, knee_z + d04 / 2 + 10)
     kneecap = half("z", 1, knee_z - 10, None, knee_z + d04 / 2 + 12) ^ half("x", 1, 40)
     add(
         "left_thigh_cover",
@@ -253,11 +255,29 @@ def parts() -> list[Part]:
         wrap(shin, half("x", 1, 0, ankle_z + 55, -d04 / 2 - 12)),
     )
 
-    # --- hip cap: outer side of the hip pitch motor's yoke
+    # --- glute (dark): over the hip roll motor behind the hip and the yoke round it, above
+    # the roll axis (the roll bracket's plates hang below it and swing round it) and on the
+    # outer side
+    roll_z = skel["motor_mounts"]["left_hip_roll"]["xyz"][2] * 1000
+    glute = (half("x", -1, -66) + half("y", 1, 36)) ^ half("z", 1, roll_z + 8, None, 55)
+    glute = glute ^ half("y", 1, -20)  # clear of the pelvis frame
     add(
-        "left_hip_cover",
+        "left_glute_cover",
         "left_hip_pitch_link",
-        wrap(on("left_hip_pitch_link"), half("y", 1, 36, -60, 55) - half("x", -1, -45)),
+        wrap(on("left_hip_pitch_link"), glute, extra=14.0),  # rounded over the flat yoke plates
+    )
+    # --- upper thigh: round the hip yaw motor and the roll bracket's bar, between the roll
+    # motor (which the bracket turns round) and the yaw output, where the thigh shell starts
+    yaw = j["left_hip_yaw"]
+    add(
+        "left_upper_thigh_cover",
+        "left_hip_roll_link",
+        wrap(
+            on("left_hip_roll_link"),
+            half("z", -1, -d04 / 2 - 6)
+            ^ half("z", 1, yaw[2] - t03 / 2 + 2)
+            ^ half("x", 1, -55),  # the calf folds up behind it
+        ),
     )
     # --- shoulder cap: over the top of the shoulder roll motor. The roll link's parts swing
     # round the roll axis from straight down to 30° above horizontal, so the cap keeps above a
