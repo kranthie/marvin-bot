@@ -22,6 +22,7 @@ Needs: pip install -e ".[cad]"
 """
 
 import argparse
+import difflib
 import sys
 from pathlib import Path
 
@@ -113,6 +114,9 @@ def main() -> int:
     if args.check:
         if not MODEL.exists() or MODEL.read_text() != text:
             print("description/cad_model.yaml is out of date: run python -m cad.build")
+            old = MODEL.read_text().splitlines() if MODEL.exists() else []
+            diff = difflib.unified_diff(old, text.splitlines(), "committed", "built", n=1)
+            print("\n".join(list(diff)[:40]))
             return 1
         if too_big:
             print(f"parts too big for the mill or printer: {[n for n, _, _ in too_big]}")
