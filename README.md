@@ -39,7 +39,8 @@ description/   robot.yaml (joints, sizes, CAN buses), actuators.yaml, mass_budge
                skeleton.yaml (frames, mass placement), urdf/ (generated)
 bom/           bill of materials (bom.csv)
 tools/         checks and generators (description check, BOM summary, URDF, concept sketch)
-sim/mujoco/    MuJoCo checks (standing and joint torques)
+sim/mujoco/    MuJoCo checks (standing, step-up, symmetry, policy cross-check)
+sim/isaaclab/  Isaac Lab robot config, walking tasks, robot check, policy export
 ```
 
 Folders for CAD, electronics, the onboard software, simulation and bench tests are added as each phase reaches them; [docs/plan.md](docs/plan.md) describes the full layout.

@@ -1,0 +1,18 @@
+[project]
+name = "marvin-bot-isaaclab"
+version = "0.0.1"
+description = "Isaac Lab robot config and tasks for Marvin Bot"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+# Installed into an Isaac Lab 3.0 environment, which provides isaaclab and its dependencies.
+dependencies = []
+
+[project.entry-points."isaaclab.tasks"]
+marvin_bot = "marvin_bot.tasks"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["marvin_bot*"]

@@ -28,6 +28,11 @@ dimensions:
   foot_length: 0.240
   foot_width: 0.100
 
+# Default stance (degrees, robot.yaml convention, same values on both sides): the pose the
+# walking policies act around and the robot starts from. Pelvis 0.636 m above the floor in it.
+stance: {hip_pitch: 12, knee: 25, ankle_pitch: 13, shoulder_roll: 8, elbow: 20}
+stance_pelvis_height: 0.636
+
 joints:
   # legs, pelvis outwards (hip pitch, roll, yaw as on most current humanoids)
   - {name: "{side}_hip_pitch",      axis: pitch, range: [-40, 120]}

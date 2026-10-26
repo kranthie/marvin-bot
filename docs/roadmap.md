@@ -27,7 +27,8 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] MuJoCo standing check: crouch and straight poses hold, worst holding torque 40% of rated (`sim/mujoco/check_standing.py`)
 - [x] Static step-up check: 10-20 cm stairs possible with 40° ankle dorsiflexion; leg length (0.62-0.69 m) barely matters (`sim/mujoco/check_step_up.py`)
 - [x] Ankle linkage geometry and push-rod loads (`tools/ankle_linkage.py`); ankles back to RS03
-- [ ] Isaac Lab robot config and flat-ground walking policy (port the an earlier prototype tasks)
+- [x] Isaac Lab package: robot config, flat and rough walking tasks, robot check on Newton and PhysX (`sim/isaaclab/`), mirror rule checked (`sim/mujoco/check_symmetry.py`)
+- [ ] Flat-ground walking policy, exported and cross-checked in MuJoCo (`sim/mujoco/check_policy.py`)
 - [ ] Rough-terrain and stair policies; MuJoCo cross-check
 - [ ] Code-CAD of the leg (aluminium cores, printed shells), masses fed back into the URDF
 

@@ -23,3 +23,4 @@ jobs:
       - run: python sim/mujoco/check_standing.py
       - run: python sim/mujoco/check_standing.py --pose straight
       - run: python sim/mujoco/check_step_up.py --heights 0.18
+      - run: python sim/mujoco/check_symmetry.py

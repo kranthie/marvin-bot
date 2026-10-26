@@ -12,6 +12,7 @@ the linkage ratios in skeleton.yaml, as in the URDF.
 Usage:
   python sim/mujoco/check_standing.py                  # crouched stance
   python sim/mujoco/check_standing.py --pose straight
+  python sim/mujoco/check_standing.py --pose stance   # robot.yaml's default stance
   python sim/mujoco/check_standing.py --render out.png
 
 Needs: pip install -e ".[sim]"
@@ -57,6 +58,7 @@ POSES = {
         "elbow": 20,
     },
     "straight": {"shoulder_roll": 8},
+    "stance": yaml.safe_load((DESC / "robot.yaml").read_text())["stance"],
 }
 
 
