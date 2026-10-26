@@ -96,7 +96,8 @@ def build() -> tuple[mujoco.MjSpec, dict]:
     # keep the URDF's visual geoms (MuJoCo drops them by default) for --render
     urdf = URDF.read_text().replace(
         '<robot name="marvin_bot">',
-        '<robot name="marvin_bot"><mujoco><compiler discardvisual="false"/></mujoco>',
+        '<robot name="marvin_bot"><mujoco>'
+        f'<compiler discardvisual="false" meshdir="{URDF.parent}"/></mujoco>',
         1,
     )
     spec = mujoco.MjSpec.from_string(urdf)

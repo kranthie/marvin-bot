@@ -103,7 +103,7 @@ def build(spec_joints: dict, stairs_height: float | None = None) -> mujoco.MjMod
     # check_standing.py does; collision boxes go to group 3, hidden in the video
     urdf = re.sub(
         r"(<robot [^>]*>)",
-        r'\1<mujoco><compiler discardvisual="false"/></mujoco>',
+        rf'\1<mujoco><compiler discardvisual="false" meshdir="{URDF.parent}"/></mujoco>',
         URDF.read_text(),
         count=1,
     )

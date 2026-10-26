@@ -11,7 +11,11 @@ Model:
 - joint effort and velocity limits are the motor's peak torque and no-load speed; the two
   ankle joints, driven by a pair of motors through a linkage, get the pair's combined torque
   times the linkage ratios in skeleton.yaml;
-- collision geometry is the skeleton's boxes; visuals are those boxes plus the motor housings.
+- the code-CAD parts (description/cad_model.yaml, from cad/build.py) replace skeleton.yaml's
+  estimate boxes for the budget items they cover, with their computed masses and inertias and
+  their meshes as visuals;
+- collision geometry is the skeleton's boxes; visuals are the remaining estimate boxes, the
+  CAD meshes and the motor housings.
 
 Usage:
   python tools/build_urdf.py           # write the URDF and print the mass summary
@@ -29,6 +33,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
 URDF_OUT = DESC / "urdf" / "marvin_bot.urdf"
+CAD_MODEL = DESC / "cad_model.yaml"  # written by cad/build.py
 SIDES = ("left", "right")
 DEFAULT_ENVELOPE_MM = [80, 80, 50]  # for actuators without a measured envelope yet
 MOTOR_COLOURS = {
@@ -39,6 +44,12 @@ MOTOR_COLOURS = {
     "STS3250": "0.88 0.66 0.0 1",
 }
 BODY_COLOUR = "0.19 0.20 0.23 1"
+CAD_COLOURS = {  # machined aluminium, printed shells and soles, bought hardware
+    "cnc": "0.72 0.74 0.77 1",
+    "service": "0.72 0.74 0.77 1",
+    "print": "0.17 0.18 0.20 1",
+    "bought": "0.45 0.45 0.47 1",
+}
 TOL = 1e-6
 
 
@@ -198,7 +209,11 @@ def build() -> tuple[str, dict]:
 
     ranges = {j["name"]: j["range"] for j in expand(robot["joints"])}
     joints = mirrored(skel["joints"], key_is_name=True)
-    bodies = mirrored(skel["bodies"], key_is_name=False)
+    cad = yaml.safe_load(CAD_MODEL.read_text()) if CAD_MODEL.exists() else {}
+    cad_items = {p["budget"] for p in cad.values()}
+    bodies = [
+        b for b in mirrored(skel["bodies"], key_is_name=False) if b["budget"] not in cad_items
+    ]
     collisions = mirrored(skel["collisions"], key_is_name=False)
     errors = []
 
@@ -222,10 +237,10 @@ def build() -> tuple[str, dict]:
 
     # every budget item fully placed
     placed: dict[str, float] = {}
-    for b in bodies:
+    for b in [*bodies, *cad.values()]:
         placed[b["budget"]] = placed.get(b["budget"], 0.0) + b["mass"]
     for k, v in budget.items():
-        if abs(placed.get(k, 0.0) - v["mass"]) > TOL:
+        if abs(placed.get(k, 0.0) - v["mass"]) > 5e-4:  # half a gram: budgets are rounded
             errors.append(
                 f"budget {k}: {v['mass']} kg, skeleton places {placed.get(k, 0.0):.3f} kg"
             )
@@ -240,6 +255,16 @@ def build() -> tuple[str, dict]:
         visuals[b["link"]].append(
             f'<visual><origin xyz="{fmt(b["xyz"])}"/><geometry><box size="{fmt(b["size"])}"/>'
             f'</geometry><material name="body"><color rgba="{BODY_COLOUR}"/></material></visual>'
+        )
+
+    for name, c in cad.items():
+        i = c["inertia"]  # ixx iyy izz ixy ixz iyz
+        inertia = [[i[0], i[3], i[4]], [i[3], i[1], i[5]], [i[4], i[5], i[2]]]
+        links[c["link"]].append((c["mass"], c["com"], inertia))
+        visuals[c["link"]].append(
+            f'<visual><geometry><mesh filename="../meshes/{name}.stl"/></geometry>'
+            f'<material name="{c["material"]}"><color rgba="{CAD_COLOURS[c["process"]]}"/>'
+            "</material></visual>"
         )
 
     # motors: mass on the parent link of the (first) joint they drive

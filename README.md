@@ -37,6 +37,7 @@ The joint list, ranges and actuators are defined in [description/robot.yaml](des
 docs/          plan, requirements, roadmap, safety, decisions, design notes
 description/   robot.yaml (joints, sizes, CAN buses), actuators.yaml, mass_budget.yaml,
                skeleton.yaml (frames, mass placement), urdf/ (generated)
+cad/           code-CAD part generators (the legs so far) and the mass and size build
 bom/           bill of materials (bom.csv)
 tools/         checks and generators (description check, BOM summary, URDF, concept sketch)
 sim/mujoco/    MuJoCo checks (standing, step-up, symmetry, policy cross-check)
@@ -56,6 +57,9 @@ ruff check . && ruff format --check .
 python tools/check_description.py   # joints, actuators, CAN load, mass budget, BOM counts
 python tools/bom_summary.py         # BOM totals by phase and group
 python tools/build_urdf.py --check  # URDF matches the description files
+
+pip install -e ".[cad]"
+python -m cad.build                 # leg meshes, masses and inertias; part sizes vs mill and printer
 
 pip install -e ".[sim]"
 python sim/mujoco/check_standing.py # stands in MuJoCo; joint torques against ratings

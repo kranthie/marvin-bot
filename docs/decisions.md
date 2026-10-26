@@ -2,6 +2,12 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: leg CAD first pass; mass at the 38 kg limit
+
+`cad/leg.py` draws the legs in code (manifold3d), around the motors at their STEP-model sizes: a flange, side plate and back plate at the hip; a two-plate bracket for hip roll; a flange, outer side plate and printed shell on the thigh; on the shin a knee flange, a central web that both ankle RS03 bolt to, and a fork for the ankle pitch bearings; a hollow ankle cross, 7075 cranks, rods with rod ends; and a foot of a pocketed base plate, heel posts, roll-bearing lugs and a TPU sole. Plates are 6 mm and pocketed with lightening holes; flanges 6 mm. `cad/build.py` computes each part's mass and inertia (into the URDF), and checks sizes: every machined part fits the desktop mill (200 × 150 mm, 60 mm stock), except the 230 mm foot base plates, which are flat and go to an online laser or water-jet service.
+
+Result: 1.72 kg of structure per leg plus a 0.46 kg foot (budget was 1.5 + 0.35), so the robot estimate is 37.98 kg, at the 38 kg hard limit with no margin. No fasteners, bearings or strength check yet; the second pass adds them and then lightens where the stresses allow. Further options if needed: the Orin module on a carrier board (−1.0 kg), a 13S2P pack (−1.1 kg, ~1 h instead of ~1.5 h). With the CAD masses, 20 cm stairs no longer pass the static check (17–18 cm, the requirement, still do) and the stance knee on a slow step is at 108% of rated.
+
 ## 2026-10-26: packaging fixes: thigh layout, knee 125°, motors moved along their axes
 
 `tools/check_packaging.py` places every motor (STEP-model envelopes) and collision box on its link and checks for overlaps over each joint's range and in combined poses (deep squat, stair step, sitting). Within a limb, or between a limb and the body it is mounted on, an overlap is a packaging error; between different limbs it is ordinary self-collision, which the simulators model. Fixes:

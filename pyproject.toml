@@ -12,7 +12,7 @@ dev = ["ruff", "pytest"]
 bench = ["python-can"]
 sketch = ["matplotlib>=3.8", "numpy"]
 sim = ["mujoco>=3.3", "numpy", "pillow", "onnxruntime"]
-cad = ["manifold3d", "trimesh"]
+cad = ["manifold3d==3.5.4", "trimesh==5.2.0"]  # pinned: cad_model.yaml must reproduce exactly
 
 [build-system]
 requires = ["setuptools>=68"]

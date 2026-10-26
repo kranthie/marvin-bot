@@ -17,6 +17,8 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q tests
+      - run: python -m cad.build --check
+      - run: python -m cad.build > /dev/null  # meshes (git-ignored) for the MuJoCo checks
       - run: python tools/check_description.py
       - run: python tools/bom_summary.py
       - run: python tools/ankle_linkage.py --check
