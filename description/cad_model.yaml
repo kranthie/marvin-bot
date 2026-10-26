@@ -541,3 +541,102 @@ right_foot_lug_back:
   com: [-0.032, -4.0954e-21, -0.0232557]
   inertia: [2.08403e-05, 1.56928e-05, 5.63217e-06, 3.78187e-22, -2.68007e-20, -5.90079e-22]
   size_mm: [8.0, 36.0, 65.5]
+pelvis_side_l:
+  link: pelvis
+  material: al6061
+  process: cnc
+  budget: pelvis
+  mass: 0.21905
+  com: [0.00123407, 0.04415, 0.0184425]
+  inertia: [0.000335545, 0.000548469, 0.000214238, -2.01005e-20, -4.53188e-06, -1.07203e-19]
+  size_mm: [114.0, 6.0, 143.7]
+pelvis_side_r:
+  link: pelvis
+  material: al6061
+  process: cnc
+  budget: pelvis
+  mass: 0.21905
+  com: [0.00123407, -0.04415, 0.0184425]
+  inertia: [0.000335545, 0.000548469, 0.000214238, 4.69011e-20, -4.53188e-06, 1.42937e-19]
+  size_mm: [114.0, 6.0, 143.7]
+pelvis_front:
+  link: pelvis
+  material: al6061
+  process: cnc
+  budget: pelvis
+  mass: 0.13285
+  com: [0.055, 0.0024267, 0.0229765]
+  inertia: [0.000274446, 0.000192057, 8.31858e-05, 8.71022e-20, 2.85874e-19, 1.01604e-07]
+  size_mm: [6.0, 82.3, 126.7]
+pelvis_back:
+  link: pelvis
+  material: al6061
+  process: cnc
+  budget: pelvis
+  mass: 0.13285
+  com: [-0.055, 0.0024267, 0.0229765]
+  inertia: [0.000274446, 0.000192057, 8.31858e-05, 1.56337e-20, 2.14405e-19, 1.01604e-07]
+  size_mm: [6.0, 82.3, 126.7]
+pelvis_top:
+  link: pelvis
+  material: al6061
+  process: cnc
+  budget: pelvis
+  mass: 0.15262
+  com: [0.00236988, -9.34182e-05, 0.0837]
+  inertia: [0.000114678, 0.000170863, 0.000284625, -1.96372e-07, -2.68006e-20, 1.13065e-20]
+  size_mm: [116.0, 94.3, 6.0]
+torso_waist_flange:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.08963
+  com: [0.0, 1.32891e-18, 0.0313]
+  inertia: [3.97334e-05, 3.97334e-05, 7.8929e-05, 5.9557e-22, 0.0, 4.32384e-21]
+  size_mm: [84.0, 84.0, 6.0]
+torso_base:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.30079
+  com: [0.00362264, -0.000699468, 0.0373]
+  inertia: [0.000699497, 0.000601162, 0.00129885, 1.78537e-06, 1.16136e-19, -1.4517e-20]
+  size_mm: [150.0, 163.4, 6.0]
+torso_upright_l:
+  link: torso_link
+  material: al6061
+  process: service
+  budget: torso
+  mass: 0.3413
+  com: [0.00136855, 0.0787, 0.165188]
+  inertia: [0.00209263, 0.00251713, 0.000426555, -9.82691e-20, 1.23481e-06, -2.28699e-18]
+  size_mm: [140.0, 6.0, 264.7]
+torso_upright_r:
+  link: torso_link
+  material: al6061
+  process: service
+  budget: torso
+  mass: 0.3413
+  com: [0.00136855, -0.0787, 0.165188]
+  inertia: [0.00209263, 0.00251713, 0.000426555, 1.56337e-19, 1.23481e-06, 2.28699e-18]
+  size_mm: [140.0, 6.0, 264.7]
+torso_bridge:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.13306
+  com: [0.000973598, -0.000130818, 0.2804]
+  inertia: [0.000284973, 6.24328e-05, 0.000346607, 2.57693e-07, -1.41596e-18, 2.68006e-20]
+  size_mm: [70.0, 151.4, 6.0]
+torso_chest_shell:
+  link: torso_link
+  material: pa_cf
+  process: print
+  budget: torso
+  mass: 0.24927
+  com: [0.0445925, -3.98704e-17, 0.145149]
+  inertia: [0.00228516, 0.00151711, 0.00189367, -1.94721e-19, -0.000168844, 5.45138e-19]
+  size_mm: [150.0, 175.4, 228.7]

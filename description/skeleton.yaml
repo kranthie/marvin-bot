@@ -56,7 +56,7 @@ motor_mounts:
 # from; the masses of each item (both sides counted) must add up to the budget figure.
 bodies:
   - {link: pelvis,                   budget: pelvis,        mass: 1.00,  xyz: [0, 0, 0.040],       size: [0.14, 0.18, 0.12]}
-  - {link: pelvis,                   budget: electronics,   mass: 0.50,  xyz: [-0.04, 0, 0.060],   size: [0.08, 0.12, 0.05]}
+  - {link: pelvis,                   budget: electronics,   mass: 0.50,  xyz: [0, 0, 0.040],       size: [0.08, 0.07, 0.05]}  # inside the pelvis frame
   - {link: left_hip_pitch_link,      budget: leg_structure, mass: 0.15,  xyz: [0, 0.015, -0.045],  size: [0.08, 0.04, 0.10]}
   - {link: left_hip_roll_link,       budget: leg_structure, mass: 0.15,  xyz: [0, 0, -0.050],      size: [0.08, 0.06, 0.10]}
   - {link: left_thigh_link,          budget: leg_structure, mass: 0.60,  xyz: [0, 0, -0.060],      size: [0.08, 0.08, 0.16]}
@@ -66,10 +66,10 @@ bodies:
   - {link: left_ankle_link,          budget: leg_structure, mass: 0.10,  xyz: [0, 0, 0],           size: [0.05, 0.05, 0.03]}
   - {link: left_foot_link,           budget: feet,          mass: 0.35,  xyz: [0.030, 0, -0.045],  size: [0.24, 0.11, 0.03]}
   - {link: torso_link,               budget: torso,         mass: 1.80,  xyz: [0, 0, 0.150],       size: [0.16, 0.24, 0.26]}
-  - {link: torso_link,               budget: compute,       mass: 1.50,  xyz: [0.020, 0, 0.130],   size: [0.11, 0.11, 0.07]}
-  - {link: torso_link,               budget: battery,       mass: 3.40,  xyz: [-0.060, 0, 0.100],  size: [0.06, 0.15, 0.17]}
-  - {link: torso_link,               budget: keep_alive,    mass: 0.40,  xyz: [-0.060, 0, 0.220],  size: [0.05, 0.10, 0.06]}
-  - {link: torso_link,               budget: electronics,   mass: 1.00,  xyz: [0, 0, 0.200],       size: [0.12, 0.20, 0.10]}
+  - {link: torso_link,               budget: compute,       mass: 1.50,  xyz: [0.025, 0, 0.130],   size: [0.11, 0.11, 0.07]}
+  - {link: torso_link,               budget: battery,       mass: 3.40,  xyz: [-0.062, 0, 0.130],  size: [0.06, 0.14, 0.17]}  # on the base plate, behind the computer
+  - {link: torso_link,               budget: keep_alive,    mass: 0.40,  xyz: [-0.060, 0, 0.250],  size: [0.05, 0.10, 0.05]}
+  - {link: torso_link,               budget: electronics,   mass: 1.00,  xyz: [0.030, 0, 0.215],   size: [0.09, 0.14, 0.05]}
   - {link: head_link,                budget: head,          mass: 0.50,  xyz: [0.010, 0, 0.040],   size: [0.15, 0.16, 0.17]}
   - {link: left_shoulder_pitch_link, budget: arm_structure, mass: 0.05,  xyz: [0, 0.025, -0.020],  size: [0.06, 0.03, 0.06]}
   - {link: left_shoulder_roll_link,  budget: arm_structure, mass: 0.05,  xyz: [0, 0, -0.040],      size: [0.06, 0.06, 0.06]}

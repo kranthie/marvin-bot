@@ -6,7 +6,8 @@ area; the loads give the axial force and the bending moments there; the bending-
 stress is compared with the material's yield strength. Torsion and stress concentrations at
 holes and corners are not included, so the target safety factor is 2 on yield.
 
-Load cases, at the default straight-leg pose (all link frames aligned):
+Load cases, at the default straight-leg pose (all link frames aligned; the pelvis takes one
+leg's landing load through its hip):
   landing: at the ankle axis, 3 x body weight up, 0.5 x fore-aft, 0.3 x sideways, together
   peak torque: the joint's peak torque (description/actuators.yaml, the linkage ratios for the
                ankle) as a moment on the part that reacts it
@@ -30,7 +31,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from . import leg
+from . import leg, torso
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -150,6 +151,13 @@ def checks(peak: dict, mass: float) -> list[Check]:
             tuple(ankle_pitch_frame),
             (0.0, 1000 * peak["left_hip_pitch"], 0.0),
         ),
+        # the pelvis frame's four plates carry one leg's landing load as a box section
+        Check(
+            "pelvis_side_l+pelvis_side_r+pelvis_front+pelvis_back",
+            "z",
+            list(np.linspace(10, 75, 6)),
+            tuple(j["left_hip_pitch"] + ankle_pitch_frame),
+        ),
         Check(
             "left_foot_base+left_foot_rib_a+left_foot_rib_b",
             "x",
@@ -175,7 +183,7 @@ def main() -> int:
         peak[m.group(1)] = float(m.group(2))
     w = mass * G
     landing = np.array([0.5 * w, 0.3 * w, 3.0 * w])  # N: fore-aft, sideways, up
-    parts = {p.name: p for p in leg.parts()}
+    parts = {p.name: p for p in leg.parts() + torso.parts()}
     worst_sf = np.inf
     print(
         f"robot {mass:.1f} kg; landing load at the ankle {np.round(landing):} N; target SF {TARGET}"
@@ -187,7 +195,7 @@ def main() -> int:
         solid = parts[names[0]].solid
         for n in names[1:]:
             solid = solid + parts[n].solid
-        label = names[0] + (" (+ far side)" if len(names) > 1 else "")
+        label = names[0] + (" (combined)" if len(names) > 1 else "")
         ax = "xyz".index(c.axis)
         uv = [i for i in range(3) if i != ax]
         for case in ("landing", "peak torque"):

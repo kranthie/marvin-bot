@@ -2,6 +2,10 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: pelvis and torso structure, first pass
+
+`cad/torso.py`: the pelvis is a box frame of pocketed plates (the hip pitch RS04s on the side plates' inner faces, the waist RS03 on the top plate, the pelvis electronics inside); the torso has a waist flange and base plate, two uprights carrying the shoulder pitch RS03s (flat profiles of 265 mm, cut by an online service), a bridge over the neck yaw servo, and a printed chest shell open at the back for the battery. The computer, battery and electronics stay as estimate boxes, moved so they sit inside the structure without overlaps. Mass: pelvis 0.86 kg and torso 1.46 kg against estimates of 1.0 and 1.8 kg; the robot is 39.06 kg, and the stance knee on a slow 18 cm step is at 112% of rated. The pelvis frame carries a one-leg landing at SF 37 as a box section, so it can be lightened later.
+
 ## 2026-10-26: keep the second-pass leg; mass limit 40 kg; knee decided after measurement
 
 The second-pass leg passes `cad/strength.py` (worst safety factor 2.4) and puts the robot at 39.55 kg. The computer (Jetson AGX Orin developer kit) and the battery (13S3P) stay as they are, so the hard mass limit goes from 38 to 40 kg; the 35 kg target stays. Effect on the actuators: peak torques stay at or below 38% of peak in the static stair check and below 76% while walking; the continuous rating binds at the knee on slow stairs (46 N·m, 115% of the RS04's rating) and is close at hip roll (92%).

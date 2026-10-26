@@ -1,6 +1,6 @@
 # Stair climbing: status and open issues
 
-Requirement R12: climb and descend household stairs with 17–18 cm risers and 25 cm treads. This note collects what the checks and training runs have shown so far, the issues still open, and the plan for closing them. Status as of 2026-10-26, design v0.2 with the second-pass leg CAD (39.55 kg).
+Requirement R12: climb and descend household stairs with 17–18 cm risers and 25 cm treads. This note collects what the checks and training runs have shown so far, the issues still open, and the plan for closing them. Status as of 2026-10-26, design v0.2 with the second-pass leg CAD and the first-pass pelvis and torso CAD (39.06 kg).
 
 ## What the robot can do in principle
 
@@ -8,7 +8,7 @@ Requirement R12: climb and descend household stairs with 17–18 cm risers and 2
 
 | Riser | Possible | Stance knee | Stance hip roll |
 |---|---|---|---|
-| 10–18 cm | yes | 46 N·m: 38% of peak, **115% of continuous rating** | 37 N·m: 31% of peak, 92% of rating |
+| 10–18 cm | yes | 45 N·m: 37% of peak, **112% of continuous rating** | 37 N·m: 31% of peak, 92% of rating |
 | 20 cm | no (since the leg CAD masses; it passed with the v0.2 estimates) | | |
 
 How the design got here:
@@ -20,7 +20,7 @@ How the design got here:
 
 ## Issue 1: knee heat on slow stairs
 
-On a slow step the stance knee holds ~46 N·m against the RS04's 40 N·m continuous rating. Heating goes with torque squared, so ~1.3× the rated heat while it lasts. Three things make the real margin smaller:
+On a slow step the stance knee holds ~45 N·m against the RS04's 40 N·m continuous rating. Heating goes with torque squared, so ~1.3× the rated heat while it lasts. Three things make the real margin smaller:
 
 - The 40 N·m rating assumes a 345 × 345 mm aluminium heat sink; the thigh plate is much smaller, so the motor's real continuous rating in the leg may be 30–35 N·m.
 - Holding a bent knee still gives no cooling from motion.
@@ -55,12 +55,12 @@ In v3 the terrain curriculum plateaued at level ~1 of 10 with very few falls: wa
 
 ## Issue 3: mass
 
-The leg strength pass (`cad/strength.py`: far-side bearings at the knee and hip roll, a channel-flanged hip block, a ribbed foot) put the robot at 39.55 kg. The hard limit was raised to 40 kg, with the 35 kg target unchanged (decisions, 2026-10-26). Mass feeds issue 1 directly. Savings that keep the computer and the battery as they are:
+The leg strength pass (`cad/strength.py`: far-side bearings at the knee and hip roll, a channel-flanged hip block, a ribbed foot) put the robot at 39.55 kg; the pelvis and torso CAD brought it to 39.06 kg. The hard limit was raised to 40 kg, with the 35 kg target unchanged (decisions, 2026-10-26). Mass feeds issue 1 directly. Savings that keep the computer and the battery as they are:
 
 | Option | Saves | Trade-off |
 |---|---|---|
 | Shoulder pitch and roll RS03 → RS06 | ~1.1 kg | shoulder peak 60 → 36 N·m (Asimov limits these joints to 30 / 25 N·m); less margin for push-ups and getting up |
-| Torso and electronics from CAD instead of estimates | ±0.5–1 kg | unknown until drawn |
+| Electronics and arms from CAD instead of estimates (pelvis and torso done: −0.5 kg) | ±0.5 kg | unknown until drawn |
 | 7075 leg plates, thinned to the same stiffness | ~0.3–0.5 kg | cost, sourcing |
 | Carbon-fibre tube cores for thigh and shin | ~0.5 kg | design work, bonded joints |
 

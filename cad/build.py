@@ -6,7 +6,8 @@ Writes:
                                   centre of mass and inertia (link frame, SI), size (mm)
 
 tools/build_urdf.py takes the CAD parts' masses and inertias in place of skeleton.yaml's
-estimates for the budget items they cover (leg structure, feet), and shows their meshes.
+estimates for the budget items they cover (leg structure, feet, pelvis, torso), and shows their
+meshes.
 
 Checks that machined parts fit the desktop mill (MILL_MM, the usable area with the tool
 changer, and stock thickness) and printed parts fit the printer (PRINT_MM); parts that don't
@@ -28,14 +29,18 @@ import numpy as np
 import trimesh
 import yaml
 
-from . import leg
+from . import leg, torso
 
 ROOT = Path(__file__).resolve().parent.parent
 MESHES = ROOT / "description" / "meshes"
 MODEL = ROOT / "description" / "cad_model.yaml"
 MILL_MM = (200.0, 150.0, 60.0)  # usable X, Y, stock thickness (mm), with the tool changer fitted
 PRINT_MM = (250.0, 250.0, 250.0)
-BUDGET = {"foot": "feet"}  # part-name keyword -> mass budget item; everything else leg_structure
+BUDGET = {
+    "foot": "feet",
+    "pelvis": "pelvis",
+    "torso": "torso",
+}  # name keyword -> budget item; else legs
 
 
 def budget_item(name: str) -> str:
@@ -53,7 +58,7 @@ def r6(v) -> list[float]:
 
 
 def build() -> tuple[str, dict, list]:
-    parts = leg.all_parts()
+    parts = leg.all_parts() + torso.parts()
     model, meshes, too_big = {}, {}, []
     for p in parts:
         mass, com, inertia = p.mass_properties()

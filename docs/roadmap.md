@@ -38,7 +38,8 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Strength check, hand calcs on the CAD sections (`cad/strength.py`): landing case fails five one-sided parts
 - [x] Leg CAD second pass: far-side bearings (knee, hip roll), channel-flanged hip block, ribbed foot; passes the strength check (worst SF 2.4); robot 39.55 kg, limit raised to 40 kg
 - [ ] Leg CAD: fasteners, bearing seats, hip yaw far-side support
-- [ ] CAD for pelvis, torso, arms, head
+- [x] Pelvis and torso CAD, first pass (`cad/torso.py`): 0.86 + 1.46 kg (estimates were 1.0 + 1.8); pelvis frame SF 37 in the landing case; robot 39.06 kg
+- [ ] CAD for arms and head
 
 ## Phase 2 preparation
 
