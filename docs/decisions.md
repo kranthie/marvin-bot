@@ -2,6 +2,10 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: stairs work in simulation; knee stays an RS04 pending the bench test
+
+The stairs policy rough v5 climbs 10, 15, 18 and 20 cm stairs up and down in the MuJoCo cross-check (five steps each way, 28 cm treads) and still walks, turns and stops on flat ground. On stairs the knees average 73–75% of their continuous rating (RMS) and hip roll ~60%, against 112% in the static worst-case check: the trained gait loads each knee only part of the time. The 1.5:1 knee stage is not needed on this evidence; the remaining check is the RS04's real continuous rating in a thigh-sized mount (phase 2 bench test). Details in [design/stairs.md](design/stairs.md).
+
 ## 2026-10-26: pelvis and torso structure, first pass
 
 `cad/torso.py`: the pelvis is a box frame of pocketed plates (the hip pitch RS04s on the side plates' inner faces, the waist RS03 on the top plate, the pelvis electronics inside); the torso has a waist flange and base plate, two uprights carrying the shoulder pitch RS03s (flat profiles of 265 mm, cut by an online service), a bridge over the neck yaw servo, and a printed chest shell open at the back for the battery. The computer, battery and electronics stay as estimate boxes, moved so they sit inside the structure without overlaps. Mass: pelvis 0.86 kg and torso 1.46 kg against estimates of 1.0 and 1.8 kg; the robot is 39.06 kg, and the stance knee on a slow 18 cm step is at 112% of rated. The pelvis frame carries a one-leg landing at SF 37 as a box section, so it can be lightened later.

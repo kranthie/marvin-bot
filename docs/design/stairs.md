@@ -9,7 +9,7 @@ Requirement R12: climb and descend household stairs with 17–18 cm risers and 2
 | Riser | Possible | Stance knee | Stance hip roll |
 |---|---|---|---|
 | 10–18 cm | yes | 45 N·m: 37% of peak, **112% of continuous rating** | 37 N·m: 31% of peak, 92% of rating |
-| 20 cm | no (since the leg CAD masses; it passed with the v0.2 estimates) | | |
+| 20 cm | no in the static check (since the leg CAD masses); **the trained policy (rough v5) climbs 20 cm dynamically** | | |
 
 How the design got here:
 
@@ -25,6 +25,8 @@ On a slow step the stance knee holds ~45 N·m against the RS04's 40 N·m continu
 - The 40 N·m rating assumes a 345 × 345 mm aluminium heat sink; the thigh plate is much smaller, so the motor's real continuous rating in the leg may be 30–35 N·m.
 - Holding a bent knee still gives no cooling from motion.
 - Each extra kilogram of robot adds ~1.1 N·m at the knee in this pose.
+
+**Measured on real climbs (rough v5 in MuJoCo, 2026-10-26): the knees average 73–75% of their continuous rating (RMS) on 10–20 cm stairs, hip roll ~60%.** The trained gait loads each knee for only part of each step, so the static 112% is a worst case the policy avoids. What remains is confirming the RS04's real rating in a thigh-sized mount on the bench (if it is 30–35 N·m rather than 40, stair RMS would be ~85–100%).
 
 What it is not: a peak-torque problem (38% of peak), or a walking problem. The flat policy v3 walks at up to 0.8 m/s with its knees at ~60% of rated (RMS) and its hottest joint, ankle pitch, at 73% (`sim/mujoco/check_policy.py`).
 
@@ -44,9 +46,10 @@ How comparable robots avoid it (neither publishes a stair heat analysis):
 |---|---|
 | rough v2 | walks on flat ground; stops in front of 10 cm stairs |
 | rough v3 (clearance reward fixed) | climbs 5 cm stairs up and down; stops in front of 10 and 15 cm |
-| rough v4 (training) | linear progress reward along the command, rough-ground tracking width 0.25, stairs (4–20 cm) on 55% of tiles, heat penalty, 6000 iterations |
+| rough v4 | collapsed: the progress reward had no upper cap, so lunging forward and falling paid best |
+| **rough v5** | **climbs 10, 15, 18 and 20 cm stairs up and down** (five steps each way, 28 cm treads), and still walks, turns and stops on flat ground |
 
-In v3 the terrain curriculum plateaued at level ~1 of 10 with very few falls: waiting at the bottom of a stair was safe, and the sharp tracking reward paid almost nothing for a slow climb, so nothing pulled the robots upward. The static check shows the legs can do 18 cm, so this is a training problem. Ideas if v4 still stalls:
+In v3 the terrain curriculum plateaued at level ~1 of 10 with very few falls: waiting at the bottom of a stair was safe, and the sharp tracking reward paid almost nothing for a slow climb, so nothing pulled the robots upward. v5 fixed it with a linear progress reward along the command (capped at the commanded speed), a wider tracking reward on rough ground (std 0.25), stairs from 4 to 20 cm on 55% of the tiles, the heat penalty and 6000 iterations; its curriculum reached level ~6 of 10. **Issue 2 is resolved in simulation.** Remaining ideas, if real stairs need more margin:
 
 - A stairs-only curriculum run, started from the v4 or flat policy.
 - A reward for height gained on stair tiles.
@@ -79,7 +82,7 @@ RobStride has nothing larger than the RS04, and the Damiao DM-J10010L is the sam
 
 Keep the current design (RS04 knee, no reduction stage). Settle it from three measurements:
 
-1. **Trained stair policy (v4):** the MuJoCo cross-check's per-joint RMS torque against rating on 10–18 cm stairs.
+1. **Trained stair policy:** done (rough v5): knees at 73–75% of rated (RMS) on 10–20 cm stairs.
 2. **Phase 2 bench test:** an RS04 holding 40–45 N·m, bolted to a plate the size of the thigh plate (`bench/actuator/bench_robstride.py thermal`), to measure its real continuous rating in the leg.
 3. **Mass:** torso and arm CAD, replacing estimates.
 
