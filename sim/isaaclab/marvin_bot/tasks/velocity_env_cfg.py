@@ -44,7 +44,7 @@ from ..robot_cfg import (
 from .curriculums import forward_speed_levels, terrain_levels_tracking
 from .events import randomize_joint_targets
 from .observations import mapped_height_scan
-from .rewards import feet_flat, foot_clearance
+from .rewards import feet_flat, foot_clearance, sustained_torque
 from .terminations import base_below_ground
 from .terrains import MARVIN_BOT_ROUGH_TERRAINS_CFG
 
@@ -173,6 +173,13 @@ class MarvinBotRewards(RewardsCfg):
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET),
             "asset_cfg": SceneEntityCfg("robot", body_names=FEET),
         },
+    )
+    # heat: holding leg torque above the continuous rating (a slow stair step put the knee at
+    # ~108% of its rating in the static check, sim/mujoco/check_step_up.py)
+    sustained_torque = RewTerm(
+        func=sustained_torque,
+        weight=-1.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINTS)},
     )
     joint_deviation_hip = RewTerm(
         func=mdp.joint_deviation_l1,

@@ -105,6 +105,23 @@ def joint_limits() -> dict[str, tuple[float, float]]:
     return out
 
 
+def joint_rated() -> dict[str, float]:
+    """Continuous (rated) torque per joint, N·m: the motor's, or for the linkage ankle the
+    pair's times the linkage ratio, as joint_limits() does for peak torque."""
+    out = {}
+    for m in _robot["motors"]:
+        a = _acts[m["model"]]
+        for side in SIDES if "{side}" in m["name"] else (None,):
+            drives = [d.replace("{side}", side) if side else d for d in m["drives"]]
+            for d in drives:
+                if len(drives) == 1:
+                    out[d] = a["rated_torque"]
+                else:
+                    r = _linkage["pitch_ratio"] if d.endswith("pitch") else _linkage["roll_ratio"]
+                    out[d] = 2 * a["rated_torque"] * r
+    return out
+
+
 def _actuators() -> dict[str, DCMotorCfg]:
     import re
 

@@ -4,7 +4,9 @@ Loads policy.onnx and policy.json from sim/isaaclab/export_policy.py, builds the
 base and the same DC motor models, gains, armature and friction as
 sim/isaaclab/marvin_bot/robot_cfg.py (PD clipped by the torque-speed line), and drives it at the
 policy's control rate through a command script. Fails if the robot falls, if it doesn't track the
-walk, turn and stop commands, or if it slides its feet instead of stepping. Prints the step rate,
+walk, turn and stop commands, if it slides its feet instead of stepping, or if any joint's RMS
+torque over a segment exceeds its continuous rating (the steady-state heating, from
+description/actuators.yaml). Prints the step rate,
 the peak torque and the left/right gait (swing, stance, step length, foot lift) per segment.
 
 Sensor noise at half the training level is added to the observations (--noise, --seed).
@@ -86,9 +88,11 @@ def joint_specs() -> dict[str, dict]:
                 if len(drives) == 2:
                     r = link["pitch_ratio"] if d.endswith("pitch") else link["roll_ratio"]
                 effort = a["peak_torque"] * (2 * r if len(drives) == 2 else 1)
+                rated = a["rated_torque"] * (2 * r if len(drives) == 2 else 1)
                 kp, kd, armature, friction = next(v for k, v in gains.items() if re.fullmatch(k, d))
                 out[d] = dict(
                     effort=effort,
+                    rated=rated,
                     speed=speed / r,
                     kp=kp,
                     kd=kd,
@@ -210,6 +214,7 @@ def main() -> None:
     scale = meta["action_scale"]
     kp = np.array([spec_joints[n]["kp"] for n in names])
     kd = np.array([spec_joints[n]["kd"] for n in names])
+    rated = np.array([spec_joints[n]["rated"] for n in names])
     effort = np.array([spec_joints[n]["effort"] for n in names])
     speed = np.array([spec_joints[n]["speed"] for n in names])
 
@@ -324,6 +329,7 @@ def main() -> None:
         steps = round(seconds / meta["control_dt"])
         vel, yaw_rate = [], []
         touchdowns, air, peak, load = 0, [0, 0], np.zeros(len(names)), []
+        heat, heat_n = np.zeros(len(names)), 0  # sum of (torque / rated torque)^2
         # per-foot gait: swing and stance times, step length along the heading, swing height
         ground, lift = [0, 0], [None, None]
         swing, stance, length, height, tilt = ([[], []] for _ in range(5))
@@ -339,6 +345,8 @@ def main() -> None:
                 lo = np.clip(effort * (-1 - qd / speed), -effort, 0)
                 data.ctrl[aid] = np.clip(tau, lo, hi)
                 peak = np.maximum(peak, np.abs(data.ctrl[aid]) / effort)
+                heat += np.square(data.ctrl[aid] / rated)
+                heat_n += 1
                 mujoco.mj_step(model, data)
             load.append(np.abs(data.ctrl[aid]) / effort)
             # a step is a touchdown after at least AIR_MIN in the air (ignores contact flicker)
@@ -405,6 +413,17 @@ def main() -> None:
             f"{rate:3.1f} steps/s, torque mean {np.mean(load):3.0%} peak {peak.max():3.0%} "
             f"of peak ({names[int(peak.argmax())]})"
         )
+        # heat: RMS torque over the segment against each joint's continuous rating. Copper
+        # losses go with torque squared, so this is the steady-state heating, relative to the
+        # rated condition, if the activity went on indefinitely
+        rms = np.sqrt(heat / max(heat_n, 1))
+        hot = np.argsort(-rms)[:2]
+        print(
+            f"{'':14} heat: RMS torque / rated "
+            + ", ".join(f"{names[i]} {rms[i]:.0%}" for i in hot)
+        )
+        if rms.max() > 1.0:
+            failures.append(f"'{name}': {names[hot[0]]} RMS torque {rms.max():.0%} of rated")
         if cmd[0] > 0:
 
             def lr(x, unit, f):

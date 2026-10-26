@@ -30,6 +30,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Isaac Lab package: robot config, flat and rough walking tasks, robot check on Newton and PhysX (`sim/isaaclab/`), mirror rule checked (`sim/mujoco/check_symmetry.py`)
 - [x] First walking policy passes the MuJoCo flat-ground cross-check (rough v2: walk, turn, stop)
 - [ ] Stairs: rough-terrain policy that climbs 15-18 cm stairs in Isaac Lab and in MuJoCo
+- [x] Heat: RMS torque vs continuous rating per joint in the MuJoCo policy check (walking: knees 60-64% of rated); sustained-torque penalty in training
 - [ ] Rough-terrain and stair policies; MuJoCo cross-check
 - [x] Packaging check with STEP-model actuator envelopes (`tools/check_packaging.py`); thigh layout, knee range and motor positions fixed
 - [x] Code-CAD of the legs, first pass (`cad/leg.py`, `cad/build.py`): every part fits the mill or printer (foot base plates cut by a service); masses and inertias in the URDF

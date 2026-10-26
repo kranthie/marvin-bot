@@ -61,3 +61,40 @@ def feet_flat(env, sensor_cfg: SceneEntityCfg, asset_cfg: SceneEntityCfg) -> tor
     g = quat_apply_inverse(quat.reshape(-1, 4), down.reshape(-1, 3)).reshape(down.shape)
     tilt = torch.sum(torch.square(g[..., :2]), dim=-1)
     return torch.sum(tilt * (contact > 0.0), dim=1)
+
+
+_heat: dict[int, torch.Tensor] = {}
+_rated: dict[int, torch.Tensor] = {}
+
+
+def sustained_torque(
+    env, asset_cfg: SceneEntityCfg, time_constant: float = 1.0, threshold: float = 0.8
+) -> torch.Tensor:
+    """Penalize joints that hold torque above their continuous rating.
+
+    Each joint keeps a running average (``time_constant`` seconds) of (torque / rated torque)²,
+    a stand-in for its winding heat; the penalty is the sum of how far those averages exceed
+    ``threshold``. Short peaks cost nothing, holding a bent knee on a stair does. The real
+    thermal time constant (minutes) is fitted on the bench; a short one keeps the signal inside
+    a training episode.
+    """
+    from ..robot_cfg import joint_rated
+
+    asset = env.scene[asset_cfg.name]
+    ids = asset_cfg.joint_ids
+    torque = asset.data.applied_torque.torch[:, ids]
+    key = id(env)
+    if key not in _rated:
+        names = [
+            asset.joint_names[i]
+            for i in (ids if not isinstance(ids, slice) else range(len(asset.joint_names)))
+        ]
+        rated = joint_rated()
+        _rated[key] = torch.tensor([rated[n] for n in names], device=torque.device)
+    if key not in _heat or _heat[key].shape != torque.shape:
+        _heat[key] = torch.zeros_like(torque)
+    h = _heat[key]
+    h[env.episode_length_buf == 0] = 0.0  # episodes that just started
+    alpha = env.step_dt / time_constant
+    h += alpha * (torch.square(torque / _rated[key]) - h)
+    return torch.sum(torch.clamp(h - threshold, min=0.0), dim=1)
