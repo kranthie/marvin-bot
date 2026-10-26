@@ -34,7 +34,8 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [ ] Rough-terrain and stair policies; MuJoCo cross-check
 - [x] Packaging check with STEP-model actuator envelopes (`tools/check_packaging.py`); thigh layout, knee range and motor positions fixed
 - [x] Code-CAD of the legs, first pass (`cad/leg.py`, `cad/build.py`): every part fits the mill or printer (foot base plates cut by a service); masses and inertias in the URDF
-- [ ] Leg CAD second pass: fasteners, bearings, strength check (FEA or hand calcs), then lighten to restore mass margin
+- [x] Strength check, hand calcs on the CAD sections (`cad/strength.py`): landing case fails five one-sided parts
+- [ ] Leg CAD second pass: far-side bearings (knee, hip roll, hip yaw), stiffer hip block, ribbed foot; fasteners; re-check strength and mass
 - [ ] CAD for pelvis, torso, arms, head
 
 ## Phase 2 preparation

@@ -2,6 +2,12 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: strength check finds one-sided joints too weak; second pass adds far-side supports
+
+`cad/strength.py` cuts each load-carrying leg part at stations along its load path, takes the real cross section of the CAD solid (holes included), and checks bending-plus-axial stress against yield (target safety factor 2, torsion and stress concentrations excluded) for two cases: a landing load at the ankle (3 × body weight up, 0.5 × fore-aft, 0.3 × sideways, straight leg) and each joint's peak torque. Peak torques pass everywhere (SF 4–9). The landing case fails five first-pass parts: foot base plate (SF 0.3), hip yoke back plate (0.3), hip roll front plate (0.6), shin knee flange (0.8), hip yoke side plate (1.4). Shin web and thigh plate pass (2.7–2.8).
+
+Cause: every joint in the first pass hangs on the motor's output on one side, so landing loads bend thin plates out of their plane. The concept already called for far-side bearings at hip roll, hip yaw and knee; the second pass adds them (the shin as a yoke around the knee, a stiffer machined hip block around the roll motor) and a stiffening rib under the foot base, then re-runs this check and the mass budget.
+
 ## 2026-10-26: buy actuators from Seeed Studio; bulk order after the bench test
 
 Seeed Studio stocks every Robstride model in the BOM at RobStride's list prices, with about 5% off at 10+ of one model (October 2026, from Seeed's product listings; Seeed's pages could not be opened directly to confirm): RS04 $255 ($242 at 10+), RS03 $225 ($214), RS06 $210 ($200), RS00 $138.99 ($131.99). RobStride's own site links to Seeed and Amazon for ordering. The BOM's 26 actuators come to ~$5,800 at single prices, against ~$6,250 at the US resellers used before.

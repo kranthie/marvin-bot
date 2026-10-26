@@ -1,0 +1,215 @@
+"""Hand-calculation strength check of the leg's load-carrying parts.
+
+Each checked part is cut at several stations along its load path. At each cut the real cross
+section of the CAD solid (lightening holes included) gives the area and the second moments of
+area; the loads give the axial force and the bending moments there; the bending-plus-axial
+stress is compared with the material's yield strength. Torsion and stress concentrations at
+holes and corners are not included, so the target safety factor is 2 on yield.
+
+Load cases, at the default straight-leg pose (all link frames aligned):
+  landing: at the ankle axis, 3 x body weight up, 0.5 x fore-aft, 0.3 x sideways, together
+  peak torque: the joint's peak torque (description/actuators.yaml, the linkage ratios for the
+               ankle) as a moment on the part that reacts it
+
+This is a first-pass check; FEA of the final parts, and fatigue, come later.
+
+Usage:
+  python -m cad.strength          # table of the worst station per part and load case
+  python -m cad.strength --check  # exit 1 if any safety factor is below the target (CI)
+
+Needs: pip install -e ".[cad]"
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+import numpy as np
+import yaml
+
+from . import leg
+
+ROOT = Path(__file__).resolve().parent.parent
+DESC = ROOT / "description"
+YIELD_MPA = {"al6061": 240.0, "al7075": 480.0}
+TARGET = 2.0
+G = 9.81
+
+
+def section(solid, axis: str, at: float):
+    """Cut `solid` (mm) perpendicular to `axis` at `at`: (area mm², centroid (u, v),
+    Iuu, Ivv, Iuv mm⁴, vertices) in the cut plane's (u, v) coordinates, where (u, v) are the
+    other two axes in x, y, z order."""
+    rot = {"z": [0, 0, 0], "x": [0, -90, 0], "y": [90, 0, 0]}[axis]
+    m = solid.rotate(rot) if axis != "z" else solid
+    polys = m.slice(at).to_polygons()
+    a = cu = cv = iuu = ivv = iuv = 0.0
+    pts = []
+    for poly in polys:
+        p = np.asarray(poly, float)
+        if axis == "x":  # rotate([0, -90, 0]) maps (x, y, z) -> (z, y, -x)... keep u = y, v = z
+            p = np.column_stack([p[:, 1], -p[:, 0]])
+        elif axis == "y":  # rotate([90, 0, 0]) maps y -> z, z -> -y: keep u = x, v = z
+            p = np.column_stack([p[:, 0], -p[:, 1]])
+        x, y = p[:, 0], p[:, 1]
+        x1, y1 = np.roll(x, -1), np.roll(y, -1)
+        cross = x * y1 - x1 * y
+        a += cross.sum() / 2
+        cu += ((x + x1) * cross).sum() / 6
+        cv += ((y + y1) * cross).sum() / 6
+        ivv += ((x * x + x * x1 + x1 * x1) * cross).sum() / 12  # about v axis (x²)
+        iuu += ((y * y + y * y1 + y1 * y1) * cross).sum() / 12  # about u axis (y²)
+        iuv += ((x * y1 + 2 * x * y + 2 * x1 * y1 + x1 * y) * cross).sum() / 24
+        pts.append(p)
+    if abs(a) < 1e-9:
+        return None
+    sign = 1.0 if a > 0 else -1.0
+    a, cu, cv, iuu, ivv, iuv = (sign * v for v in (a, cu, cv, iuu, ivv, iuv))
+    cu, cv = cu / a, cv / a
+    iuu -= a * cv * cv
+    ivv -= a * cu * cu
+    iuv -= a * cu * cv
+    return a, (cu, cv), iuu, ivv, iuv, np.vstack(pts)
+
+
+def bending_stress(sec, n_force: float, m_u: float, m_v: float) -> float:
+    """Peak |normal stress| (MPa) over the section's outline for axial force n (N) and bending
+    moments about the section's u and v axes (N·mm), unsymmetric bending formula."""
+    a, (cu, cv), iuu, ivv, iuv, pts = sec
+    den = iuu * ivv - iuv * iuv
+    u, v = pts[:, 0] - cu, pts[:, 1] - cv
+    # sigma = N/A + [(Mu Ivv + Mv Iuv) v - (Mv Iuu + Mu Iuv) u] / den
+    sig = n_force / a + ((m_u * ivv + m_v * iuv) * v - (m_v * iuu + m_u * iuv) * u) / den
+    return float(np.max(np.abs(sig)))
+
+
+@dataclass
+class Check:
+    part: str
+    axis: str  # cut perpendicular to this axis
+    stations: list[float]  # mm along the axis
+    point: tuple  # where the landing force acts, in the part's link frame (mm)
+    moment: tuple = (0.0, 0.0, 0.0)  # peak-torque case: moment vector (N·mm)
+
+
+def checks(peak: dict, mass: float) -> list[Check]:
+    skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
+    j = {k: np.array(v["xyz"]) * 1000 for k, v in skel["joints"].items()}
+    ankle_shin = j["left_ankle_pitch"]  # ankle axis in the shin frame
+    knee_thigh = j["left_knee"]
+    ankle_thigh = knee_thigh + ankle_shin
+    yaw = j["left_hip_yaw"]
+    ankle_roll_frame = yaw + ankle_thigh
+    ankle_pitch_frame = j["left_hip_roll"] + ankle_roll_frame
+    ankle_pitch = 1000 * peak["left_ankle_pitch"]
+    return [
+        Check(
+            "left_shin_web",
+            "z",
+            list(np.linspace(-90, -230, 8)),
+            tuple(ankle_shin),
+            (0.0, ankle_pitch, 0.0),
+        ),
+        Check("left_ankle_fork", "z", list(np.linspace(-250, -270, 3)), tuple(ankle_shin)),
+        Check(
+            "left_shin_knee_flange",
+            "z",
+            list(np.linspace(-30, -85, 6)),
+            tuple(ankle_shin),
+            (0.0, 1000 * peak["left_knee"], 0.0),
+        ),
+        Check(
+            "left_thigh_plate",
+            "z",
+            list(np.linspace(-40, -150, 8)),
+            tuple(ankle_thigh),
+            (0.0, 1000 * peak["left_knee"], 0.0),
+        ),
+        Check(
+            "left_hip_roll_front",
+            "z",
+            list(np.linspace(-20, 20, 5)),
+            tuple(ankle_roll_frame),
+            (1000 * peak["left_hip_roll"], 0.0, 0.0),
+        ),
+        Check(
+            "left_hip_yoke_back",
+            "z",
+            list(np.linspace(-130, -40, 7)),
+            tuple(ankle_pitch_frame - np.array([0, 75, 0]) * 0),
+            (1000 * peak["left_hip_roll"], 0.0, 0.0),
+        ),
+        Check(
+            "left_hip_yoke_side",
+            "x",
+            list(np.linspace(-100, -20, 6)),
+            tuple(ankle_pitch_frame),
+            (0.0, 1000 * peak["left_hip_pitch"], 0.0),
+        ),
+        Check("left_foot_base", "x", list(np.linspace(40, 140, 6)), (150.0, 0.0, -60.0)),
+    ]
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--check", action="store_true")
+    args = ap.parse_args()
+    sys.path.insert(0, str(ROOT / "tools"))
+    import build_urdf  # noqa: E402
+
+    urdf = build_urdf.URDF_OUT.read_text()
+    import re
+
+    mass = sum(float(x) for x in re.findall(r'<mass value="([^"]+)"', urdf))
+    peak = {}
+    for m in re.finditer(r'<joint name="([^"]+)".*?effort="([^"]+)"', urdf, re.S):
+        peak[m.group(1)] = float(m.group(2))
+    w = mass * G
+    landing = np.array([0.5 * w, 0.3 * w, 3.0 * w])  # N: fore-aft, sideways, up
+    parts = {p.name: p for p in leg.parts()}
+    worst_sf = np.inf
+    print(
+        f"robot {mass:.1f} kg; landing load at the ankle {np.round(landing):} N; target SF {TARGET}"
+    )
+    print(f"{'part':24} {'case':8} {'station':>8} {'stress':>8} {'yield':>6} {'SF':>5}")
+    for c in checks(peak, mass):
+        part = parts[c.part]
+        ys = YIELD_MPA[part.material]
+        ax = "xyz".index(c.axis)
+        uv = [i for i in range(3) if i != ax]
+        for case in ("landing", "peak torque"):
+            worst = (0.0, None)
+            for s in c.stations:
+                sec = section(part.solid, c.axis, s)
+                if sec is None:
+                    continue
+                centroid = np.zeros(3)
+                centroid[ax] = s
+                centroid[uv[0]], centroid[uv[1]] = sec[1]
+                if case == "landing":
+                    force = landing
+                    mom = np.cross(np.array(c.point) - centroid, force)  # N·mm
+                else:
+                    force = np.zeros(3)
+                    mom = np.array(c.moment)
+                if not mom.any() and not force.any():
+                    continue
+                stress = bending_stress(sec, force[ax], mom[uv[0]], mom[uv[1]])
+                if stress > worst[0]:
+                    worst = (stress, s)
+            if worst[1] is None:
+                continue
+            sf = ys / worst[0] if worst[0] > 0 else np.inf
+            worst_sf = min(worst_sf, sf)
+            flag = "  <-- below target" if sf < TARGET else ""
+            print(f"{c.part:24} {case:8} {worst[1]:8.0f} {worst[0]:8.0f} {ys:6.0f} {sf:5.1f}{flag}")
+    if args.check and worst_sf < TARGET:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
