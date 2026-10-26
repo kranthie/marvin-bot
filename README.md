@@ -20,7 +20,7 @@ The full list is in [docs/requirements.md](docs/requirements.md).
 
 | | |
 |---|---|
-| Height, mass | ~1.22 m, ≤35 kg target (current estimate in [description/mass_budget.yaml](description/mass_budget.yaml)) |
+| Height, mass | ~1.29 m, ≤35 kg target, ≤40 kg limit (current estimate in [description/mass_budget.yaml](description/mass_budget.yaml)) |
 | Joints | 6 per leg, 5 per arm, waist yaw, 2 neck, plus a 1-DOF gripper per arm |
 | Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulders), RS06 (shoulder yaw, elbows), RS00 (wrists); serial-bus servos for neck and grippers |
 | Compute | Jetson AGX Orin 64 GB; desktop GPU for training and, at first, for the vision-language-action model |

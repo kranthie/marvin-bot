@@ -70,7 +70,9 @@ def parts() -> list[Part]:
     base_z = out_z + t + t / 2
     sh = mounts["left_shoulder_pitch"]  # shoulder pitch RS03 centre (torso frame)
     up_y = sh[1] - t03 / 2 - t / 2  # uprights against the shoulder motors' inner faces
-    base = box((150, 2 * up_y + t, t), (0, 0, base_z))
+    # the frame runs from behind the battery to just ahead of the computer standing on edge
+    fx0, fx1 = -95.0, 55.0
+    base = box((fx1 - fx0, 2 * up_y + t, t), ((fx0 + fx1) / 2, 0, base_z))
     base = lighten(base, "z", keep=[cyl(60, 40, "z", (0, 0, base_z))], hole=22, rim=10)
     out.append(Part("torso_waist_flange", "torso_link", "al6061", flange, "cnc"))
     out.append(Part("torso_base", "torso_link", "al6061", base, "cnc"))
@@ -78,9 +80,9 @@ def parts() -> list[Part]:
         # an A-frame: two straps from the base to a ring on the shoulder motor's stator
         ring = (sh[0], s * up_y, sh[2])
         up = union(
-            box((140, t, 12), (0, s * up_y, base_z + 6)),
-            strap(30, t, "y", (-55, s * up_y, base_z + 12), ring),
-            strap(30, t, "y", (55, s * up_y, base_z + 12), ring),
+            box((fx1 - fx0 - 10, t, 12), ((fx0 + fx1) / 2, s * up_y, base_z + 6)),
+            strap(30, t, "y", (fx0 + 20, s * up_y, base_z + 12), ring),
+            strap(30, t, "y", (fx1 - 20, s * up_y, base_z + 12), ring),
             cyl(86, t, "y", ring),
         )
         up = lighten(up, "y", keep=[cyl(70, 40, "y", ring)], hole=12, pitch=18, rim=7)
@@ -92,14 +94,14 @@ def parts() -> list[Part]:
     # chest shell: front and sides, 2.5 mm, open at the back (battery) and top and bottom
     z0, z1 = base_z + t, sh[2] + 20
     outer = hull(
-        box((150, 2 * up_y + 2 * t + 6, 2), (5, 0, z0)),
-        box((160, 2 * up_y + 2 * t + 6, 2), (10, 0, z1)),
+        box((118, 2 * up_y + 2 * t + 6, 2), (-1, 0, z0)),
+        box((124, 2 * up_y + 2 * t + 6, 2), (0, 0, z1)),
     )
     inner_s = hull(
-        box((145, 2 * up_y + 2 * t + 1, 4), (5, 0, z0)),
-        box((155, 2 * up_y + 2 * t + 1, 4), (10, 0, z1)),
+        box((113, 2 * up_y + 2 * t + 1, 4), (-1, 0, z0)),
+        box((119, 2 * up_y + 2 * t + 1, 4), (0, 0, z1)),
     )
-    shell = outer - inner_s - box((80, 400, 1000), (-60 - 40, 0, 0))  # open back
+    shell = outer - inner_s - box((80, 400, 1000), (-45 - 40, 0, 0))  # open back
     shell = shell - cyl(d03 + 10, 400, "y", (sh[0], 0, sh[2]))  # clear the shoulder motors
     out.append(Part("torso_chest_shell", "torso_link", "pa_cf", shell, "print"))
     return out

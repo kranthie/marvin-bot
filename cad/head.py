@@ -31,10 +31,10 @@ _acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
 _skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
 WALL = 2.5
 # helmet: the hull of a crown ellipsoid and a smaller chin ellipsoid (centre, semi-axes; head frame)
-CROWN = (2.0, 0.0, 76.0), (72.0, 80.0, 92.0)
-CHIN = (12.0, 0.0, 30.0), (54.0, 50.0, 40.0)
+CROWN = (-2.0, 0.0, 90.0), (76.0, 71.0, 86.0)
+CHIN = (12.0, 0.0, 40.0), (54.0, 48.0, 44.0)
 CAMERA = (124.0, 29.0, 27.0, 133.0)  # width, height, depth (mm), mass (g)
-CAMERA_AT = (19.0, 0.0, 55.0)  # its centre: the front corners just inside the visor
+CAMERA_AT = (12.5, 0.0, 92.0)  # its centre, at eye height: half way up the head
 VISOR_X = 25.0  # the visor is the whole face ahead of this plane
 NECK_CUT_Z = 6.0  # the shell's open bottom; the neck sleeve (cad/covers.py) runs up inside it
 
@@ -59,9 +59,9 @@ def parts() -> list[Part]:
     cw, ch, cd, cmass = CAMERA
     back = cx - cd / 2  # the camera's back face
     # side plates kept inside r = 22 mm of the pitch axis below it, clear of the neck cheeks
-    plates = [box((back + 20, 3, 110), ((back - 20) / 2, s * (st / 2 + 3), 50)) for s in (1, -1)]
+    plates = [box((back + 10, 3, 110), ((back - 10) / 2, s * (st / 2 + 3), 50)) for s in (1, -1)]
     bridge = box((4, st + 9, 22), (back - 2, 0, cz))  # the camera bolts to this
-    top = box((back + 20, st + 9, 4), ((back - 20) / 2, 0, 103))
+    top = box((back + 10, st + 9, 4), ((back - 10) / 2, 0, 103))
     out.append(Part("head_frame", "head_link", "pa_cf", union(*plates, bridge, top), "print"))
 
     # --- shell and visor

@@ -24,7 +24,7 @@ waist_motor:
 head:
   frm: torso_pdb
   to: neck_pitch
-  length_m: 0.3
+  length_m: 0.33
   crosses: [neck_yaw]
   service_loop_m: 0.07
   current_a: 0.0

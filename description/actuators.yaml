@@ -33,7 +33,7 @@ RS03:
   voltage: [24, 60]
   interface: can
   protocols: [robstride, mit]
-  envelope_mm: [100, 99, 56.6]  # RobStride STEP model; resellers list 106 x 106 x 56
+  envelope_mm: [100, 99, 56.6]  # RobStride STEP model (re-measured 2026-10-26); a lug reaches Ø107 at one point; resellers list 106 x 106 x 56
   verified: manual
 
 RS06:
@@ -47,7 +47,7 @@ RS06:
   voltage: [15, 60]
   interface: can
   protocols: [robstride, mit]
-  envelope_mm: [85, 82, 50.5]  # RobStride STEP model
+  envelope_mm: [85, 82, 50.5]  # RobStride STEP model (re-measured 2026-10-26); a lug reaches Ø90 at one point
   verified: manual
 
 RS00:

@@ -74,12 +74,13 @@ def offset_hull(solids, r: float):
     return hull(*[h.translate(list(r * d)) for d in _DIRS])
 
 
-def lofted(solids, gap: float, corner: float, step: float = 15.0, style=None):
+def lofted(solids, gap: float, corner: float, step: float = 15.0, style=None, neck=None):
     """A smooth body round `solids`: at each height, a rectangle with large rounded corners
     (radius `corner`) just containing everything in that slice plus `gap`; the hull of all of
     them, closed at the top by a smaller section so the shoulders round over too. `style(z)`
     may give a larger rectangle (x0, y0, x1, y1) at a height, to shape the body beyond what it
-    must contain."""
+    must contain; `neck` = (half depth, half width, height) adds a small top section that the
+    shoulders slope up to."""
     h = hull(*solids)
     lo, hi = h.bounding_box()[2], h.bounding_box()[5]
 
@@ -106,6 +107,9 @@ def lofted(solids, gap: float, corner: float, step: float = 15.0, style=None):
     x0, y0, x1, y1 = top
     inset = 0.6 * corner
     sections.append(section(x0 + inset, y0 + inset, x1 - inset, y1 - inset, hi + gap, corner))
+    if neck is not None:
+        hx, hy, nz = neck
+        sections.append(section(-hx, -hy, hx, hy, nz, corner))
     return hull(*sections)
 
 
@@ -171,23 +175,18 @@ def parts() -> list[Part]:
     tor = on("torso_link")
     sh_y = j["left_shoulder_pitch"][1] - 8  # inside the shoulder pitch output flange
     sh = j["left_shoulder_pitch"]
+    neck_z = j["neck_yaw"][2]
     body = (
         box((BIG, BIG, BIG), (0, 0, 0))
         - half("z", -1, 26.0)
         - cyl(108, BIG, "y", (sh[0], 0, sh[2]))  # round openings for the shoulder motors
-        - cyl(104, 200, "z", (0, 0, j["neck_yaw"][2]))
-        - cyl(150, 100, "z", (0, 0, j["neck_yaw"][2] + 3 + 50))  # a shallow collar: chin room
+        - cyl(104, 200, "z", (0, 0, neck_z))  # the neck opening
     )
-
-    def chest(z, grow=0.0):  # a chest that widens from the waist to the shoulders
-        k = float(np.clip((z - 40.0) / 180.0, 0.0, 1.0))
-        k = np.sin(k * np.pi / 2)  # full width well below the shoulders
-        half_w = 80.0 + 50.0 * k + grow
-        return (-70.0 - 28.0 * k - grow, -half_w, 72.0 + 30.0 * k + grow, half_w)
-
+    # the body follows its contents; the shoulders slope up into a collar round the neck
+    collar = (46.0, 62.0, neck_z + 4)
     # flat side walls short of the shoulder flanges close the sides
-    outer_b = lofted(tor, GAP + SKIN, 34.0, style=lambda z: chest(z, SKIN))
-    inner_b = lofted(tor, GAP, 34.0 - SKIN, style=chest)
+    outer_b = lofted(tor, GAP + SKIN, 34.0, neck=(collar[0] + SKIN, collar[1] + SKIN, collar[2]))
+    inner_b = lofted(tor, GAP, 34.0 - SKIN, neck=(collar[0], collar[1], collar[2] - SKIN))
     skin = (outer_b ^ box((BIG, 2 * sh_y, BIG))) - (inner_b ^ box((BIG, 2 * (sh_y - SKIN), BIG)))
     # each half in four pieces (left and right, chest and waist): a whole half is too big to
     # print; the seams run down the middle and round the body under the chest
@@ -202,9 +201,10 @@ def parts() -> list[Part]:
     # --- neck sleeve (dark, flexible print): from inside the torso shell's neck opening up
     # into the helmet, turning with neck yaw; the head pitches over it
     nz = j["neck_pitch"][2]
-    sleeve = hull(cyl(76, 2, "z", (0, 0, -4)), cyl(68, 2, "z", (0, 0, nz + 8))) - hull(
-        cyl(72, 2, "z", (0, 0, -6)), cyl(64, 2, "z", (0, 0, nz + 10))
-    )  # starts just above the torso bridge
+    bot = -22.0  # just above the torso bridge; flaring towards the collar
+    sleeve = hull(cyl(96, 2, "z", (0, 0, bot)), cyl(66, 2, "z", (0, 0, nz + 2))) - hull(
+        cyl(92, 2, "z", (0, 0, bot - 2)), cyl(62, 2, "z", (0, 0, nz + 4))
+    )
     add("neck_cover", "neck_link", sleeve)
 
     # --- hip girdle (dark): round the pelvis frame and the waist motor, between the hips; in
@@ -267,13 +267,13 @@ def parts() -> list[Part]:
     # --- arm sleeves: the upper arm from the yaw output to above the elbow motor, the forearm
     # from below the elbow motor to the wrist output
     el = j["left_elbow"]
+    band = half("z", -1, -t06 / 2 - 8) ^ half("z", 1, el[2] + d06 / 2 + 6)
+    # and down the back of the elbow motor: the forearm swings forward, never back
+    elbow_back = half("z", -1, -t06 / 2 - 8) ^ half("z", 1, el[2]) ^ half("x", -1, -24)
     add(
         "left_upper_arm_cover",
         "left_upper_arm_link",
-        wrap(
-            on("left_upper_arm_link"),
-            half("z", -1, -t06 / 2 - 8) ^ half("z", 1, el[2] + d06 / 2 + 6),
-        ),
+        wrap(on("left_upper_arm_link"), band + elbow_back),
     )
     wr = j["left_wrist_yaw"]
     add(
