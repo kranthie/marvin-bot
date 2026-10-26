@@ -26,7 +26,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Skeleton (`description/skeleton.yaml`) and URDF generated from the description files (`tools/build_urdf.py`)
 - [x] MuJoCo standing check: crouch and straight poses hold, worst holding torque 40% of rated (`sim/mujoco/check_standing.py`)
 - [x] Static step-up check: 10-20 cm stairs possible with 40° ankle dorsiflexion; leg length (0.62-0.69 m) barely matters (`sim/mujoco/check_step_up.py`)
-- [ ] Ankle linkage geometry and push-rod loads
+- [x] Ankle linkage geometry and push-rod loads (`tools/ankle_linkage.py`); ankles back to RS03
 - [ ] Isaac Lab robot config and flat-ground walking policy (port the an earlier prototype tasks)
 - [ ] Rough-terrain and stair policies; MuJoCo cross-check
 - [ ] Code-CAD of the leg (aluminium cores, printed shells), masses fed back into the URDF
@@ -43,3 +43,4 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 8. Desktop-CNC feeds and achievable accuracy in 6061 (coupon cuts).
 9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
+11. Knee and hip-roll heating on slow stairs: the static step-up check puts the stance knee at ~96% and hip roll at ~87% of rated torque; measure RS04 heating at 35-40 N·m in phase 2 and decide the knee heat sinking.

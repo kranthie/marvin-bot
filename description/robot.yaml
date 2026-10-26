@@ -55,8 +55,8 @@ motors:
   - {name: "{side}_hip_yaw",        model: RS03,    bus: "{side}_hip",   drives: ["{side}_hip_yaw"]}
   - {name: "{side}_knee",           model: RS04,    bus: "{side}_shank", drives: ["{side}_knee"]}
   # two calf-mounted motors driving ankle pitch and roll through push rods (parallel linkage)
-  - {name: "{side}_ankle_a",        model: RS06,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"]}
-  - {name: "{side}_ankle_b",        model: RS06,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"]}
+  - {name: "{side}_ankle_a",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"]}
+  - {name: "{side}_ankle_b",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"]}
   - {name: waist_yaw,               model: RS03,    bus: right_arm,      drives: [waist_yaw]}
   - {name: "{side}_shoulder_pitch", model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_pitch"]}
   - {name: "{side}_shoulder_roll",  model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_roll"]}

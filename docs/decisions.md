@@ -2,6 +2,13 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: ankle linkage geometry; ankles back to RS03
+
+`tools/ankle_linkage.py` solves the two-crank, two-rod ankle exactly over the full range (pitch ±40°, roll ±20°) and searches crank radius, rod placement and crank tilt for the best worst-pose torque with a transmission (sine of the crank–rod angle) of at least 0.5. Best geometry: 45 mm cranks tilted 10°, rods ~188 mm long attached 45 mm behind, ±25 mm beside and 10 mm below the ankle axis; cranks swing −53° to +54°. Joint torque per motor torque is 1.02 (pitch) and 0.56 (roll) at neutral, and at the worst pose the pair gives about 2.0× (pitch) and 1.0× (roll) one motor's torque. Narrowing roll to ±15° hardly changes this.
+
+With RS06 that is 22 N·m pitch and 11 N·m roll continuous, against ~22 N·m pitch and ~14 N·m roll that slow stair climbing and standing on one foot need (`check_step_up.py`). With RS03 it is 39 N·m and 20 N·m. The ankles therefore go back to RS03, the fallback named in v0.2; mass estimate rises by 1.1 kg to ~37.3 kg (limit 38 kg). The largest rod force for a 60 N·m pitch / 30 N·m roll demand is ~2 kN, which sizes the rod ends (M6 steel-ball rod ends or larger) and push rods.
+Alternatives: RS06 ankles relying on walking duty cycle to stay within rating (rejected: slow stairs and one-foot standing are sustained); a larger crank-to-rod ratio (limited by the ±40° pitch range and transmission).
+
 ## 2026-10-26: ankle dorsiflexion 40°; hip height stays 0.65 m
 
 `sim/mujoco/check_step_up.py` (static: three poses of a slow step, pelvis upright, CoM over the supporting foot, stance torques) shows:

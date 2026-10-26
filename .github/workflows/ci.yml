@@ -18,6 +18,7 @@ jobs:
       - run: ruff format --check .
       - run: python tools/check_description.py
       - run: python tools/bom_summary.py
+      - run: python tools/ankle_linkage.py --check
       - run: python tools/build_urdf.py --check
       - run: python sim/mujoco/check_standing.py
       - run: python sim/mujoco/check_standing.py --pose straight

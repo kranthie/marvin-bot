@@ -29,14 +29,19 @@ joints:
   left_wrist_yaw:      {parent: left_forearm_link,       child: left_wrist_link,          xyz: [0, 0, -0.125],      axis: [0, 0, -1]}
   left_gripper:        {parent: left_wrist_link,         child: left_gripper_link,        xyz: [0, 0, -0.090],      axis: [0, -1, 0]}
 
-# The ankle's two motors drive pitch and roll through push rods. Until the linkage is designed,
-# its joint-space torque is modelled as (sum of both motors' torque) x ratio. Estimates.
-ankle_linkage: {pitch_ratio: 1.0, roll_ratio: 0.6}
+# The ankle's two motors drive pitch and roll through cranks and push rods (tools/ankle_linkage.py).
+# Geometry in the shin frame (origin on the ankle axis, x forward, y left, z up), metres; the
+# ratios are joint torque per motor torque at the neutral pose, computed by that tool from the
+# geometry, and set the URDF's ankle torque limits as (sum of both motors) x ratio.
+ankle_linkage:
+  geometry: {crank_radius: 0.045, crank_tilt: 0.1745, motor_x: -0.018, motor_y: 0.025, motor_z: 0.185, rod_back: 0.045, rod_side: 0.025, rod_below: 0.010}
+  pitch_ratio: 1.02
+  roll_ratio: 0.56
 
 # Motor housings sit on the parent link of the joint they drive, at the joint, unless listed here.
 motor_mounts:
-  left_ankle_a: {link: left_shin_link, xyz: [-0.018, 0.030, -0.105]}
-  left_ankle_b: {link: left_shin_link, xyz: [-0.018, -0.030, -0.105]}
+  left_ankle_a: {link: left_shin_link, xyz: [-0.018, 0.025, -0.105]}
+  left_ankle_b: {link: left_shin_link, xyz: [-0.018, -0.025, -0.105]}
 
 # Structure and equipment, as boxes. "budget" names the mass_budget.yaml item each mass comes
 # from; the masses of each item (both sides counted) must add up to the budget figure.
