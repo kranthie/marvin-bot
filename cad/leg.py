@@ -5,10 +5,10 @@ Every part is built in its link's frame (mm), using the frames of description/sk
 them (motor_mounts), at their STEP-model sizes, and the structure is built around them:
 
 - hip roll: the roll RS04 sits in the pelvis behind the hip; a U round it (front plate on its
-  output, rear plate on a far-side bearing, a bar outside it) reaches forward to the pitch RS04's
+  output, rear plate on a far-side bearing, a bar over it) reaches forward to the pitch RS04's
   stator face, so the roll motor never swings with the leg;
-- hip pitch: a U-yoke round the pitch RS04 (flange and outer plate on its output, inner plate
-  on a far-side bearing) down to a plate on the hip yaw RS03;
+- hip pitch: a closed box round the pitch RS04 (flange and outer wall on its output, inner wall
+  on a far-side bearing, front and back walls below the motor) with the hip yaw RS03 under it;
 - thigh: a flange on the yaw output and an outer side plate carrying the knee RS04, under a
   printed shell;
 - shin: two side plates on the shin's centre line with the two ankle RS03 staggered between
@@ -64,8 +64,8 @@ def parts() -> list[Part]:
     # --- hip roll link: frame on the roll axis. The roll RS04 is fixed in the pelvis behind the
     # hip (its output face forward); the pitch RS04 is centred on the pitch joint, axis y, its
     # stator face inward. The roll bracket is a U round the roll motor (front plate on its
-    # output, rear plate on a far-side bearing on the pelvis's stub axle behind it, a bar on
-    # its outer side joining them) and a plate reaching forward from the front plate to the
+    # output, rear plate on a far-side bearing on the pelvis's stub axle behind it, a bar over it
+    # joining them) and a plate reaching forward from the front plate to the
     # pitch motor's stator face, with a stub axle for the thigh's far-side bearing.
     rj = J["left_hip_roll"]
     roll_c = [a - b for a, b in zip(mounts["left_hip_roll"], rj, strict=True)]  # this frame
@@ -74,13 +74,13 @@ def parts() -> list[Part]:
     fx = out_x + plate / 2  # front plate
     st = 8.0  # stator plate: SF 2 in the landing case needs 8 mm (cad/strength.py)
     sy = pj[1] - t04 / 2 - st / 2  # stator plate, against the pitch motor's inner face
-    side = d04 / 2 + 6  # bar's inner face, outboard of the roll motor (over it, it would swing
-    # into the pelvis when the leg rolls out; under it, into the thigh when the hip extends)
+    over = d04 / 2 + 6  # bar's underside, over the roll motor (under it, the thigh would hit it
+    # when the hip extends); the pelvis keeps clear of its swing (cad/torso.py)
     rear_x = roll_c[0] - t04 / 2 - hip_t - 14 - plate / 2
     front = union(
         cyl(80, plate, "x", (fx, 0, 0)),
         box((plate, -sy + st / 2, 56), (fx, (sy - st / 2) / 2, 0)),  # in, to the stator
-        box((plate, side + 10, 40), (fx, (side + 10) / 2, 0)),  # out, to the bar
+        box((plate, 40, over + 10), (fx, 0, (over + 10) / 2)),  # up, to the bar
     )
     front = lighten(front, "x", keep=[cyl(60, 40, "x", (out_x, 0, 0))], hole=12, pitch=18, rim=7)
     stator = union(
@@ -92,10 +92,10 @@ def parts() -> list[Part]:
     stator = union(stator, stub)
     rear = union(
         cyl(brg_d + 16, plate, "x", (rear_x, 0, 0)),
-        box((plate, side + 10, 30), (rear_x, (side + 10) / 2, 0)),
+        box((plate, 30, over + 10), (rear_x, 0, (over + 10) / 2)),
     ) - cyl(brg_d, plate + 2, "x", (rear_x, 0, 0))
-    bar = box((fx - rear_x + plate, 10, 60), ((fx + rear_x) / 2, side + 5, 0))
-    bar = bar - box((fx - rear_x - 10, 12, 44), ((fx + rear_x) / 2, side + 5 + 3, 0))  # channel
+    bar = box((fx - rear_x + plate, 60, 10), ((fx + rear_x) / 2, 0, over + 5))
+    bar = bar - box((fx - rear_x - 10, 44, 12), ((fx + rear_x) / 2, 0, over + 5 + 3))  # channel
     out.append(Part("left_hip_roll_front", "left_hip_roll_link", "al6061", front, "cnc"))
     out.append(Part("left_hip_roll_stator", "left_hip_roll_link", "al6061", stator, "cnc"))
     out.append(Part("left_hip_roll_rear", "left_hip_roll_link", "al6061", rear, "cnc"))
@@ -113,15 +113,17 @@ def parts() -> list[Part]:
     )
 
     # --- hip pitch link: frame on the pitch axis (the pitch RS04 centred here, output face +y).
-    # A U-yoke round the pitch motor: a flange and outer plate on its output, an inner plate on
-    # a far-side bearing on the roll bracket's stub axle, both down to a plate on the yaw RS03
+    # A closed box round the pitch motor: a flange and outer wall on its output, an inner wall on
+    # a far-side bearing on the roll bracket's stub axle, front and back walls joining them
+    # below the motor, and the yaw RS03 under its floor. A box, not a U of two plates: much
+    # stiffer in twist, and one solid piece at the top of the thigh.
     face = t04 / 2
     yaw_c = J["left_hip_yaw"]
     yaw_top = yaw_c[2] + t03 / 2
     tz = yaw_top + web_t / 2  # yaw top plate
     flange = cyl(80, plate, "y", (0, face + plate / 2, 0))
     out.append(Part("left_hip_pitch_flange", "left_hip_pitch_link", "al6061", flange, "cnc"))
-    side_t = 8.0
+    side_t = 6.0  # the box walls carry the twist (SF > 5, cad/strength.py)
     oy = face + plate + side_t / 2
     outer_p = union(
         cyl(80, side_t, "y", (0, oy, 0)),
@@ -131,7 +133,7 @@ def parts() -> list[Part]:
     iy = sy - pj[1] - st / 2 - 3 - plate / 2  # inner plate, on the bearing (this frame)
     inner_p = union(
         cyl(brg_d + 16, plate, "y", (0, iy, 0)),
-        hull(cyl(40, plate, "y", (0, iy, 0)), box((40, plate, 2), (0, iy, tz + 1))),
+        hull(cyl(48, plate, "y", (0, iy, 0)), box((48, plate, 2), (0, iy, tz + 1))),
     ) - cyl(brg_d, plate + 2, "y", (0, iy, 0))
     inner_p = lighten(inner_p, "y", keep=[cyl(brg_d + 12, 40, "y", (0, iy, 0))], hole=12, pitch=18)
     top = hull(
@@ -144,6 +146,15 @@ def parts() -> list[Part]:
     out.append(Part("left_hip_pitch_outer", "left_hip_pitch_link", "al6061", outer_p, "cnc"))
     out.append(Part("left_hip_pitch_inner", "left_hip_pitch_link", "al6061", inner_p, "cnc"))
     out.append(Part("left_hip_pitch_top", "left_hip_pitch_link", "al6061", top, "cnc"))
+    wall_t = 4.0
+    wz0 = -math.sqrt((d04 / 2) ** 2 - 24.0**2) - 7  # 7 mm under the pitch motor at x = +-24
+    wz1 = tz + web_t / 2
+    for name, s in (("front", 1), ("back", -1)):
+        wall = box(
+            (wall_t, oy - iy - side_t / 2 - plate / 2, wz0 - wz1),
+            (s * (24 - wall_t / 2), (oy + iy) / 2 + (plate - side_t) / 4, (wz0 + wz1) / 2),
+        )
+        out.append(Part(f"left_hip_pitch_{name}", "left_hip_pitch_link", "al6061", wall, "cnc"))
     out.append(
         Part(
             "left_hip_pitch_bearing",

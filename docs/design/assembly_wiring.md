@@ -83,7 +83,7 @@ The bare robot is meant to look finished: graphite printed shells (thigh, upper 
 | Neck sleeve | 1, dark, flexible print | flares from the helmet down into the collar; turns with neck yaw inside the torso's neck opening; the head pitches over it |
 | Hip girdle | 1, dark | round the pelvis frame and waist motor; reaches over the hip motors in front, stays clear of the hip roll motors that swing round the hip behind |
 | Thigh, shin | 1 each per leg | thigh all round except a strip at the back of the inner side (harness), and over the front of the knee motor; shin front and sides, open at the back where the cranks and rods move |
-| Hip, shoulder | 1 each per side | over the hip yoke; over the top of the shoulder roll motor only, above the swing of the roll bracket |
+| Shoulder | 1 per side | over the top of the shoulder roll motor only, above the swing of the roll bracket (the hip roll motors behind the hips are left bare) |
 | Upper arm, forearm, toe | 1 each per side | sleeves between the joints (the upper arm's runs down the back of the elbow motor); a cap over the front of the foot |
 
 How they are made and checked:

@@ -46,6 +46,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] More human proportions: computer stood on edge (torso frame 155 mm deep, was 190), helmet head 142 mm wide and 170 mm tall with the camera at eye height, neck 20 mm longer, torso shell sloping into the neck; 1.29 m, 38.66 kg (39.77 kg with shells)
 - [x] Narrower shoulders: shoulder pitch motors 30 mm deeper in the torso, arms 158 mm off the centre line (was 188), two-plate side frames; shoulder roll range 0-120°; 38.80 kg (39.88 kg with shells)
 - [x] Roll-first hip: hip roll RS04s fixed in the pelvis behind the hips, pitch motors at the hip joints on the roll brackets; knee 0-130° (was 125°), hip pitch -30-120° (was -40°); torso 25 mm ahead of the hips; part-to-part sweep added to `python -m cad.covers --check`; 38.69 kg (39.78 kg with shells)
+- [x] Thigh top a closed box round the hip pitch motor; roll bracket bars over the roll motors; no shells over the roll motors; 38.78 kg (39.74 kg with shells)
 - [ ] Retrain the flat and stair policies on the current model (ankle ratios 0.99 / 0.67, 38.71 kg) and rerun the MuJoCo cross-checks
 - [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
 - [ ] Battery cradle, blind-mate connector and electronics bay layout

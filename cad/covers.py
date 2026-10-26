@@ -252,21 +252,7 @@ def parts() -> list[Part]:
         wrap(shin, half("x", 1, 0, ankle_z + 55, -d04 / 2 - 12)),
     )
 
-    # --- glute (dark): round the hip roll motor behind the hip (fixed in the pelvis) and the
-    # roll bracket round it; carried by the bracket, so it turns about the roll motor's own
-    # axis and never meets it. Behind the hip pitch motor, and outboard of the pelvis frame.
-    rj = j["left_hip_roll"]
-    roll_m = [
-        m_.translate([-rj[0], -rj[1], -rj[2]])
-        for m_ in motors_on("pelvis")
-        if abs((m_.bounding_box()[1] + m_.bounding_box()[4]) / 2 - rj[1]) < 1
-    ]
-    glute = half("x", -1, -66) ^ half("y", 1, 66 - rj[1]) ^ half("z", 1, -75, None, 95)
-    add(
-        "left_glute_cover",
-        "left_hip_roll_link",
-        wrap(on("left_hip_roll_link") + roll_m, glute, extra=8.0),
-    )
+    # (no shell over the hip roll motors behind the hips: they are left bare)
     # --- upper thigh: round the hip pitch yoke and the yaw motor, between the pitch motor
     # (which the yoke turns round) and the yaw output, where the thigh shell starts
     yaw = j["left_hip_yaw"]

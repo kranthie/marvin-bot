@@ -52,10 +52,13 @@ def parts() -> list[Part]:
     bx = rc[0] - t04 / 2 - hip_t / 2  # back plate, on the roll motors' back faces
     waist_z = j["waist_yaw"][2]
     top_z = waist_z - t03 / 2 - t / 2  # under the waist RS03
+    # The roll brackets' bars run over the roll motors and swing inward over them when a leg
+    # rolls out, so the back plate is full width only below the roll axes, with a narrow
+    # spine up the middle to the top plate
     back = union(
         *[cyl(100, hip_t, "x", (bx, s * rc[1], rc[2])) for s in (1, -1)],
-        box((hip_t, 2 * rc[1], 60), (bx, 0, rc[2])),
-        box((hip_t, 80, top_z - rc[2] + t / 2), (bx, 0, (top_z + t / 2 + rc[2]) / 2)),
+        box((hip_t, 2 * rc[1], 55), (bx, 0, rc[2] - 32.5)),
+        box((hip_t, 36, top_z - rc[2] + 60 + t / 2), (bx, 0, (top_z + t / 2 + rc[2] - 60) / 2)),
     )
     back = lighten(
         back,

@@ -137,9 +137,9 @@ def checks(peak: dict, mass: float) -> list[Check]:
             tuple(ankle_thigh),
             (0.0, 1000 * peak["left_knee"], 0.0),
         ),
-        # hip pitch link: the U-yoke's two plates round the pitch motor, down to the yaw motor
+        # hip pitch link: the box round the pitch motor, down to the yaw motor
         Check(
-            "left_hip_pitch_outer+left_hip_pitch_inner",
+            "left_hip_pitch_outer+left_hip_pitch_inner+left_hip_pitch_front+left_hip_pitch_back",
             "z",
             list(np.linspace(-40, -105, 6)),
             tuple(ankle_pitch_frame),

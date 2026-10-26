@@ -2,6 +2,10 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: box thigh top; roll bracket bar on top
+
+The thigh hung from the hip pitch motor in a U of two plates (an outer plate on the output, an inner plate on a far-side bearing): weak in twist and visibly a bracket. It is now a closed box round the pitch motor, with front and back walls joining the two plates below the motor and the yaw motor under its floor: much stiffer (worst SF 5.6 with a 6 mm outer wall, was 5.6 with 8 mm and no box) and one solid piece at the top of the thigh. A single-sided thigh on the pitch motor's output alone would look cleaner still, but it puts the whole landing moment on the actuator's output bearing, whose moment rating is still an open item; it stays an option once that is known. The roll brackets' bars now run over the roll motors instead of outboard: the pelvis back plate is full width only below the roll axes, with a narrow spine above them, so the bars clear it when a leg rolls out 45° (checked by the part sweep). The shells over the roll motors are dropped; they are left bare. Robot 38.78 kg bare, 39.74 kg with shells.
+
 ## 2026-10-26: roll-first hip
 
 The hip was pitch, then roll, then yaw: the hip roll RS04 sat behind the hip on the leg and swung with every hip flexion, a box hanging off the back of the thigh that also stopped the knee at 125°. It is now roll, then pitch, then yaw, as on several current humanoids: the roll RS04s are fixed in the pelvis behind the hips (a static block, like a pelvis), and each roll bracket (a U round its roll motor, with a far-side bearing behind it and a bar on its outer side) reaches forward to carry the pitch RS04 at the hip joint by its stator face; the thigh hangs from the pitch motor in a U-yoke with a far-side bearing on its inner side. A full yaw-roll-pitch stack with the yaw motor in the pelvis was ruled out: it needs ~60 mm more above the hips, past the 1.30 m height limit or below the 0.65 m leg length the stairs need.
