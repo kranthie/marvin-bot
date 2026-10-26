@@ -41,6 +41,9 @@ bom/           bill of materials (bom.csv)
 tools/         checks and generators (description check, BOM summary, URDF, concept sketch)
 sim/mujoco/    MuJoCo checks (standing, step-up, symmetry, policy cross-check)
 sim/isaaclab/  Isaac Lab robot config, walking tasks, robot check, policy export
+robot/         onboard software (Robstride CAN driver so far)
+bench/         actuator bench tests (phase 2)
+tests/         unit tests
 ```
 
 Folders for CAD, electronics, the onboard software, simulation and bench tests are added as each phase reaches them; [docs/plan.md](docs/plan.md) describes the full layout.

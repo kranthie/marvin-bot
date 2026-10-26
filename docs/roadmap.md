@@ -32,6 +32,11 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [ ] Rough-terrain and stair policies; MuJoCo cross-check
 - [ ] Code-CAD of the leg (aluminium cores, printed shells), masses fed back into the URDF
 
+## Phase 2 preparation
+
+- [x] Robstride CAN protocol driver from the official manuals, frame encoding unit-tested (`robot/drivers/robstride.py`)
+- [x] Bench scripts and procedure: scan, latency, step response, thermal (`bench/`, untested)
+
 ## Open items to verify before ordering
 
 1. RobStride direct quote, lead time and current import tariffs; compare with US resellers.

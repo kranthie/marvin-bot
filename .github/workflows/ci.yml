@@ -16,6 +16,7 @@ jobs:
       - run: pip install -e ".[dev,sim]"
       - run: ruff check .
       - run: ruff format --check .
+      - run: pytest -q tests
       - run: python tools/check_description.py
       - run: python tools/bom_summary.py
       - run: python tools/ankle_linkage.py --check
