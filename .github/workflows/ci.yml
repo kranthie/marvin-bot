@@ -21,3 +21,4 @@ jobs:
       - run: python tools/build_urdf.py --check
       - run: python sim/mujoco/check_standing.py
       - run: python sim/mujoco/check_standing.py --pose straight
+      - run: python sim/mujoco/check_step_up.py --heights 0.18

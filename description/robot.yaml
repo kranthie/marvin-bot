@@ -34,7 +34,7 @@ joints:
   - {name: "{side}_hip_roll",       axis: roll,  range: [-20, 45]}
   - {name: "{side}_hip_yaw",        axis: yaw,   range: [-45, 45]}
   - {name: "{side}_knee",           axis: pitch, range: [0, 140]}
-  - {name: "{side}_ankle_pitch",    axis: pitch, range: [-40, 35]}
+  - {name: "{side}_ankle_pitch",    axis: pitch, range: [-40, 40]}  # 40° dorsiflexion: 17-20 cm stairs (check_step_up.py)
   - {name: "{side}_ankle_roll",     axis: roll,  range: [-20, 20]}
   # torso and head
   - {name: waist_yaw,               axis: yaw,   range: [-90, 90]}

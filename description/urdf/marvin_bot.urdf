@@ -188,7 +188,7 @@
   <joint name="left_ankle_pitch" type="revolute">
     <parent link="left_shin_link"/><child link="left_ankle_link"/>
     <origin xyz="0 0 -0.29"/><axis xyz="0 -1 0"/>
-    <limit lower="-0.698132" upper="0.610865" effort="72" velocity="50.2655"/>
+    <limit lower="-0.698132" upper="0.698132" effort="72" velocity="50.2655"/>
   </joint>
   <joint name="left_ankle_roll" type="revolute">
     <parent link="left_ankle_link"/><child link="left_foot_link"/>
@@ -263,7 +263,7 @@
   <joint name="right_ankle_pitch" type="revolute">
     <parent link="right_shin_link"/><child link="right_ankle_link"/>
     <origin xyz="0 0 -0.29"/><axis xyz="0 -1 0"/>
-    <limit lower="-0.698132" upper="0.610865" effort="72" velocity="50.2655"/>
+    <limit lower="-0.698132" upper="0.698132" effort="72" velocity="50.2655"/>
   </joint>
   <joint name="right_ankle_roll" type="revolute">
     <parent link="right_ankle_link"/><child link="right_foot_link"/>

@@ -2,6 +2,15 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: ankle dorsiflexion 40°; hip height stays 0.65 m
+
+`sim/mujoco/check_step_up.py` (static: three poses of a slow step, pelvis upright, CoM over the supporting foot, stance torques) shows:
+
+- With 35° of ankle dorsiflexion no leg length could climb 17 cm: in the "weight on the stair" pose the CoM cannot get over the front foot. Widening hip extension, knee flexion or plantarflexion did not help; dorsiflexion did.
+- The smallest dorsiflexion that climbs 17–20 cm is 38° at every leg length tried (0.62, 0.65, 0.69 m hip to sole). Leg length barely matters in this test, so the hip height stays 0.65 m.
+- The ankle pitch range becomes −40°/+40°; the linkage must reach it. All stairs from 10 to 20 cm are then possible; the stance leg's worst static torque is the knee at 37 N·m (31% of peak, 94% of rated).
+- Single-support ankle roll needs ~14 N·m, about the RS06 pair's rated roll torque with the placeholder 0.6 roll ratio. The linkage design must give a higher roll ratio, or the ankles go back to RS03.
+
 ## 2026-10-25: v0.2: shorter legs, RS06 ankles, hip yaw stays RS03, ranges checked
 
 Compared with two open humanoids of the same class (Asimov 1, from its simulation model; Roboto Origin, from its URDF, BOM and Isaac Lab config):
