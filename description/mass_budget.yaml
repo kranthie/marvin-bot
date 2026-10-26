@@ -3,7 +3,7 @@
 # basis: estimate = engineering guess, to be replaced by CAD-computed (cad) and then weighed (weighed).
 
 items:
-  leg_structure:     {mass: 3.2, basis: estimate, note: "two legs: aluminium cores, printed skins, ankle linkages, far-side bearings"}
+  leg_structure:     {mass: 3.0, basis: estimate, note: "two legs: aluminium cores, printed skins, ankle linkages, far-side bearings"}
   feet:              {mass: 0.7, basis: estimate, note: "two feet with rubber or TPU soles"}
   pelvis:            {mass: 1.0, basis: estimate, note: "frame carrying the hip pitch motors and the battery cradle"}
   torso:             {mass: 1.8, basis: estimate, note: "aluminium spine and structural chest shell"}
@@ -18,6 +18,5 @@ items:
 
 # Ideas to bring the total back under the target, with rough savings (kg).
 reductions:
-  - {idea: "RS06 instead of RS03 at the four ankle motors, if simulation shows enough torque", saving: 1.1}
   - {idea: "Orin module on a compact carrier board instead of the developer kit", saving: 1.0}
   - {idea: "Lighter leg cores once CAD and simulation give real loads", saving: 0.5}

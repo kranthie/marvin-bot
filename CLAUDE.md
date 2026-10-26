@@ -1,6 +1,6 @@
 # Marvin Bot
 
-A ~1.25 m, ~35 kg, 25-DOF open humanoid on Robstride actuators, with a Jetson AGX Orin 64 GB onboard. Currently in phase 0 (design).
+A ~1.22 m, ~35 kg, 25-DOF open humanoid on Robstride actuators, with a Jetson AGX Orin 64 GB onboard. Currently in phase 1 (robot in simulation).
 
 ## Read first
 - `README.md`: overview and layout

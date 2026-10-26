@@ -1,9 +1,11 @@
 """Draw the front and side concept layout of Marvin Bot to scale (mm).
 
-The drawing is hand-placed from the sizes in description/robot.yaml (v0.1); it is a concept
-sketch, not generated geometry. Actuators are drawn as discs or boxes depending on whether
-their axis points at the viewer. The RS06 envelope is approximate until its STEP model is
-checked.
+The parts are hand-placed at reference proportions (ankle axis 70 mm, knee 370 mm, hip
+690 mm, overall 1255 mm) and then remapped vertically to the ankle, knee and hip heights and
+overall height in description/robot.yaml, so leg changes there redraw the sketch. It is a
+concept sketch, not generated geometry. Actuators are drawn as discs or boxes depending on
+whether their axis points at the viewer; the RS06 envelope is approximate until its STEP
+model is checked.
 
 Usage:
   pip install -e ".[sketch]"
@@ -11,12 +13,18 @@ Usage:
 """
 
 import sys
+from pathlib import Path
 
 import matplotlib
+import numpy as np
+import yaml
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Ellipse, FancyBboxPatch, Polygon, Rectangle
+
+ROOT = Path(__file__).resolve().parent.parent
+REF_Z = [0, 70, 370, 690, 1255]  # sole, ankle, knee, hip, top of head as drawn
 
 # type: (diameter, thickness, colour, label)
 ACT = {
@@ -38,8 +46,8 @@ for s, side in ((1, "L"), (-1, "R")):
         (f"{side} hip roll", "RS04", s * 100, -5, 600, "y"),
         (f"{side} hip yaw", "RS03", s * 100, 0, 500, "z"),
         (f"{side} knee", "RS04", s * 100, 0, 370, "x"),
-        (f"{side} ankle A", "RS03", s * (100 - 30), -18, 262, "x"),
-        (f"{side} ankle B", "RS03", s * (100 + 30), -18, 262, "x"),
+        (f"{side} ankle A", "ANKLE", s * (100 - 30), -18, 262, "x"),
+        (f"{side} ankle B", "ANKLE", s * (100 + 30), -18, 262, "x"),
         (f"{side} shoulder pitch", "RS03", s * 140, 0, 1055, "x"),
         (f"{side} shoulder roll", "RS03", s * 188, 0, 1005, "y"),
         (f"{side} shoulder yaw", "RS06", s * 190, 0, 920, "z"),
@@ -313,12 +321,40 @@ def body(ax, view):
         ax.add_patch(Rectangle((-18, 1088), 36, 40, fc=LINK, zorder=3))
 
 
-def joints(ax, view):
+def joints(ax, view, ankle_model):
     for _name, kind, x, y, z, axis in J:
         if view == "side" and x < 0:
             continue  # right side hidden behind left
         u = x if view == "front" else y
-        draw_act(ax, kind, u, z, axis, view)
+        draw_act(ax, ankle_model if kind == "ANKLE" else kind, u, z, axis, view)
+
+
+def remap(ax, new_z):
+    """Move everything drawn at REF_Z heights to new_z, piecewise linearly, without
+    distorting round parts (circles and ellipses keep their size, only their centres move)."""
+
+    def f(z):
+        return np.interp(z, REF_Z, new_z, right=None) if z <= REF_Z[-1] else z + new_z[-1] - 1255
+
+    for p in ax.patches:
+        if isinstance(p, (Circle, Ellipse)):
+            x, z = p.center
+            p.center = (x, f(z))
+        elif isinstance(p, FancyBboxPatch):
+            z0, z1 = f(p.get_y()), f(p.get_y() + p.get_height())
+            p.set_y(z0)
+            p.set_height(z1 - z0)
+        elif isinstance(p, Rectangle):
+            z0, z1 = f(p.get_y()), f(p.get_y() + p.get_height())
+            p.set_y(z0)
+            p.set_height(z1 - z0)
+        elif isinstance(p, Polygon):
+            p.set_xy([(x, f(z)) for x, z in p.get_xy()])
+    for line in ax.lines:
+        line.set_ydata([f(z) for z in line.get_ydata()])
+    for t in ax.texts:
+        x, z = t.get_position()
+        t.set_position((x, f(z)))
 
 
 def dim(ax, u, z0, z1, text, side=1):
@@ -337,10 +373,18 @@ def dim(ax, u, z0, z1, text, side=1):
 
 def main(out):
     matplotlib.rcParams["svg.hashsalt"] = "marvin-bot"  # stable element ids: stable diffs
+    robot = yaml.safe_load((ROOT / "description" / "robot.yaml").read_text())
+    d = {k: v * 1000 for k, v in robot["dimensions"].items()}
+    ankle_model = next(m["model"] for m in robot["motors"] if m["name"] == "{side}_ankle_a")
+    ankle, hip = d["ankle_height"], d["hip_axis_height"]
+    knee = ankle + d["shin"]
+    top = robot["robot"]["height"] * 1000
+    assert abs(knee + d["thigh"] - hip) < 1, "thigh + shin + ankle height must equal hip height"
     fig, axs = plt.subplots(1, 2, figsize=(12, 9.2), gridspec_kw=dict(width_ratios=[1.15, 1]))
     for ax, view in zip(axs, ("front", "side"), strict=True):
         body(ax, view)
-        joints(ax, view)
+        joints(ax, view, ankle_model)
+        remap(ax, [0, ankle, knee, hip, top])
         ax.axhline(0, color="#888", lw=1)
         ax.set_aspect("equal")
         ax.set_xlim(-330, 330) if view == "front" else ax.set_xlim(-280, 300)
@@ -348,17 +392,21 @@ def main(out):
         ax.axis("off")
         ax.set_title("Front" if view == "front" else "Side (left)", fontsize=11)
     a = axs[0]
-    dim(a, -300, 0, 1255, "1255 mm overall")
-    dim(a, 270, 0, 690, "690 hip axis to sole")
-    dim(a, 230, 370, 690, "320 thigh")
-    dim(a, 230, 70, 370, "300 shin")
+    up = top - 1255  # upper body moves with the overall height
+    dim(a, -300, 0, top, f"{top:.0f} mm overall")
+    dim(a, 270, 0, hip, f"{hip:.0f} hip axis to sole")
+    dim(a, 230, knee, hip, f"{d['thigh']:.0f} thigh")
+    dim(a, 230, ankle, knee, f"{d['shin']:.0f} shin")
     a.annotate(
-        "", (-243, 1275), (243, 1275), arrowprops=dict(arrowstyle="<->", lw=0.7, color="#555")
+        "",
+        (-243, top + 20),
+        (243, top + 20),
+        arrowprops=dict(arrowstyle="<->", lw=0.7, color="#555"),
     )
-    a.text(0, 1283, "≈ 490 mm shoulder width", fontsize=7, ha="center", color="#333")
+    a.text(0, top + 28, "≈ 490 mm shoulder width", fontsize=7, ha="center", color="#333")
     b = axs[1]
-    dim(b, 250, 805, 1005, "200 upper arm")
-    dim(b, 250, 590, 805, "215 forearm + wrist")
+    dim(b, 250, 805 + up, 1005 + up, "200 upper arm")
+    dim(b, 250, 590 + up, 805 + up, "215 forearm + wrist")
     handles = [Rectangle((0, 0), 1, 1, fc=ALU, ec=v[2], lw=2.5) for v in ACT.values()]
     handles += [Rectangle((0, 0), 1, 1, fc=LINK), Rectangle((0, 0), 1, 1, fc=SHELL, ec="#9aa1ab")]
     labels = [v[3] for v in ACT.values()] + [
@@ -367,7 +415,9 @@ def main(out):
     ]
     fig.legend(handles, labels, loc="lower center", ncol=4, fontsize=8, frameon=False)
     fig.suptitle(
-        "Marvin Bot: concept layout v0.1 (to scale, 25 powered DOF + grippers)", fontsize=13
+        f"Marvin Bot: concept layout v{robot['robot']['version']} "
+        "(to scale, 25 powered DOF + grippers)",
+        fontsize=13,
     )
     fig.tight_layout(rect=(0, 0.06, 1, 0.97))
     fig.savefig(out + ".svg", metadata={"Date": None})  # no timestamp: stable diffs

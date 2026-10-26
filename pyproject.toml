@@ -1,7 +1,7 @@
 [project]
 name = "marvin-bot"
 version = "0.0.1"
-description = "A 1.25 m, 25-DOF open humanoid on Robstride actuators and a Jetson AGX Orin"
+description = "A 1.2 m, 25-DOF open humanoid on Robstride actuators and a Jetson AGX Orin"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"

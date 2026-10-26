@@ -1,11 +1,11 @@
 # Roadmap
 
-Current phase: **0, foundations** (started 2026-10-25). Phases and pass checks are defined in [plan.md](plan.md).
+Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass checks are defined in [plan.md](plan.md).
 
 | Phase | Status |
 |---|---|
-| 0 Foundations | in progress |
-| 1 Robot in simulation | not started |
+| 0 Foundations | done |
+| 1 Robot in simulation | in progress |
 | 2 Actuator bench | not started |
 | 3 One leg | not started |
 | 4 Lower body | not started |
@@ -18,7 +18,8 @@ Current phase: **0, foundations** (started 2026-10-25). Phases and pass checks a
 - [x] Plan, requirements, safety rules
 - [x] v0.1 joint layout, actuator assignment and CAN map (`description/robot.yaml`)
 - [x] Mass budget and preliminary BOM
-- [ ] Review the v0.1 layout and lock it
+- [x] v0.2: compared with Asimov 1 and Roboto Origin; shorter legs, RS06 ankles
+- [x] v0.2 layout locked for phase 1
 
 ## Open items to verify before ordering
 

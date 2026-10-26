@@ -2,7 +2,30 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-25: v0.2: shorter legs, RS06 ankles, hip yaw stays RS03, ranges checked
+
+Compared with two open humanoids of the same class (Asimov 1, from its simulation model; Roboto Origin, from its URDF, BOM and Isaac Lab config):
+
+| | Asimov 1 | Roboto Origin | Marvin v0.1 | Marvin v0.2 |
+|---|---|---|---|---|
+| Height, mass | 1.2 m, 35.5 kg | 1.25 m, 33.8 kg | 1.255 m, 37.5 kg est. | 1.215 m, 36.2 kg est. |
+| Thigh / shin / hip to sole | ~0.25 / 0.295 / ~0.58 m | 0.25 / 0.30 / ~0.62 m | 0.32 / 0.30 / 0.69 m | 0.30 / 0.29 / 0.65 m |
+| Hip order from pelvis | pitch, roll, yaw | yaw, roll, pitch | pitch, roll, yaw | pitch, roll, yaw |
+| Hip yaw actuator | limited to 28 N·m in sim | 120 N·m class | RS03, 60 N·m | RS03, 60 N·m |
+| Ankle | two motors, 40 / 17 N·m pitch / roll in sim | two 27 N·m motors on a linkage | two RS03 (60 N·m) | two RS06 (36 N·m) |
+| Knee range | 0–86° (sim) | −11° to 143° | 0–140° | 0–140° |
+| Ankle pitch / roll range | ±20° / ±6° (sim) | ±34° / ±29° | −45/+35° / ±20° | −40/+35° / ±20° |
+
+- **Legs:** hip axis to sole goes from 0.69 m to 0.65 m (thigh 0.30 m, shin 0.29 m, ankle 0.06 m), and overall height from 1.255 m to 1.215 m. 0.69 m was longer than both references, adding leg inertia and mass; 0.65 m still meets requirement R3 for 17–18 cm stairs. Phase 1 simulation compares 0.62, 0.65 and 0.69 m on stairs before the leg CAD is fixed.
+- **Ankles:** two RS06 (36 N·m peak, 11 N·m rated) per ankle instead of two RS03. Roboto Origin walks and runs at 34 kg on two 27 N·m motors per ankle. Saves ~1.1 kg of distal mass. Risk: continuous stance torque is close to the RS06's rating, so phase 1 checks ankle torque and heating, and RS03 remains the fallback (same bus, similar mounting).
+- **Hip yaw:** stays RS03 (60 N·m), between Asimov's 28 N·m limit and Roboto Origin's 120 N·m actuator.
+- **Hip order:** stays pitch, roll, yaw (as Asimov 1), which suits deep hip flexion for stairs; Roboto Origin's yaw-first order is noted as an alternative.
+- **Ranges:** hip pitch extension widened to 40° (Roboto Origin allows 45°); ankle plantarflexion set to 40°, a realistic target for a two-motor linkage. Our knee and ankle ranges are closer to Roboto Origin's than to Asimov's simulation limits, which suits stairs.
+- **Bench test:** phase 2 tests an RS04 and an RS06 (the RS06 now covers 8 joints).
+
 ## 2026-10-25: mass target kept at 35 kg; estimate is 37.5 kg
+
+_Updated by v0.2 above: the estimate is now 36.2 kg._
 
 The v0.1 estimate (`tools/check_description.py`) is 21.8 kg of motors plus 15.7 kg of everything else. That is over the 35 kg target and under the 38 kg hard limit. Reductions to test in phase 1: RS06 instead of RS03 at the ankles (−1.1 kg), the Orin module on a compact carrier board instead of the developer kit (−1.0 kg), lighter leg cores once real loads are known.
 
@@ -12,6 +35,8 @@ Machined 6061 cores carry the load through each leg and the pelvis; 7075 only fo
 Alternatives: all-machined structure (heavier, more machining time); fully printed structure (load must still go through metal; heat near actuators softens PETG-class plastics).
 
 ## 2026-10-25: leg layout: hip pitch, roll, yaw; knee at the joint; two-motor ankle
+
+_Updated by v0.2 above: hip to sole 0.65 m, RS06 ankle motors._
 
 Hip order from the pelvis is pitch, roll, yaw, which allows deep hip flexion for stairs and sitting. The knee motor sits at the knee for v1 (simplest). Each ankle uses two RS03 motors mounted high on the calf, driving pitch and roll through push rods with spherical rod ends, which keeps the shin light. Hip axis to sole is 0.69 m (55% of height), sized for 17–18 cm stairs.
 Alternatives: knee motor near the hip with a linkage (lower leg inertia, more parts; revisit if simulation shows a need); serial ankle pitch and roll motors (heavier shin).

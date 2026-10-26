@@ -1,6 +1,6 @@
 id,group,item,model,qty,unit_usd,price_basis,phase,status,spare,source,notes
 act-rs04-p2,actuators,Robstride RS04 120 N·m actuator,RS04,1,319,US reseller 2026-10 (CN list ¥1199),P2,planned,no,https://openelab.io/products/robstride04-qdd-120n-m-integrated-joint-motor-module,bench test; becomes a hip or knee motor
-act-rs03-p2,actuators,Robstride RS03 60 N·m actuator,RS03,1,225,US reseller 2026-10 (CN list ¥999),P2,planned,no,https://aifitlab.com/collections/servo-motor/products/robstride-03-motor,bench test; becomes an ankle motor
+act-rs06-p2,actuators,Robstride RS06 36 N·m actuator,RS06,1,200,estimate (CN list ¥849),P2,planned,no,https://github.com/RobStride/Product_Information,bench test; becomes an ankle motor
 can-usb-p2,electronics,Isolated USB-CAN adapter (gs_usb / SocketCAN),,1,90,estimate (reseller range $73-107),P2,planned,no,,candleLight-compatible with galvanic isolation
 psu-bench,power,48 V 20 A bench power supply,,1,250,estimate,P2,planned,no,,for bench and gantry tests
 regen-clamp,power,Regen clamp (brake resistor chopper or TVS ~56-58 V),,1,40,estimate,P2,planned,no,,needed whenever a bench supply is used
@@ -8,7 +8,8 @@ estop-wired,safety,Latching e-stop button and contactor driver,,1,40,estimate,P2
 contactor,power,Main contactor (48 V DC rated),,1,60,estimate,P2,planned,no,,opened by the e-stop chain
 can-cable,electronics,Twisted-pair CAN cable and connectors,,1,50,estimate,P2,planned,no,,
 act-rs04-p3,actuators,Robstride RS04 120 N·m actuator,RS04,2,319,US reseller 2026-10 (CN list ¥1199),P3,planned,no,https://openelab.io/products/robstride04-qdd-120n-m-integrated-joint-motor-module,completes one leg (hip pitch/roll/knee)
-act-rs03-p3,actuators,Robstride RS03 60 N·m actuator,RS03,2,225,US reseller 2026-10 (CN list ¥999),P3,planned,no,https://aifitlab.com/collections/servo-motor/products/robstride-03-motor,completes one leg (hip yaw and ankle)
+act-rs03-p3,actuators,Robstride RS03 60 N·m actuator,RS03,1,225,US reseller 2026-10 (CN list ¥999),P3,planned,no,https://aifitlab.com/collections/servo-motor/products/robstride-03-motor,hip yaw for the first leg
+act-rs06-p3,actuators,Robstride RS06 36 N·m actuator,RS06,1,200,estimate (CN list ¥849),P3,planned,no,https://github.com/RobStride/Product_Information,second ankle motor for the first leg
 alu-6061,materials,6061-T6 aluminium plate and bar stock,,1,300,estimate,P3,planned,no,,leg cores and brackets for both legs and pelvis
 alu-7075,materials,7075-T6 bar for highly loaded flanges and ankle cranks,,1,100,estimate,P3,planned,no,,
 fil-cfnylon,materials,Carbon-fibre nylon filament (kg),,4,95,typical first-party price 2026-10,P3,planned,no,,structural shells; needs a hardened nozzle and dry storage
@@ -21,7 +22,8 @@ fasteners,mechanical,Metric fasteners; heat-set inserts; dowel pins; threadlocke
 endmills,tooling,Carbide 3-flute end mills for aluminium (1/8 and 1/4 in),,8,20,reseller range $14-33,P3,planned,no,,
 leg-jig,tooling,Single-leg test jig (aluminium extrusion),,1,120,estimate,P3,planned,no,,
 act-rs04-p4,actuators,Robstride RS04 120 N·m actuator,RS04,3,319,US reseller 2026-10 (CN list ¥1199),P4,planned,no,https://openelab.io/products/robstride04-qdd-120n-m-integrated-joint-motor-module,second leg
-act-rs03-p4,actuators,Robstride RS03 60 N·m actuator,RS03,3,225,US reseller 2026-10 (CN list ¥999),P4,planned,no,https://aifitlab.com/collections/servo-motor/products/robstride-03-motor,second leg
+act-rs03-p4,actuators,Robstride RS03 60 N·m actuator,RS03,1,225,US reseller 2026-10 (CN list ¥999),P4,planned,no,https://aifitlab.com/collections/servo-motor/products/robstride-03-motor,hip yaw for the second leg
+act-rs06-p4,actuators,Robstride RS06 36 N·m actuator,RS06,2,200,estimate (CN list ¥849),P4,planned,no,https://github.com/RobStride/Product_Information,ankle motors for the second leg
 cells,power,Molicel P45B 21700 cells,,39,8.5,US reseller 2026-10 ($8.25-8.75),P4,planned,no,,13S3P pack ~630 Wh; buy from an authorised dealer
 bms,power,13S smart BMS 150 A with CAN telemetry,,1,145,reseller 2026-10,P4,planned,no,,check precharge support
 pack-hw,power,Pack housing; nickel strip; quick-release cradle,,1,80,estimate,P4,planned,no,,
@@ -41,7 +43,7 @@ gantry,safety,Gantry frame; harness and hoist,,1,300,estimate,P4,planned,no,,
 padding,safety,Fall padding foam,,1,50,estimate,P4,planned,no,,
 gamepad,electronics,Wireless gamepad,,1,60,estimate,P4,planned,no,,
 act-rs03-p5,actuators,Robstride RS03 60 N·m actuator,RS03,5,225,US reseller 2026-10 (CN list ¥999),P5,planned,no,https://aifitlab.com/collections/servo-motor/products/robstride-03-motor,waist yaw; shoulder pitch and roll
-act-rs06,actuators,Robstride RS06 36 N·m actuator,RS06,4,200,estimate (CN list ¥849),P5,planned,no,https://github.com/RobStride/Product_Information,shoulder yaw and elbow
+act-rs06-p5,actuators,Robstride RS06 36 N·m actuator,RS06,4,200,estimate (CN list ¥849),P5,planned,no,https://github.com/RobStride/Product_Information,shoulder yaw and elbow
 act-rs00,actuators,Robstride RS00 14 N·m actuator,RS00,2,159,US reseller 2026-10 (CN list ¥598),P5,planned,no,,wrist yaw
 servo-sts3250,actuators,Feetech STS3250 serial-bus servo,STS3250,4,45,reseller 2026-10,P5,planned,no,,neck yaw/pitch and grippers
 servo-adapter,electronics,Feetech serial-bus USB adapter,,1,15,estimate,P5,planned,no,,
