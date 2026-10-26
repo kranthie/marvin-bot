@@ -113,4 +113,6 @@ def forward_progress(env, command_name: str, asset_name: str = "robot") -> torch
     direction = cmd / speed.clamp(min=1e-6)[:, None]
     vel = env.scene[asset_name].data.root_lin_vel_b.torch[:, :2]
     along = torch.sum(vel * direction, dim=1)
-    return torch.clamp(along, min=0.0) / speed.clamp(min=1e-6) * (speed > 0.1)
+    # capped at the commanded speed: uncapped, v4 learned to lunge forward and fall
+    progress = torch.clamp(along / speed.clamp(min=1e-6), min=0.0, max=1.0)
+    return progress * (speed > 0.1)
