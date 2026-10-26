@@ -179,10 +179,12 @@ def main() -> int:
 
     if args.search:
         best = None
-        # rods kept vertical at neutral (motor spacing = rod spacing); the foot is 100 mm wide
-        for r in np.arange(0.030, 0.0651, 0.005):
-            for back in np.arange(0.030, 0.0701, 0.005):
-                for side in np.arange(0.025, 0.0451, 0.005):
+        # rods vertical at neutral (crank plane = rod spacing). The two RS03 sit side by side
+        # (56.6 mm thick), so the cranks on their outer faces are at least ~55 mm off centre;
+        # the foot is 110 mm wide
+        for r in np.arange(0.035, 0.0651, 0.005):
+            for back in np.arange(0.035, 0.0701, 0.005):
+                for side in np.arange(0.055, 0.0701, 0.005):
                     for tilt in np.radians([-20, -10, 0, 10, 20]):
                         cand = {
                             **g,

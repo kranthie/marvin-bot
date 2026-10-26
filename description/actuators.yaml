@@ -3,8 +3,9 @@
 # Rated torques for Robstride depend on the aluminium heat sink the manual tests with.
 #
 # Sources:
-#   Robstride: https://github.com/RobStride/Product_Information (manuals revised 2025-11 to 2026-10,
-#              specification README dated 2026-07-13)
+#   Robstride: https://github.com/RobStride/Product_Information (manuals revised 2025-11 to
+#              2026-10, specification README dated 2026-07-13; envelopes measured from the
+#              STEP models, fetched locally by tools/fetch_vendor_cad.py)
 #   Feetech STS3250: manufacturer datasheet (ST-3250-C001)
 
 RS04:
@@ -18,7 +19,7 @@ RS04:
   voltage: [24, 60]           # V; manual 24-60, specification README 15-60
   interface: can
   protocols: [robstride, mit, canopen]
-  envelope_mm: [120, 120, 56] # reseller figure, check against the STEP model
+  envelope_mm: [120, 120, 55.7]  # RobStride STEP model (tools/fetch_vendor_cad.py)
   verified: manual
 
 RS03:
@@ -32,7 +33,7 @@ RS03:
   voltage: [24, 60]
   interface: can
   protocols: [robstride, mit]
-  envelope_mm: [106, 106, 56] # reseller figure
+  envelope_mm: [100, 99, 56.6]  # RobStride STEP model; resellers list 106 x 106 x 56
   verified: manual
 
 RS06:
@@ -46,7 +47,7 @@ RS06:
   voltage: [15, 60]
   interface: can
   protocols: [robstride, mit]
-  envelope_mm: null           # not yet measured; driver board is 62 mm across
+  envelope_mm: [85, 82, 50.5]  # RobStride STEP model
   verified: manual
 
 RS00:
@@ -60,7 +61,7 @@ RS00:
   voltage: [24, 60]
   interface: can
   protocols: [robstride, mit]
-  envelope_mm: [57, 57, 51]   # reseller figure
+  envelope_mm: [57, 57, 51.4]  # RobStride STEP model
   verified: manual
 
 STS3250:

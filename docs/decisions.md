@@ -2,6 +2,12 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: ankle motors side by side, wider push rods; real actuator envelopes
+
+Packaging the leg against the actuators' STEP models (fetched locally by `tools/fetch_vendor_cad.py`; RS04 Ø120 × 55.7 mm, RS03 Ø100 × 56.6 mm, RS06 Ø85 × 50.5 mm, RS00 Ø57 × 51.4 mm) showed the previous ankle layout could not be built: two RS03 50 mm apart overlap (each is 56.6 mm thick), and 105 mm below the knee they hit the knee motor. They now sit side by side 64 mm apart, 125 mm below the knee, with the cranks on their outer faces. The search (`tools/ankle_linkage.py --search`) then finds 65 mm cranks and rods 55 mm behind and ±55 mm beside the ankle axis (foot widened to 110 mm): ratios 0.86 pitch / 0.83 roll at neutral, 31 N·m pitch and 26 N·m roll continuous at the worst pose (needs ~22 and ~14), transmission ≥ 0.58, rod force ≤ 1.3 kN. The wider rods trade some pitch for much more roll. All stairs from 10 to 20 cm still pass; the stance knee is at 99% of rated on a slow step (bench item).
+
+The same check found that the hip roll RS04 at its joint origin would overlap the hip pitch RS04; it will sit behind it along its own axis, which leaves the kinematics unchanged. The leg CAD places every motor along its axis this way.
+
 ## 2026-10-26: ankle linkage geometry; ankles back to RS03
 
 `tools/ankle_linkage.py` solves the two-crank, two-rod ankle exactly over the full range (pitch ±40°, roll ±20°) and searches crank radius, rod placement and crank tilt for the best worst-pose torque with a transmission (sine of the crank–rod angle) of at least 0.5. Best geometry: 45 mm cranks tilted 10°, rods ~188 mm long attached 45 mm behind, ±25 mm beside and 10 mm below the ankle axis; cranks swing −53° to +54°. Joint torque per motor torque is 1.02 (pitch) and 0.56 (roll) at neutral, and at the worst pose the pair gives about 2.0× (pitch) and 1.0× (roll) one motor's torque. Narrowing roll to ±15° hardly changes this.

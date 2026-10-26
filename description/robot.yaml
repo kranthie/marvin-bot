@@ -26,7 +26,7 @@ dimensions:
   upper_arm: 0.200         # shoulder roll axis to elbow axis
   forearm: 0.215           # elbow axis to gripper centre
   foot_length: 0.240
-  foot_width: 0.100
+  foot_width: 0.110
 
 # Default stance (degrees, robot.yaml convention, same values on both sides): the pose the
 # walking policies act around and the robot starts from. Pelvis 0.636 m above the floor in it.

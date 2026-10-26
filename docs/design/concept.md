@@ -31,7 +31,7 @@ The goal is a robot that looks finished without a separate cover, because the vi
 - **Load path:** machined 6061 cores through each leg and the pelvis. Printed carbon-fibre-nylon shells bolt through to metal inserts and add stiffness, never carry the primary load alone.
 - **Part size:** parts are sized for a desktop CNC mill with about 200 × 150 mm usable area. Long thigh and shin cores are split into pinned segments or ordered from an online machining service.
 - **Bearings:** far-side bearings at hip roll, hip yaw and knee; a crossed-roller bearing at the waist.
-- **Ankles:** two RS03 motors in the calf turn 45 mm cranks that drive pitch and roll through ~190 mm push rods with spherical rod ends, 45 mm behind and ±25 mm beside the ankle axis (`tools/ankle_linkage.py`).
+- **Ankles:** two RS03 motors side by side in the calf, 125 mm below the knee, turn 65 mm cranks on their outer faces; ~166 mm push rods with spherical rod ends drive the foot 55 mm behind and ±55 mm beside the ankle axis (`tools/ankle_linkage.py`).
 - **Feet:** flat aluminium plates with replaceable rubber or TPU soles; no toe joint in v1.
 - **Cables:** each limb's CAN and power run through the joints with service loops; connectors at each limb root so a limb can be removed as a unit.
 
