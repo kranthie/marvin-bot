@@ -30,6 +30,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Isaac Lab package: robot config, flat and rough walking tasks, robot check on Newton and PhysX (`sim/isaaclab/`), mirror rule checked (`sim/mujoco/check_symmetry.py`)
 - [ ] Flat-ground walking policy, exported and cross-checked in MuJoCo (`sim/mujoco/check_policy.py`)
 - [ ] Rough-terrain and stair policies; MuJoCo cross-check
+- [x] Packaging check with STEP-model actuator envelopes (`tools/check_packaging.py`); thigh layout, knee range and motor positions fixed
 - [ ] Code-CAD of the leg (aluminium cores, printed shells), masses fed back into the URDF
 
 ## Phase 2 preparation
@@ -49,4 +50,4 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 8. Desktop-CNC feeds and achievable accuracy in 6061 (coupon cuts).
 9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
-11. Knee and hip-roll heating on slow stairs: the static step-up check puts the stance knee at ~96% and hip roll at ~87% of rated torque; measure RS04 heating at 35-40 N·m in phase 2 and decide the knee heat sinking.
+11. Knee and hip-roll heating on slow stairs: the static step-up check puts the stance knee at ~106% and hip roll at ~87% of rated torque (rated assumes a 345 × 345 mm aluminium heat sink); measure RS04 heating at 40-45 N·m in phase 2 and design the knee's heat path (thigh core as heat sink, airflow) accordingly.

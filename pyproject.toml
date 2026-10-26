@@ -12,6 +12,7 @@ dev = ["ruff", "pytest"]
 bench = ["python-can"]
 sketch = ["matplotlib>=3.8", "numpy"]
 sim = ["mujoco>=3.3", "numpy", "pillow", "onnxruntime"]
+cad = ["manifold3d", "trimesh"]
 
 [build-system]
 requires = ["setuptools>=68"]

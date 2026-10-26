@@ -38,7 +38,7 @@ joints:
   - {name: "{side}_hip_pitch",      axis: pitch, range: [-40, 120]}
   - {name: "{side}_hip_roll",       axis: roll,  range: [-20, 45]}
   - {name: "{side}_hip_yaw",        axis: yaw,   range: [-45, 45]}
-  - {name: "{side}_knee",           axis: pitch, range: [0, 140]}
+  - {name: "{side}_knee",           axis: pitch, range: [0, 125]}  # beyond 125° the calf meets the hip roll motor behind the hip (check_packaging.py)
   - {name: "{side}_ankle_pitch",    axis: pitch, range: [-40, 40]}  # 40° dorsiflexion: 17-20 cm stairs (check_step_up.py)
   - {name: "{side}_ankle_roll",     axis: roll,  range: [-20, 20]}
   # torso and head
@@ -47,7 +47,7 @@ joints:
   - {name: neck_pitch,              axis: pitch, range: [-20, 40]}
   # arms
   - {name: "{side}_shoulder_pitch", axis: pitch, range: [-60, 180]}
-  - {name: "{side}_shoulder_roll",  axis: roll,  range: [-10, 120]}
+  - {name: "{side}_shoulder_roll",  axis: roll,  range: [-5, 120]}  # -10° put the upper arm into the torso (check_packaging.py)
   - {name: "{side}_shoulder_yaw",   axis: yaw,   range: [-90, 90]}
   - {name: "{side}_elbow",          axis: pitch, range: [0, 135]}
   - {name: "{side}_wrist_yaw",      axis: yaw,   range: [-90, 90]}

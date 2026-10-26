@@ -4,8 +4,7 @@ The parts are hand-placed at reference proportions (ankle axis 70 mm, knee 370 m
 690 mm, overall 1255 mm) and then remapped vertically to the ankle, knee and hip heights and
 overall height in description/robot.yaml, so leg changes there redraw the sketch. It is a
 concept sketch, not generated geometry. Actuators are drawn as discs or boxes depending on
-whether their axis points at the viewer; the RS06 envelope is approximate until its STEP
-model is checked.
+whether their axis points at the viewer, at their STEP-model sizes.
 
 Usage:
   pip install -e ".[sketch]"
@@ -29,8 +28,8 @@ REF_Z = [0, 70, 370, 690, 1255]  # sole, ankle, knee, hip, top of head as drawn
 # type: (diameter, thickness, colour, label)
 ACT = {
     "RS04": (120, 56, "#d9534f", "Robstride RS04 (120 N·m)"),
-    "RS03": (106, 56, "#3b7dd8", "Robstride RS03 (60 N·m)"),
-    "RS06": (80, 50, "#3aa655", "Robstride RS06 (36 N·m)"),
+    "RS03": (100, 57, "#3b7dd8", "Robstride RS03 (60 N·m)"),
+    "RS06": (85, 51, "#3aa655", "Robstride RS06 (36 N·m)"),
     "RS00": (57, 51, "#8e5bd0", "Robstride RS00 (14 N·m)"),
     "STS": (45, 25, "#e0a800", "Feetech STS3250 (neck, gripper)"),
 }
@@ -43,12 +42,12 @@ J = []
 for s, side in ((1, "L"), (-1, "R")):
     J += [
         (f"{side} hip pitch", "RS04", s * 78, 0, 690, "x"),
-        (f"{side} hip roll", "RS04", s * 100, -5, 600, "y"),
-        (f"{side} hip yaw", "RS03", s * 100, 0, 500, "z"),
+        (f"{side} hip roll", "RS04", s * 100, -90, 605, "y"),  # behind the hip pitch motor
+        (f"{side} hip yaw", "RS03", s * 100, 0, 545, "z"),
         (f"{side} knee", "RS04", s * 100, 0, 370, "x"),
-        (f"{side} ankle A", "ANKLE", s * (100 - 30), -18, 262, "x"),
-        (f"{side} ankle B", "ANKLE", s * (100 + 30), -18, 262, "x"),
-        (f"{side} shoulder pitch", "RS03", s * 140, 0, 1055, "x"),
+        (f"{side} ankle A", "ANKLE", s * (100 - 32), -18, 245, "x"),
+        (f"{side} ankle B", "ANKLE", s * (100 + 32), -18, 245, "x"),
+        (f"{side} shoulder pitch", "RS03", s * 110, 0, 1055, "x"),
         (f"{side} shoulder roll", "RS03", s * 188, 0, 1005, "y"),
         (f"{side} shoulder yaw", "RS06", s * 190, 0, 920, "z"),
         (f"{side} elbow", "RS06", s * 190, 0, 805, "x"),

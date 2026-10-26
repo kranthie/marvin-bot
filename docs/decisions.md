@@ -2,6 +2,19 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: packaging fixes: thigh layout, knee 125°, motors moved along their axes
+
+`tools/check_packaging.py` places every motor (STEP-model envelopes) and collision box on its link and checks for overlaps over each joint's range and in combined poses (deep squat, stair step, sitting). Within a limb, or between a limb and the body it is mounted on, an overlap is a packaging error; between different limbs it is ordinary self-collision, which the simulators model. Fixes:
+
+- **Hip roll RS04** moved 90 mm back along its own axis, behind the hip pitch RS04 (they overlapped at the joint origin).
+- **Thigh layout:** hip roll to hip yaw 60 mm (was 100), hip yaw to knee 155 mm (was 115); thigh length unchanged at 300 mm. With the yaw motor low on the thigh, the calf's ankle motors hit it from 125° of knee flexion; the roll motor no longer sits above the yaw motor, so the yaw joint can move up.
+- **Knee range 0–125°** (was 140°): beyond 125° the folded calf reaches the hip roll motor behind the hip. Stairs need far less; Roboto Origin allows 143°, Asimov's simulation model 86°.
+- **Shoulder pitch RS03** pulled 30 mm into the torso along its axis, clear of the shoulder roll RS03 and the head.
+- **Shoulder roll range −5° to 120°** (was −10°): at −10° the upper arm entered the torso.
+- **Neck yaw servo** lowered 25 mm into the torso top, clear of the head.
+
+All stairs to 20 cm still pass; the stance knee on a slow 18 cm step is now at 42 N·m, 106% of the RS04's rated torque (bench item: knee heat path).
+
 ## 2026-10-26: ankle motors side by side, wider push rods; real actuator envelopes
 
 Packaging the leg against the actuators' STEP models (fetched locally by `tools/fetch_vendor_cad.py`; RS04 Ø120 × 55.7 mm, RS03 Ø100 × 56.6 mm, RS06 Ø85 × 50.5 mm, RS00 Ø57 × 51.4 mm) showed the previous ankle layout could not be built: two RS03 50 mm apart overlap (each is 56.6 mm thick), and 105 mm below the knee they hit the knee motor. They now sit side by side 64 mm apart, 125 mm below the knee, with the cranks on their outer faces. The search (`tools/ankle_linkage.py --search`) then finds 65 mm cranks and rods 55 mm behind and ±55 mm beside the ankle axis (foot widened to 110 mm): ratios 0.86 pitch / 0.83 roll at neutral, 31 N·m pitch and 26 N·m roll continuous at the worst pose (needs ~22 and ~14), transmission ≥ 0.58, rod force ≤ 1.3 kN. The wider rods trade some pitch for much more roll. All stairs from 10 to 20 cm still pass; the stance knee is at 99% of rated on a slow step (bench item).

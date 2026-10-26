@@ -153,6 +153,43 @@ def mirrored(items: dict | list, key_is_name: bool):
     return out
 
 
+def motor_placements() -> list[dict]:
+    """Every motor housing: name, model, the link carrying it, centre and axis in that link's
+    frame, envelope (diameter, -, thickness in m), and the joints it drives.
+
+    A housing sits on the parent link of the (first) joint it drives, centred on the joint origin
+    along the joint axis, unless skeleton.yaml's motor_mounts moves it (``xyz``, and ``axis``
+    if it is not the joint axis; the ankle motors default to a y axis)."""
+    robot = yaml.safe_load((DESC / "robot.yaml").read_text())
+    acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
+    skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
+    joints = mirrored(skel["joints"], key_is_name=True)
+    mounts = mirrored(skel["motor_mounts"], key_is_name=True)
+    out = []
+    for m in expand(robot["motors"]):
+        a = acts[m["model"]]
+        env = [x / 1000 for x in (a.get("envelope_mm") or DEFAULT_ENVELOPE_MM)]
+        j = joints[m["drives"][0]]
+        mount = mounts.get(m["name"])
+        if mount:
+            link, xyz = mount["link"], mount["xyz"]
+            axis = mount.get("axis", j["axis"] if len(m["drives"]) == 1 else [0, 1, 0])
+        else:
+            link, xyz, axis = j["parent"], j["xyz"], j["axis"]
+        out.append(
+            dict(
+                name=m["name"],
+                model=m["model"],
+                link=link,
+                xyz=xyz,
+                axis=axis,
+                envelope=env,
+                drives=m["drives"],
+            )
+        )
+    return out
+
+
 def build() -> tuple[str, dict]:
     robot = yaml.safe_load((DESC / "robot.yaml").read_text())
     acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
@@ -160,9 +197,7 @@ def build() -> tuple[str, dict]:
     skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
 
     ranges = {j["name"]: j["range"] for j in expand(robot["joints"])}
-    motors = expand(robot["motors"])
     joints = mirrored(skel["joints"], key_is_name=True)
-    mounts = mirrored(skel["motor_mounts"], key_is_name=True)
     bodies = mirrored(skel["bodies"], key_is_name=False)
     collisions = mirrored(skel["collisions"], key_is_name=False)
     errors = []
@@ -211,14 +246,9 @@ def build() -> tuple[str, dict]:
     effort: dict[str, float] = {}
     velocity: dict[str, float] = {}
     pairs: dict[tuple, list] = {}
-    for m in motors:
+    for m in motor_placements():
         a = acts[m["model"]]
-        env = [x / 1000 for x in (a.get("envelope_mm") or DEFAULT_ENVELOPE_MM)]
-        j = joints[m["drives"][0]]
-        if m["name"] in mounts:
-            link, xyz, axis = mounts[m["name"]]["link"], mounts[m["name"]]["xyz"], [0, 1, 0]
-        else:
-            link, xyz, axis = j["parent"], j["xyz"], j["axis"]
+        env, link, xyz, axis = m["envelope"], m["link"], m["xyz"], m["axis"]
         mass = a["mass"]
         links[link].append((mass, xyz, cylinder_inertia(mass, env[0], env[2], axis)))
         rpy = (

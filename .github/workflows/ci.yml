@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev,sim]"
+      - run: pip install -e ".[dev,sim,cad]"
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q tests
@@ -25,3 +25,4 @@ jobs:
       - run: python sim/mujoco/check_standing.py --pose straight
       - run: python sim/mujoco/check_step_up.py --heights 0.18
       - run: python sim/mujoco/check_symmetry.py
+      - run: python tools/check_packaging.py

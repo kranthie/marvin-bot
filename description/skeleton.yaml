@@ -15,8 +15,8 @@
 joints:
   left_hip_pitch:      {parent: pelvis,                  child: left_hip_pitch_link,      xyz: [0, 0.075, 0],       axis: [0, -1, 0]}
   left_hip_roll:       {parent: left_hip_pitch_link,     child: left_hip_roll_link,       xyz: [0, 0.025, -0.085],  axis: [1, 0, 0]}
-  left_hip_yaw:        {parent: left_hip_roll_link,      child: left_thigh_link,          xyz: [0, 0, -0.100],      axis: [0, 0, -1]}
-  left_knee:           {parent: left_thigh_link,         child: left_shin_link,           xyz: [0, 0, -0.115],      axis: [0, 1, 0]}
+  left_hip_yaw:        {parent: left_hip_roll_link,      child: left_thigh_link,          xyz: [0, 0, -0.060],      axis: [0, 0, -1]}
+  left_knee:           {parent: left_thigh_link,         child: left_shin_link,           xyz: [0, 0, -0.155],      axis: [0, 1, 0]}
   left_ankle_pitch:    {parent: left_shin_link,          child: left_ankle_link,          xyz: [0, 0, -0.290],      axis: [0, -1, 0]}
   left_ankle_roll:     {parent: left_ankle_link,         child: left_foot_link,           xyz: [0, 0, 0],           axis: [1, 0, 0]}
   waist_yaw:           {parent: pelvis,                  child: torso_link,               xyz: [0, 0, 0.115],       axis: [0, 0, 1]}
@@ -41,6 +41,12 @@ ankle_linkage:
 
 # Motor housings sit on the parent link of the joint they drive, at the joint, unless listed here.
 motor_mounts:
+  # hip roll RS04 behind the hip pitch RS04, along its own (x) axis: at the joint origin they overlap
+  left_hip_roll: {link: left_hip_pitch_link, xyz: [-0.090, 0.025, -0.085]}
+  # shoulder pitch RS03 pulled into the torso along its axis, clear of the shoulder roll RS03
+  left_shoulder_pitch: {link: torso_link, xyz: [0, 0.110, 0.250]}
+  # neck yaw servo lowered into the torso top, clear of the head
+  neck_yaw: {link: torso_link, xyz: [0, 0, 0.265]}
   # the two ankle RS03 side by side (56.6 mm thick, 7 mm apart), 125 mm below the knee so they
   # clear the knee motor (tools/ankle_linkage.py: motor_z 0.165 above the ankle)
   left_ankle_a: {link: left_shin_link, xyz: [-0.018, 0.032, -0.125]}
@@ -77,7 +83,7 @@ bodies:
 collisions:
   - {link: pelvis,            xyz: [0, 0, 0.040],      size: [0.14, 0.18, 0.12]}
   - {link: left_thigh_link,   xyz: [0, 0, -0.060],     size: [0.09, 0.09, 0.16]}
-  - {link: left_shin_link,    xyz: [-0.010, 0, -0.130], size: [0.09, 0.09, 0.22]}
+  - {link: left_shin_link,    xyz: [-0.010, 0, -0.145], size: [0.09, 0.09, 0.19]}  # starts 50 mm below the knee axis
   - {link: left_foot_link,    xyz: [0.030, 0, -0.045], size: [0.24, 0.11, 0.03]}
   - {link: torso_link,        xyz: [-0.010, 0, 0.135], size: [0.18, 0.26, 0.25]}  # top 15 mm below the head box
   - {link: head_link,         xyz: [0.010, 0, 0.040],  size: [0.15, 0.16, 0.17]}
