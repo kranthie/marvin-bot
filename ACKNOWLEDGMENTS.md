@@ -4,8 +4,8 @@ Marvin Bot is designed from scratch, but it learns from many open projects, publ
 
 ## Humanoid designs (ideas and reference figures)
 
-- **Asimov v1** by Menlo Research: https://github.com/asimovinc/asimov-v1 (hardware CERN-OHL-S-2.0, software GPL-2.0). The main reference for the overall layout: a 1.2 m, 35 kg, 25-DOF humanoid with 6-DOF legs, 5-DOF arms, waist yaw and a 2-DOF neck, a two-motor parallel-linkage ankle, and per-joint torque classes. Used for ideas and sizing only; no Asimov CAD, drawings or code are used here.
-- **Roboto Origin** by RoboParty: https://github.com/Roboparty/roboto_origin (GPL-3.0). An open 1.25 m, 34 kg humanoid; reference for an all-machined structure, an ankle linkage with spherical bearings and a published BOM.
+- **Asimov 1** by Menlo Research: https://github.com/menloresearch/asimov-1 (hardware CERN-OHL-S-2.0, software GPL-2.0). The main reference for the overall layout: a 1.2 m, 35 kg, 25-DOF humanoid with 6-DOF legs, 5-DOF arms, waist yaw and a 2-DOF neck, a two-motor parallel-linkage ankle, and per-joint torque classes. Used for ideas and sizing only; no Asimov CAD, drawings or code are used here.
+- **Roboto Origin** by RoboParty: https://github.com/Roboparty/roboto_origin (hardware and robot description CERN-OHL-W-2.0, training code BSD-3-Clause, onboard software GPL-3.0). An open 1.25 m, 34 kg, 23-DOF humanoid; reference for an all-machined structure, two-motor ankles with a parallel linkage, an off-the-shelf 48 V pack, a published BOM and per-joint actuator gains for Isaac Lab. Used for ideas and reference figures only.
 - **Berkeley Humanoid Lite** (UC Berkeley Hybrid Robotics): https://github.com/HybridRobotics/Berkeley-Humanoid-Lite and arXiv:2504.17249. Lessons on low-cost actuation, printed structures that route load through metal fasteners, and sim-to-real training.
 - **ToddlerBot** (Stanford University): https://github.com/hshi74/toddlerbot. Lessons on zero-point calibration and data collection for a low-cost open humanoid.
 - **K-Scale Labs** (K-Bot): https://github.com/kscalelabs. Reference for an all-Robstride humanoid and open actuator drivers.

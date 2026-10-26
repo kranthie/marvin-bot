@@ -18,7 +18,7 @@ Alternatives: knee motor near the hip with a linkage (lower leg inertia, more pa
 
 ## 2026-10-25: arms use RS06 at shoulder yaw and elbow
 
-Robstride's RS06 (36 N·m peak, 0.621 kg) replaces the RS02 (17 N·m). Comparable humanoids size these joints at 36–60 N·m; 17 N·m is marginal for push-ups and getting up after a fall. Cost +~¥600 for four, mass +~0.96 kg.
+Robstride's RS06 (36 N·m peak, 0.621 kg) replaces the RS02 (17 N·m). Roboto Origin uses 27 N·m-peak actuators at every arm joint; Asimov 1's simulation model limits shoulder yaw to 20 N·m and the elbow to 12 N·m. The RS02's 17 N·m peak is below the first, and the RS06 leaves margin for push-ups and getting up after a fall. Cost +~¥600 for four, mass +~0.96 kg. Revisit with simulated arm torques in phase 1.
 
 ## 2026-10-25: Robstride actuators, RS04 / RS03 / RS06 / RS00
 
