@@ -29,6 +29,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Ankle linkage geometry and push-rod loads (`tools/ankle_linkage.py`); ankles back to RS03
 - [x] Isaac Lab package: robot config, flat and rough walking tasks, robot check on Newton and PhysX (`sim/isaaclab/`), mirror rule checked (`sim/mujoco/check_symmetry.py`)
 - [x] First walking policy passes the MuJoCo flat-ground cross-check (rough v2: walk, turn, stop)
+- [x] Flat policy v3 passes the MuJoCo cross-check up to 0.8 m/s, joints within their continuous ratings
 - [ ] Stairs: rough-terrain policy that climbs 15-18 cm stairs in Isaac Lab and in MuJoCo
 - [x] Heat: RMS torque vs continuous rating per joint in the MuJoCo policy check (walking: knees 60-64% of rated); sustained-torque penalty in training
 - [ ] Rough-terrain and stair policies; MuJoCo cross-check

@@ -70,5 +70,6 @@ python sim/mujoco/check_policy.py <run>/exported --stairs 0.15    # rough-ground
 | --- | --- | --- |
 | flat v2 (2026-10-26) | survives 99.6% of episodes, but barely steps (air-time reward ~0) | stands and turns, does not walk: the clearance reward paid planted feet in full, so standing still won. Fixed: only swinging feet earn it; flat action scale 0.25 → 0.5 |
 | rough v2 (2026-10-26, pre-CAD masses) | survives 96.6%; terrain curriculum stalled at level ~1 of 10 | **passes flat ground**: walk 0.44 m/s for 0.5, turn 0.75 rad/s for 0.8, walk-and-turn, stop; 1.5 steps/s, symmetric (2%), 7 cm steps, 6 cm foot lift, knee peaks 63% of peak torque. Stops in front of 10 cm stairs |
+| flat v3 (2026-10-26, clearance fix, action scale 0.5) | survives 99.3%; speed curriculum reached 1.2 m/s; air-time reward 0.33 (was ~0) | **passes**, including a 0.8 m/s fast walk: walk 0.49 for 0.5 m/s, turn 0.75 for 0.8 rad/s, walk-and-turn exact, stop; 1.5-1.8 steps/s, 5 cm foot lift, symmetric (1-3%); hottest joint ankle pitch at 73% of rated (RMS). Trained on the 37.98 kg first-pass model, checked on the 39.55 kg second-pass leg |
 
 Policies are cross-checked against the current URDF, so rough v2 also coped with the CAD leg masses (0.66 kg heavier) it was not trained on.
