@@ -6,7 +6,7 @@ items:
   leg_structure:     {mass: 4.628, basis: cad, note: "two legs, cad/leg.py second pass: far-side bearings at knee and hip roll, channel-flanged hip block, pocketed plates; passes cad/strength.py; no fasteners yet"}
   feet:              {mass: 1.175, basis: cad, note: "two feet, cad/leg.py: 5 mm pocketed base with two 6 x 16 mm ribs, heel posts, roll-bearing lugs, 4 mm TPU sole"}
   pelvis:            {mass: 0.744, basis: cad, note: "cad/torso.py: box frame of side, front, back and top plates, pocketed"}
-  torso:             {mass: 1.179, basis: cad, note: "cad/torso.py: waist flange, base plate, two uprights (service-cut), neck bridge, printed chest shell"}
+  torso:             {mass: 1.319, basis: cad, note: "cad/torso.py: waist flange, base plate, two uprights (service-cut), neck bridge, printed chest shell"}
   arm_structure:     {mass: 1.439, basis: cad, note: "two arms, cad/arm.py: two-plate shoulder brackets, 7 mm shoulder plates, aluminium motor rings and flanges, printed upper-arm and forearm shells; no fasteners yet"}
   grippers:          {mass: 0.180, basis: cad, note: "two 1-DOF grippers, cad/arm.py: printed palm with a fixed jaw, moving jaw on the servo horn; excluding servos"}
   head:              {mass: 0.391, basis: cad, note: "cad/head.py: neck bracket, printed head frame, egg shell and visor, depth camera (0.133 kg)"}

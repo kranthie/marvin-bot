@@ -2,6 +2,10 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: narrower shoulders
+
+The arms hung ~188 mm off the centre line (a person this height: ~150 mm), set by the shoulder roll RS03 (Ø100 mm) sitting outside the shoulder pitch RS03. Putting the roll motor behind the pitch motor, as at the hip, does not help: it would sweep through the torso as the arm pitches. Instead both shoulder pitch motors sit 30 mm deeper in the torso (centres at ±80 mm, joints at ±110 mm), so the arms hang 158 mm off the centre line and the shoulders are 416 mm across (was 476). The battery (140 mm wide) is wider than the space now left between the shoulder motors, so each side frame is two plates: a lower A-frame outside the battery and an upper plate on the shoulder motor's inner face, above the battery and computer, joined by two spacers clear of the motor; the battery sits 4.5 mm lower, the electronics and keep-alive bays are narrower. With the arms closer, below 0° of shoulder roll the forearm meets the hip motor, so the roll range is now 0-120° (was -5-120°); the default stance uses 8°. Robot 38.80 kg bare, 39.88 kg with shells (0.12 kg under the 40 kg limit).
+
 ## 2026-10-26: torso shell follows the frame
 
 The torso shell was the convex hull of everything in the torso, so the shoulder motors (±138 mm, at the top) held its sides out all the way down: up to 44 mm of air beside a frame ±88 mm wide. It now follows the frame slice by slice, ~13 mm outside it everywhere (4 mm gap, the corner rounding and the skin), blending between slices at most 0.7 mm across per mm up: broad at the shoulders, slimmer at the chest and waist.

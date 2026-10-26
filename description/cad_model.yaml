@@ -636,46 +636,100 @@ torso_base:
   material: al6061
   process: cnc
   budget: torso
-  mass: 0.3029
-  com: [-0.0146673, -0.000709137, 0.0373]
-  inertia: [0.000699561, 0.000607416, 0.00130516, 1.45005e-06, 1.07203e-19, -2.79173e-20]
-  size_mm: [150.0, 163.4, 6.0]
+  mass: 0.2846
+  com: [-0.0147653, -0.000636017, 0.0373]
+  inertia: [0.000571128, 0.000567825, 0.00113725, 2.15834e-06, -1.78671e-20, 1.89838e-20]
+  size_mm: [150.0, 152.0, 6.0]
 torso_upright_l:
   link: torso_link
   material: al6061
   process: service
   budget: torso
-  mass: 0.22562
-  com: [-0.00805295, 0.0787, 0.167183]
-  inertia: [0.00144908, 0.00170333, 0.00025561, -8.93356e-19, -0.000138239, 0.0]
-  size_mm: [140.0, 6.0, 258.7]
+  mass: 0.16608
+  com: [-0.0212567, 0.079, 0.124334]
+  inertia: [0.000529795, 0.00098283, 0.000454032, 3.75791e-15, 6.59674e-05, 1.08203e-15]
+  size_mm: [149.0, 6.0, 212.7]
+torso_shoulder_plate_l:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.11834
+  com: [-0.0026922, 0.0487, 0.242266]
+  inertia: [7.98674e-05, 0.000201626, 0.000122469, -2.08085e-17, 1.81324e-05, 1.34361e-17]
+  size_mm: [142.0, 6.0, 116.0]
+torso_spacer_l0:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.02372
+  com: [-0.07, 0.06385, 0.232]
+  inertia: [2.03445e-06, 1.73418e-06, 2.03445e-06, -1.07203e-19, 2.85874e-19, 2.14405e-19]
+  size_mm: [20.0, 24.3, 20.0]
+torso_spacer_l1:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.02372
+  com: [0.042, 0.06385, 0.192]
+  inertia: [2.03445e-06, 1.73418e-06, 2.03445e-06, -1.78671e-20, 0.0, 7.14684e-20]
+  size_mm: [20.0, 24.3, 20.0]
 torso_upright_r:
   link: torso_link
   material: al6061
   process: service
   budget: torso
-  mass: 0.22562
-  com: [-0.00805295, -0.0787, 0.167183]
-  inertia: [0.00144908, 0.00170333, 0.00025561, -7.86153e-19, -0.000138239, -1.1435e-18]
-  size_mm: [140.0, 6.0, 258.7]
+  mass: 0.16608
+  com: [-0.0212567, -0.079, 0.124334]
+  inertia: [0.000529795, 0.00098283, 0.000454032, 3.75798e-15, 6.59674e-05, 1.08003e-15]
+  size_mm: [149.0, 6.0, 212.7]
+torso_shoulder_plate_r:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.11834
+  com: [-0.0026922, -0.0487, 0.242266]
+  inertia: [7.98674e-05, 0.000201626, 0.000122469, -2.08129e-17, 1.81324e-05, 1.22926e-17]
+  size_mm: [142.0, 6.0, 116.0]
+torso_spacer_r0:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.02372
+  com: [-0.07, -0.06385, 0.232]
+  inertia: [2.03445e-06, 1.73418e-06, 2.03445e-06, 7.14684e-20, 2.85874e-19, -7.14684e-20]
+  size_mm: [20.0, 24.3, 20.0]
+torso_spacer_r1:
+  link: torso_link
+  material: al6061
+  process: cnc
+  budget: torso
+  mass: 0.02372
+  com: [0.042, -0.06385, 0.192]
+  inertia: [2.03445e-06, 1.73418e-06, 2.03445e-06, 8.93355e-21, 0.0, -2.50139e-19]
+  size_mm: [20.0, 24.3, 20.0]
 torso_bridge:
   link: torso_link
   material: al6061
   process: cnc
   budget: torso
-  mass: 0.13306
-  com: [0.000973598, -0.000130818, 0.2804]
-  inertia: [0.000284973, 6.24328e-05, 0.000346607, 2.57693e-07, -1.41596e-18, 2.68006e-20]
-  size_mm: [70.0, 151.4, 6.0]
+  mass: 0.07802
+  com: [0.00116015, -0.0001381, 0.2804]
+  inertia: [6.47427e-05, 3.77574e-05, 0.000102032, 1.27844e-07, -9.38021e-20, 1.00502e-20]
+  size_mm: [70.0, 91.4, 6.0]
 torso_chest_shell:
   link: torso_link
   material: pa_cf
   process: print
   budget: torso
-  mass: 0.20221
-  com: [0.0353154, -6.14362e-17, 0.142726]
-  inertia: [0.00172528, 0.000970107, 0.00119175, -4.38729e-19, -0.000103743, -2.02157e-18]
-  size_mm: [107.0, 175.4, 228.7]
+  mass: 0.20259
+  com: [0.0353588, -1.22645e-17, 0.142752]
+  inertia: [0.00173469, 0.00097202, 0.00119967, -2.12085e-19, -0.000103894, -1.597e-18]
+  size_mm: [107.0, 176.0, 228.7]
 left_shoulder_flange:
   link: left_shoulder_pitch_link
   material: al6061
@@ -692,7 +746,7 @@ left_shoulder_back:
   budget: arm_structure
   mass: 0.12235
   com: [-0.0318, 0.0433166, -0.0439749]
-  inertia: [0.000145446, 7.96681e-05, 6.67775e-05, -1.01449e-16, 7.79363e-17, 2.0616e-05]
+  inertia: [0.000145446, 7.96681e-05, 6.67775e-05, 7.73646e-17, 9.65181e-17, 2.0616e-05]
   size_mm: [7.0, 92.7, 101.0]
 left_shoulder_roll_front:
   link: left_shoulder_roll_link
@@ -791,7 +845,7 @@ right_shoulder_back:
   budget: arm_structure
   mass: 0.12235
   com: [-0.0318, -0.0433166, -0.0439749]
-  inertia: [0.000145446, 7.96681e-05, 6.67775e-05, 1.01485e-16, 7.7972e-17, -2.0616e-05]
+  inertia: [0.000145446, 7.96681e-05, 6.67775e-05, -7.73646e-17, 9.65181e-17, -2.0616e-05]
   size_mm: [7.0, 92.7, 101.0]
 right_shoulder_roll_front:
   link: right_shoulder_roll_link
@@ -924,73 +978,73 @@ torso_cover_front_l:
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.07462
-  com: [0.054765, 0.0789997, 0.240523]
-  inertia: [0.000341164, 0.000270155, 0.000171501, 2.83563e-05, 2.82122e-05, 1.51006e-05]
-  size_mm: [94.6, 132.0, 164.5]
+  mass: 0.07212
+  com: [0.0476749, 0.0702043, 0.239555]
+  inertia: [0.000265567, 0.000252492, 0.000136795, 3.66214e-05, 2.06995e-05, 7.92558e-06]
+  size_mm: [94.6, 102.0, 164.5]
 torso_cover_front_l_waist:
   link: torso_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.05144
-  com: [0.0476178, 0.0722545, 0.0887201]
-  inertia: [0.000120904, 0.000108981, 9.78719e-05, 3.1823e-05, -1.80371e-06, -3.22202e-06]
-  size_mm: [92.6, 114.0, 124.0]
+  mass: 0.05121
+  com: [0.0475077, 0.0717235, 0.0883845]
+  inertia: [0.000118534, 0.00010801, 9.61982e-05, 3.1494e-05, -1.39498e-06, -1.23702e-06]
+  size_mm: [92.6, 100.6, 124.0]
 torso_cover_front_r:
   link: torso_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.07462
-  com: [0.054765, -0.0789997, 0.240523]
-  inertia: [0.000341164, 0.000270155, 0.000171501, -2.83563e-05, 2.82122e-05, -1.51006e-05]
-  size_mm: [94.6, 132.0, 164.5]
+  mass: 0.07212
+  com: [0.0476749, -0.0702043, 0.239555]
+  inertia: [0.000265567, 0.000252492, 0.000136795, -3.66214e-05, 2.06995e-05, -7.92558e-06]
+  size_mm: [94.6, 102.0, 164.5]
 torso_cover_front_r_waist:
   link: torso_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.05144
-  com: [0.0476178, -0.0722545, 0.0887201]
-  inertia: [0.000120904, 0.000108981, 9.78719e-05, -3.1823e-05, -1.80371e-06, 3.22202e-06]
-  size_mm: [92.6, 114.0, 124.0]
+  mass: 0.05121
+  com: [0.0475077, -0.0717235, 0.0883845]
+  inertia: [0.000118534, 0.00010801, 9.61982e-05, -3.1494e-05, -1.39498e-06, 1.23702e-06]
+  size_mm: [92.6, 100.6, 124.0]
 torso_cover_back_l:
   link: torso_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.07527
-  com: [-0.0818072, 0.080512, 0.238586]
-  inertia: [0.00033575, 0.000244967, 0.000173814, -2.44011e-05, -3.93768e-05, 1.64651e-05]
-  size_mm: [84.6, 132.0, 164.5]
+  mass: 0.06651
+  com: [-0.0779118, 0.067639, 0.237445]
+  inertia: [0.00024468, 0.000215769, 0.00011618, -2.50119e-05, -3.08541e-05, 1.18792e-05]
+  size_mm: [84.6, 102.0, 164.5]
 torso_cover_back_l_waist:
   link: torso_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.04973
-  com: [-0.0837374, 0.0712735, 0.0883718]
-  inertia: [0.000117619, 9.96787e-05, 8.89454e-05, -2.8724e-05, -3.35352e-07, -2.59799e-06]
-  size_mm: [87.6, 114.0, 124.0]
+  mass: 0.0495
+  com: [-0.0836453, 0.0707594, 0.0880229]
+  inertia: [0.000115316, 9.87429e-05, 8.73994e-05, -2.84081e-05, -6.82274e-07, -7.17308e-07]
+  size_mm: [87.6, 100.6, 124.0]
 torso_cover_back_r:
   link: torso_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.07527
-  com: [-0.0818072, -0.080512, 0.238586]
-  inertia: [0.00033575, 0.000244967, 0.000173814, 2.44011e-05, -3.93768e-05, -1.64651e-05]
-  size_mm: [84.6, 132.0, 164.5]
+  mass: 0.06651
+  com: [-0.0779118, -0.067639, 0.237445]
+  inertia: [0.00024468, 0.000215769, 0.00011618, 2.50119e-05, -3.08541e-05, -1.18792e-05]
+  size_mm: [84.6, 102.0, 164.5]
 torso_cover_back_r_waist:
   link: torso_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.04973
-  com: [-0.0837374, -0.0712735, 0.0883718]
-  inertia: [0.000117619, 9.96787e-05, 8.89454e-05, 2.8724e-05, -3.35352e-07, 2.59799e-06]
-  size_mm: [87.6, 114.0, 124.0]
+  mass: 0.0495
+  com: [-0.0836453, -0.0707594, 0.0880229]
+  inertia: [0.000115316, 9.87429e-05, 8.73994e-05, 2.84081e-05, -6.82275e-07, 7.17308e-07]
+  size_mm: [87.6, 100.6, 124.0]
 neck_cover:
   link: neck_link
   material: pa_cf

@@ -81,15 +81,21 @@
     <collision><origin xyz="0.03 0 -0.045"/><geometry><box size="0.24 0.11 0.03"/></geometry></collision>
   </link>
   <link name="torso_link">
-    <inertial><origin xyz="-0.0221373 -2.35605e-05 0.162058"/><mass value="9.85566"/><inertia ixx="0.0945944" ixy="3.71456e-06" ixz="-0.00476872" iyy="0.072559" iyz="-2.47377e-05" izz="0.0575016"/></inertial>
+    <inertial><origin xyz="-0.0223308 -1.92329e-05 0.160285"/><mass value="9.97174"/><inertia ixx="0.0822426" ixy="3.90872e-06" ixz="-0.00490521" iyy="0.073129" iyz="-2.09673e-05" izz="0.0457306"/></inertial>
     <visual><origin xyz="0.01 0 0.1"/><geometry><box size="0.072 0.11 0.11"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.062 0 0.13"/><geometry><box size="0.06 0.14 0.17"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.06 0 0.25"/><geometry><box size="0.05 0.1 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="0.01 0 0.19"/><geometry><box size="0.07 0.14 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
+    <visual><origin xyz="-0.062 0 0.1255"/><geometry><box size="0.06 0.14 0.17"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
+    <visual><origin xyz="-0.06 0 0.25"/><geometry><box size="0.05 0.08 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
+    <visual><origin xyz="0.01 0 0.185"/><geometry><box size="0.07 0.085 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_waist_flange.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_base.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_upright_l.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/torso_shoulder_plate_l.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/torso_spacer_l0.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/torso_spacer_l1.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_upright_r.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/torso_shoulder_plate_r.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/torso_spacer_r0.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/torso_spacer_r1.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_bridge.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_chest_shell.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_cover_front_l.stl"/></geometry><material name="pa_cf"><color rgba="0.88 0.89 0.91 1"/></material></visual>
@@ -100,10 +106,10 @@
     <visual><geometry><mesh filename="../meshes/torso_cover_back_l_waist.stl"/></geometry><material name="pa_cf"><color rgba="0.88 0.89 0.91 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_cover_back_r.stl"/></geometry><material name="pa_cf"><color rgba="0.88 0.89 0.91 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_cover_back_r_waist.stl"/></geometry><material name="pa_cf"><color rgba="0.88 0.89 0.91 1"/></material></visual>
-    <visual><origin xyz="0 0.11 0.25" rpy="1.5708 0 0"/><geometry><cylinder radius="0.05" length="0.0566"/></geometry><material name="RS03"><color rgba="0.23 0.49 0.85 1"/></material></visual>
-    <visual><origin xyz="0 -0.11 0.25" rpy="1.5708 0 0"/><geometry><cylinder radius="0.05" length="0.0566"/></geometry><material name="RS03"><color rgba="0.23 0.49 0.85 1"/></material></visual>
+    <visual><origin xyz="0 0.08 0.25" rpy="1.5708 0 0"/><geometry><cylinder radius="0.05" length="0.0566"/></geometry><material name="RS03"><color rgba="0.23 0.49 0.85 1"/></material></visual>
+    <visual><origin xyz="0 -0.08 0.25" rpy="1.5708 0 0"/><geometry><cylinder radius="0.05" length="0.0566"/></geometry><material name="RS03"><color rgba="0.23 0.49 0.85 1"/></material></visual>
     <visual><origin xyz="0 0 0.265" rpy="0 0 0"/><geometry><cylinder radius="0.02265" length="0.0248"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
-    <collision><origin xyz="-0.02 0 0.135"/><geometry><box size="0.16 0.26 0.25"/></geometry></collision>
+    <collision><origin xyz="-0.02 0 0.135"/><geometry><box size="0.16 0.2 0.25"/></geometry></collision>
   </link>
   <link name="neck_link">
     <inertial><origin xyz="-1.52802e-11 -5.62301e-11 0.0150927"/><mass value="0.16495"/><inertia ixx="0.000128808" ixy="3.84352e-14" ixz="-1.87399e-14" iyy="0.000158443" iyz="-6.89615e-14" izz="9.4172e-05"/></inertial>
@@ -313,13 +319,13 @@
   </joint>
   <joint name="left_shoulder_pitch" type="revolute">
     <parent link="torso_link"/><child link="left_shoulder_pitch_link"/>
-    <origin xyz="0 0.14 0.25"/><axis xyz="0 -1 0"/>
+    <origin xyz="0 0.11 0.25"/><axis xyz="0 -1 0"/>
     <limit lower="-1.0472" upper="3.14159" effort="60" velocity="20.4204"/>
   </joint>
   <joint name="left_shoulder_roll" type="revolute">
     <parent link="left_shoulder_pitch_link"/><child link="left_shoulder_roll_link"/>
     <origin xyz="0 0.048 -0.05"/><axis xyz="1 0 0"/>
-    <limit lower="-0.0872665" upper="2.0944" effort="60" velocity="20.4204"/>
+    <limit lower="0" upper="2.0944" effort="60" velocity="20.4204"/>
   </joint>
   <joint name="left_shoulder_yaw" type="revolute">
     <parent link="left_shoulder_roll_link"/><child link="left_upper_arm_link"/>
@@ -373,13 +379,13 @@
   </joint>
   <joint name="right_shoulder_pitch" type="revolute">
     <parent link="torso_link"/><child link="right_shoulder_pitch_link"/>
-    <origin xyz="0 -0.14 0.25"/><axis xyz="0 -1 0"/>
+    <origin xyz="0 -0.11 0.25"/><axis xyz="0 -1 0"/>
     <limit lower="-1.0472" upper="3.14159" effort="60" velocity="20.4204"/>
   </joint>
   <joint name="right_shoulder_roll" type="revolute">
     <parent link="right_shoulder_pitch_link"/><child link="right_shoulder_roll_link"/>
     <origin xyz="0 -0.048 -0.05"/><axis xyz="-1 0 0"/>
-    <limit lower="-0.0872665" upper="2.0944" effort="60" velocity="20.4204"/>
+    <limit lower="0" upper="2.0944" effort="60" velocity="20.4204"/>
   </joint>
   <joint name="right_shoulder_yaw" type="revolute">
     <parent link="right_shoulder_roll_link"/><child link="right_upper_arm_link"/>

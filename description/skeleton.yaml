@@ -22,7 +22,7 @@ joints:
   waist_yaw:           {parent: pelvis,                  child: torso_link,               xyz: [0, 0, 0.115],       axis: [0, 0, 1]}
   neck_yaw:            {parent: torso_link,              child: neck_link,                xyz: [0, 0, 0.310],       axis: [0, 0, 1]}
   neck_pitch:          {parent: neck_link,               child: head_link,                xyz: [0, 0, 0.035],       axis: [0, 1, 0]}
-  left_shoulder_pitch: {parent: torso_link,              child: left_shoulder_pitch_link, xyz: [0, 0.140, 0.250],   axis: [0, -1, 0]}
+  left_shoulder_pitch: {parent: torso_link,              child: left_shoulder_pitch_link, xyz: [0, 0.110, 0.250],   axis: [0, -1, 0]}
   left_shoulder_roll:  {parent: left_shoulder_pitch_link, child: left_shoulder_roll_link, xyz: [0, 0.048, -0.050],  axis: [1, 0, 0]}
   left_shoulder_yaw:   {parent: left_shoulder_roll_link, child: left_upper_arm_link,      xyz: [0, 0, -0.085],      axis: [0, 0, -1]}
   left_elbow:          {parent: left_upper_arm_link,     child: left_forearm_link,        xyz: [0, 0, -0.115],      axis: [0, -1, 0]}
@@ -46,8 +46,9 @@ ankle_linkage:
 motor_mounts:
   # hip roll RS04 behind the hip pitch RS04, along its own (x) axis: at the joint origin they overlap
   left_hip_roll: {link: left_hip_pitch_link, xyz: [-0.090, 0.025, -0.085]}
-  # shoulder pitch RS03 pulled into the torso along its axis, clear of the shoulder roll RS03
-  left_shoulder_pitch: {link: torso_link, xyz: [0, 0.110, 0.250]}
+  # shoulder pitch RS03 pulled into the torso along its axis, clear of the shoulder roll RS03;
+  # deep in the torso (above the battery and computer) so the arms hang close to the body
+  left_shoulder_pitch: {link: torso_link, xyz: [0, 0.080, 0.250]}
   # neck yaw servo lowered into the torso top, clear of the head
   neck_yaw: {link: torso_link, xyz: [0, 0, 0.265]}
   # the two ankle RS03 staggered on the shin's centre line (a slim shin): a low, b high and
@@ -70,9 +71,9 @@ bodies:
   - {link: left_foot_link,           budget: feet,          mass: 0.35,  xyz: [0.030, 0, -0.045],  size: [0.24, 0.11, 0.03]}
   - {link: torso_link,               budget: torso,         mass: 1.80,  xyz: [0, 0, 0.150],       size: [0.16, 0.24, 0.26]}
   - {link: torso_link,               budget: compute,       mass: 1.50,  xyz: [0.010, 0, 0.100],   size: [0.072, 0.11, 0.11]}  # dev kit standing on edge: a shallower chest
-  - {link: torso_link,               budget: battery,       mass: 3.40,  xyz: [-0.062, 0, 0.130],  size: [0.06, 0.14, 0.17]}  # on the base plate, behind the computer
-  - {link: torso_link,               budget: keep_alive,    mass: 0.40,  xyz: [-0.060, 0, 0.250],  size: [0.05, 0.10, 0.05]}
-  - {link: torso_link,               budget: electronics,   mass: 1.00,  xyz: [0.010, 0, 0.190],   size: [0.07, 0.14, 0.05]}
+  - {link: torso_link,               budget: battery,       mass: 3.40,  xyz: [-0.062, 0, 0.1255], size: [0.06, 0.14, 0.17]}  # on the base plate, behind the computer, under the shoulder motors
+  - {link: torso_link,               budget: keep_alive,    mass: 0.40,  xyz: [-0.060, 0, 0.250],  size: [0.05, 0.08, 0.05]}
+  - {link: torso_link,               budget: electronics,   mass: 1.00,  xyz: [0.010, 0, 0.185],   size: [0.07, 0.085, 0.05]}
   - {link: head_link,                budget: head,          mass: 0.50,  xyz: [0.010, 0, 0.040],   size: [0.15, 0.16, 0.17]}
   - {link: left_shoulder_pitch_link, budget: arm_structure, mass: 0.05,  xyz: [0, 0.025, -0.020],  size: [0.06, 0.03, 0.06]}
   - {link: left_shoulder_roll_link,  budget: arm_structure, mass: 0.05,  xyz: [0, 0, -0.040],      size: [0.06, 0.06, 0.06]}
@@ -89,7 +90,7 @@ collisions:
   - {link: left_shin_link,    xyz: [0.040, 0, -0.113],  size: [0.11, 0.09, 0.105]}  # upper ankle motor, under the knee
   - {link: left_shin_link,    xyz: [-0.010, 0, -0.213], size: [0.104, 0.09, 0.097]}  # lower ankle motor
   - {link: left_foot_link,    xyz: [0.030, 0, -0.045], size: [0.24, 0.11, 0.03]}
-  - {link: torso_link,        xyz: [-0.020, 0, 0.135], size: [0.16, 0.26, 0.25]}  # top below the head box
+  - {link: torso_link,        xyz: [-0.020, 0, 0.135], size: [0.16, 0.20, 0.25]}  # top below the head box
   - {link: head_link,         xyz: [0.002, 0, 0.087],  size: [0.15, 0.16, 0.162]}  # helmet, above the neck cut
   - {link: left_upper_arm_link, xyz: [0, 0, -0.060],   size: [0.08, 0.08, 0.14]}
   - {link: left_forearm_link, xyz: [0, 0, -0.080],     size: [0.07, 0.07, 0.17]}

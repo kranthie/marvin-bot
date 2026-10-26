@@ -21,7 +21,7 @@ dimensions:
   shin: 0.290              # knee axis to ankle axis
   ankle_height: 0.060      # ankle axis to sole
   hip_spacing: 0.200       # between left and right leg lines
-  shoulder_width: 0.490    # outside of the shoulder actuators
+  shoulder_width: 0.416    # outside of the shoulder actuators
   shoulder_height: 1.015   # shoulder pitch axis above the floor
   upper_arm: 0.200         # shoulder roll axis to elbow axis
   forearm: 0.215           # elbow axis to gripper centre
@@ -47,7 +47,7 @@ joints:
   - {name: neck_pitch,              axis: pitch, range: [-20, 40]}
   # arms
   - {name: "{side}_shoulder_pitch", axis: pitch, range: [-60, 180]}
-  - {name: "{side}_shoulder_roll",  axis: roll,  range: [-5, 120]}  # -10° put the upper arm into the torso (check_packaging.py)
+  - {name: "{side}_shoulder_roll",  axis: roll,  range: [0, 120]}  # with the arms close to the body, below 0° the forearm meets the hip motor (check_packaging.py)
   - {name: "{side}_shoulder_yaw",   axis: yaw,   range: [-90, 90]}
   - {name: "{side}_elbow",          axis: pitch, range: [0, 135]}
   - {name: "{side}_wrist_yaw",      axis: yaw,   range: [-90, 90]}

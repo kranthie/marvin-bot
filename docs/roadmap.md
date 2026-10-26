@@ -44,6 +44,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Slim shin with the ankle motors staggered on its centre line (~95 mm wide, was ~132), same ankle torque; plates reduced to rings on the motors' bolt circles and straps; robot 38.71 kg
 - [x] Styled body: helmet head with a full-face visor, full body-shell set (torso, neck, hip girdle, legs, arms, toes) as an add-on, 1.10 kg; shell clearance check through every joint range in CI (`python -m cad.covers --check`); 39.80 kg with shells
 - [x] More human proportions: computer stood on edge (torso frame 155 mm deep, was 190), helmet head 142 mm wide and 170 mm tall with the camera at eye height, neck 20 mm longer, torso shell sloping into the neck; 1.29 m, 38.66 kg (39.77 kg with shells)
+- [x] Narrower shoulders: shoulder pitch motors 30 mm deeper in the torso, arms 158 mm off the centre line (was 188), two-plate side frames; shoulder roll range 0-120°; 38.80 kg (39.88 kg with shells)
 - [ ] Retrain the flat and stair policies on the current model (ankle ratios 0.99 / 0.67, 38.71 kg) and rerun the MuJoCo cross-checks
 - [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
 - [ ] Battery cradle, blind-mate connector and electronics bay layout

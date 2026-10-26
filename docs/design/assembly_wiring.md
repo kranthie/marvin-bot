@@ -92,7 +92,7 @@ How they are made and checked:
 - `python -m cad.covers --check` (run in CI) moves every joint to both ends and to half of each end of its range, plus combined poses (deep squat, knee up, arm up, hand to chest, looking down while turned), and fails if any shell touches a part or shell of another link. Shells on one limb are not checked against the other limbs; limb-to-limb contact is the policy's job.
 - They clip on (clip and boss details come with the fastener pass), so they come off without tools, and they carry no load; they add some fall protection (R53).
 
-The shells weigh 1.10 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 38.66 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.76 kg) adds the shells' mass and visuals, just inside the 40 kg limit; a robot that runs with them should be trained on it.
+The shells weigh 1.08 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 38.80 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.88 kg) adds the shells' mass and visuals, 0.12 kg inside the 40 kg limit; a robot that runs with them should be trained on it.
 
 ## Still to do
 
