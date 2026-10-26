@@ -37,7 +37,13 @@ from . import arm, leg, torso
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
-YIELD_MPA = {"al6061": 240.0, "al7075": 480.0}
+YIELD_MPA = {
+    "al6061": 240.0,
+    "al7075": 480.0,
+    # printed carbon-fibre nylon: the strength between layers (25-40 MPa in published
+    # tests), the weak direction for a part printed standing up; conservative
+    "pa_cf": 25.0,
+}
 TARGET = 2.0
 G = 9.81
 
@@ -114,6 +120,9 @@ def checks(peak: dict, mass: float) -> list[Check]:
         j[k] for k in ("left_shoulder_yaw", "left_elbow", "left_wrist_yaw", "left_gripper")
     )
     hand_pitch = j["left_shoulder_roll"] + hand_roll
+    hand_wrist = j["left_gripper"] + np.array([0.0, 0.0, -60.0])  # the grip, below the palm
+    hand_fore = j["left_wrist_yaw"] + hand_wrist
+    hand_upper = j["left_elbow"] + hand_fore
     return [
         # the two side plates act together as the shin; the ankle fork is their lower end
         Check(
@@ -198,6 +207,23 @@ def checks(peak: dict, mass: float) -> list[Check]:
             tuple(hand_roll),
             (0.0, 0.0, 1000 * peak["left_shoulder_yaw"]),
             "hand",
+        ),
+        # printed arm shells that carry load (cad/arm.py): the upper-arm shell between the
+        # shoulder yaw ring and the elbow ring, the forearm shell down to the wrist cup, the
+        # gripper palm under the wrist
+        Check(
+            "left_upper_arm_shell",
+            "z",
+            list(np.linspace(-40, -70, 4)),
+            tuple(hand_upper),
+            (0.0, 1000 * peak["left_elbow"], 0.0),
+            "hand",
+        ),
+        Check(
+            "left_forearm_shell", "z", list(np.linspace(-50, -95, 4)), tuple(hand_fore), load="hand"
+        ),
+        Check(
+            "left_gripper_palm", "z", list(np.linspace(-35, -70, 4)), tuple(hand_wrist), load="hand"
         ),
     ]
 

@@ -1,6 +1,6 @@
 # Assembly, wiring and covers
 
-How the robot comes apart, how the wiring runs, and what the optional covers add. Status as of 2026-10-26: first-pass CAD of every structural part (`cad/`), a generated harness (`tools/build_harness.py` → `electrical/harness.yaml`), and the covers as an add-on (`cad/covers.py`). Fasteners, clips and connector footprints are still to come.
+How the robot comes apart, how the wiring runs, and what the optional covers add. Status as of 2026-10-26: first-pass CAD of every structural part (`cad/`), the electronics bay, battery cradle and limb-root bulkheads at their parts' outlines (`cad/electrical.py`), a generated harness (`tools/build_harness.py` → `electrical/harness.yaml`), and the covers as an add-on (`cad/covers.py`). Fastener holes are in the mounts; clip bosses and the bought parts' datasheet outlines are still to come.
 
 ## Modules
 
@@ -9,9 +9,9 @@ The robot is built from seven modules that are assembled and tested on their own
 | Module | Contents | Joins at | Connectors at the joint |
 |---|---|---|---|
 | Torso core | torso frame, chest shell, Orin, electronics bay, battery cradle, shoulder pitch and neck yaw motors | waist RS03 output flange (bolted) | trunk harness: power plus 5 CAN pairs |
-| Pelvis | back plate, top plate and gussets, waist RS03, hip roll RS04s, pelvis power board | waist flange; leg flanges | leg root connectors |
-| Leg (×2) | roll bracket to foot: 5 actuators (hip pitch, yaw, knee, two ankle), linkage, foot | hip roll RS04 output flange and the far-side bearing behind it | 1 power, 1 signal |
-| Arm (×2) | shoulder bracket to gripper: 4 actuators, gripper servo | shoulder pitch RS03 output flange | 1 power, 1 signal |
+| Pelvis | back plate, top plate and gussets, waist RS03, hip roll RS04s, pelvis power board, 12 V servo DC-DC, IMU | waist flange; leg flanges | leg bulkheads |
+| Leg (×2) | roll bracket to foot: 5 actuators (hip pitch, yaw, knee, two ankle), linkage, foot | hip roll RS04 output flange and the far-side bearing behind it | 1 power, 1 signal, at the leg bulkhead |
+| Arm (×2) | shoulder bracket to gripper: 4 actuators, gripper servo | shoulder pitch RS03 output flange | 1 power, 1 signal, at the arm bulkhead |
 | Head | neck bracket, pitch servo, frame, shell, visor, camera | neck yaw servo horn | servo bus, camera USB-C |
 | Battery | 13S pack with BMS | slides into the cradle from the back | blind-mate power and BMS connector |
 | Body shells | clip-on shells (optional) | clips on the parts below | none |
@@ -26,6 +26,20 @@ Each limb's first actuator stays on the parent module (hip roll on the pelvis, s
 4. Join the torso core to the pelvis at the waist flange; plug in the trunk harness through its service loop.
 5. Arms and head onto their flanges and connectors.
 6. Calibrate joint zeros with the robot hung from the gantry (docs/safety.md), then add the covers if wanted.
+
+## Electronics layout
+
+| Where | What, in power-flow order |
+|---|---|
+| Torso, back | 13S pack on the base plate between two printed side guides; a latch plate behind it. It slides out backwards with the back shell off; its blind-mate connector (AS150 class) is at its front-top corner and seats in a socket over the computer, beside the computer's buttons. |
+| Torso, middle | the computer on edge: fan forward (vents in the chest shell), I/O ports to the sides, buttons up, bolted by its feet to a plate behind it. |
+| Torso, bay above the computer | main contactor and precharge, torso power board (bus bars, arm fuses), e-stop receiver and watchdog relay; the computer's DC-DC (fed ahead of the contactor); three isolated USB-CAN adapters beside the computer's USB ports. |
+| Torso, behind the neck | keep-alive allowance (the parts that stay powered during an e-stop). |
+| Shoulder plates | the arm bulkheads, behind the shoulder pitch motors. |
+| Pelvis channel, under the waist motor | 12 V DC-DC for the servos (a compact 10 A brick, at most 60 × 34 × 25 mm), the IMU near the hip axes. |
+| Pelvis, between the hip roll motors | pelvis power board (leg fuses) with the leg bulkheads under it. |
+
+The outlines are typical sizes for each class of part; each is replaced with the chosen part's datasheet outline when it is bought, and the sweep and rest-pose audit rerun.
 
 ## Power and signal topology
 
@@ -57,10 +71,10 @@ The computer's supply is taken before the contactor, so an e-stop cuts every act
 | Harness | Branch current | Fuse | Length | Carries |
 |---|---|---|---|---|
 | Main (battery to torso board) | 78.5 A | 100 A | — | 6 AWG |
-| Trunk (torso to pelvis, across the waist) | 51.3 A | 80 A | 0.57 m | 8 AWG, 4 leg CAN pairs, waist CAN |
-| Leg (each) | 24.3 A | 40 A | 1.79 m | 12 AWG at the root down to 16 AWG; hip and shank CAN |
-| Arm (each) | 13.6 A | 20 A | 1.83 m | 16 AWG; arm CAN; 12 V and serial for the gripper |
-| Head | — | — | 0.30 m | 12 V and serial for the neck servos; camera USB-C |
+| Trunk (torso to pelvis, across the waist) | 51.3 A | 80 A | 0.60 m | 8 AWG, 4 leg CAN pairs, waist CAN |
+| Leg (each) | 24.3 A | 40 A | 1.82 m | 12 AWG at the root down to 16 AWG; hip and shank CAN |
+| Arm (each) | 13.6 A | 20 A | 1.79 m | 16 AWG; arm CAN; 12 V and serial for the gripper |
+| Head | — | — | 0.36 m | 12 V and serial for the neck servos; camera USB-C |
 
 The currents are continuous estimates: rated torque at half the no-load speed, 80% efficiency, 48 V, with half the branch's motors at rated output at once. Peak currents are several times higher for short periods; the fuse and gauge choices are first-pass, and the real bus currents come from the phase 2 bench test (open item 3 in [roadmap.md](../roadmap.md)).
 
@@ -68,10 +82,10 @@ Rules the harness follows:
 
 - **One harness per limb**: power is daisy-chained motor to motor in kinematic order, with the limb's CAN pair(s) twisted alongside. Each motor's own power and CAN connectors plug into the chain, so a motor swap needs no crimping.
 - **Service loops at every joint**: a loop of length range × 35 mm around each joint the harness crosses (0.04–0.15 m per joint). The loop runs beside the motor housing, on the side away from the output flange, inside the clearance the packaging check keeps. The waist and shoulder pitch, the joints with the largest ranges, get the longest loops.
-- **No wire carries load**: the harness is clipped to the structure on both sides of each loop, so motion only flexes the loop.
+- **No wire carries load**: the harness is clipped to the structure on both sides of each loop (`harness.yaml` lists the clip pair, parent link and child link, for every loop), so motion only flexes the loop.
 - **CAN**: twisted pair, 120 Ω termination at the hub end and on the last motor of each bus, shield or drain grounded at the hub only. Each leg carries two buses (hip and shank), so its signal connector has 6 pins.
-- **Limb-root connectors**: a keyed 2-pin power connector rated above the branch fuse (XT60 class for legs and arms) and a latching signal connector (CAN pairs, ground, a spare), both mounted on a bulkhead on the parent module next to the limb's first flange.
-- **Paths**: the leg harness drops from the pelvis board between the hip pitch motor and the frame, behind the hip roll motor, down the back of the thigh shell and between the shin's side plates to the ankle motors. The arm harness leaves the torso beside the shoulder pitch motor, runs inside the upper-arm and forearm shells (they leave a cable channel; the upper-arm shell has an exit at the elbow for the loop), and ends at the gripper servo.
+- **Limb-root connectors**: a keyed 2-pin power connector rated above the branch fuse (XT60 class for legs and arms) and a latching signal connector (CAN pairs, ground, a spare), both mounted on a bulkhead on the parent module next to the limb's first flange (`elec_bulkhead_*` in `cad/electrical.py`).
+- **Paths**: the leg harness leaves the bulkhead under the pelvis board, runs to the hip roll motor behind the hip, then past the hip pitch and yaw motors, down the back of the thigh shell and between the shin's side plates to the ankle motors. The arm harness leaves the torso beside the shoulder pitch motor, runs inside the upper-arm and forearm shells (they leave a cable channel; the upper-arm shell has an exit at the elbow for the loop), and ends at the gripper servo.
 
 ## Body shells (add-on)
 
@@ -88,16 +102,16 @@ The bare robot is meant to look finished: graphite printed shells (thigh, upper 
 
 How they are made and checked:
 
-- Each shell is a 1.6 mm printed skin at a 4 mm gap from the parts it covers (an offset of their hull, rounded; the torso is lofted from rounded sections), so the shells refit automatically when the structure changes.
+- Each shell is a 1.2 mm printed skin at a 4 mm gap from the parts it covers (an offset of their hull, rounded; the torso is lofted from rounded sections), so the shells refit automatically when the structure changes.
 - `python -m cad.covers --check` (run in CI) moves every joint to both ends and to half of each end of its range, plus combined poses (deep squat, knee up, arm up, hand to chest, looking down while turned), and fails if any shell touches a part or shell of another link. Shells on one limb are not checked against the other limbs; limb-to-limb contact is the policy's job.
 - They clip on (clip and boss details come with the fastener pass), so they come off without tools, and they carry no load; they add some fall protection (R53).
 
-The shells weigh 1.08 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 38.80 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.88 kg) adds the shells' mass and visuals, 0.12 kg inside the 40 kg limit; a robot that runs with them should be trained on it.
+The shells weigh 0.83 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 39.13 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.96 kg) adds the shells' mass and visuals, 0.04 kg inside the 40 kg limit; a robot that runs with them should be trained on it.
 
 ## Still to do
 
-- Fastener holes, bearing seats, clips and connector footprints in the CAD.
-- Harness clip points and loop guides in the CAD; check the loops against the packaging envelopes through the full joint ranges.
+- Bearing seats, clip bosses on the clip points `harness.yaml` lists, and connector footprints on the bulkheads.
+- Loop guides; check the loops against the packaging envelopes through the full joint ranges.
 - Torso shell seams: clip and alignment details at the eight pieces' joins.
-- The battery cradle and blind-mate connector; the electronics bay layout.
+- Datasheet outlines for the bought electronics once chosen (the layout uses typical sizes).
 - Measured bus currents (phase 2) to confirm the gauges and fuses.

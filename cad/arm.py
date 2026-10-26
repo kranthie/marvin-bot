@@ -131,15 +131,17 @@ def parts() -> list[Part]:
         eh["n"], eh["thread"], eh["pcd"], "y", (el[0], stator_y, el[2]), t + 2
     )
     out.append(Part("left_upper_arm_elbow_ring", "left_upper_arm_link", "al6061", ring_el, "cnc"))
-    # shell: a rounded tube from the top ring to around the elbow motor's inner half
+    # shell: a rounded tube from the top ring to around the elbow motor's inner half; it
+    # carries the forearm and hand, so 3.5 mm walls (cad/strength.py)
+    UW = 3.5
     top_z = yaw_out - t
     o = hull(
         cyl(78, 2, "z", (0, 0, top_z - 1)),
-        cyl(d06 + 2 * WALL + 2, t06 / 2 + 8, "y", (el[0], el[1] - t06 / 4 - 4, el[2])),
+        cyl(d06 + 2 * UW + 2, t06 / 2 + 8, "y", (el[0], el[1] - t06 / 4 - 4, el[2])),
     )
     i = hull(
-        cyl(78 - 2 * WALL, 4, "z", (0, 0, top_z)),
-        cyl(d06 + 2, t06 / 2 + 8 - 2 * WALL, "y", (el[0], el[1] - t06 / 4 - 4 + WALL, el[2])),
+        cyl(78 - 2 * UW, 4, "z", (0, 0, top_z)),
+        cyl(d06 + 2, t06 / 2 + 8 - 2 * UW, "y", (el[0], el[1] - t06 / 4 - 4 + UW, el[2])),
     )
     upper = o - i - cyl(d06 + 3, t06 + 2, "y", el) - box((200, 200, 40), (0, 0, el[2] - 70))
     upper = upper - box((40, 20, 20), (-30, -10, el[2] + 30))  # harness exit to the elbow loop

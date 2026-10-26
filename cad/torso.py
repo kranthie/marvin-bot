@@ -171,15 +171,15 @@ def parts() -> list[Part]:
     )
     oplate = lighten(oplate, "x", hole=14, pitch=20, rim=8)
     out.append(Part("torso_compute_plate", "torso_link", "al6061", oplate, "cnc"))
-    # chest shell: front and sides, 2.5 mm, open at the back (battery) and top and bottom
+    # chest shell: front and sides, 2 mm, open at the back (battery) and top and bottom
     z0, z1 = base_z + t, sh[2] + 20
     outer = hull(
         box((118, 2 * y_low + 2 * t + 6, 2), (-1, 0, z0)),
         box((124, 2 * y_low + 2 * t + 6, 2), (0, 0, z1)),
     )
     inner_s = hull(
-        box((113, 2 * y_low + 2 * t + 1, 4), (-1, 0, z0)),
-        box((119, 2 * y_low + 2 * t + 1, 4), (0, 0, z1)),
+        box((114, 2 * y_low + 2 * t + 2, 4), (-1, 0, z0)),
+        box((120, 2 * y_low + 2 * t + 2, 4), (0, 0, z1)),
     )
     shell = outer - inner_s - box((80, 400, 1000), (-45 - 40, 0, 0))  # open back
     shell = shell - cyl(d03 + 10, 400, "y", (sh[0], 0, sh[2]))  # clear the shoulder motors

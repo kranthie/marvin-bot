@@ -57,13 +57,13 @@ FUSES = [5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 125, 150]
 # where the power distribution boards sit (link, xyz m): in the torso electronics bay and the
 # pelvis frame (skeleton.yaml's electronics boxes)
 HUBS = {
-    "torso_pdb": ("torso_link", [0.030, 0.0, 0.215]),
+    "torso_pdb": ("torso_link", [0.005, 0.001, 0.187]),
     "pelvis_pdb": ("pelvis", [-0.094, 0.0, 0.01]),
 }
 LIMBS = {  # harness: hub, motors in kinematic order
     "{side}_leg": (
         "pelvis_pdb",
-        ["hip_pitch", "hip_roll", "hip_yaw", "knee", "ankle_a", "ankle_b"],
+        ["hip_roll", "hip_pitch", "hip_yaw", "knee", "ankle_a", "ankle_b"],
     ),
     "{side}_arm": (
         "torso_pdb",
@@ -137,6 +137,9 @@ def build() -> str:
             length_m=round(math.dist(p, q) * ROUTE_FACTOR + loops + TERMINATION, 2),
             crosses=crossed,
             service_loop_m=round(loops, 2),
+            # a clip on each side of every loop: on the parent link and on the child link, so
+            # the joint only flexes the loop
+            clips=[[joints[j]["parent"], joints[j]["child"]] for j in crossed],
             current_a=round(amps, 1),
             power_awg=min(awg(amps), MIN_POWER_AWG) if amps else SERVO_AWG,
             signals=carries,
@@ -165,6 +168,7 @@ def build() -> str:
                 branch_current_a=amps,
                 branch_fuse_a=fuse(amps),
                 root_connectors=dict(
+                    bulkhead=f"elec_bulkhead_{template.split('_')[1]}_{side[0]}",
                     power=f"2-pin, rated >= {fuse(amps)} A (XT60 class), keyed",
                     signal=f"{2 * len(buses) + 2}-pin latching (CAN pairs, ground, spare)",
                 ),

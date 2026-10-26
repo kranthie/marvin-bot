@@ -392,6 +392,14 @@ def poses(joints: dict, ranges: dict) -> list[tuple[str, dict]]:
                 {f"{side}_shoulder_pitch": 60, f"{side}_shoulder_yaw": -90, f"{side}_elbow": 120},
             ),
         ]
+        for ap in (-40, 40):  # the ankle's corners, where the linkage is most stretched
+            for ar in (-20, 20):
+                out.append(
+                    (
+                        f"{side} ankle {ap:+d}/{ar:+d}",
+                        {f"{side}_ankle_pitch": ap, f"{side}_ankle_roll": ar},
+                    )
+                )
     out += [
         ("look down, turned", {"neck_pitch": 40, "neck_yaw": 60}),
         ("look up, turned", {"neck_pitch": -20, "neck_yaw": -60}),
@@ -451,6 +459,31 @@ def check(min_cm3: float = 0.5, parts_too: bool = True) -> list[str]:
             return m.transform(np.hstack([r, t[:, None]]).tolist())
 
         cache = {}
+        for side in ("left", "right"):
+            pq = np.radians(q.get(f"{side}_ankle_pitch", 0.0))
+            rq = np.radians(q.get(f"{side}_ankle_roll", 0.0))
+            for name, solid in ankle_linkage_solids(side, pq, rq):
+                lw = placed(solid, f"{side}_shin_link")
+                lb = np.array(lw.bounding_box())
+                for b in (
+                    f"{side}_shin_link",
+                    f"{side}_foot_link",
+                    f"{side}_thigh_link",
+                    f"{side}_ankle_link",
+                ):
+                    if b not in body_u:
+                        continue
+                    other = placed(body_u[b], b)
+                    ob = np.array(other.bounding_box())
+                    if np.any(lb[3:] < ob[:3]) or np.any(ob[3:] < lb[:3]):
+                        continue
+                    v = (lw ^ other).volume() / 1000
+                    key = (f"{side}_{name}", b, "part")
+                    if label == "zero":
+                        rest[key] = v
+                    v -= rest.get(key, 0.0)
+                    if v > min_cm3 and v > worst.get(key, (0, ""))[0]:
+                        worst[key] = (v, label)
         if parts_too:
             placed_b = {k: placed(v, k) for k, v in body_u.items()}
             for a in body_u:
@@ -490,6 +523,32 @@ def check(min_cm3: float = 0.5, parts_too: bool = True) -> list[str]:
         f"{'part' if len(k) == 3 else 'shell'} on {k[0]:24} x {k[1]:24} {v:6.1f} cm³ at {lbl}"
         for k, (v, lbl) in worst.items()
     ]
+
+
+def ankle_linkage_solids(side: str, pitch: float, roll: float):
+    """The two cranks and push rods of one ankle at a joint pose (radians), solved by
+    tools/ankle_linkage.py, as solids in the shin frame (mm): [(name, solid)]."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import ankle_linkage as al
+
+    skel = yaml.safe_load((ROOT / "description" / "skeleton.yaml").read_text())
+    lk = al.Linkage(skel["ankle_linkage"]["geometry"])
+    az = skel["joints"]["left_ankle_pitch"]["xyz"][2] * 1000  # ankle axis in the shin frame
+    sgn = 1 if side == "left" else -1
+    out = []
+    for i, name in enumerate(("a", "b")):
+        th = lk.crank(i, pitch, roll, lk.theta0)
+        if th is None:
+            continue
+        m = lk.motor[i] * 1000
+        tip = lk.tip(i, th) * 1000
+        foot = lk.foot_point(i, pitch, roll) * 1000
+        pts = [np.array([p_[0], sgn * p_[1], p_[2] + az]) for p_ in (m, tip, foot)]
+        crank = hull(cyl(36, 6, "y", pts[0]), cyl(18, 6, "y", pts[1]))
+        d = pts[2] - pts[1]
+        rod = hull(*[box((8, 8, 8), pts[1] + d * f) for f in (0.08, 0.92)])  # clear of the ends
+        out += [(f"crank_{name}", crank), (f"rod_{name}", rod)]
+    return out
 
 
 def hull_free_union(solids):

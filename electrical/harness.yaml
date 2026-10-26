@@ -5,9 +5,11 @@ main: {current_a: 78.5, power_awg: 6, fuse_a: 100}
 trunk:
   frm: torso_pdb
   to: pelvis_pdb
-  length_m: 0.65
+  length_m: 0.6
   crosses: [waist_yaw]
   service_loop_m: 0.11
+  clips:
+  - [pelvis, torso_link]
   current_a: 51.3
   power_awg: 8
   signals: [left_hip, left_shank, right_hip, right_shank, right_arm (waist motor)]
@@ -18,15 +20,18 @@ waist_motor:
   length_m: 0.29
   crosses: []
   service_loop_m: 0
+  clips: []
   current_a: 2.7
   power_awg: 16
   signals: [right_arm]
 head:
   frm: torso_pdb
   to: neck_pitch
-  length_m: 0.33
+  length_m: 0.36
   crosses: [neck_yaw]
   service_loop_m: 0.07
+  clips:
+  - [torso_link, neck_link]
   current_a: 0.0
   power_awg: 20
   signals: [servo (12 V + serial), camera USB-C]
@@ -36,31 +41,36 @@ limbs:
     buses: [left_hip, left_shank]
     branch_current_a: 24.3
     branch_fuse_a: 40
-    root_connectors: {power: '2-pin, rated >= 40 A (XT60 class), keyed', signal: '6-pin latching (CAN
-        pairs, ground, spare)'}
-    total_length_m: 1.97
+    root_connectors: {bulkhead: elec_bulkhead_leg_l, power: '2-pin, rated >= 40 A (XT60 class), keyed',
+      signal: '6-pin latching (CAN pairs, ground, spare)'}
+    total_length_m: 1.82
     segments:
     - frm: pelvis_pdb
-      to: left_hip_pitch
-      length_m: 0.28
-      crosses: [left_hip_roll]
-      service_loop_m: 0.04
+      to: left_hip_roll
+      length_m: 0.21
+      crosses: []
+      service_loop_m: 0
+      clips: []
       current_a: 24.3
       power_awg: 12
       signals: [left_hip, left_shank]
-    - frm: left_hip_pitch
-      to: left_hip_roll
+    - frm: left_hip_roll
+      to: left_hip_pitch
       length_m: 0.25
       crosses: [left_hip_roll]
       service_loop_m: 0.04
+      clips:
+      - [pelvis, left_hip_roll_link]
       current_a: 18.9
       power_awg: 14
       signals: [left_hip, left_shank]
-    - frm: left_hip_roll
+    - frm: left_hip_pitch
       to: left_hip_yaw
-      length_m: 0.44
-      crosses: [left_hip_pitch, left_hip_roll]
-      service_loop_m: 0.13
+      length_m: 0.36
+      crosses: [left_hip_pitch]
+      service_loop_m: 0.09
+      clips:
+      - [left_hip_roll_link, left_hip_pitch_link]
       current_a: 13.4
       power_awg: 16
       signals: [left_hip, left_shank]
@@ -69,6 +79,8 @@ limbs:
       length_m: 0.34
       crosses: [left_hip_yaw]
       service_loop_m: 0.05
+      clips:
+      - [left_hip_pitch_link, left_thigh_link]
       current_a: 10.8
       power_awg: 16
       signals: [left_shank]
@@ -77,6 +89,8 @@ limbs:
       length_m: 0.43
       crosses: [left_knee]
       service_loop_m: 0.08
+      clips:
+      - [left_thigh_link, left_shin_link]
       current_a: 5.3
       power_awg: 16
       signals: [left_shank]
@@ -85,6 +99,7 @@ limbs:
       length_m: 0.23
       crosses: []
       service_loop_m: 0
+      clips: []
       current_a: 2.7
       power_awg: 16
       signals: [left_shank]
@@ -93,31 +108,36 @@ limbs:
     buses: [right_hip, right_shank]
     branch_current_a: 24.3
     branch_fuse_a: 40
-    root_connectors: {power: '2-pin, rated >= 40 A (XT60 class), keyed', signal: '6-pin latching (CAN
-        pairs, ground, spare)'}
-    total_length_m: 1.97
+    root_connectors: {bulkhead: elec_bulkhead_leg_r, power: '2-pin, rated >= 40 A (XT60 class), keyed',
+      signal: '6-pin latching (CAN pairs, ground, spare)'}
+    total_length_m: 1.82
     segments:
     - frm: pelvis_pdb
-      to: right_hip_pitch
-      length_m: 0.28
-      crosses: [right_hip_roll]
-      service_loop_m: 0.04
+      to: right_hip_roll
+      length_m: 0.21
+      crosses: []
+      service_loop_m: 0
+      clips: []
       current_a: 24.3
       power_awg: 12
       signals: [right_hip, right_shank]
-    - frm: right_hip_pitch
-      to: right_hip_roll
+    - frm: right_hip_roll
+      to: right_hip_pitch
       length_m: 0.25
       crosses: [right_hip_roll]
       service_loop_m: 0.04
+      clips:
+      - [pelvis, right_hip_roll_link]
       current_a: 18.9
       power_awg: 14
       signals: [right_hip, right_shank]
-    - frm: right_hip_roll
+    - frm: right_hip_pitch
       to: right_hip_yaw
-      length_m: 0.44
-      crosses: [right_hip_pitch, right_hip_roll]
-      service_loop_m: 0.13
+      length_m: 0.36
+      crosses: [right_hip_pitch]
+      service_loop_m: 0.09
+      clips:
+      - [right_hip_roll_link, right_hip_pitch_link]
       current_a: 13.4
       power_awg: 16
       signals: [right_hip, right_shank]
@@ -126,6 +146,8 @@ limbs:
       length_m: 0.34
       crosses: [right_hip_yaw]
       service_loop_m: 0.05
+      clips:
+      - [right_hip_pitch_link, right_thigh_link]
       current_a: 10.8
       power_awg: 16
       signals: [right_shank]
@@ -134,6 +156,8 @@ limbs:
       length_m: 0.43
       crosses: [right_knee]
       service_loop_m: 0.08
+      clips:
+      - [right_thigh_link, right_shin_link]
       current_a: 5.3
       power_awg: 16
       signals: [right_shank]
@@ -142,6 +166,7 @@ limbs:
       length_m: 0.23
       crosses: []
       service_loop_m: 0
+      clips: []
       current_a: 2.7
       power_awg: 16
       signals: [right_shank]
@@ -150,15 +175,16 @@ limbs:
     buses: [left_arm, servo]
     branch_current_a: 13.6
     branch_fuse_a: 20
-    root_connectors: {power: '2-pin, rated >= 20 A (XT60 class), keyed', signal: '6-pin latching (CAN
-        pairs, ground, spare)'}
-    total_length_m: 1.78
+    root_connectors: {bulkhead: elec_bulkhead_arm_l, power: '2-pin, rated >= 20 A (XT60 class), keyed',
+      signal: '6-pin latching (CAN pairs, ground, spare)'}
+    total_length_m: 1.79
     segments:
     - frm: torso_pdb
       to: left_shoulder_pitch
-      length_m: 0.2
+      length_m: 0.21
       crosses: []
       service_loop_m: 0
+      clips: []
       current_a: 13.6
       power_awg: 16
       signals: [left_arm, servo]
@@ -167,6 +193,8 @@ limbs:
       length_m: 0.35
       crosses: [left_shoulder_pitch]
       service_loop_m: 0.15
+      clips:
+      - [torso_link, left_shoulder_pitch_link]
       current_a: 10.9
       power_awg: 16
       signals: [left_arm, servo]
@@ -175,6 +203,8 @@ limbs:
       length_m: 0.26
       crosses: [left_shoulder_roll]
       service_loop_m: 0.07
+      clips:
+      - [left_shoulder_pitch_link, left_shoulder_roll_link]
       current_a: 8.3
       power_awg: 16
       signals: [left_arm, servo]
@@ -183,6 +213,8 @@ limbs:
       length_m: 0.34
       crosses: [left_shoulder_yaw]
       service_loop_m: 0.11
+      clips:
+      - [left_shoulder_roll_link, left_upper_arm_link]
       current_a: 4.7
       power_awg: 16
       signals: [left_arm, servo]
@@ -191,6 +223,8 @@ limbs:
       length_m: 0.32
       crosses: [left_elbow]
       service_loop_m: 0.08
+      clips:
+      - [left_upper_arm_link, left_forearm_link]
       current_a: 1.1
       power_awg: 16
       signals: [left_arm, servo]
@@ -199,6 +233,8 @@ limbs:
       length_m: 0.31
       crosses: [left_wrist_yaw]
       service_loop_m: 0.11
+      clips:
+      - [left_forearm_link, left_wrist_link]
       current_a: 0.0
       power_awg: 20
       signals: [servo]
@@ -207,15 +243,16 @@ limbs:
     buses: [right_arm, servo]
     branch_current_a: 13.6
     branch_fuse_a: 20
-    root_connectors: {power: '2-pin, rated >= 20 A (XT60 class), keyed', signal: '6-pin latching (CAN
-        pairs, ground, spare)'}
-    total_length_m: 1.78
+    root_connectors: {bulkhead: elec_bulkhead_arm_r, power: '2-pin, rated >= 20 A (XT60 class), keyed',
+      signal: '6-pin latching (CAN pairs, ground, spare)'}
+    total_length_m: 1.79
     segments:
     - frm: torso_pdb
       to: right_shoulder_pitch
-      length_m: 0.2
+      length_m: 0.21
       crosses: []
       service_loop_m: 0
+      clips: []
       current_a: 13.6
       power_awg: 16
       signals: [right_arm, servo]
@@ -224,6 +261,8 @@ limbs:
       length_m: 0.35
       crosses: [right_shoulder_pitch]
       service_loop_m: 0.15
+      clips:
+      - [torso_link, right_shoulder_pitch_link]
       current_a: 10.9
       power_awg: 16
       signals: [right_arm, servo]
@@ -232,6 +271,8 @@ limbs:
       length_m: 0.26
       crosses: [right_shoulder_roll]
       service_loop_m: 0.07
+      clips:
+      - [right_shoulder_pitch_link, right_shoulder_roll_link]
       current_a: 8.3
       power_awg: 16
       signals: [right_arm, servo]
@@ -240,6 +281,8 @@ limbs:
       length_m: 0.34
       crosses: [right_shoulder_yaw]
       service_loop_m: 0.11
+      clips:
+      - [right_shoulder_roll_link, right_upper_arm_link]
       current_a: 4.7
       power_awg: 16
       signals: [right_arm, servo]
@@ -248,6 +291,8 @@ limbs:
       length_m: 0.32
       crosses: [right_elbow]
       service_loop_m: 0.08
+      clips:
+      - [right_upper_arm_link, right_forearm_link]
       current_a: 1.1
       power_awg: 16
       signals: [right_arm, servo]
@@ -256,6 +301,8 @@ limbs:
       length_m: 0.31
       crosses: [right_wrist_yaw]
       service_loop_m: 0.11
+      clips:
+      - [right_forearm_link, right_wrist_link]
       current_a: 0.0
       power_awg: 20
       signals: [servo]

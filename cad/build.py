@@ -29,7 +29,7 @@ import numpy as np
 import trimesh
 import yaml
 
-from . import arm, covers, head, leg, torso
+from . import arm, covers, electrical, head, leg, torso
 
 ROOT = Path(__file__).resolve().parent.parent
 MESHES = ROOT / "description" / "meshes"
@@ -37,6 +37,7 @@ MODEL = ROOT / "description" / "cad_model.yaml"
 MILL_MM = (200.0, 150.0, 60.0)  # usable X, Y, stock thickness (mm), with the tool changer fitted
 PRINT_MM = (250.0, 250.0, 250.0)
 BUDGET = {
+    "elec_": "electronics",  # first: electronics names also name their bay
     "foot": "feet",
     "pelvis": "pelvis",
     "torso": "torso",
@@ -66,7 +67,14 @@ def r6(v) -> list[float]:
 
 
 def build() -> tuple[str, dict, list]:
-    parts = leg.all_parts() + torso.parts() + arm.all_parts() + head.parts() + covers.all_parts()
+    parts = (
+        leg.all_parts()
+        + torso.parts()
+        + arm.all_parts()
+        + head.parts()
+        + electrical.parts()
+        + covers.all_parts()
+    )
     model, meshes, too_big = {}, {}, []
     for p in parts:
         mass, com, inertia = p.mass_properties()
