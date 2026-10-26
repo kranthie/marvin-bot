@@ -7,7 +7,7 @@
 | ID | Requirement | Target | Level |
 |---|---|---|---|
 | R1 | Standing height | 1.20–1.30 m | must |
-| R2 | Total mass with battery | ≤35 kg target, ≤38 kg hard limit | must |
+| R2 | Total mass with battery | ≤35 kg target, ≤40 kg hard limit (raised from 38 kg after the leg strength pass, 2026-10-26) | must |
 | R3 | Hip axis to sole | ≥0.65 m (needed for 17–18 cm stairs) | must |
 
 ## Mobility

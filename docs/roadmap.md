@@ -36,7 +36,8 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Packaging check with STEP-model actuator envelopes (`tools/check_packaging.py`); thigh layout, knee range and motor positions fixed
 - [x] Code-CAD of the legs, first pass (`cad/leg.py`, `cad/build.py`): every part fits the mill or printer (foot base plates cut by a service); masses and inertias in the URDF
 - [x] Strength check, hand calcs on the CAD sections (`cad/strength.py`): landing case fails five one-sided parts
-- [ ] Leg CAD second pass: far-side bearings (knee, hip roll, hip yaw), stiffer hip block, ribbed foot; fasteners; re-check strength and mass
+- [x] Leg CAD second pass: far-side bearings (knee, hip roll), channel-flanged hip block, ribbed foot; passes the strength check (worst SF 2.4); robot 39.55 kg, limit raised to 40 kg
+- [ ] Leg CAD: fasteners, bearing seats, hip yaw far-side support
 - [ ] CAD for pelvis, torso, arms, head
 
 ## Phase 2 preparation
@@ -56,4 +57,4 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 8. Desktop-CNC feeds and achievable accuracy in 6061 (coupon cuts).
 9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
-11. Knee and hip-roll heating on slow stairs: the static step-up check puts the stance knee at ~106% and hip roll at ~87% of rated torque (rated assumes a 345 × 345 mm aluminium heat sink); measure RS04 heating at 40-45 N·m in phase 2 and design the knee's heat path (thigh core as heat sink, airflow) accordingly.
+11. Knee and hip-roll heating on slow stairs (knee 115% of rated in the static check at 39.55 kg): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.

@@ -13,7 +13,7 @@ robot:
   version: "0.2"
   height: 1.215
   mass_target_kg: 35.0
-  mass_limit_kg: 38.0
+  mass_limit_kg: 40.0
 
 dimensions:
   hip_axis_height: 0.650   # hip pitch axis to sole (53% of height)

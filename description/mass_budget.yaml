@@ -3,8 +3,8 @@
 # basis: estimate = engineering guess, to be replaced by CAD-computed (cad) and then weighed (weighed).
 
 items:
-  leg_structure:     {mass: 3.443, basis: cad, note: "two legs, cad/leg.py first pass: pocketed aluminium brackets and plates, printed thigh shells, ankle linkages; no fasteners or bearings yet"}
-  feet:              {mass: 0.918, basis: cad, note: "two feet, cad/leg.py: pocketed aluminium base, heel posts, roll-bearing lugs, 4 mm TPU sole"}
+  leg_structure:     {mass: 4.750, basis: cad, note: "two legs, cad/leg.py second pass: far-side bearings at knee and hip roll, channel-flanged hip block, pocketed plates; passes cad/strength.py; no fasteners yet"}
+  feet:              {mass: 1.175, basis: cad, note: "two feet, cad/leg.py: 5 mm pocketed base with two 6 x 16 mm ribs, heel posts, roll-bearing lugs, 4 mm TPU sole"}
   pelvis:            {mass: 1.0, basis: estimate, note: "frame carrying the hip pitch motors and the battery cradle"}
   torso:             {mass: 1.8, basis: estimate, note: "aluminium spine and structural chest shell"}
   arm_structure:     {mass: 1.0, basis: estimate, note: "two arms, printed structural shells with aluminium mounting rings"}

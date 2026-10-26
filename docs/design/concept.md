@@ -35,6 +35,8 @@ The goal is a robot that looks finished without a separate cover, because the vi
 - **Feet:** flat aluminium plates with replaceable rubber or TPU soles; no toe joint in v1.
 - **Cables:** each limb's CAN and power run through the joints with service loops; connectors at each limb root so a limb can be removed as a unit.
 
+Stair climbing (status, open issues and options) has its own note: [stairs.md](stairs.md).
+
 ## Open design questions for phase 1
 
 - Knee motor at the joint (v1) or near the hip with a linkage: decided by simulated leg inertia and torque.

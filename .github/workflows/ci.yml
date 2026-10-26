@@ -18,6 +18,7 @@ jobs:
       - run: ruff format --check .
       - run: pytest -q tests
       - run: python -m cad.build --check
+      - run: python -m cad.strength --check
       - run: python -m cad.build > /dev/null  # meshes (git-ignored) for the MuJoCo checks
       - run: python tools/check_description.py
       - run: python tools/bom_summary.py

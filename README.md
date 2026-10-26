@@ -60,6 +60,7 @@ python tools/build_urdf.py --check  # URDF matches the description files
 
 pip install -e ".[cad]"
 python -m cad.build                 # leg meshes, masses and inertias; part sizes vs mill and printer
+python -m cad.strength              # hand-calc strength check of the leg parts
 
 pip install -e ".[sim]"
 python sim/mujoco/check_standing.py # stands in MuJoCo; joint torques against ratings

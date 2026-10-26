@@ -52,8 +52,10 @@ def parts() -> list[Part]:
     link = _skel["ankle_linkage"]["geometry"]
     d04, t04 = env("RS04")
     d03, t03 = env("RS03")
-    plate = 6.0  # motor flanges (strength pass to confirm)
+    plate = 6.0  # motor flanges
     web_t = 6.0  # side plates and webs, pocketed
+    hip_t = 8.0  # hip back plate, with edge flanges: it carries the leg's landing moment
+    brg_d, brg_w = 42.0, 7.0  # 6806 far-side bearing (30 x 42 x 7 mm)
     out: list[Part] = []
 
     # --- hip pitch link: frame on the hip pitch axis; the pitch RS04 is centred here (on the
@@ -63,23 +65,42 @@ def parts() -> list[Part]:
     roll_back = roll_c[0] - t04 / 2  # its back face (x)
     flange = cyl(80, plate, "y", (0, face + plate / 2, 0))
     out.append(Part("left_hip_pitch_flange", "left_hip_pitch_link", "al6061", flange, "cnc"))
-    side_y = face + plate + web_t / 2
+    side_t = 8.0  # SF 2.7 in the landing case at 8 mm (cad/strength.py)
+    side_y = face + plate + side_t / 2
     roll_clear = cyl(d04 + 6, t04 + 8, "x", roll_c)
     side = (
         hull(
-            cyl(80, web_t, "y", (0, side_y, 0)),
-            box((16, web_t, 50), (roll_back - plate - 8, side_y, 5)),
+            cyl(80, side_t, "y", (0, side_y, 0)),
+            box((16, side_t, 50), (roll_back - hip_t - 8, side_y, 5)),
         )
         - roll_clear
     )
-    side = lighten(side, "y", keep=[cyl(90, 40, "y", (0, side_y, 0))])
+    side = lighten(side, "y", keep=[cyl(90, 40, "y", (0, side_y, 0))], hole=20, rim=12)
     out.append(Part("left_hip_yoke_side", "left_hip_pitch_link", "al6061", side, "cnc"))
-    back_x = roll_back - plate / 2
+    back_x = roll_back - hip_t / 2
+    # the back plate also carries the roll joint's far-side stub axle (behind it, on the roll axis)
+    stub = cyl(30, 14, "x", (back_x - hip_t / 2 - 7, roll_c[1], roll_c[2]))
+    # full width (110 mm) up to the top: a narrow neck to the side plate was the weak point
     back = hull(
-        cyl(d04 - 10, web_t, "x", (back_x, roll_c[1], roll_c[2])),
-        box((web_t, 14, 10), (back_x, side_y, 25)),
+        cyl(d04 - 10, hip_t, "x", (back_x, roll_c[1], roll_c[2])),
+        box((hip_t, d04 - 10, 12), (back_x, roll_c[1], 24)),
     )
-    back = lighten(back, "x", keep=[cyl(60, 40, "x", (back_x, roll_c[1], roll_c[2]))])
+    # flanges along both vertical edges, pointing back: a channel section, which carries the
+    # out-of-plane landing moment far better than the flat plate alone
+    flanges = [
+        box(
+            (22, 6, 30 - roll_c[2]),
+            (back_x - hip_t / 2 - 11, roll_c[1] + s * (d04 / 2 - 8), (30 + roll_c[2]) / 2),
+        )
+        for s in (1, -1)
+    ]
+    back = union(
+        lighten(
+            back, "x", keep=[cyl(70, 40, "x", (back_x, roll_c[1], roll_c[2]))], hole=18, rim=14
+        ),
+        stub,
+        *flanges,
+    )
     out.append(Part("left_hip_yoke_back", "left_hip_pitch_link", "al6061", back, "cnc"))
 
     # --- hip roll link: frame on the roll axis; roll output faces forward (+x) at
@@ -88,16 +109,41 @@ def parts() -> list[Part]:
     out_x = roll_c[0] - rj[0] + t04 / 2  # roll output face, in this frame
     yaw_c = J["left_hip_yaw"]
     yaw_top = yaw_c[2] + t03 / 2
+    # a U-yoke around the roll RS04: front plate on its output, rear plate on a far-side bearing
+    # on the hip block's stub axle, a bar under the motor joining them
+    under = -d04 / 2 - 8  # bar top, below the roll motor
     front = hull(
         cyl(80, plate, "x", (out_x + plate / 2, 0, 0)),
-        box((plate, 80, plate), (out_x + plate / 2, 0, yaw_top + plate / 2)),
+        box((plate, 80, plate), (out_x + plate / 2, 0, under - plate / 2)),
     )
-    front = lighten(front, "x", keep=[cyl(60, 40, "x", (out_x, 0, 0))], hole=16, pitch=24)
+    front = lighten(front, "x", keep=[cyl(60, 40, "x", (out_x, 0, 0))], hole=20, pitch=24, rim=7)
+    rear_x = (roll_c[0] - rj[0]) - t04 / 2 - hip_t - 14 - plate / 2
+    rear = hull(
+        cyl(brg_d + 16, plate, "x", (rear_x, 0, 0)),
+        box((plate, 60, plate), (rear_x, 0, under - plate / 2)),
+    ) - cyl(brg_d, plate + 2, "x", (rear_x, 0, 0))
+    bar = box((out_x - rear_x + plate, 60, 10), ((out_x + rear_x) / 2, 0, under - 5))
+    bar = bar - box(
+        (out_x - rear_x - 10, 44, 12), ((out_x + rear_x) / 2, 0, under - 5 - 3)
+    )  # channel
+    out.append(Part("left_hip_roll_rear", "left_hip_roll_link", "al6061", rear, "cnc"))
+    out.append(Part("left_hip_roll_bar", "left_hip_roll_link", "al6061", bar, "cnc"))
+    out.append(
+        Part(
+            "left_hip_roll_bearing",
+            "left_hip_roll_link",
+            "bought",
+            cyl(brg_d, brg_w, "x", (rear_x, 0, 0)) - cyl(30, brg_w + 2, "x", (rear_x, 0, 0)),
+            "bought",
+            mass_g=25.0,
+            notes="6806-2RS far-side bearing",
+        )
+    )
     top = hull(
         cyl(d03 + 4, web_t, "z", (0, 0, yaw_top + web_t / 2)),
         box((14, 80, web_t), (out_x + 7, 0, yaw_top + web_t / 2)),
     )
-    top = lighten(top, "z", keep=[cyl(44, 40, "z", (0, 0, yaw_top))])
+    top = lighten(top, "z", keep=[cyl(44, 40, "z", (0, 0, yaw_top))], hole=24, pitch=28, rim=8)
     # two plates bolted at the corner: an L machined from one block would need 80 mm stock
     out.append(Part("left_hip_roll_front", "left_hip_roll_link", "al6061", front, "cnc"))
     out.append(Part("left_hip_roll_top", "left_hip_roll_link", "al6061", top, "cnc"))
@@ -116,6 +162,8 @@ def parts() -> list[Part]:
         cyl(d04 + 4, web_t, "y", (0, py, knee[2])),
     )
     tplate = lighten(tplate, "y", keep=[cyl(70, 40, "y", (0, py, knee[2]))])
+    # stub axle for the shin's far-side bearing, on the knee axis outside the plate
+    tplate = union(tplate, cyl(30, 12, "y", (0, py + web_t / 2 + 6, knee[2])))
     out.append(Part("left_thigh_plate", "left_thigh_link", "al6061", tplate, "cnc"))
     shell_top, shell_bot = yaw_out - 12, knee[2] + d04 / 2 + 4
     outer = hull(
@@ -136,12 +184,33 @@ def parts() -> list[Part]:
         cyl(84, plate, "y", (0, fy, 0)),
         box((50, plate, 15), (0, fy, -d04 / 2 - 30)),
     )
-    sflange = lighten(sflange, "y", keep=[cyl(64, 40, "y", (0, fy, 0))], hole=16, pitch=22)
-    tab = box((50, -fy + 3, 15), (0, fy / 2 + 1.5, -d04 / 2 - 30)) - box(
-        (38, -fy - 9, 17), (0, fy / 2 + 1.5, -d04 / 2 - 30)
+    sflange = lighten(sflange, "y", keep=[cyl(64, 40, "y", (0, fy, 0))], hole=22, pitch=25, rim=7)
+    # a U-yoke around the knee RS04: this inner flange on its output, an outer plate on a
+    # far-side bearing on the thigh plate's stub axle, a bridge under the motor joining them
+    oy = t04 / 2 + web_t + 2 + 6 + plate / 2  # outside the thigh plate and its stub
+    outer_pl = hull(
+        cyl(brg_d + 16, plate, "y", (0, oy, 0)),
+        box((50, plate, 15), (0, oy, -d04 / 2 - 30)),
+    ) - cyl(brg_d, plate + 2, "y", (0, oy, 0))
+    outer_pl = lighten(
+        outer_pl, "y", keep=[cyl(brg_d + 10, 40, "y", (0, oy, 0))], hole=14, pitch=20
+    )
+    bridge = box((50, oy - fy + plate, 15), (0, (oy + fy) / 2, -d04 / 2 - 30)) - box(
+        (38, oy - fy - plate - 6, 17), (0, (oy + fy) / 2, -d04 / 2 - 30)
     )  # a U-channel, not a block
+    out.append(Part("left_shin_knee_flange", "left_shin_link", "al6061", sflange, "cnc"))
+    out.append(Part("left_shin_knee_outer", "left_shin_link", "al6061", outer_pl, "cnc"))
+    out.append(Part("left_shin_bridge", "left_shin_link", "al6061", bridge, "cnc"))
     out.append(
-        Part("left_shin_knee_flange", "left_shin_link", "al6061", union(sflange, tab), "cnc")
+        Part(
+            "left_knee_bearing",
+            "left_shin_link",
+            "bought",
+            cyl(brg_d, brg_w, "y", (0, oy, 0)) - cyl(30, brg_w + 2, "y", (0, oy, 0)),
+            "bought",
+            mass_g=25.0,
+            notes="6806-2RS far-side bearing",
+        )
     )
     web_top = -d04 / 2 - 30
     web = hull(
@@ -218,8 +287,12 @@ def parts() -> list[Part]:
     ]
     # the base is longer than the desktop mill's travel: a flat plate cut by an online
     # laser or water-jet service; posts and lugs are machined and bolted on
-    fbase = lighten(box((fl - 10, fw - 10, 5), (fx, 0, pz)), "z", hole=28, pitch=32, rim=8)
+    fbase = lighten(box((fl - 10, fw - 10, 5), (fx, 0, pz)), "z", hole=24, pitch=30, rim=10)
     out.append(Part("left_foot_base", "left_foot_link", "al6061", fbase, "service"))
+    # stiffening ribs along the foot either side of the lugs (bolted on; the base is a flat plate)
+    for k, ry in (("rib_a", 24), ("rib_b", -24)):
+        rib = box((fl - 50, 6, 16), (fx + 10, ry, pz + 2.5 + 8))  # 190 mm: fits the mill
+        out.append(Part(f"left_foot_{k}", "left_foot_link", "al6061", rib, "cnc"))
     for name, solid in (
         ("post_a", posts[0]),
         ("post_b", posts[1]),

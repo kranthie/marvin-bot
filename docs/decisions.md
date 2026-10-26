@@ -2,6 +2,12 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: keep the second-pass leg; mass limit 40 kg; knee decided after measurement
+
+The second-pass leg passes `cad/strength.py` (worst safety factor 2.4) and puts the robot at 39.55 kg. The computer (Jetson AGX Orin developer kit) and the battery (13S3P) stay as they are, so the hard mass limit goes from 38 to 40 kg; the 35 kg target stays. Effect on the actuators: peak torques stay at or below 38% of peak in the static stair check and below 76% while walking; the continuous rating binds at the knee on slow stairs (46 N·m, 115% of the RS04's rating) and is close at hip roll (92%).
+
+The knee stays an RS04 for now. Whether it needs a 1.5:1 reduction stage, better cooling or nothing is decided from the stair policy's measured knee RMS, the phase 2 bench thermal test and the torso and arm CAD masses, before the leg actuators are ordered. The issues, options and comparison with Asimov 1 and Roboto Origin are in [design/stairs.md](design/stairs.md).
+
 ## 2026-10-26: strength check finds one-sided joints too weak; second pass adds far-side supports
 
 `cad/strength.py` cuts each load-carrying leg part at stations along its load path, takes the real cross section of the CAD solid (holes included), and checks bending-plus-axial stress against yield (target safety factor 2, torsion and stress concentrations excluded) for two cases: a landing load at the ankle (3 × body weight up, 0.5 × fore-aft, 0.3 × sideways, straight leg) and each joint's peak torque. Peak torques pass everywhere (SF 4–9). The landing case fails five first-pass parts: foot base plate (SF 0.3), hip yoke back plate (0.3), hip roll front plate (0.6), shin knee flange (0.8), hip yoke side plate (1.4). Shin web and thigh plate pass (2.7–2.8).

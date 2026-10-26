@@ -88,7 +88,7 @@ def bending_stress(sec, n_force: float, m_u: float, m_v: float) -> float:
 
 @dataclass
 class Check:
-    part: str
+    part: str  # one part, or several joined by "+" and checked as one section (a yoke)
     axis: str  # cut perpendicular to this axis
     stations: list[float]  # mm along the axis
     point: tuple  # where the landing force acts, in the part's link frame (mm)
@@ -115,7 +115,7 @@ def checks(peak: dict, mass: float) -> list[Check]:
         ),
         Check("left_ankle_fork", "z", list(np.linspace(-250, -270, 3)), tuple(ankle_shin)),
         Check(
-            "left_shin_knee_flange",
+            "left_shin_knee_flange+left_shin_knee_outer",
             "z",
             list(np.linspace(-30, -85, 6)),
             tuple(ankle_shin),
@@ -129,7 +129,7 @@ def checks(peak: dict, mass: float) -> list[Check]:
             (0.0, 1000 * peak["left_knee"], 0.0),
         ),
         Check(
-            "left_hip_roll_front",
+            "left_hip_roll_front+left_hip_roll_rear",
             "z",
             list(np.linspace(-20, 20, 5)),
             tuple(ankle_roll_frame),
@@ -138,8 +138,9 @@ def checks(peak: dict, mass: float) -> list[Check]:
         Check(
             "left_hip_yoke_back",
             "z",
-            list(np.linspace(-130, -40, 7)),
-            tuple(ankle_pitch_frame - np.array([0, 75, 0]) * 0),
+            # load enters at the roll axis (z = -85) and leaves at the top, into the side plate
+            list(np.linspace(-80, 15, 7)),
+            tuple(ankle_pitch_frame),
             (1000 * peak["left_hip_roll"], 0.0, 0.0),
         ),
         Check(
@@ -149,7 +150,12 @@ def checks(peak: dict, mass: float) -> list[Check]:
             tuple(ankle_pitch_frame),
             (0.0, 1000 * peak["left_hip_pitch"], 0.0),
         ),
-        Check("left_foot_base", "x", list(np.linspace(40, 140, 6)), (150.0, 0.0, -60.0)),
+        Check(
+            "left_foot_base+left_foot_rib_a+left_foot_rib_b",
+            "x",
+            list(np.linspace(40, 140, 6)),
+            (150.0, 0.0, -60.0),
+        ),
     ]
 
 
@@ -174,16 +180,20 @@ def main() -> int:
     print(
         f"robot {mass:.1f} kg; landing load at the ankle {np.round(landing):} N; target SF {TARGET}"
     )
-    print(f"{'part':24} {'case':8} {'station':>8} {'stress':>8} {'yield':>6} {'SF':>5}")
+    print(f"{'part':34} {'case':8} {'station':>8} {'stress':>8} {'yield':>6} {'SF':>5}")
     for c in checks(peak, mass):
-        part = parts[c.part]
-        ys = YIELD_MPA[part.material]
+        names = c.part.split("+")
+        ys = YIELD_MPA[parts[names[0]].material]
+        solid = parts[names[0]].solid
+        for n in names[1:]:
+            solid = solid + parts[n].solid
+        label = names[0] + (" (+ far side)" if len(names) > 1 else "")
         ax = "xyz".index(c.axis)
         uv = [i for i in range(3) if i != ax]
         for case in ("landing", "peak torque"):
             worst = (0.0, None)
             for s in c.stations:
-                sec = section(part.solid, c.axis, s)
+                sec = section(solid, c.axis, s)
                 if sec is None:
                     continue
                 centroid = np.zeros(3)
@@ -205,7 +215,7 @@ def main() -> int:
             sf = ys / worst[0] if worst[0] > 0 else np.inf
             worst_sf = min(worst_sf, sf)
             flag = "  <-- below target" if sf < TARGET else ""
-            print(f"{c.part:24} {case:8} {worst[1]:8.0f} {worst[0]:8.0f} {ys:6.0f} {sf:5.1f}{flag}")
+            print(f"{label:34} {case:8} {worst[1]:8.0f} {worst[0]:8.0f} {ys:6.0f} {sf:5.1f}{flag}")
     if args.check and worst_sf < TARGET:
         return 1
     return 0
