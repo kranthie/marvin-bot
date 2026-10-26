@@ -64,15 +64,36 @@ def draw_act(ax, kind, u, z, axis, view):
     else:
         w, h = (d, t) if axis == "z" else (t, d)
         ax.add_patch(
-            FancyBboxPatch((u - w / 2, z - h / 2), w, h, boxstyle="round,pad=0,rounding_size=6",
-                           fc=ALU, ec="#555", lw=0.8, zorder=5)
+            FancyBboxPatch(
+                (u - w / 2, z - h / 2),
+                w,
+                h,
+                boxstyle="round,pad=0,rounding_size=6",
+                fc=ALU,
+                ec="#555",
+                lw=0.8,
+                zorder=5,
+            )
         )
-        ax.add_patch(Rectangle((u - w / 2 + 3, z - h / 2 + 3), w - 6, h - 6, fc="none", ec=c, lw=2.0, zorder=6))
+        ax.add_patch(
+            Rectangle(
+                (u - w / 2 + 3, z - h / 2 + 3), w - 6, h - 6, fc="none", ec=c, lw=2.0, zorder=6
+            )
+        )
 
 
 def taper(ax, u0, z0, w0, u1, z1, w1, fc=LINK, z=2, ec="#1b1e22"):
-    return ax.add_patch(Polygon([(u0 - w0 / 2, z0), (u0 + w0 / 2, z0), (u1 + w1 / 2, z1), (u1 - w1 / 2, z1)],
-                         closed=True, fc=fc, ec=ec, lw=0.8, zorder=z, joinstyle="round"))
+    return ax.add_patch(
+        Polygon(
+            [(u0 - w0 / 2, z0), (u0 + w0 / 2, z0), (u1 + w1 / 2, z1), (u1 - w1 / 2, z1)],
+            closed=True,
+            fc=fc,
+            ec=ec,
+            lw=0.8,
+            zorder=z,
+            joinstyle="round",
+        )
+    )
 
 
 def body(ax, view):
@@ -83,64 +104,217 @@ def body(ax, view):
         taper(ax, lx, 650, 118 if view == "front" else 128, lx, 400, 92 if view == "front" else 104)
         taper(ax, lx, 340, 96 if view == "front" else 100, lx, 95, 58 if view == "front" else 62)
         if view == "front":
-            ax.add_patch(FancyBboxPatch((lx - 48, 0), 96, 34, boxstyle="round,pad=0,rounding_size=10",
-                                        fc=LINK, ec="#1b1e22", zorder=3))
+            ax.add_patch(
+                FancyBboxPatch(
+                    (lx - 48, 0),
+                    96,
+                    34,
+                    boxstyle="round,pad=0,rounding_size=10",
+                    fc=LINK,
+                    ec="#1b1e22",
+                    zorder=3,
+                )
+            )
             for dx in (-30, 30):  # push rods
                 ax.plot([lx + dx, lx + dx * 0.9], [240, 82], color="#8a9099", lw=3, zorder=4)
         else:
-            ax.add_patch(Polygon([(-75, 0), (165, 0), (175, 12), (150, 30), (40, 42), (-60, 40), (-80, 18)],
-                                 fc=LINK, ec="#1b1e22", zorder=3))
+            ax.add_patch(
+                Polygon(
+                    [(-75, 0), (165, 0), (175, 12), (150, 30), (40, 42), (-60, 40), (-80, 18)],
+                    fc=LINK,
+                    ec="#1b1e22",
+                    zorder=3,
+                )
+            )
             ax.plot([-18 + 45, -38], [262, 78], color="#8a9099", lw=3, zorder=4)
             ax.plot([-18 - 40, -42], [250, 78], color="#8a9099", lw=3, zorder=4)
-        ax.add_patch(Circle((lx if view == "front" else 0, 70), 14, fc="#7d848e", ec="#444", zorder=6))
+        ax.add_patch(
+            Circle((lx if view == "front" else 0, 70), 14, fc="#7d848e", ec="#444", zorder=6)
+        )
         # arm links
         if view == "front":
             ax_ = s * 190
             taper(ax, ax_, 975, 82, ax_, 830, 70)
             taper(ax, ax_, 785, 66, ax_, 700, 58)
-            ax.add_patch(FancyBboxPatch((ax_ - 32, 520), 64, 90, boxstyle="round,pad=0,rounding_size=14",
-                                        fc="#3d434b", ec="#1b1e22", zorder=4))
+            ax.add_patch(
+                FancyBboxPatch(
+                    (ax_ - 32, 520),
+                    64,
+                    90,
+                    boxstyle="round,pad=0,rounding_size=14",
+                    fc="#3d434b",
+                    ec="#1b1e22",
+                    zorder=4,
+                )
+            )
         else:
-            for p_ in (taper(ax, 0, 975, 84, 0, 830, 72, z=7), taper(ax, 0, 785, 68, 0, 700, 58, z=7)):
+            for p_ in (
+                taper(ax, 0, 975, 84, 0, 830, 72, z=7),
+                taper(ax, 0, 785, 68, 0, 700, 58, z=7),
+            ):
                 p_.set_alpha(0.55)
-            ax.add_patch(FancyBboxPatch((-32, 520), 64, 90, boxstyle="round,pad=0,rounding_size=14",
-                                        fc="#3d434b", ec="#1b1e22", zorder=8, alpha=0.55))
+            ax.add_patch(
+                FancyBboxPatch(
+                    (-32, 520),
+                    64,
+                    90,
+                    boxstyle="round,pad=0,rounding_size=14",
+                    fc="#3d434b",
+                    ec="#1b1e22",
+                    zorder=8,
+                    alpha=0.55,
+                )
+            )
     if view == "front":
         # pelvis
-        ax.add_patch(FancyBboxPatch((-62, 640), 124, 135, boxstyle="round,pad=0,rounding_size=18",
-                                    fc=LINK, ec="#1b1e22", zorder=3))
+        ax.add_patch(
+            FancyBboxPatch(
+                (-62, 640),
+                124,
+                135,
+                boxstyle="round,pad=0,rounding_size=18",
+                fc=LINK,
+                ec="#1b1e22",
+                zorder=3,
+            )
+        )
         # torso: chest vest (structural shell) over an aluminium spine
-        ax.add_patch(Polygon([(-92, 835), (92, 835), (125, 960), (122, 1075), (60, 1092), (-60, 1092),
-                              (-122, 1075), (-125, 960)], fc=SHELL, ec="#9aa1ab", lw=1.2, zorder=4))
-        ax.add_patch(FancyBboxPatch((-55, 880), 110, 110, boxstyle="round,pad=0,rounding_size=8",
-                                    fc="none", ec="#9aa1ab", lw=1, ls="--", zorder=4))
-        ax.text(0, 935, "computer\n(behind)", ha="center", va="center", fontsize=6, color="#6b7280", zorder=4)
+        ax.add_patch(
+            Polygon(
+                [
+                    (-92, 835),
+                    (92, 835),
+                    (125, 960),
+                    (122, 1075),
+                    (60, 1092),
+                    (-60, 1092),
+                    (-122, 1075),
+                    (-125, 960),
+                ],
+                fc=SHELL,
+                ec="#9aa1ab",
+                lw=1.2,
+                zorder=4,
+            )
+        )
+        ax.add_patch(
+            FancyBboxPatch(
+                (-55, 880),
+                110,
+                110,
+                boxstyle="round,pad=0,rounding_size=8",
+                fc="none",
+                ec="#9aa1ab",
+                lw=1,
+                ls="--",
+                zorder=4,
+            )
+        )
+        ax.text(
+            0,
+            935,
+            "computer\n(behind)",
+            ha="center",
+            va="center",
+            fontsize=6,
+            color="#6b7280",
+            zorder=4,
+        )
         # head: smooth egg, black visor
         ax.add_patch(Ellipse((0, 1170), 160, 168, fc="#16181c", ec="#000", zorder=7))
-        ax.add_patch(FancyBboxPatch((-62, 1150), 124, 22, boxstyle="round,pad=0,rounding_size=8",
-                                    fc="#2c3440", ec="#56606e", zorder=8))
+        ax.add_patch(
+            FancyBboxPatch(
+                (-62, 1150),
+                124,
+                22,
+                boxstyle="round,pad=0,rounding_size=8",
+                fc="#2c3440",
+                ec="#56606e",
+                zorder=8,
+            )
+        )
         for cx in (-47, 47):
             ax.add_patch(Circle((cx, 1161), 6, fc="#8fb3e0", zorder=9))
         ax.add_patch(Rectangle((-18, 1088), 36, 40, fc=LINK, zorder=3))
     else:
-        ax.add_patch(FancyBboxPatch((-70, 640), 140, 135, boxstyle="round,pad=0,rounding_size=18",
-                                    fc=LINK, ec="#1b1e22", zorder=3))
-        ax.add_patch(Polygon([(-80, 835), (55, 835), (85, 960), (78, 1070), (30, 1092), (-60, 1092),
-                              (-95, 1040), (-95, 900)], fc=SHELL, ec="#9aa1ab", lw=1.2, zorder=4))
-        ax.add_patch(FancyBboxPatch((-90, 850), 50, 170, boxstyle="round,pad=0,rounding_size=6",
-                                    fc="none", ec="#9aa1ab", lw=1, ls="--", zorder=4))
-        ax.text(-65, 935, "battery\n13S3P", ha="center", va="center", fontsize=6, color="#6b7280",
-                rotation=90, zorder=4)
-        ax.add_patch(FancyBboxPatch((-20, 880), 72, 110, boxstyle="round,pad=0,rounding_size=6",
-                                    fc="none", ec="#9aa1ab", lw=1, ls="--", zorder=4))
-        ax.text(16, 935, "computer", ha="center", va="center", fontsize=6, color="#6b7280", zorder=4)
+        ax.add_patch(
+            FancyBboxPatch(
+                (-70, 640),
+                140,
+                135,
+                boxstyle="round,pad=0,rounding_size=18",
+                fc=LINK,
+                ec="#1b1e22",
+                zorder=3,
+            )
+        )
+        ax.add_patch(
+            Polygon(
+                [
+                    (-80, 835),
+                    (55, 835),
+                    (85, 960),
+                    (78, 1070),
+                    (30, 1092),
+                    (-60, 1092),
+                    (-95, 1040),
+                    (-95, 900),
+                ],
+                fc=SHELL,
+                ec="#9aa1ab",
+                lw=1.2,
+                zorder=4,
+            )
+        )
+        ax.add_patch(
+            FancyBboxPatch(
+                (-90, 850),
+                50,
+                170,
+                boxstyle="round,pad=0,rounding_size=6",
+                fc="none",
+                ec="#9aa1ab",
+                lw=1,
+                ls="--",
+                zorder=4,
+            )
+        )
+        ax.text(
+            -65,
+            935,
+            "battery\n13S3P",
+            ha="center",
+            va="center",
+            fontsize=6,
+            color="#6b7280",
+            rotation=90,
+            zorder=4,
+        )
+        ax.add_patch(
+            FancyBboxPatch(
+                (-20, 880),
+                72,
+                110,
+                boxstyle="round,pad=0,rounding_size=6",
+                fc="none",
+                ec="#9aa1ab",
+                lw=1,
+                ls="--",
+                zorder=4,
+            )
+        )
+        ax.text(
+            16, 935, "computer", ha="center", va="center", fontsize=6, color="#6b7280", zorder=4
+        )
         ax.add_patch(Ellipse((8, 1170), 150, 168, fc="#16181c", ec="#000", zorder=7))
-        ax.add_patch(Polygon([(55, 1150), (83, 1152), (83, 1172), (55, 1174)], fc="#2c3440", zorder=8))
+        ax.add_patch(
+            Polygon([(55, 1150), (83, 1152), (83, 1172), (55, 1174)], fc="#2c3440", zorder=8)
+        )
         ax.add_patch(Rectangle((-18, 1088), 36, 40, fc=LINK, zorder=3))
 
 
 def joints(ax, view):
-    for name, kind, x, y, z, axis in J:
+    for _name, kind, x, y, z, axis in J:
         if view == "side" and x < 0:
             continue  # right side hidden behind left
         u = x if view == "front" else y
@@ -149,13 +323,22 @@ def joints(ax, view):
 
 def dim(ax, u, z0, z1, text, side=1):
     ax.annotate("", (u, z0), (u, z1), arrowprops=dict(arrowstyle="<->", lw=0.7, color="#555"))
-    ax.text(u + side * 6, (z0 + z1) / 2, text, fontsize=7, color="#333", rotation=90, va="center",
-            ha="left" if side > 0 else "right")
+    ax.text(
+        u + side * 6,
+        (z0 + z1) / 2,
+        text,
+        fontsize=7,
+        color="#333",
+        rotation=90,
+        va="center",
+        ha="left" if side > 0 else "right",
+    )
 
 
 def main(out):
+    matplotlib.rcParams["svg.hashsalt"] = "marvin-bot"  # stable element ids: stable diffs
     fig, axs = plt.subplots(1, 2, figsize=(12, 9.2), gridspec_kw=dict(width_ratios=[1.15, 1]))
-    for ax, view in zip(axs, ("front", "side")):
+    for ax, view in zip(axs, ("front", "side"), strict=True):
         body(ax, view)
         joints(ax, view)
         ax.axhline(0, color="#888", lw=1)
@@ -169,18 +352,25 @@ def main(out):
     dim(a, 270, 0, 690, "690 hip axis to sole")
     dim(a, 230, 370, 690, "320 thigh")
     dim(a, 230, 70, 370, "300 shin")
-    a.annotate("", (-243, 1275), (243, 1275), arrowprops=dict(arrowstyle="<->", lw=0.7, color="#555"))
+    a.annotate(
+        "", (-243, 1275), (243, 1275), arrowprops=dict(arrowstyle="<->", lw=0.7, color="#555")
+    )
     a.text(0, 1283, "≈ 490 mm shoulder width", fontsize=7, ha="center", color="#333")
     b = axs[1]
     dim(b, 250, 805, 1005, "200 upper arm")
     dim(b, 250, 590, 805, "215 forearm + wrist")
     handles = [Rectangle((0, 0), 1, 1, fc=ALU, ec=v[2], lw=2.5) for v in ACT.values()]
     handles += [Rectangle((0, 0), 1, 1, fc=LINK), Rectangle((0, 0), 1, 1, fc=SHELL, ec="#9aa1ab")]
-    labels = [v[3] for v in ACT.values()] + ["structural link (Al core + printed skin)", "chest shell (structural)"]
+    labels = [v[3] for v in ACT.values()] + [
+        "structural link (Al core + printed skin)",
+        "chest shell (structural)",
+    ]
     fig.legend(handles, labels, loc="lower center", ncol=4, fontsize=8, frameon=False)
-    fig.suptitle("Marvin Bot: concept layout v0.1 (to scale, 25 powered DOF + grippers)", fontsize=13)
+    fig.suptitle(
+        "Marvin Bot: concept layout v0.1 (to scale, 25 powered DOF + grippers)", fontsize=13
+    )
     fig.tight_layout(rect=(0, 0.06, 1, 0.97))
-    fig.savefig(out + ".svg")
+    fig.savefig(out + ".svg", metadata={"Date": None})  # no timestamp: stable diffs
 
 
 if __name__ == "__main__":
