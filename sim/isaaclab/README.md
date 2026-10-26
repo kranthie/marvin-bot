@@ -62,3 +62,12 @@ uv run --no-sync python <repo>/sim/isaaclab/export_policy.py --checkpoint logs/r
 python sim/mujoco/check_policy.py <run>/exported --fast 1.0       # from the repo, in its own venv
 python sim/mujoco/check_policy.py <run>/exported --stairs 0.15    # rough-ground policies
 ```
+
+## Results
+
+| Run | Training (Isaac Lab, Newton) | MuJoCo cross-check (`check_policy.py`) |
+| --- | --- | --- |
+| flat v2 (2026-10-26) | survives 99.6% of episodes, but barely steps (air-time reward ~0) | stands and turns, does not walk: the clearance reward paid planted feet in full, so standing still won. Fixed: only swinging feet earn it; flat action scale 0.25 → 0.5 |
+| rough v2 (2026-10-26, pre-CAD masses) | survives 96.6%; terrain curriculum stalled at level ~1 of 10 | **passes flat ground**: walk 0.44 m/s for 0.5, turn 0.75 rad/s for 0.8, walk-and-turn, stop; 1.5 steps/s, symmetric (2%), 7 cm steps, 6 cm foot lift, knee peaks 63% of peak torque. Stops in front of 10 cm stairs |
+
+Policies are cross-checked against the current URDF, so rough v2 also coped with the CAD leg masses (0.66 kg heavier) it was not trained on.

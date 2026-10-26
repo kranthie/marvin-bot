@@ -25,6 +25,10 @@ def foot_clearance(
     edge its toe (15 cm ahead of the ankle) is about to meet. On an earlier prototype, measured from the
     ground under the ankle, the policies lifted their feet 3.5 cm, caught 3 cm steps with their
     toes, and learned to stop at stairs instead. On flat ground z = 0. Zero for near-zero commands.
+
+    Only swinging feet earn it: each foot's term is weighted by tanh of its speed, so a planted
+    foot earns nothing. (Weighting the height error by speed instead, as the Spot term does, gave
+    a planted foot the full reward; Marvin Bot's first flat policy learned to stand and shuffle.)
     """
     asset = env.scene[asset_cfg.name]
     feet = asset.data.body_pos_w.torch[:, asset_cfg.body_ids]  # (N, F, 3)
@@ -38,8 +42,8 @@ def foot_clearance(
         ground = torch.where(near > -1e2, near, nearest).clamp(min=-1e2)
     clearance = feet[..., 2] - SOLE_BELOW_FOOT_FRAME - ground
     speed = torch.linalg.norm(asset.data.body_lin_vel_w.torch[:, asset_cfg.body_ids, :2], dim=2)
-    error = torch.square(clearance - target_height) * torch.tanh(tanh_mult * speed)
-    reward = torch.exp(-torch.sum(error, dim=1) / std)
+    swinging = torch.tanh(tanh_mult * speed)
+    reward = torch.mean(swinging * torch.exp(-torch.square(clearance - target_height) / std), dim=1)
     return reward * (torch.linalg.norm(env.command_manager.get_command(command_name), dim=1) > 0.1)
 
 

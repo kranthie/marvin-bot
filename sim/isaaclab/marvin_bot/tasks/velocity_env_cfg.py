@@ -318,8 +318,9 @@ class MarvinBotFlatEnvCfg(MarvinBotRoughEnvCfg):
         self.observations.policy.height_scan = None
         self.commands.base_velocity.resampling_time_range = (4.0, 8.0)
         self.rewards.lin_vel_z_l2.weight = -0.2
-        # flat ground: small actions and strong smoothness penalties (an earlier prototype's v7 gait)
-        self.actions.joint_pos.scale = 0.25
+        # flat ground: strong smoothness penalties (an earlier prototype's v7 gait). Action scale 0.5
+        # as on rough ground: at 0.25 the 37 kg robot never found a stepping gait
+        self.actions.joint_pos.scale = 0.5
         self.rewards.action_rate_l2.weight = -0.05
         self.rewards.joint_vel_legs.weight = -1.0e-3
         self.rewards.foot_clearance.params["std"] = 0.001
