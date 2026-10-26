@@ -8,12 +8,13 @@ servos (STS3250, 45.3 x 35.8 x 24.8 mm) and the depth camera (Orbbec Gemini 335L
   two cheeks cradling the neck pitch servo;
 - head frame: two plates on the pitch servo's horn and idler, joined by a bridge that carries
   the camera and a top bar that carries the shell;
-- head shell: an egg, 2.5 mm wall, open at the bottom for the neck, with a flat-cut front;
-- visor: the dark front cap, a separate print, with a slot in front of the camera's lenses and
-  projector (no material in front of the optics);
+- head shell: a helmet, taller than it is wide and narrowing to the chin (the hull of two
+  ellipsoids), 2.5 mm wall, open at the bottom for the neck;
+- visor: the whole face, a separate glossy part, with a narrow slot in front of the camera's
+  lenses and projector (no material in front of the optics);
 - the camera, as a bought part.
 
-No fasteners yet.
+The helmet sits on a dark neck sleeve (cad/covers.py). No fasteners yet.
 """
 
 from __future__ import annotations
@@ -22,18 +23,20 @@ from pathlib import Path
 
 import yaml
 
-from .lib import Part, box, ellipsoid, union
+from .lib import Part, box, ellipsoid, hull, union
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
 _acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
 _skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
 WALL = 2.5
-EGG = (8.0, 0.0, 40.0), (72.0, 85.0, 80.0)  # head shell centre and semi-axes (head frame)
+# helmet: the hull of a crown ellipsoid and a smaller chin ellipsoid (centre, semi-axes; head frame)
+CROWN = (2.0, 0.0, 76.0), (72.0, 80.0, 92.0)
+CHIN = (12.0, 0.0, 30.0), (54.0, 50.0, 40.0)
 CAMERA = (124.0, 29.0, 27.0, 133.0)  # width, height, depth (mm), mass (g)
-CAMERA_AT = (38.5, 0.0, 45.0)  # its centre: the front corners just inside the visor
-VISOR_X = 53.0  # the shell's front cut; the visor is everything ahead of it
-NECK_CUT_Z = -22.0  # the shell's open bottom
+CAMERA_AT = (19.0, 0.0, 55.0)  # its centre: the front corners just inside the visor
+VISOR_X = 25.0  # the visor is the whole face ahead of this plane
+NECK_CUT_Z = 6.0  # the shell's open bottom; the neck sleeve (cad/covers.py) runs up inside it
 
 
 def parts() -> list[Part]:
@@ -54,22 +57,27 @@ def parts() -> list[Part]:
     # a camera bridge and a top bar
     cx, cy, cz = CAMERA_AT
     cw, ch, cd, cmass = CAMERA
-    plates = [box((40, 3, 105), (2, s * (st / 2 + 3), 42)) for s in (1, -1)]
-    bridge = box((cx - cd / 2 - 18, st + 9, 22), ((cx - cd / 2 + 18) / 2, 0, cz))
-    top = box((44, st + 9, 4), (2, 0, 96))
+    back = cx - cd / 2  # the camera's back face
+    # side plates kept inside r = 22 mm of the pitch axis below it, clear of the neck cheeks
+    plates = [box((back + 20, 3, 110), ((back - 20) / 2, s * (st / 2 + 3), 50)) for s in (1, -1)]
+    bridge = box((4, st + 9, 22), (back - 2, 0, cz))  # the camera bolts to this
+    top = box((back + 20, st + 9, 4), ((back - 20) / 2, 0, 103))
     out.append(Part("head_frame", "head_link", "pa_cf", union(*plates, bridge, top), "print"))
 
     # --- shell and visor
-    c, r = EGG
-    outer = ellipsoid(r, c)
-    inner = ellipsoid([x - WALL for x in r], c)
+    outer = hull(ellipsoid(CROWN[1], CROWN[0]), ellipsoid(CHIN[1], CHIN[0]))
+    inner = hull(
+        ellipsoid([x - WALL for x in CROWN[1]], CROWN[0]),
+        ellipsoid([x - WALL for x in CHIN[1]], CHIN[0]),
+    )
     big = 400.0
     skin = outer - inner
     shell = skin - box((big, big, big), (VISOR_X + big / 2, 0, 0))
     shell = shell - box((big, big, big), (0, 0, NECK_CUT_Z - big / 2))
     out.append(Part("head_shell", "head_link", "pa_cf", shell, "print"))
     visor = skin ^ box((big, big, big), (VISOR_X + big / 2, 0, 0))
-    visor = visor - box((60, cw - 4, ch - 7), (cx + 30, 0, cz))  # optics slot
+    visor = visor - box((big, big, big), (0, 0, NECK_CUT_Z - big / 2))
+    visor = visor - box((80, cw - 4, ch - 9), (cx + 40, 0, cz))  # optics slot
     out.append(Part("head_visor", "head_link", "pa_cf", visor, "print"))
     cam = box((cd, cw, ch), CAMERA_AT)
     out.append(Part("head_camera", "head_link", "bought", cam, "bought", mass_g=cmass))

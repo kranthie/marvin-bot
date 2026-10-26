@@ -42,6 +42,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Arm and head CAD, first pass (`cad/arm.py`, `cad/head.py`): arms 1.47 kg and grippers 0.18 kg for both (estimates 1.0 and 0.4), head 0.40 kg with the camera; shoulder plates SF 2.4 in a hand-load case; robot 39.20 kg
 - [x] Clip-on covers as an optional add-on (`cad/covers.py`, 0.59 kg, separate URDF) and a generated wiring harness (`tools/build_harness.py`); see [design/assembly_wiring.md](design/assembly_wiring.md)
 - [x] Slim shin with the ankle motors staggered on its centre line (~95 mm wide, was ~132), same ankle torque; plates reduced to rings on the motors' bolt circles and straps; robot 38.71 kg
+- [x] Styled body: helmet head with a full-face visor, full body-shell set (torso, neck, hip girdle, legs, arms, toes) as an add-on, 1.10 kg; shell clearance check through every joint range in CI (`python -m cad.covers --check`); 39.80 kg with shells
 - [ ] Retrain the flat and stair policies on the current model (ankle ratios 0.99 / 0.67, 38.71 kg) and rerun the MuJoCo cross-checks
 - [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
 - [ ] Battery cradle, blind-mate connector and electronics bay layout

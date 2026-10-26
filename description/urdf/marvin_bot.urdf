@@ -98,12 +98,12 @@
     <visual><origin xyz="0 0 0.035" rpy="1.5708 0 0"/><geometry><cylinder radius="0.02265" length="0.0248"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
   </link>
   <link name="head_link">
-    <inertial><origin xyz="0.0177843 5.91328e-13 0.0473909"/><mass value="0.35"/><inertia ixx="0.00097694" ixy="-7.97345e-15" ixz="9.64778e-06" iyy="0.00077595" iyz="8.32362e-16" izz="0.00104167"/></inertial>
+    <inertial><origin xyz="0.0067252 1.91403e-12 0.0723383"/><mass value="0.3463"/><inertia ixx="0.00112059" ixy="-8.22127e-15" ixz="2.98743e-05" iyy="0.000903864" iyz="6.05464e-14" izz="0.000989931"/></inertial>
     <visual><geometry><mesh filename="../meshes/head_frame.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_shell.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_visor.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_camera.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
-    <collision><origin xyz="0.01 0 0.04"/><geometry><box size="0.15 0.16 0.17"/></geometry></collision>
+    <collision><origin xyz="0.002 0 0.087"/><geometry><box size="0.15 0.16 0.162"/></geometry></collision>
   </link>
   <link name="left_shoulder_pitch_link">
     <inertial><origin xyz="-0.00353799 0.0446492 -0.0461649"/><mass value="1.08805"/><inertia ixx="0.00159287" ixy="-3.40223e-06" ixz="6.2806e-06" iyy="0.00120502" iyz="0.000170628" izz="0.00113847"/></inertial>

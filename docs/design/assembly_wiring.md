@@ -14,7 +14,7 @@ The robot is built from seven modules that are assembled and tested on their own
 | Arm (×2) | shoulder bracket to gripper: 4 actuators, gripper servo | shoulder pitch RS03 output flange | 1 power, 1 signal |
 | Head | neck bracket, pitch servo, frame, shell, visor, camera | neck yaw servo horn | servo bus, camera USB-C |
 | Battery | 13S pack with BMS | slides into the cradle from the back | blind-mate power and BMS connector |
-| Covers | clip-on panels (optional) | clips on the parts below | none |
+| Body shells | clip-on shells (optional) | clips on the parts below | none |
 
 Each limb's first actuator stays on the parent module (hip pitch on the pelvis, shoulder pitch on the torso), so a limb comes off by removing the bolts on one output flange and unplugging two connectors. That meets R63: any actuator in a limb can be changed with only that limb off the robot.
 
@@ -73,21 +73,31 @@ Rules the harness follows:
 - **Limb-root connectors**: a keyed 2-pin power connector rated above the branch fuse (XT60 class for legs and arms) and a latching signal connector (CAN pairs, ground, a spare), both mounted on a bulkhead on the parent module next to the limb's first flange.
 - **Paths**: the leg harness drops from the pelvis board between the hip pitch motor and the frame, behind the hip roll motor, down the back of the thigh shell and between the shin's side plates to the ankle motors. The arm harness leaves the torso beside the shoulder pitch motor, runs inside the upper-arm and forearm shells (they leave a cable channel; the upper-arm shell has an exit at the elbow for the loop), and ends at the gripper servo.
 
-## Covers (add-on)
+## Body shells (add-on)
 
-The bare robot is meant to look finished: graphite printed shells (thigh, upper arm, forearm, chest, head), bead-blasted aluminium plates and the actuators' own housings. The covers are an optional layer of light 2 mm printed panels over the thigh, shin, hip, shoulder, pelvis front, chest, back and collar:
+The bare robot is meant to look finished: graphite printed shells (thigh, upper arm, forearm, chest), bead-blasted aluminium plates, the actuators' own housings and a glossy helmet head. The body shells are an optional layer that gives it a finished body in the style of current commercial humanoids: a helmet head with a full-face glossy visor over a slim dark neck, a smooth light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them. The style is the general language only; the shapes are this project's own.
 
-- generated from the parts they cover (an offset skin at a 4 mm gap), so they refit automatically when the structure changes;
-- trimmed short of every joint, so they never touch the next link;
-- clipped on (clip and boss details come with the fastener pass), so they come off without tools for service;
-- carrying no load; they add some fall protection (R53).
+| Shell | Pieces | Notes |
+|---|---|---|
+| Torso | 8 (front and back, left and right, chest and waist) | rounded sections lofted round the torso's contents, widening to the shoulders; flat side walls with round openings for the shoulder motors; a recessed collar so the chin clears when looking down; the back comes off for the battery |
+| Neck sleeve | 1, dark, flexible print | turns with neck yaw inside the torso's neck opening; the head pitches over it |
+| Hip girdle | 1, dark | round the pelvis frame and waist motor; reaches over the hip motors in front, stays clear of the hip roll motors that swing round the hip behind |
+| Thigh, shin | 1 each per leg | thigh all round except a strip at the back of the inner side (harness), and over the front of the knee motor; shin front and sides, open at the back where the cranks and rods move |
+| Hip, shoulder | 1 each per side | over the hip yoke; over the top of the shoulder roll motor only, above the swing of the roll bracket |
+| Upper arm, forearm, toe | 1 each per side | sleeves between the joints; a cap over the front of the foot |
 
-The covers weigh 0.59 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 38.71 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.30 kg) adds the covers' mass and visuals; a robot that runs with covers should be trained on it.
+How they are made and checked:
+
+- Each shell is a 1.6 mm printed skin at a 4 mm gap from the parts it covers (an offset of their hull, rounded; the torso is lofted from rounded sections), so the shells refit automatically when the structure changes.
+- `python -m cad.covers --check` (run in CI) moves every joint to both ends and to half of each end of its range, plus combined poses (deep squat, knee up, arm up, hand to chest, looking down while turned), and fails if any shell touches a part or shell of another link. Shells on one limb are not checked against the other limbs; limb-to-limb contact is the policy's job.
+- They clip on (clip and boss details come with the fastener pass), so they come off without tools, and they carry no load; they add some fall protection (R53).
+
+The shells weigh 1.10 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 38.70 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.80 kg) adds the shells' mass and visuals, just inside the 40 kg limit; a robot that runs with them should be trained on it.
 
 ## Still to do
 
 - Fastener holes, bearing seats, clips and connector footprints in the CAD.
 - Harness clip points and loop guides in the CAD; check the loops against the packaging envelopes through the full joint ranges.
-- Covers in the packaging check: they are trimmed by hand at the joints so far, and checked only visually in a deep squat.
+- Torso shell seams: clip and alignment details at the eight pieces' joins.
 - The battery cradle and blind-mate connector; the electronics bay layout.
 - Measured bus currents (phase 2) to confirm the gauges and fuses.
