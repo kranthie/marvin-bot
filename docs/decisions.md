@@ -2,6 +2,10 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: arms, head, covers and harness, first pass
+
+Arms: two-plate shoulder brackets (an L in one piece is too tall for 60 mm stock), aluminium rings on every motor face, printed upper-arm and forearm shells that carry the harness inside; 7 mm shoulder plates pass a new hand-load case (0.5 × body weight at the gripper: catching a fall or pushing up) at SF 2.4. Head: an egg-shaped printed shell with a flat-cut front and a dark visor, with a slot in front of the depth camera's optics rather than material over them. Covers are an add-on, not structure: the robot must look finished without them, so they are generated as offset skins over the parts, kept out of the default URDF (the policies train on the bare robot) and written to a second URDF with their 0.56 kg. The harness is generated from the description (one harness per limb, one power and one signal connector at each limb root, so a limb comes off as a unit) instead of being drawn by hand, so it follows layout changes. Robot 39.20 kg bare, 39.76 kg with covers. Details in [design/assembly_wiring.md](design/assembly_wiring.md).
+
 ## 2026-10-26: stairs work in simulation; knee stays an RS04 pending the bench test
 
 The stairs policy rough v5 climbs 10, 15, 18 and 20 cm stairs up and down in the MuJoCo cross-check (five steps each way, 28 cm treads) and still walks, turns and stops on flat ground. On stairs the knees average 73–75% of their continuous rating (RMS) and hip roll ~60%, against 112% in the static worst-case check: the trained gait loads each knee only part of the time. The 1.5:1 knee stage is not needed on this evidence; the remaining check is the RS04's real continuous rating in a thigh-sized mount (phase 2 bench test). Details in [design/stairs.md](design/stairs.md).

@@ -58,7 +58,7 @@ In v3 the terrain curriculum plateaued at level ~1 of 10 with very few falls: wa
 
 ## Issue 3: mass
 
-The leg strength pass (`cad/strength.py`: far-side bearings at the knee and hip roll, a channel-flanged hip block, a ribbed foot) put the robot at 39.55 kg; the pelvis and torso CAD brought it to 39.06 kg. The hard limit was raised to 40 kg, with the 35 kg target unchanged (decisions, 2026-10-26). Mass feeds issue 1 directly. Savings that keep the computer and the battery as they are:
+The leg strength pass (`cad/strength.py`: far-side bearings at the knee and hip roll, a channel-flanged hip block, a ribbed foot) put the robot at 39.55 kg; the pelvis and torso CAD brought it to 39.06 kg, and the arm and head CAD to 39.20 kg (39.76 kg with the optional covers). The hard limit was raised to 40 kg, with the 35 kg target unchanged (decisions, 2026-10-26). Mass feeds issue 1 directly. Savings that keep the computer and the battery as they are:
 
 | Option | Saves | Trade-off |
 |---|---|---|
