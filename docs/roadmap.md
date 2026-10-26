@@ -43,7 +43,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 
 ## Open items to verify before ordering
 
-1. RobStride direct quote, lead time and current import tariffs; compare with US resellers.
+1. RobStride direct quote, lead time and current import tariffs; compare with Seeed Studio (list price, ~5% off at 10+ of one model) and confirm Seeed's live prices.
 2. Robstride output-bearing type, backlash and moment ratings (decides the far-side bearing design).
 3. Robstride bus current and regen behaviour (sizes the fuse, clamp and precharge).
 4. Real CAN timing with 3–5 motors per bus on the Orin under JetPack 7.2, and the on-board CAN controllers' pin setup.

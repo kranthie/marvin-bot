@@ -2,6 +2,12 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: buy actuators from Seeed Studio; bulk order after the bench test
+
+Seeed Studio stocks every Robstride model in the BOM at RobStride's list prices, with about 5% off at 10+ of one model (October 2026, from Seeed's product listings; Seeed's pages could not be opened directly to confirm): RS04 $255 ($242 at 10+), RS03 $225 ($214), RS06 $210 ($200), RS00 $138.99 ($131.99). RobStride's own site links to Seeed and Amazon for ordering. The BOM's 26 actuators come to ~$5,800 at single prices, against ~$6,250 at the US resellers used before.
+
+Only the RS03 (12 with a spare) reaches the 10+ tier on its own. Ordering it all at once would save ~$130 but commit ~$2,600 before the phase 2 bench test. So the bench units (one RS04, one RS03) are bought singly, and the remaining 11 RS03 are ordered together after the bench test passes, which still qualifies for the 10+ price. RS04 (7) and RS06 (5) stay below 10 unless a second robot or extra spares are planned. A direct quote from RobStride for the full set is still worth asking for. Seeed also sells RobStride's $15 USB-to-CAN debug adapter, worth having for RobStride's configuration tool; the robot's buses stay on isolated SocketCAN adapters until the debug adapter is shown to work as one.
+
 ## 2026-10-26: leg CAD first pass; mass at the 38 kg limit
 
 `cad/leg.py` draws the legs in code (manifold3d), around the motors at their STEP-model sizes: a flange, side plate and back plate at the hip; a two-plate bracket for hip roll; a flange, outer side plate and printed shell on the thigh; on the shin a knee flange, a central web that both ankle RS03 bolt to, and a fork for the ankle pitch bearings; a hollow ankle cross, 7075 cranks, rods with rod ends; and a foot of a pocketed base plate, heel posts, roll-bearing lugs and a TPU sole. Plates are 6 mm and pocketed with lightening holes; flanges 6 mm. `cad/build.py` computes each part's mass and inertia (into the URDF), and checks sizes: every machined part fits the desktop mill (200 × 150 mm, 60 mm stock), except the 230 mm foot base plates, which are flat and go to an online laser or water-jet service.
