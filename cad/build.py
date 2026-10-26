@@ -63,8 +63,11 @@ def fits(size: np.ndarray, limit) -> bool:
     )
 
 
-def r6(v) -> list[float]:
-    return [float(f"{x:.6g}") + 0.0 for x in np.ravel(v)]
+def r6(v, step: float) -> list[float]:
+    """6 significant figures, with anything below `step` dropped: the round-off left in the
+    near-zero terms (products of inertia, centred coordinates) differs between CPUs, and would
+    make the --check fail on some CI runners"""
+    return [float(f"{round(x / step) * step:.6g}") + 0.0 for x in np.ravel(v)]
 
 
 def build() -> tuple[str, dict, list]:
@@ -91,8 +94,8 @@ def build() -> tuple[str, dict, list]:
             process=p.process,
             budget=budget_item(p),
             mass=round(float(mass), 5),
-            com=r6(com),
-            inertia=r6(inertia[[0, 1, 2, 0, 0, 1], [0, 1, 2, 1, 2, 2]]),
+            com=r6(com, 1e-7),
+            inertia=r6(inertia[[0, 1, 2, 0, 0, 1], [0, 1, 2, 1, 2, 2]], 1e-10),
             size_mm=[round(float(x), 1) for x in size],
         )
         v, f = p.mesh()
