@@ -79,7 +79,7 @@ The bare robot is meant to look finished: graphite printed shells (thigh, upper 
 
 | Shell | Pieces | Notes |
 |---|---|---|
-| Torso | 8 (front and back, left and right, chest and waist) | rounded sections lofted round the torso's contents, the shoulders sloping up into a collar round the neck; flat side walls with round openings for the shoulder motors; the back comes off for the battery |
+| Torso | 8 (front and back, left and right, chest and waist) | follows the torso frame slice by slice (rounded sections ~13 mm outside it, blended where the width changes), so it is broad at the shoulders and slimmer at the chest and waist; the shoulders slope up into a collar round the neck; flat side walls with round openings for the shoulder motors; the back comes off for the battery |
 | Neck sleeve | 1, dark, flexible print | flares from the helmet down into the collar; turns with neck yaw inside the torso's neck opening; the head pitches over it |
 | Hip girdle | 1, dark | round the pelvis frame and waist motor; reaches over the hip motors in front, stays clear of the hip roll motors that swing round the hip behind |
 | Thigh, shin | 1 each per leg | thigh all round except a strip at the back of the inner side (harness), and over the front of the knee motor; shin front and sides, open at the back where the cranks and rods move |
@@ -92,7 +92,7 @@ How they are made and checked:
 - `python -m cad.covers --check` (run in CI) moves every joint to both ends and to half of each end of its range, plus combined poses (deep squat, knee up, arm up, hand to chest, looking down while turned), and fails if any shell touches a part or shell of another link. Shells on one limb are not checked against the other limbs; limb-to-limb contact is the policy's job.
 - They clip on (clip and boss details come with the fastener pass), so they come off without tools, and they carry no load; they add some fall protection (R53).
 
-The shells weigh 1.12 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 38.66 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.77 kg) adds the shells' mass and visuals, just inside the 40 kg limit; a robot that runs with them should be trained on it.
+The shells weigh 1.10 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 38.66 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.76 kg) adds the shells' mass and visuals, just inside the 40 kg limit; a robot that runs with them should be trained on it.
 
 ## Still to do
 

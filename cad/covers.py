@@ -26,7 +26,7 @@ import numpy as np
 import yaml
 
 from . import arm, head, leg, torso
-from .lib import Part, box, cyl, hull
+from .lib import Part, box, cyl, hull, union
 
 ROOT = Path(__file__).resolve().parent.parent
 GAP, SKIN = 4.0, 1.6
@@ -74,43 +74,50 @@ def offset_hull(solids, r: float):
     return hull(*[h.translate(list(r * d)) for d in _DIRS])
 
 
-def lofted(solids, gap: float, corner: float, step: float = 15.0, style=None, neck=None):
-    """A smooth body round `solids`: at each height, a rectangle with large rounded corners
-    (radius `corner`) just containing everything in that slice plus `gap`; the hull of all of
-    them, closed at the top by a smaller section so the shoulders round over too. `style(z)`
-    may give a larger rectangle (x0, y0, x1, y1) at a height, to shape the body beyond what it
-    must contain; `neck` = (half depth, half width, height) adds a small top section that the
-    shoulders slope up to."""
-    h = hull(*solids)
+def lofted(solids, gap: float, corner: float, step: float = 10.0, neck=None, slope: float = 0.7):
+    """A smooth body round `solids` that follows them slice by slice: at each height, a
+    rectangle with rounded corners (radius `corner`) containing everything in that slice plus
+    `gap`, widened only as far as needed for the slices above and below to blend at `slope`
+    (mm across per mm up), each joined to the next by their hull; closed at the top by a
+    smaller section so the shoulders round over. `neck` = (half depth, half width, height)
+    adds a small top section that the shoulders slope up to."""
+    h = union(*solids)
     lo, hi = h.bounding_box()[2], h.bounding_box()[5]
 
     def section(x0, y0, x1, y1, zc, r):
         r = min(r, (x1 - x0) / 2 - 1, (y1 - y0) / 2 - 1)
         return hull(
-            *[cyl(2 * r, 2.0, "z", (x, y, zc)) for x in (x0 + r, x1 - r) for y in (y0 + r, y1 - r)]
+            *[cyl(2 * r, 1.0, "z", (x, y, zc)) for x in (x0 + r, x1 - r) for y in (y0 + r, y1 - r)]
         )
 
-    sections, top = [], None
+    pull = gap + corner * (1 - 0.5**0.5)  # the rounded corner still contains the slice's
+    zs, rects = [], []
     for z in np.arange(lo + step / 2, hi, step):
         sl = h ^ box((BIG, BIG, step), (0, 0, z))
         if sl.is_empty():
             continue
         b = sl.bounding_box()
-        pull = gap + corner * (1 - 0.5**0.5)  # the rounded corner still contains the slice's
-        rect = (b[0] - pull, b[1] - pull, b[3] + pull, b[4] + pull)
-        if style is not None:
-            sx0, sy0, sx1, sy1 = style(z)
-            rect = (min(rect[0], sx0), min(rect[1], sy0), max(rect[2], sx1), max(rect[3], sy1))
-        for zz in (z - step / 2, z + step / 2):
-            sections.append(section(*rect, zz, corner))
-        top = rect
-    x0, y0, x1, y1 = top
+        zs.append(z)
+        rects.append(np.array([b[0] - pull, b[1] - pull, b[3] + pull, b[4] + pull]))
+    zs, rects = np.array(zs), np.array(rects)
+    smooth = rects.copy()
+    for i, z in enumerate(zs):
+        d = slope * np.abs(zs - z)
+        smooth[i, :2] = np.min(rects[:, :2] + d[:, None], axis=0)
+        smooth[i, 2:] = np.max(rects[:, 2:] - d[:, None], axis=0)
+    chain = [section(*smooth[i], z, corner) for i, z in enumerate(zs)]
+    x0, y0, x1, y1 = smooth[-1]
     inset = 0.6 * corner
-    sections.append(section(x0 + inset, y0 + inset, x1 - inset, y1 - inset, hi + gap, corner))
+    cap = [chain[-1], section(x0 + inset, y0 + inset, x1 - inset, y1 - inset, hi + gap, corner)]
     if neck is not None:
         hx, hy, nz = neck
-        sections.append(section(-hx, -hy, hx, hy, nz, corner))
-    return hull(*sections)
+        cap.append(section(-hx, -hy, hx, hy, nz, corner))
+    bottom = section(*smooth[0], lo - gap, corner)
+    return union(
+        hull(bottom, chain[0]),
+        *[hull(a, b) for a, b in zip(chain, chain[1:], strict=False)],
+        hull(*cap),
+    )
 
 
 def wrap(solids, keep, cut=()):
@@ -172,6 +179,8 @@ def parts() -> list[Part]:
     # --- torso: a smooth shell from the waist to the shoulders, in a front half and a back half
     # (the back half comes off for the battery). It stops short of the shoulder flanges, leaves
     # a round opening for the neck sleeve, and its bottom edge clears the hip girdle.
+    # the shell covers the inner part of the shoulder pitch motors: broad shoulders over a
+    # narrower chest and waist; the motors' outer ends pass through the side walls
     tor = on("torso_link")
     sh_y = j["left_shoulder_pitch"][1] - 8  # inside the shoulder pitch output flange
     sh = j["left_shoulder_pitch"]
@@ -179,14 +188,14 @@ def parts() -> list[Part]:
     body = (
         box((BIG, BIG, BIG), (0, 0, 0))
         - half("z", -1, 26.0)
-        - cyl(108, BIG, "y", (sh[0], 0, sh[2]))  # round openings for the shoulder motors
-        - cyl(104, 200, "z", (0, 0, neck_z))  # the neck opening
+        - (cyl(108, BIG, "y", (sh[0], 0, sh[2])) - box((BIG, 2 * 110, BIG)))  # shoulder motors
+        - cyl(96, 200, "z", (0, 0, neck_z))  # the neck opening
     )
     # the body follows its contents; the shoulders slope up into a collar round the neck
-    collar = (46.0, 62.0, neck_z + 4)
+    collar = (60.0, 70.0, neck_z + 4)
     # flat side walls short of the shoulder flanges close the sides
-    outer_b = lofted(tor, GAP + SKIN, 34.0, neck=(collar[0] + SKIN, collar[1] + SKIN, collar[2]))
-    inner_b = lofted(tor, GAP, 34.0 - SKIN, neck=(collar[0], collar[1], collar[2] - SKIN))
+    outer_b = lofted(tor, GAP + SKIN, 24.0, neck=(collar[0] + SKIN, collar[1] + SKIN, collar[2]))
+    inner_b = lofted(tor, GAP, 24.0 - SKIN, neck=(collar[0], collar[1], collar[2] - SKIN))
     skin = (outer_b ^ box((BIG, 2 * sh_y, BIG))) - (inner_b ^ box((BIG, 2 * (sh_y - SKIN), BIG)))
     # each half in four pieces (left and right, chest and waist): a whole half is too big to
     # print; the seams run down the middle and round the body under the chest
@@ -202,8 +211,8 @@ def parts() -> list[Part]:
     # into the helmet, turning with neck yaw; the head pitches over it
     nz = j["neck_pitch"][2]
     bot = -22.0  # just above the torso bridge; flaring towards the collar
-    sleeve = hull(cyl(96, 2, "z", (0, 0, bot)), cyl(66, 2, "z", (0, 0, nz + 2))) - hull(
-        cyl(92, 2, "z", (0, 0, bot - 2)), cyl(62, 2, "z", (0, 0, nz + 4))
+    sleeve = hull(cyl(88, 2, "z", (0, 0, bot)), cyl(66, 2, "z", (0, 0, nz + 2))) - hull(
+        cyl(84, 2, "z", (0, 0, bot - 2)), cyl(62, 2, "z", (0, 0, nz + 4))
     )
     add("neck_cover", "neck_link", sleeve)
 

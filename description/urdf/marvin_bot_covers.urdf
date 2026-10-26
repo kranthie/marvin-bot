@@ -81,7 +81,7 @@
     <collision><origin xyz="0.03 0 -0.045"/><geometry><box size="0.24 0.11 0.03"/></geometry></collision>
   </link>
   <link name="torso_link">
-    <inertial><origin xyz="-0.0221567 -2.40832e-05 0.16182"/><mass value="9.8666"/><inertia ixx="0.0951138" ixy="3.48928e-06" ixz="-0.00476278" iyy="0.0728333" iyz="-2.53408e-05" izz="0.058562"/></inertial>
+    <inertial><origin xyz="-0.0221373 -2.35605e-05 0.162058"/><mass value="9.85566"/><inertia ixx="0.0945944" ixy="3.71456e-06" ixz="-0.00476872" iyy="0.072559" iyz="-2.47377e-05" izz="0.0575016"/></inertial>
     <visual><origin xyz="0.01 0 0.1"/><geometry><box size="0.072 0.11 0.11"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><origin xyz="-0.062 0 0.13"/><geometry><box size="0.06 0.14 0.17"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><origin xyz="-0.06 0 0.25"/><geometry><box size="0.05 0.1 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
@@ -106,7 +106,7 @@
     <collision><origin xyz="-0.02 0 0.135"/><geometry><box size="0.16 0.26 0.25"/></geometry></collision>
   </link>
   <link name="neck_link">
-    <inertial><origin xyz="1.33943e-10 4.16608e-11 0.0147542"/><mass value="0.16696"/><inertia ixx="0.000135187" ixy="1.5792e-13" ixz="1.64772e-13" iyy="0.000164822" iyz="5.67705e-14" izz="0.000104186"/></inertial>
+    <inertial><origin xyz="-1.52802e-11 -5.62301e-11 0.0150927"/><mass value="0.16495"/><inertia ixx="0.000128808" ixy="3.84352e-14" ixz="-1.87399e-14" iyy="0.000158443" iyz="-6.89615e-14" izz="9.4172e-05"/></inertial>
     <visual><geometry><mesh filename="../meshes/neck_bracket.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/neck_cover.stl"/></geometry><material name="pa_cf"><color rgba="0.88 0.89 0.91 1"/></material></visual>
     <visual><origin xyz="0 0 0.035" rpy="1.5708 0 0"/><geometry><cylinder radius="0.02265" length="0.0248"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>

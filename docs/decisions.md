@@ -2,6 +2,10 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-10-26: torso shell follows the frame
+
+The torso shell was the convex hull of everything in the torso, so the shoulder motors (±138 mm, at the top) held its sides out all the way down: up to 44 mm of air beside a frame ±88 mm wide. It now follows the frame slice by slice, ~13 mm outside it everywhere (4 mm gap, the corner rounding and the skin), blending between slices at most 0.7 mm across per mm up: broad at the shoulders, slimmer at the chest and waist.
+
 ## 2026-10-26: more human proportions
 
 Compared with human proportions at this height the robot's heights were already right (shoulder axis at 0.79 of standing height, chin at ~0.85), but it was too deep in the chest, too wide in the head and wide at the shoulders: parts that do not shrink with the robot (the computer developer kit, the battery, Ø120 mm knee motors, the 124 mm-wide depth camera) sit in a body three quarters the size of current commercial humanoids (~1.7 m). Changes that need no new parts: the computer stands on edge (71 mm deep instead of 110), so the torso frame is 155 mm deep instead of 190 and the shell no longer flares at the chest; the head is a narrower, taller helmet (142 mm wide, 170 mm tall) with the camera at eye height, half way up the face; the neck is 20 mm longer, and the torso shell's shoulders slope up into a collar round a flared neck sleeve. Standing height 1.29 m (requirement 1.20-1.30 m). Not changed, and open: narrower shoulders (the shoulder roll motor sits outboard of the shoulder pitch motor, so the arms hang ~190 mm off the centre line against ~150 mm for a person of this height) would need a new shoulder layout; a smaller head would need a narrower depth camera. The actuator envelopes were re-measured with a STEP reader and match the description (the RS03 and RS06 have a lug that reaches Ø107 and Ø90 mm at one point).
