@@ -98,3 +98,19 @@ def sustained_torque(
     alpha = env.step_dt / time_constant
     h += alpha * (torch.square(torque / _rated[key]) - h)
     return torch.sum(torch.clamp(h - threshold, min=0.0), dim=1)
+
+
+def forward_progress(env, command_name: str, asset_name: str = "robot") -> torch.Tensor:
+    """Reward ground covered along the commanded direction, linearly, up to the command speed.
+
+    The exponential tracking reward with a sharp width pays almost nothing for a slow climb, so
+    at a stair the best-paying choice was to stand still at the bottom (rough v3 stopped in front
+    of 10 cm stairs). This term pays a robot climbing at half the commanded speed half the reward.
+    Zero for near-zero commands.
+    """
+    cmd = env.command_manager.get_command(command_name)[:, :2]
+    speed = torch.linalg.norm(cmd, dim=1)
+    direction = cmd / speed.clamp(min=1e-6)[:, None]
+    vel = env.scene[asset_name].data.root_lin_vel_b.torch[:, :2]
+    along = torch.sum(vel * direction, dim=1)
+    return torch.clamp(along, min=0.0) / speed.clamp(min=1e-6) * (speed > 0.1)

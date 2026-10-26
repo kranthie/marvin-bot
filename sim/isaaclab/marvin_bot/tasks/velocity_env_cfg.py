@@ -44,7 +44,7 @@ from ..robot_cfg import (
 from .curriculums import forward_speed_levels, terrain_levels_tracking
 from .events import randomize_joint_targets
 from .observations import mapped_height_scan
-from .rewards import feet_flat, foot_clearance, sustained_torque
+from .rewards import feet_flat, foot_clearance, forward_progress, sustained_torque
 from .terminations import base_below_ground
 from .terrains import MARVIN_BOT_ROUGH_TERRAINS_CFG
 
@@ -174,6 +174,10 @@ class MarvinBotRewards(RewardsCfg):
             "asset_cfg": SceneEntityCfg("robot", body_names=FEET),
         },
     )
+    # progress along the command, paid linearly so a slow stair climb still earns (rough ground)
+    forward_progress = RewTerm(
+        func=forward_progress, weight=0.0, params={"command_name": "base_velocity"}
+    )
     # heat: holding leg torque above the continuous rating (a slow stair step put the knee at
     # ~108% of its rating in the static check, sim/mujoco/check_step_up.py)
     sustained_torque = RewTerm(
@@ -245,8 +249,11 @@ class MarvinBotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.joint_vel_legs.weight = -5.0e-4
         # a sharp clearance reward (on an earlier prototype a loose one let the feet barely rise)
         self.rewards.foot_clearance.params["std"] = 1.0e-4
-        # make standing still in front of stairs a poor answer to a walk command
-        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.15
+        # make standing still in front of stairs a poor answer to a walk command: linear progress
+        # reward plus a tracking width that still pays partial speed (at std 0.15 rough v3
+        # learned to stop at 10 cm stairs)
+        self.rewards.forward_progress.weight = 1.0
+        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.25
         self.rewards.termination_penalty.weight = -50.0
         self.rewards.dof_acc_l2.weight = -1.0e-7
         self.rewards.dof_acc_l2.params["asset_cfg"] = SceneEntityCfg(
