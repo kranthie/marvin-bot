@@ -1,0 +1,82 @@
+# Marvin Bot: single source of truth for joints, sizes, motors and CAN buses.
+# Concept v0.1 (2026-10-25). Lengths in m; joint ranges in degrees (anatomical, see below).
+# Entries containing "{side}" are expanded for left and right by tools/check_description.py.
+#
+# Range convention (left side; the URDF assigns axis signs):
+#   pitch: + = flexion (thigh or arm forward, knee bend, toes up at the ankle)
+#   roll:  + = abduction (limb away from the midline)
+#   yaw:   + = rotation towards the midline (toes or hand turning in)
+#   neck pitch: + = looking down
+
+robot:
+  name: marvin_bot
+  version: "0.1"
+  height: 1.255
+  mass_target_kg: 35.0
+  mass_limit_kg: 38.0
+
+dimensions:
+  hip_axis_height: 0.690   # hip pitch axis to sole
+  thigh: 0.320             # hip pitch axis to knee axis
+  shin: 0.300              # knee axis to ankle axis
+  ankle_height: 0.070      # ankle axis to sole
+  hip_spacing: 0.200       # between left and right leg lines
+  shoulder_width: 0.490    # outside of the shoulder actuators
+  shoulder_height: 1.055   # shoulder pitch axis above the floor
+  upper_arm: 0.200         # shoulder roll axis to elbow axis
+  forearm: 0.215           # elbow axis to gripper centre
+  foot_length: 0.240
+  foot_width: 0.100
+
+joints:
+  # legs, pelvis outwards (hip pitch, roll, yaw as on most current humanoids)
+  - {name: "{side}_hip_pitch",      axis: pitch, range: [-30, 120]}
+  - {name: "{side}_hip_roll",       axis: roll,  range: [-20, 45]}
+  - {name: "{side}_hip_yaw",        axis: yaw,   range: [-45, 45]}
+  - {name: "{side}_knee",           axis: pitch, range: [0, 140]}
+  - {name: "{side}_ankle_pitch",    axis: pitch, range: [-45, 35]}
+  - {name: "{side}_ankle_roll",     axis: roll,  range: [-20, 20]}
+  # torso and head
+  - {name: waist_yaw,               axis: yaw,   range: [-90, 90]}
+  - {name: neck_yaw,                axis: yaw,   range: [-60, 60]}
+  - {name: neck_pitch,              axis: pitch, range: [-20, 40]}
+  # arms
+  - {name: "{side}_shoulder_pitch", axis: pitch, range: [-60, 180]}
+  - {name: "{side}_shoulder_roll",  axis: roll,  range: [-10, 120]}
+  - {name: "{side}_shoulder_yaw",   axis: yaw,   range: [-90, 90]}
+  - {name: "{side}_elbow",          axis: pitch, range: [0, 135]}
+  - {name: "{side}_wrist_yaw",      axis: yaw,   range: [-90, 90]}
+  - {name: "{side}_gripper",        axis: pitch, range: [0, 60], powered_dof: false}  # end effector, not counted as a body DOF
+
+# Each motor drives one joint directly, or two motors drive a pair of joints through a linkage.
+motors:
+  - {name: "{side}_hip_pitch",      model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_pitch"]}
+  - {name: "{side}_hip_roll",       model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_roll"]}
+  - {name: "{side}_hip_yaw",        model: RS03,    bus: "{side}_hip",   drives: ["{side}_hip_yaw"]}
+  - {name: "{side}_knee",           model: RS04,    bus: "{side}_shank", drives: ["{side}_knee"]}
+  # two calf-mounted motors driving ankle pitch and roll through push rods (parallel linkage)
+  - {name: "{side}_ankle_a",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"]}
+  - {name: "{side}_ankle_b",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"]}
+  - {name: waist_yaw,               model: RS03,    bus: right_arm,      drives: [waist_yaw]}
+  - {name: "{side}_shoulder_pitch", model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_pitch"]}
+  - {name: "{side}_shoulder_roll",  model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_roll"]}
+  - {name: "{side}_shoulder_yaw",   model: RS06,    bus: "{side}_arm",   drives: ["{side}_shoulder_yaw"]}
+  - {name: "{side}_elbow",          model: RS06,    bus: "{side}_arm",   drives: ["{side}_elbow"]}
+  - {name: "{side}_wrist_yaw",      model: RS00,    bus: "{side}_arm",   drives: ["{side}_wrist_yaw"]}
+  - {name: neck_yaw,                model: STS3250, bus: servo,          drives: [neck_yaw]}
+  - {name: neck_pitch,              model: STS3250, bus: servo,          drives: [neck_pitch]}
+  - {name: "{side}_gripper",        model: STS3250, bus: servo,          drives: ["{side}_gripper"]}
+
+# Classic CAN 2.0B at 1 Mbit/s (Robstride uses 29-bit identifiers). Each motor exchanges one
+# command and one reply frame per control cycle. Load is kept at or below max_load.
+can:
+  bitrate: 1000000
+  bits_per_frame: 150        # 29-bit ID, 8 data bytes, worst-case bit stuffing
+  frames_per_motor_cycle: 2
+  max_load: 0.6
+  buses:
+    "{side}_hip":   {type: can, rate_hz: 500}
+    "{side}_shank": {type: can, rate_hz: 500}
+    "{side}_arm":   {type: can, rate_hz: 250}
+    battery:        {type: can, rate_hz: 10, note: "BMS telemetry, no motors"}
+    servo:          {type: serial, note: "Feetech serial bus, 12 V"}

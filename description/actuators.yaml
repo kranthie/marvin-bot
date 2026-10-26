@@ -1,0 +1,93 @@
+# Actuator specifications. SI units. "verified: manual" means taken from the manufacturer's
+# manual or specification sheet; "reseller" means not yet confirmed by the manufacturer.
+# Rated torques for Robstride depend on the aluminium heat sink the manual tests with.
+#
+# Sources:
+#   Robstride: https://github.com/RobStride/Product_Information (manuals revised 2025-11 to 2026-10,
+#              specification README dated 2026-07-13)
+#   Feetech STS3250: manufacturer datasheet (ST-3250-C001)
+
+RS04:
+  vendor: RobStride
+  peak_torque: 120.0          # N·m, at 90 A peak phase current
+  rated_torque: 40.0          # N·m with a 345 x 345 mm heat sink; 35 N·m with 220 x 200 mm
+  no_load_speed_rpm: 200
+  gear_ratio: 9
+  mass: 1.42                  # kg
+  torque_constant: 2.1        # N·m/A rms
+  voltage: [24, 60]           # V; manual 24-60, specification README 15-60
+  interface: can
+  protocols: [robstride, mit, canopen]
+  envelope_mm: [120, 120, 56] # reseller figure, check against the STEP model
+  verified: manual
+
+RS03:
+  vendor: RobStride
+  peak_torque: 60.0           # at 43 A
+  rated_torque: 20.0          # 215 x 220 mm heat sink; README says 21
+  no_load_speed_rpm: 195      # README; manual says 200
+  gear_ratio: 9
+  mass: 0.90                  # README; manual says 0.88
+  torque_constant: 2.36
+  voltage: [24, 60]
+  interface: can
+  protocols: [robstride, mit]
+  envelope_mm: [106, 106, 56] # reseller figure
+  verified: manual
+
+RS06:
+  vendor: RobStride
+  peak_torque: 36.0           # at 57 A
+  rated_torque: 11.0          # 130 x 160 mm heat sink
+  no_load_speed_rpm: 480
+  gear_ratio: 9
+  mass: 0.621
+  torque_constant: 1.09
+  voltage: [15, 60]
+  interface: can
+  protocols: [robstride, mit]
+  envelope_mm: null           # not yet measured; driver board is 62 mm across
+  verified: manual
+
+RS00:
+  vendor: RobStride
+  peak_torque: 14.0           # at 15.5 A
+  rated_torque: 5.0           # 90 x 85 mm heat sink
+  no_load_speed_rpm: 315
+  gear_ratio: 10
+  mass: 0.31
+  torque_constant: 1.48
+  voltage: [24, 60]
+  interface: can
+  protocols: [robstride, mit]
+  envelope_mm: [57, 57, 51]   # reseller figure
+  verified: manual
+
+STS3250:
+  vendor: Feetech
+  peak_torque: 4.9            # stall, at 12 V
+  rated_torque: 1.57
+  no_load_speed_rpm: 75
+  gear_ratio: 345
+  mass: 0.0745
+  torque_constant: null
+  voltage: [9, 12.6]
+  interface: serial
+  protocols: [feetech_sts]
+  envelope_mm: [45.3, 35.8, 24.8]
+  verified: manual
+
+# Second source for the 120 N·m class, not used in the current layout.
+DM-J10010L:
+  vendor: Damiao
+  peak_torque: 120.0
+  rated_torque: 40.0
+  no_load_speed_rpm: null
+  gear_ratio: 10
+  mass: null
+  torque_constant: null
+  voltage: [24, 48]
+  interface: can
+  protocols: [mit]
+  envelope_mm: null
+  verified: reseller
