@@ -30,6 +30,10 @@ def cyl(d: float, h: float, axis: str = "z", center=(0, 0, 0)) -> mf.Manifold:
     return m.translate(list(center))
 
 
+def ellipsoid(radii, center=(0, 0, 0)) -> mf.Manifold:
+    return mf.Manifold.sphere(1.0, SEGMENTS).scale(list(radii)).translate(list(center))
+
+
 def hull(*parts: mf.Manifold) -> mf.Manifold:
     return mf.Manifold.batch_hull(list(parts))
 

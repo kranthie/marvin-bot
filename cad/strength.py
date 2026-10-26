@@ -1,4 +1,4 @@
-"""Hand-calculation strength check of the leg's load-carrying parts.
+"""Hand-calculation strength check of the legs', pelvis's and arms' load-carrying parts.
 
 Each checked part is cut at several stations along its load path. At each cut the real cross
 section of the CAD solid (lightening holes included) gives the area and the second moments of
@@ -6,9 +6,11 @@ area; the loads give the axial force and the bending moments there; the bending-
 stress is compared with the material's yield strength. Torsion and stress concentrations at
 holes and corners are not included, so the target safety factor is 2 on yield.
 
-Load cases, at the default straight-leg pose (all link frames aligned; the pelvis takes one
+Load cases, at the default straight-limb pose (all link frames aligned; the pelvis takes one
 leg's landing load through its hip):
   landing: at the ankle axis, 3 x body weight up, 0.5 x fore-aft, 0.3 x sideways, together
+  hand: for the arms' aluminium parts, at the gripper: 0.5 x body weight up, 0.25 x
+        fore-aft, 0.15 x sideways (catching a fall or pushing up from the floor on one hand)
   peak torque: the joint's peak torque (description/actuators.yaml, the linkage ratios for the
                ankle) as a moment on the part that reacts it
 
@@ -31,7 +33,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from . import leg, torso
+from . import arm, leg, torso
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -92,8 +94,9 @@ class Check:
     part: str  # one part, or several joined by "+" and checked as one section (a yoke)
     axis: str  # cut perpendicular to this axis
     stations: list[float]  # mm along the axis
-    point: tuple  # where the landing force acts, in the part's link frame (mm)
+    point: tuple  # where the landing (or hand) force acts, in the part's link frame (mm)
     moment: tuple = (0.0, 0.0, 0.0)  # peak-torque case: moment vector (N·mm)
+    load: str = "landing"  # or "hand"
 
 
 def checks(peak: dict, mass: float) -> list[Check]:
@@ -106,6 +109,10 @@ def checks(peak: dict, mass: float) -> list[Check]:
     ankle_roll_frame = yaw + ankle_thigh
     ankle_pitch_frame = j["left_hip_roll"] + ankle_roll_frame
     ankle_pitch = 1000 * peak["left_ankle_pitch"]
+    hand_roll = sum(
+        j[k] for k in ("left_shoulder_yaw", "left_elbow", "left_wrist_yaw", "left_gripper")
+    )
+    hand_pitch = j["left_shoulder_roll"] + hand_roll
     return [
         Check(
             "left_shin_web",
@@ -164,6 +171,24 @@ def checks(peak: dict, mass: float) -> list[Check]:
             list(np.linspace(40, 140, 6)),
             (150.0, 0.0, -60.0),
         ),
+        # arms: the shoulder pitch bracket's back plate carries the roll motor; the roll
+        # bracket's front and top plates carry the yaw motor and everything below
+        Check(
+            "left_shoulder_back",
+            "z",
+            list(np.linspace(-85, -20, 6)),
+            tuple(hand_pitch),
+            (1000 * peak["left_shoulder_roll"], 0.0, 0.0),
+            "hand",
+        ),
+        Check(
+            "left_shoulder_roll_front",
+            "z",
+            list(np.linspace(-50, -10, 5)),
+            tuple(hand_roll),
+            (0.0, 0.0, 1000 * peak["left_shoulder_yaw"]),
+            "hand",
+        ),
     ]
 
 
@@ -183,10 +208,12 @@ def main() -> int:
         peak[m.group(1)] = float(m.group(2))
     w = mass * G
     landing = np.array([0.5 * w, 0.3 * w, 3.0 * w])  # N: fore-aft, sideways, up
-    parts = {p.name: p for p in leg.parts() + torso.parts()}
+    hand = np.array([0.25 * w, 0.15 * w, 0.5 * w])
+    parts = {p.name: p for p in leg.parts() + torso.parts() + arm.parts()}
     worst_sf = np.inf
     print(
-        f"robot {mass:.1f} kg; landing load at the ankle {np.round(landing):} N; target SF {TARGET}"
+        f"robot {mass:.1f} kg; landing load at the ankle {np.round(landing):} N, hand load"
+        f" {np.round(hand):} N; target SF {TARGET}"
     )
     print(f"{'part':34} {'case':8} {'station':>8} {'stress':>8} {'yield':>6} {'SF':>5}")
     for c in checks(peak, mass):
@@ -198,7 +225,7 @@ def main() -> int:
         label = names[0] + (" (combined)" if len(names) > 1 else "")
         ax = "xyz".index(c.axis)
         uv = [i for i in range(3) if i != ax]
-        for case in ("landing", "peak torque"):
+        for case in (c.load, "peak torque"):
             worst = (0.0, None)
             for s in c.stations:
                 sec = section(solid, c.axis, s)
@@ -207,8 +234,8 @@ def main() -> int:
                 centroid = np.zeros(3)
                 centroid[ax] = s
                 centroid[uv[0]], centroid[uv[1]] = sec[1]
-                if case == "landing":
-                    force = landing
+                if case in ("landing", "hand"):
+                    force = landing if case == "landing" else hand
                     mom = np.cross(np.array(c.point) - centroid, force)  # N·mm
                 else:
                     force = np.zeros(3)

@@ -29,7 +29,7 @@ import numpy as np
 import trimesh
 import yaml
 
-from . import leg, torso
+from . import arm, covers, head, leg, torso
 
 ROOT = Path(__file__).resolve().parent.parent
 MESHES = ROOT / "description" / "meshes"
@@ -40,11 +40,19 @@ BUDGET = {
     "foot": "feet",
     "pelvis": "pelvis",
     "torso": "torso",
+    "shoulder": "arm_structure",
+    "upper_arm": "arm_structure",
+    "forearm": "arm_structure",
+    "gripper": "grippers",
+    "neck": "head",
+    "head": "head",
 }  # name keyword -> budget item; else legs
 
 
-def budget_item(name: str) -> str:
-    return next((v for k, v in BUDGET.items() if k in name), "leg_structure")
+def budget_item(p) -> str:
+    if p.process == "cover":
+        return "covers"  # add-on, outside the mass budget and the default URDF
+    return next((v for k, v in BUDGET.items() if k in p.name), "leg_structure")
 
 
 def fits(size: np.ndarray, limit) -> bool:
@@ -58,19 +66,21 @@ def r6(v) -> list[float]:
 
 
 def build() -> tuple[str, dict, list]:
-    parts = leg.all_parts() + torso.parts()
+    parts = leg.all_parts() + torso.parts() + arm.all_parts() + head.parts() + covers.all_parts()
     model, meshes, too_big = {}, {}, []
     for p in parts:
         mass, com, inertia = p.mass_properties()
         size = p.bounds()
-        limit = MILL_MM if p.process == "cnc" else PRINT_MM if p.process == "print" else None
+        limit = (
+            MILL_MM if p.process == "cnc" else PRINT_MM if p.process in ("print", "cover") else None
+        )
         if limit and not fits(size, limit):
             too_big.append((p.name, p.process, size))
         model[p.name] = dict(
             link=p.link,
             material=p.material,
             process=p.process,
-            budget=budget_item(p.name),
+            budget=budget_item(p),
             mass=round(float(mass), 5),
             com=r6(com),
             inertia=r6(inertia[[0, 1, 2, 0, 0, 1], [0, 1, 2, 1, 2, 2]]),

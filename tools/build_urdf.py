@@ -15,11 +15,13 @@ Model:
   estimate boxes for the budget items they cover, with their computed masses and inertias and
   their meshes as visuals;
 - collision geometry is the skeleton's boxes; visuals are the remaining estimate boxes, the
-  CAD meshes and the motor housings.
+  CAD meshes and the motor housings;
+- the clip-on covers (cad/covers.py, an optional add-on) go only into a second URDF,
+  marvin_bot_covers.urdf, with their masses; the default model is the bare robot.
 
 Usage:
   python tools/build_urdf.py           # write the URDF and print the mass summary
-  python tools/build_urdf.py --check   # exit 1 if the URDF is out of date (used by CI)
+  python tools/build_urdf.py --check   # exit 1 if either URDF is out of date (used by CI)
 """
 
 import argparse
@@ -33,6 +35,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
 URDF_OUT = DESC / "urdf" / "marvin_bot.urdf"
+URDF_COVERS = DESC / "urdf" / "marvin_bot_covers.urdf"  # with the clip-on covers
 CAD_MODEL = DESC / "cad_model.yaml"  # written by cad/build.py
 SIDES = ("left", "right")
 DEFAULT_ENVELOPE_MM = [80, 80, 50]  # for actuators without a measured envelope yet
@@ -49,6 +52,7 @@ CAD_COLOURS = {  # machined aluminium, printed shells and soles, bought hardware
     "service": "0.72 0.74 0.77 1",
     "print": "0.17 0.18 0.20 1",
     "bought": "0.45 0.45 0.47 1",
+    "cover": "0.88 0.89 0.91 1",
 }
 TOL = 1e-6
 
@@ -201,7 +205,7 @@ def motor_placements() -> list[dict]:
     return out
 
 
-def build() -> tuple[str, dict]:
+def build(covers: bool = False) -> tuple[str, dict]:
     robot = yaml.safe_load((DESC / "robot.yaml").read_text())
     acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
     budget = yaml.safe_load((DESC / "mass_budget.yaml").read_text())["items"]
@@ -210,6 +214,8 @@ def build() -> tuple[str, dict]:
     ranges = {j["name"]: j["range"] for j in expand(robot["joints"])}
     joints = mirrored(skel["joints"], key_is_name=True)
     cad = yaml.safe_load(CAD_MODEL.read_text()) if CAD_MODEL.exists() else {}
+    if not covers:
+        cad = {k: v for k, v in cad.items() if v["budget"] != "covers"}
     cad_items = {p["budget"] for p in cad.values()}
     bodies = [
         b for b in mirrored(skel["bodies"], key_is_name=False) if b["budget"] not in cad_items
@@ -352,18 +358,20 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true", help="fail if the URDF is out of date")
     args = ap.parse_args()
-    text, summary = build()
+    outputs = [(URDF_OUT, *build()), (URDF_COVERS, *build(covers=True))]
     if args.check:
-        if not URDF_OUT.exists() or URDF_OUT.read_text() != text:
-            print(f"{URDF_OUT.relative_to(ROOT)} is out of date: run python tools/build_urdf.py")
-            return 1
-        print("URDF up to date")
+        for path, text, _ in outputs:
+            if not path.exists() or path.read_text() != text:
+                print(f"{path.relative_to(ROOT)} is out of date: run python tools/build_urdf.py")
+                return 1
+        print("URDFs up to date")
         return 0
     URDF_OUT.parent.mkdir(parents=True, exist_ok=True)
-    URDF_OUT.write_text(text)
-    print(
-        f"wrote {URDF_OUT.relative_to(ROOT)}: {len(summary)} links, {sum(summary.values()):.2f} kg"
-    )
+    for path, text, summary in outputs:
+        path.write_text(text)
+        print(
+            f"wrote {path.relative_to(ROOT)}: {len(summary)} links, {sum(summary.values()):.2f} kg"
+        )
     return 0
 
 
