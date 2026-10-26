@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+
+# Python packaging
+*.egg-info/
+build/
+dist/
+.ruff_cache/
+
+# Generated or large artefacts
+logs/
+outputs/
+*.engine
+description/meshes/
+sim/isaaclab/usd/
+bench/data/
+
+# Vendor CAD fetched by scripts (not redistributable)
+cad/vendor/
