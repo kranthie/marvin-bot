@@ -20,6 +20,12 @@ RS04:
   interface: can
   protocols: [robstride, mit, canopen]
   envelope_mm: [120, 120, 55.7]  # RobStride STEP model (tools/fetch_vendor_cad.py)
+  # Outline (RobStride drawing, manual §1.1, and STEP model): a Ø120 body with the output on its
+  # front face, and a Ø94 driver cap (cable exit) standing 13.2 mm proud of the rear face.
+  shape: {body_d: 120, cap_d: 94, cap_len: 13.2, output_d: 42}
+  holes:   # mm; stator holes on both body faces (front: blind 5 deep; rear: 6 deep)
+    stator: {n: 10, thread: M4, pcd: 106}
+    output: {n: 9, thread: M5, pcd: 36, pins: {n: 2, d: 5, pcd: 35.86}}
   verified: manual
 
 RS03:
@@ -34,6 +40,12 @@ RS03:
   interface: can
   protocols: [robstride, mit]
   envelope_mm: [100, 99, 56.6]  # RobStride STEP model (re-measured 2026-10-26); a lug reaches Ø107 at one point; resellers list 106 x 106 x 56
+  # Outline: a Ø98 body with eight mounting ears (to ~Ø107), the output on its front face, and a
+  # ~Ø78 driver cap 12.5 mm proud of the rear face (drawing and STEP model).
+  shape: {body_d: 100, cap_d: 78, cap_len: 12.5, ears_d: 107, output_d: 70}
+  holes:
+    stator: {n: 8, thread: M4, pcd: 98}   # in the ears, 8 deep
+    output: {n: 6, thread: M4, pcd: 30.36, pins: {n: 3, d: 4, pcd: 30.36}}
   verified: manual
 
 RS06:
@@ -48,6 +60,12 @@ RS06:
   interface: can
   protocols: [robstride, mit]
   envelope_mm: [85, 82, 50.5]  # RobStride STEP model (re-measured 2026-10-26); a lug reaches Ø90 at one point
+  # Outline: a Ø85 body with ears (to ~Ø88), the output (Ø52 spigot) on its front face, and a
+  # Ø70 driver cap ~14 mm proud of the rear face (drawing and STEP model).
+  shape: {body_d: 85, cap_d: 70, cap_len: 14.0, ears_d: 88, output_d: 52}
+  holes:
+    stator: {n: 8, thread: M3, pcd: 82}   # in the ears, 8.5 deep
+    output: {n: 6, thread: M4, pcd: 30, pins: {n: 3, d: 4, pcd: 24}}   # screw circle read off the drawing, to confirm
   verified: manual
 
 RS00:
@@ -62,6 +80,11 @@ RS00:
   interface: can
   protocols: [robstride, mit]
   envelope_mm: [57, 57, 51.4]  # RobStride STEP model
+  # Outline: a plain Ø57 cylinder, the output (Ø35, 1 mm proud) on its front face.
+  shape: {body_d: 57, cap_d: null, cap_len: 0, output_d: 35}
+  holes:
+    stator: {n: 6, thread: M3, pcd: 50}   # front face; the rear face has 4 x M3 on Ø38
+    output: {n: 6, thread: M3, pcd: 27, pins: {n: 2, d: 3, pcd: 24.46}}
   verified: manual
 
 STS3250:
@@ -76,6 +99,10 @@ STS3250:
   interface: serial
   protocols: [feetech_sts]
   envelope_mm: [45.3, 35.8, 24.8]
+  # A box servo: the output shaft runs along its 35.8 mm height, 5.8 mm above the case's top face
+  # with the spline; the shaft sits 11.5 mm off the case centre along its 45.3 mm length
+  # (approximate, from the datasheet outline). Mounting ears at both ends of the length.
+  shape: {box: [45.3, 24.8], axial: [-30.0, 5.8], shaft_offset: 11.5}
   verified: manual
 
 # Second source for the 120 N·m class, not used in the current layout.

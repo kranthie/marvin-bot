@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from .lib import Part, box, ellipsoid, hull, union
+from .lib import Part, box, cyl, ellipsoid, hull, union
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -36,7 +36,7 @@ WALL = 2.5
 # deeper than it is wide, sitting forward of the neck, the chin forward and low, the crown
 # back and high
 CROWN = (4.0, 0.0, 94.0), (82.0, 71.0, 84.0)
-CHIN = (28.0, 0.0, 42.0), (50.0, 46.0, 40.0)
+CHIN = (28.0, 0.0, 42.0), (50.0, 54.0, 40.0)
 CAMERA = (124.0, 29.0, 27.0, 133.0)  # width, height, depth (mm), mass (g)
 CAMERA_AT = (21.0, 0.0, 92.0)  # its centre, at eye height: half way up the head
 VISOR_X = 34.0  # the visor is the whole face ahead of this plane (at eye height) ...
@@ -47,28 +47,50 @@ NECK_CUT_SLOPE = 0.35  # (cad/covers.py) runs up inside it. The underside rises 
 
 
 def parts() -> list[Part]:
-    sw, sl, st = _acts["STS3250"]["envelope_mm"]  # servo length (x), height (z), thickness (y)
+    sv = _acts["STS3250"]["shape"]  # case length x width, axial extent about the shaft
+    s_len, s_wid = sv["box"]
+    s_lo, s_hi = sv["axial"]  # case bottom and spline top, along the shaft from its datum
+    s_off = sv["shaft_offset"]  # case centre from the shaft, along its length
+    horn_t = 3.0  # the servo horn, on the spline
     neck_mount = [x * 1000 for x in _skel["motor_mounts"]["neck_yaw"]["xyz"]]
     neck = [x * 1000 for x in _skel["joints"]["neck_yaw"]["xyz"]]
     pitch = [x * 1000 for x in _skel["joints"]["neck_pitch"]["xyz"]]
-    horn_top = neck_mount[2] + sl / 2 - neck[2] + 2  # above the torso bridge (neck frame)
     out: list[Part] = []
 
-    # --- neck link: plate on the yaw horn, cheeks cradling the pitch servo at its ends
-    base = box((60, 34, 4), (0, 0, horn_top + 2))
-    cheek_h = pitch[2] - horn_top
-    cheeks = [box((4, 30, cheek_h), (s * (sw / 2 + 2), 0, horn_top + cheek_h / 2)) for s in (1, -1)]
-    out.append(Part("neck_bracket", "neck_link", "al6061", union(base, *cheeks), "cnc"))
+    # --- neck link: the yaw servo hangs under the torso bridge, its horn just above the bridge;
+    # a hub on the horn carries the base plate clear of the bridge, and two cheeks hold the
+    # pitch servo, which stands case-down below its shaft, by its mounting ears
+    horn_top = neck_mount[2] + s_hi + horn_t - neck[2]  # neck frame
+    bridge_top = neck_mount[2] + s_hi + 6.0 - neck[2]  # cad/torso.py
+    base_z = bridge_top + 2.0 + 2.0  # 4 mm base, 2 mm over the bridge
+    hub = cyl(16, base_z - 2.0 - horn_top, "z", (0, 0, (horn_top + base_z - 2.0) / 2))
+    base = box((40, 50, 4), (0, -12, base_z))
+    case_bot = pitch[2] - s_off - s_len / 2  # the pitch servo's case, along -z below the shaft
+    ymid = (s_hi + s_lo) / 2
+    cradle = box(
+        (s_wid + 6, s_hi - s_lo + 6, case_bot - base_z), (0, ymid, (case_bot + base_z) / 2)
+    )
+    cheeks = [
+        box((3, s_hi - s_lo, 25), (sgn * (s_wid / 2 + 1.5), ymid, case_bot + 12.5))
+        for sgn in (1, -1)
+    ]
+    cradle = cradle - box(
+        (s_wid - 4, s_hi - s_lo + 8, case_bot - base_z - 8), (0, ymid, (case_bot + base_z) / 2)
+    )  # an open frame, not a block
+    bracket = union(hub, base, cradle, *cheeks)
+    out.append(Part("neck_bracket", "neck_link", "al6061", bracket, "cnc"))
 
-    # --- head frame: side plates on the pitch servo's horn and idler (y = +-(st/2 + 1.5)),
-    # a camera bridge and a top bar
+    # --- head frame: side plates on the pitch servo's horn (+y) and idler (-y), a camera mount
+    # and a top bar joining them
     cx, cy, cz = CAMERA_AT
     cw, ch, cd, cmass = CAMERA
     back = cx - cd / 2  # the camera's back face
-    # side plates kept inside r = 22 mm of the pitch axis below it, clear of the neck cheeks
-    plates = [box((back + 10, 3, 110), ((back - 10) / 2, s * (st / 2 + 3), 50)) for s in (1, -1)]
-    bridge = box((4, st + 9, 22), (back - 2, 0, cz))  # the camera bolts to this
-    top = box((back + 10, st + 9, 4), ((back - 10) / 2, 0, 103))
+    y_horn = s_hi + horn_t + 1.5
+    y_idler = s_lo - 2.5
+    plates = [box((back + 10, 3, 110), ((back - 10) / 2, y, 50)) for y in (y_horn, y_idler)]
+    span = y_horn - y_idler + 3
+    bridge = box((4, span, 22), (back - 2, (y_horn + y_idler) / 2, cz))  # the camera bolts here
+    top = box((back + 10, span, 4), ((back - 10) / 2, (y_horn + y_idler) / 2, 103))
     out.append(Part("head_frame", "head_link", "pa_cf", union(*plates, bridge, top), "print"))
 
     # --- shell and visor

@@ -31,6 +31,8 @@ from pathlib import Path
 import yaml
 
 from .lib import Part, box, cyl, hull, lighten, strap, union
+from .mounts import bolt_holes, output_flange, rear_ring, spec, spider
+from .mounts import posts as mount_posts
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -78,18 +80,23 @@ def parts() -> list[Part]:
     # when the hip extends); the pelvis keeps clear of its swing (cad/torso.py)
     rear_x = roll_c[0] - t04 / 2 - hip_t - 14 - plate / 2
     front = union(
-        cyl(80, plate, "x", (fx, 0, 0)),
+        output_flange("RS04", roll_c, "x", 1, 80, plate)[0],
         box((plate, -sy + st / 2, 56), (fx, (sy - st / 2) / 2, 0)),  # in, to the stator
         box((plate, 40, over + 10), (fx, 0, (over + 10) / 2)),  # up, to the bar
     )
     front = lighten(front, "x", keep=[cyl(60, 40, "x", (out_x, 0, 0))], hole=12, pitch=18, rim=7)
     stator = union(
-        cyl(100, st, "y", (pj[0], sy, pj[2])),
+        spider("RS04", pj, "y", 1, t04 / 2, st, width=20),
         hull(cyl(56, st, "y", (pj[0], sy, pj[2])), box((plate, st, 56), (fx, sy, 0))),
     )
     stator = lighten(stator, "y", keep=[cyl(76, 40, "y", (pj[0], sy, pj[2]))], hole=14, pitch=20)
     stub = cyl(30, 12, "y", (pj[0], sy - st / 2 - 6, pj[2]))  # thigh far-side bearing
     stator = union(stator, stub)
+    # the pitch motor's stator bolts to a ring on its body's rear (inner) face; posts carry
+    # the stator plate, with the thigh's far-side stub, over its driver cap
+    hp_ring, _ = rear_ring("RS04", pj, "y", 1)
+    hp_mount = union(hp_ring, mount_posts("RS04", pj, "y", 1, 4.0, t04 / 2))
+    out.append(Part("left_hip_pitch_mount", "left_hip_roll_link", "al6061", hp_mount, "cnc"))
     rear = union(
         cyl(brg_d + 16, plate, "x", (rear_x, 0, 0)),
         box((plate, 30, over + 10), (rear_x, 0, (over + 10) / 2)),
@@ -119,11 +126,11 @@ def parts() -> list[Part]:
     # stiffer in twist, and one solid piece at the top of the thigh.
     face = t04 / 2
     yaw_c = J["left_hip_yaw"]
-    yaw_top = yaw_c[2] + t03 / 2
-    tz = yaw_top + web_t / 2  # yaw top plate
-    flange = cyl(80, plate, "y", (0, face + plate / 2, 0))
+    yaw_top = yaw_c[2] + t03 / 2  # the yaw motor's driver cap top
+    tz = yaw_top + web_t / 2  # the box floor, over the cap; posts down to a ring on the body
+    flange = output_flange("RS04", (0, 0, 0), "y", 1, 80, plate)[0]
     out.append(Part("left_hip_pitch_flange", "left_hip_pitch_link", "al6061", flange, "cnc"))
-    side_t = 6.0  # the box walls carry the twist (SF > 5, cad/strength.py)
+    side_t = 5.0  # the box walls carry the twist (SF > 4, cad/strength.py)
     oy = face + plate + side_t / 2
     outer_p = union(
         cyl(80, side_t, "y", (0, oy, 0)),
@@ -141,8 +148,11 @@ def parts() -> list[Part]:
         box((48, oy - iy + side_t, web_t), (0, (oy + iy) / 2, tz)),
     )
     top = lighten(
-        top, "z", keep=[cyl(44, 40, "z", (yaw_c[0], yaw_c[1], yaw_top))], hole=20, pitch=26
+        top, "z", keep=[cyl(d03 + 4, 40, "z", (yaw_c[0], yaw_c[1], yaw_top))], hole=20, pitch=26
     )
+    y_ring, _ = rear_ring("RS03", yaw_c, "z", -1)
+    y_mount = union(y_ring, mount_posts("RS03", yaw_c, "z", -1, 4.0, t03 / 2))
+    out.append(Part("left_hip_yaw_mount", "left_hip_pitch_link", "al6061", y_mount, "cnc"))
     out.append(Part("left_hip_pitch_outer", "left_hip_pitch_link", "al6061", outer_p, "cnc"))
     out.append(Part("left_hip_pitch_inner", "left_hip_pitch_link", "al6061", inner_p, "cnc"))
     out.append(Part("left_hip_pitch_top", "left_hip_pitch_link", "al6061", top, "cnc"))
@@ -170,8 +180,8 @@ def parts() -> list[Part]:
     # --- thigh: frame on the yaw axis at the yaw motor's centre; yaw output faces down
     yaw_out = -t03 / 2
     knee = J["left_knee"]
-    tflange = hull(
-        cyl(84, plate, "z", (0, 0, yaw_out - plate / 2)),
+    tflange = union(
+        output_flange("RS03", (0, 0, 0), "z", -1, 84, plate)[0],
         box((60, 16, plate), (0, t04 / 2 + 2, yaw_out - plate / 2)),
     )
     out.append(Part("left_thigh_flange", "left_thigh_link", "al6061", tflange, "cnc"))
@@ -180,12 +190,17 @@ def parts() -> list[Part]:
     # (~86 mm, STEP model), instead of a plate as wide as the motor
     tplate = union(
         hull(box((60, web_t, 16), (0, py, yaw_out - 8)), cyl(46, web_t, "y", (0, py, knee[2]))),
-        cyl(100, web_t, "y", (0, py, knee[2])),
+        spider("RS04", knee, "y", -1, t04 / 2, web_t, width=20),
     )
     tplate = lighten(tplate, "y", keep=[cyl(70, 40, "y", (0, py, knee[2]))], hole=16, pitch=22)
     # stub axle for the shin's far-side bearing, on the knee axis outside the plate
     tplate = union(tplate, cyl(30, 12, "y", (0, py + web_t / 2 + 6, knee[2])))
     out.append(Part("left_thigh_plate", "left_thigh_link", "al6061", tplate, "cnc"))
+    # the knee motor's stator bolts to a ring on its body's rear (outer) face; posts join it to
+    # the thigh plate over the driver cap
+    kn_ring, _ = rear_ring("RS04", knee, "y", -1)
+    kn_mount = union(kn_ring, mount_posts("RS04", knee, "y", -1, 4.0, t04 / 2))
+    out.append(Part("left_thigh_knee_mount", "left_thigh_link", "al6061", kn_mount, "cnc"))
     shell_top, shell_bot = yaw_out - 12, knee[2] + d04 / 2 + 4
     outer = hull(
         cyl(d03 + 16, 2, "z", (0, 0, shell_top)),
@@ -205,9 +220,8 @@ def parts() -> list[Part]:
     ka, kb = mounts["left_ankle_a"], mounts["left_ankle_b"]
     ankle_z = J["left_ankle_pitch"][2]
     yi, yo = -(t03 / 2 + plate / 2), t03 / 2 + plate / 2  # inner and outer side plates
-    ring03 = 86.0  # RS03 stator ring: its ~72 mm mounting-hole circle (STEP model) + margin
     hub = 40.0  # crank hub, spanning the gap from the motor's output face to the crank
-    w = 30.0  # strap width (cad/strength.py sizes it)
+    w = 38.0  # strap width (cad/strength.py sizes it)
 
     def cheek_at(y):  # the fork cheek: the plate's lower end, round the ankle bearing
         return (0.0, y, ankle_z)
@@ -216,10 +230,12 @@ def parts() -> list[Part]:
     bridge_c = (65.0, -45.0)  # bridge in front of the knee motor, joining the knee yoke
     inner = union(
         cyl(84, plate, "y", (0, yi, 0)),
-        cyl(ring03, plate, "y", (ka[0], yi, ka[2])),
+        spider("RS03", ka, "y", 1, t03 / 2, plate, width=24),
         strap(w, plate, "y", (0, yi, 0), (-20, yi, -110), (ka[0], yi, ka[2]), cheek_at(yi)),
         strap(30, plate, "y", (0, yi, 0), (bridge_c[0], yi, bridge_c[1])),
     ) - cyl(22, 20, "y", (0, yi, ankle_z))
+    kh = spec("RS04")["holes"]["output"]
+    inner = inner - bolt_holes(kh["n"], kh["thread"], kh["pcd"], "y", (0, yi, 0), plate + 2)
     inner = lighten(
         inner,
         "y",
@@ -230,7 +246,7 @@ def parts() -> list[Part]:
     )
     outer = (
         union(
-            cyl(ring03, plate, "y", (kb[0], yo, kb[2])),
+            spider("RS03", kb, "y", -1, t03 / 2, plate, width=24),
             strap(
                 w,
                 plate,
@@ -249,6 +265,12 @@ def parts() -> list[Part]:
     )
     out.append(Part("left_shin_inner", "left_shin_link", "al6061", inner, "service"))
     out.append(Part("left_shin_outer", "left_shin_link", "al6061", outer, "service"))
+    # each ankle motor's stator bolts to a ring on its body's rear face (its ears), joined by
+    # posts to the side plate over its driver cap: a's to the inner plate, b's to the outer
+    for name, c, sgn in (("a", ka, 1), ("b", kb, -1)):
+        ring, _ = rear_ring("RS03", c, "y", sgn, outer=112.0)
+        mount = union(ring, mount_posts("RS03", c, "y", sgn, 4.0, t03 / 2))
+        out.append(Part(f"left_ankle_mount_{name}", "left_shin_link", "al6061", mount, "cnc"))
     # the knee's far side: a plate on a bearing on the thigh plate's stub axle, tied to both
     # side plates by a bridge in front of the knee motor
     oy = t04 / 2 + web_t + 2 + 6 + plate / 2  # outside the thigh plate and its stub
@@ -274,7 +296,7 @@ def parts() -> list[Part]:
     )
     # spacer tubes between the side plates, clear of both motors and the ankle cross
     gap = yo - yi - plate
-    for k, (sx, sz) in enumerate(((-50.0, -130.0), (55.0, -200.0), (-40.0, ankle_z + 35))):
+    for k, (sx, sz) in enumerate(((-50.0, -130.0), (55.0, -200.0), (-45.0, ankle_z + 25))):
         tube = cyl(16, gap, "y", (sx, 0, sz)) - cyl(8, gap + 2, "y", (sx, 0, sz))
         out.append(Part(f"left_shin_spacer_{k}", "left_shin_link", "al6061", tube, "cnc"))
     # cranks outside the side plates, pointing back (and slightly down) at neutral

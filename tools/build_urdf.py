@@ -191,6 +191,7 @@ def motor_placements() -> list[dict]:
             axis = mount.get("axis", j["axis"] if len(m["drives"]) == 1 else [0, 1, 0])
         else:
             link, xyz, axis = j["parent"], j["xyz"], j["axis"]
+        right = m["name"].startswith("right_")
         out.append(
             dict(
                 name=m["name"],
@@ -200,9 +201,59 @@ def motor_placements() -> list[dict]:
                 axis=axis,
                 envelope=env,
                 drives=m["drives"],
+                output=mirror_xyz(m["output"]) if right else m.get("output", axis),
+                length=(mirror_xyz(m["length"]) if right else m["length"])
+                if "length" in m
+                else None,
+                shape=a.get("shape"),
             )
         )
     return out
+
+
+def motor_primitives(m: dict) -> list[dict]:
+    """The housing of a placed motor as simple solids in its link's frame (m): for a RobStride,
+    the body cylinder (output face on the output side) and the smaller driver cap behind it;
+    for a servo, its case box, offset from the shaft. Each: kind "cylinder" (centre, axis, d,
+    length) or "box" (centre, size along x, y, z)."""
+    env, xyz = m["envelope"], [float(v) for v in m["xyz"]]
+    o = [float(v) for v in m["output"]]
+    sh = m.get("shape") or {}
+    if "box" in sh:
+        ln = [float(v) for v in m["length"]]
+        lo, hi = sh["axial"][0] / 1000, sh["axial"][1] / 1000
+        along = (lo + hi) / 2
+        off = sh["shaft_offset"] / 1000
+        centre = [xyz[i] + o[i] * along + ln[i] * off for i in range(3)]
+        width = [1.0 - abs(o[i]) - abs(ln[i]) for i in range(3)]
+        size = [
+            abs(o[i]) * (hi - lo)
+            + abs(ln[i]) * sh["box"][0] / 1000
+            + width[i] * sh["box"][1] / 1000
+            for i in range(3)
+        ]
+        return [dict(kind="box", centre=centre, size=size)]
+    t = env[2]
+    if not sh or not sh.get("cap_d"):
+        return [dict(kind="cylinder", centre=xyz, axis=o, d=env[0], length=t)]
+    cap = sh["cap_len"] / 1000
+    body = t - cap
+    return [
+        dict(
+            kind="cylinder",
+            centre=[xyz[i] + o[i] * (t / 2 - body / 2) for i in range(3)],
+            axis=o,
+            d=sh["body_d"] / 1000,
+            length=body,
+        ),
+        dict(
+            kind="cylinder",
+            centre=[xyz[i] - o[i] * (t / 2 - cap / 2) for i in range(3)],
+            axis=o,
+            d=sh["cap_d"] / 1000,
+            length=cap,
+        ),
+    ]
 
 
 def build(covers: bool = False) -> tuple[str, dict]:
@@ -282,17 +333,23 @@ def build(covers: bool = False) -> tuple[str, dict]:
         env, link, xyz, axis = m["envelope"], m["link"], m["xyz"], m["axis"]
         mass = a["mass"]
         links[link].append((mass, xyz, cylinder_inertia(mass, env[0], env[2], axis)))
-        rpy = (
-            "1.5708 0 0"
-            if abs(axis[1]) > 0.5
-            else ("0 1.5708 0" if abs(axis[0]) > 0.5 else "0 0 0")
-        )
-        visuals[link].append(
-            f'<visual><origin xyz="{fmt(xyz)}" rpy="{rpy}"/><geometry>'
-            f'<cylinder radius="{env[0] / 2:.6g}" length="{env[2]:.6g}"/></geometry>'
-            f'<material name="{m["model"]}"><color rgba="{MOTOR_COLOURS[m["model"]]}"/></material>'
-            "</visual>"
-        )
+        for p in motor_primitives(m):
+            if p["kind"] == "box":
+                geom = f'<box size="{fmt(p["size"])}"/>'
+                rpy = "0 0 0"
+            else:
+                ax = p["axis"]
+                rpy = (
+                    "1.5708 0 0"
+                    if abs(ax[1]) > 0.5
+                    else ("0 1.5708 0" if abs(ax[0]) > 0.5 else "0 0 0")
+                )
+                geom = f'<cylinder radius="{p["d"] / 2:.6g}" length="{p["length"]:.6g}"/>'
+            visuals[link].append(
+                f'<visual><origin xyz="{fmt(p["centre"])}" rpy="{rpy}"/><geometry>{geom}</geometry>'
+                f'<material name="{m["model"]}"><color rgba="{MOTOR_COLOURS[m["model"]]}"/>'
+                "</material></visual>"
+            )
         speed = a["no_load_speed_rpm"] * 2 * math.pi / 60
         if len(m["drives"]) == 1:
             effort[m["drives"][0]] = a["peak_torque"]

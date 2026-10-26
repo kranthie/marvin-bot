@@ -23,6 +23,8 @@ from pathlib import Path
 import yaml
 
 from .lib import Part, box, cyl, hull, lighten, strap, union
+from .mounts import bolt_holes, output_flange, rear_ring, spec, spider
+from .mounts import posts as mount_posts
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -51,12 +53,12 @@ def parts() -> list[Part]:
     hip_t = 8.0
     bx = rc[0] - t04 / 2 - hip_t / 2  # back plate, on the roll motors' back faces
     waist_z = j["waist_yaw"][2]
-    top_z = waist_z - t03 / 2 - t / 2  # under the waist RS03
+    top_z = waist_z - t03 / 2 - t / 2  # under the waist RS03's driver cap
     # The roll brackets' bars run over the roll motors and swing inward over them when a leg
     # rolls out, so the back plate is full width only below the roll axes, with a narrow
     # spine up the middle to the top plate
     back = union(
-        *[cyl(100, hip_t, "x", (bx, s * rc[1], rc[2])) for s in (1, -1)],
+        *[spider("RS04", (rc[0], s * rc[1], rc[2]), "x", 1, t04 / 2, hip_t) for s in (1, -1)],
         box((hip_t, 2 * rc[1], 55), (bx, 0, rc[2] - 32.5)),
         box((hip_t, 36, top_z - rc[2] + 60 + t / 2), (bx, 0, (top_z + t / 2 + rc[2] - 60) / 2)),
     )
@@ -71,11 +73,22 @@ def parts() -> list[Part]:
     # stub axles behind the roll motors for the roll brackets' far-side bearings
     stubs = [cyl(30, 14, "x", (bx - hip_t / 2 - 7, s * rc[1], rc[2])) for s in (1, -1)]
     out.append(Part("pelvis_back", "pelvis", "al6061", union(back, *stubs), "service"))
+    # each roll motor's stator bolts to a ring on its body's rear face; posts join it to the
+    # back plate over the driver cap
+    for side, s in (("l", 1), ("r", -1)):
+        c = (rc[0], s * rc[1], rc[2])
+        ring, _ = rear_ring("RS04", c, "x", 1)
+        mount = union(ring, mount_posts("RS04", c, "x", 1, 4.0, t04 / 2))
+        out.append(Part(f"pelvis_roll_mount_{side}", "pelvis", "al6061", mount, "cnc"))
     wx = j["waist_yaw"][0]  # the waist motor sits a little ahead of the hips
     front_x = wx + 50.0
     bf = bx + hip_t / 2  # back plate's front face
     top = box((front_x - bf, 90, t), ((front_x + bf) / 2, 0, top_z))
     top = union(top, cyl(100, t, "z", (wx, 0, top_z)))  # under the waist motor
+    # the waist motor's stator bolts to a ring on its body's underside, on posts over the cap
+    w_ring, _ = rear_ring("RS03", (wx, 0, waist_z), "z", 1)
+    w_mount = union(w_ring, mount_posts("RS03", (wx, 0, waist_z), "z", 1, 4.0, t03 / 2))
+    out.append(Part("pelvis_waist_mount", "pelvis", "al6061", w_mount, "cnc"))
     top = lighten(top, "z", keep=[cyl(56, 40, "z", (wx, 0, top_z))], hole=18, pitch=24, rim=9)
     out.append(Part("pelvis_top", "pelvis", "al6061", top, "service"))  # 210 mm: laser cut
     gy = 23.0  # gussets: vertical plates under the top plate, a channel with it
@@ -94,7 +107,7 @@ def parts() -> list[Part]:
 
     # --- torso: frame on the waist axis at the waist motor's centre; output face up
     out_z = t03 / 2
-    flange = cyl(84, t, "z", (0, 0, out_z + t / 2))
+    flange = output_flange("RS03", (0, 0, 0), "z", 1, 84, t)[0]
     base_z = out_z + t + t / 2
     sh = mounts["left_shoulder_pitch"]  # shoulder pitch RS03 centre (torso frame)
     # The shoulder motors sit deep in the torso (narrow shoulders), deeper than the battery is
@@ -103,7 +116,7 @@ def parts() -> list[Part]:
     # joined by two spacers clear of the motor
     bat = next(b for b in _skel["bodies"] if b["budget"] == "battery")
     y_low = bat["size"][1] * 1000 / 2 + 6 + t / 2
-    up_y = sh[1] - t03 / 2 - t / 2
+    up_y = sh[1] - spec("RS03")["rear"] - t / 2  # on the motors' body rear faces (caps inboard)
     # the frame runs from behind the battery to just ahead of the computer standing on edge
     fx0, fx1 = -95.0, 55.0
     tops = ((-70.0, sh[2] - 18), (42.0, sh[2] - 58))  # back and front spacers (x, z)
@@ -124,20 +137,40 @@ def parts() -> list[Part]:
         out.append(Part(f"torso_upright_{side}", "torso_link", "al6061", low, "service"))
         ring = (sh[0], s * up_y, sh[2])
         up = union(
-            cyl(86, t, "y", ring),
+            cyl(112, t, "y", ring),  # round the motor's ears (stator holes on Ø98)
             strap(30, t, "y", ring, (bx, s * up_y, bz)),
             strap(30, t, "y", ring, (fx, s * up_y, fz)),
         )
         up = lighten(up, "y", keep=[cyl(70, 40, "y", ring)], hole=12, pitch=18, rim=7)
+        sh_h = spec("RS03")["holes"]["stator"]
+        up = up - cyl(spec("RS03")["cap_d"] + 2, t + 2, "y", ring)
+        up = up - bolt_holes(sh_h["n"], sh_h["thread"], sh_h["pcd"], "y", ring, t + 2)
         out.append(Part(f"torso_shoulder_plate_{side}", "torso_link", "al6061", up, "cnc"))
         for k, (x, z) in enumerate(tops):
             yc = s * (up_y + t / 2 + gap / 2)
             spacer = box((20, gap, 20), (x, yc, z)) - cyl(7, gap + 2, "y", (x, yc, z))
             out.append(Part(f"torso_spacer_{side}{k}", "torso_link", "al6061", spacer, "cnc"))
+    # the neck yaw servo hangs under the bridge by its ears, its spline up through it. The bridge
+    # is an H: two cross bars in front of and behind the shoulder motors' caps, joined by the
+    # servo plate between them
     neck = mounts["neck_yaw"]
-    bridge_z = neck[2] + 12.4 + t / 2  # on top of the neck yaw servo
-    bridge = box((70, 2 * up_y - t, t), (0, 0, bridge_z)) - cyl(30, 20, "z", (0, 0, bridge_z))
-    out.append(Part("torso_bridge", "torso_link", "al6061", lighten(bridge, "z", hole=16), "cnc"))
+    bridge_z = neck[2] + 5.8 + t / 2  # on top of the servo (its spline up through the bridge)
+    bars = [box((12, 2 * up_y - t, t), (s * 50.0, 0, bridge_z)) for s in (1, -1)]
+    plate = box((112, 70, t), (0, 0, bridge_z))
+    bridge = union(*bars, plate) - cyl(26, 20, "z", (0, 0, bridge_z))
+    out.append(Part("torso_bridge", "torso_link", "al6061", bridge, "cnc"))
+    # the computer stands on edge, fan forward, its I/O ports toward the sides (cable room to
+    # the uprights) and its buttons up; it bolts by the feet on its underside to a plate behind
+    # it, tied to the lower uprights
+    comp = next(b for b in _skel["bodies"] if b["budget"] == "compute")
+    cx0 = (comp["xyz"][0] - comp["size"][0] / 2) * 1000  # its back face (the underside)
+    cz = comp["xyz"][2] * 1000
+    oplate = union(
+        box((3, 104, 104), (cx0 - 1.5, 0, cz)),
+        *[box((3, y_low - 50, 20), (cx0 - 1.5, s * (y_low + 50) / 2, cz)) for s in (1, -1)],
+    )
+    oplate = lighten(oplate, "x", hole=14, pitch=20, rim=8)
+    out.append(Part("torso_compute_plate", "torso_link", "al6061", oplate, "cnc"))
     # chest shell: front and sides, 2.5 mm, open at the back (battery) and top and bottom
     z0, z1 = base_z + t, sh[2] + 20
     outer = hull(
@@ -150,5 +183,8 @@ def parts() -> list[Part]:
     )
     shell = outer - inner_s - box((80, 400, 1000), (-45 - 40, 0, 0))  # open back
     shell = shell - cyl(d03 + 10, 400, "y", (sh[0], 0, sh[2]))  # clear the shoulder motors
+    # intake vents over the computer's fan
+    for k in range(-3, 4):
+        shell = shell - box((20, 7, 80), (60, k * 13.0, cz))
     out.append(Part("torso_chest_shell", "torso_link", "pa_cf", shell, "print"))
     return out

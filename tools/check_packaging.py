@@ -63,8 +63,14 @@ def shapes() -> dict[str, list[tuple[str, str, mf.Manifold]]]:
     skel = yaml.safe_load((bu.DESC / "skeleton.yaml").read_text())
     out: dict[str, list] = {}
     for m in bu.motor_placements():
-        d, _, h = m["envelope"]
-        s = place(cylinder(d, h, m["axis"]), np.eye(3), m["xyz"])
+        parts = []
+        for p in bu.motor_primitives(m):
+            if p["kind"] == "box":
+                solid = mf.Manifold.cube(p["size"], center=True)
+            else:
+                solid = cylinder(p["d"], p["length"], p["axis"])
+            parts.append(place(solid, np.eye(3), p["centre"]))
+        s = mf.Manifold.batch_boolean(parts, mf.OpType.Add)
         out.setdefault(m["link"], []).append(("motor", m["name"], s))
     for c in bu.mirrored(skel["collisions"], key_is_name=False):
         s = place(mf.Manifold.cube(c["size"], center=True), np.eye(3), c["xyz"])

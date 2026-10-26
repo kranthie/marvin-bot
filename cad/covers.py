@@ -6,7 +6,7 @@ torso tapering to the waist, a dark hip girdle, long leg shells, arm sleeves, to
 dark neck sleeve under the helmet head, with the joints left visible between them. They add
 some fall protection.
 
-Each shell is a 1.4 mm printed skin following its link's parts and motors at a 4 mm gap: the
+Each shell is a 1.2 mm printed skin following its link's parts and motors at a 4 mm gap: the
 hull of everything on the link, grown outward (rounded), kept only where it cannot reach the
 next link, and split where it must come off for service. Shells clip onto the parts under them
 (clip and boss details come with the fastener pass), so every one comes off without tools,
@@ -29,7 +29,7 @@ from . import arm, head, leg, torso
 from .lib import Part, box, cyl, hull, union
 
 ROOT = Path(__file__).resolve().parent.parent
-GAP, SKIN = 4.0, 1.4
+GAP, SKIN = 4.0, 1.2
 
 
 def _sphere_dirs() -> list[np.ndarray]:
@@ -58,14 +58,23 @@ def motors_on(link: str):
     sys.path.insert(0, str(ROOT / "tools"))
     import build_urdf
 
-    out = []
-    for m in build_urdf.motor_placements():
-        if m["link"] != link:
-            continue
-        d, _, t = (x * 1000 for x in m["envelope"])
-        ax = "xyz"[int(np.argmax(np.abs(m["axis"])))]
-        out.append(cyl(d, t, ax, [x * 1000 for x in m["xyz"]]))
-    return out
+    return [motor_solid(m) for m in build_urdf.motor_placements() if m["link"] == link]
+
+
+def motor_solid(m: dict):
+    """A placed motor's housing (tools/build_urdf.py motor_primitives) as one solid, mm."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import build_urdf
+
+    solids = []
+    for p in build_urdf.motor_primitives(m):
+        c = [x * 1000 for x in p["centre"]]
+        if p["kind"] == "box":
+            solids.append(box([x * 1000 for x in p["size"]], c))
+        else:
+            ax = "xyz"[int(np.argmax(np.abs(p["axis"])))]
+            solids.append(cyl(p["d"] * 1000, p["length"] * 1000, ax, c))
+    return union(*solids)
 
 
 def offset_hull(solids, r: float):
@@ -191,7 +200,7 @@ def parts() -> list[Part]:
         box((BIG, BIG, BIG), (0, 0, 0))
         - half("z", -1, 26.0)
         - (cyl(108, BIG, "y", (sh[0], 0, sh[2])) - box((BIG, 2 * 110, BIG)))  # shoulder motors
-        - cyl(96, 200, "z", (0, 0, neck_z))  # the neck opening
+        - cyl(100, 200, "z", (0, 0, neck_z))  # the neck opening
     )
     # the body follows its contents; the shoulders slope up into a collar round the neck
     collar = (60.0, 70.0, neck_z + 4)
@@ -213,8 +222,14 @@ def parts() -> list[Part]:
     # into the helmet, turning with neck yaw; the head pitches over it
     nz = j["neck_pitch"][2]
     bot = -22.0  # just above the torso bridge; flaring towards the collar
-    sleeve = hull(cyl(88, 2, "z", (0, 0, bot)), cyl(60, 2, "z", (0, 0, nz + 26))) - hull(
-        cyl(84, 2, "z", (0, 0, bot - 2)), cyl(56, 2, "z", (0, 0, nz + 28))
+
+    # oval at the top: wide side to side for the head frame's plates, narrow front to back so
+    # the chin clears it looking down
+    def oval(w, d, z):
+        return cyl(w, 2, "z").scale([d / w, 1.0, 1.0]).translate([0, 0, z])
+
+    sleeve = hull(cyl(92, 2, "z", (0, 0, bot)), oval(84, 60, nz + 14)) - hull(
+        cyl(88, 2, "z", (0, 0, bot - 2)), oval(80, 56, nz + 16)
     )
     add("neck_cover", "neck_link", sleeve)
 
@@ -271,7 +286,7 @@ def parts() -> list[Part]:
     # round the roll axis from straight down to 30° above horizontal, so the cap keeps above a
     # plane through that axis at 40°, and behind the roll output face
     ro = j["left_shoulder_roll"]
-    up = box((BIG, BIG, BIG), (0, 0, BIG / 2)).rotate([40, 0, 0]).translate([0, ro[1], ro[2]])
+    up = box((BIG, BIG, BIG), (0, 0, BIG / 2)).rotate([45, 0, 0]).translate([0, ro[1], ro[2]])
     add(
         "left_shoulder_cover",
         "left_shoulder_pitch_link",
@@ -409,9 +424,7 @@ def check(min_cm3: float = 0.5, parts_too: bool = True) -> list[str]:
             continue  # drawn at the neutral pose only; they move with the ankle
         body.setdefault(p.link, []).append(p.solid)
     for m in bu.motor_placements():
-        d, _, t = (x * 1000 for x in m["envelope"])
-        ax = "xyz"[int(np.argmax(np.abs(m["axis"])))]
-        body.setdefault(m["link"], []).append(cyl(d, t, ax, [x * 1000 for x in m["xyz"]]))
+        body.setdefault(m["link"], []).append(motor_solid(m))
     for b in bu.mirrored(skel["bodies"], key_is_name=False):
         if b["budget"] in ("compute", "battery", "keep_alive", "electronics"):
             body[b["link"]].append(box([x * 1000 for x in b["size"]], [x * 1000 for x in b["xyz"]]))

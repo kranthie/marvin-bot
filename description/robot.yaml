@@ -55,23 +55,25 @@ joints:
   - {name: "{side}_gripper",        axis: pitch, range: [0, 60], powered_dof: false}  # end effector, not counted as a body DOF
 
 # Each motor drives one joint directly, or two motors drive a pair of joints through a linkage.
+# output: the direction its output face looks, in the frame of the link carrying it (left side;
+# mirrored for the right); for servos, length: the direction its case's long side runs.
 motors:
-  - {name: "{side}_hip_pitch",      model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_pitch"]}
-  - {name: "{side}_hip_roll",       model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_roll"]}
-  - {name: "{side}_hip_yaw",        model: RS03,    bus: "{side}_hip",   drives: ["{side}_hip_yaw"]}
-  - {name: "{side}_knee",           model: RS04,    bus: "{side}_shank", drives: ["{side}_knee"]}
+  - {name: "{side}_hip_pitch",      model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_pitch"], output: [0, 1, 0]}
+  - {name: "{side}_hip_roll",       model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_roll"], output: [1, 0, 0]}
+  - {name: "{side}_hip_yaw",        model: RS03,    bus: "{side}_hip",   drives: ["{side}_hip_yaw"], output: [0, 0, -1]}
+  - {name: "{side}_knee",           model: RS04,    bus: "{side}_shank", drives: ["{side}_knee"], output: [0, -1, 0]}
   # two calf-mounted motors driving ankle pitch and roll through push rods (parallel linkage)
-  - {name: "{side}_ankle_a",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"]}
-  - {name: "{side}_ankle_b",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"]}
-  - {name: waist_yaw,               model: RS03,    bus: right_arm,      drives: [waist_yaw]}
-  - {name: "{side}_shoulder_pitch", model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_pitch"]}
-  - {name: "{side}_shoulder_roll",  model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_roll"]}
-  - {name: "{side}_shoulder_yaw",   model: RS06,    bus: "{side}_arm",   drives: ["{side}_shoulder_yaw"]}
-  - {name: "{side}_elbow",          model: RS06,    bus: "{side}_arm",   drives: ["{side}_elbow"]}
-  - {name: "{side}_wrist_yaw",      model: RS00,    bus: "{side}_arm",   drives: ["{side}_wrist_yaw"]}
-  - {name: neck_yaw,                model: STS3250, bus: servo,          drives: [neck_yaw]}
-  - {name: neck_pitch,              model: STS3250, bus: servo,          drives: [neck_pitch]}
-  - {name: "{side}_gripper",        model: STS3250, bus: servo,          drives: ["{side}_gripper"]}
+  - {name: "{side}_ankle_a",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"], output: [0, 1, 0]}
+  - {name: "{side}_ankle_b",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"], output: [0, -1, 0]}
+  - {name: waist_yaw,               model: RS03,    bus: right_arm,      drives: [waist_yaw], output: [0, 0, 1]}
+  - {name: "{side}_shoulder_pitch", model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_pitch"], output: [0, 1, 0]}
+  - {name: "{side}_shoulder_roll",  model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_roll"], output: [1, 0, 0]}
+  - {name: "{side}_shoulder_yaw",   model: RS06,    bus: "{side}_arm",   drives: ["{side}_shoulder_yaw"], output: [0, 0, -1]}
+  - {name: "{side}_elbow",          model: RS06,    bus: "{side}_arm",   drives: ["{side}_elbow"], output: [0, 1, 0]}
+  - {name: "{side}_wrist_yaw",      model: RS00,    bus: "{side}_arm",   drives: ["{side}_wrist_yaw"], output: [0, 0, -1]}
+  - {name: neck_yaw,                model: STS3250, bus: servo,          drives: [neck_yaw], output: [0, 0, 1], length: [1, 0, 0]}
+  - {name: neck_pitch,              model: STS3250, bus: servo,          drives: [neck_pitch], output: [0, 1, 0], length: [0, 0, -1]}
+  - {name: "{side}_gripper",        model: STS3250, bus: servo,          drives: ["{side}_gripper"], output: [0, 1, 0], length: [0, 0, -1]}
 
 # Classic CAN 2.0B at 1 Mbit/s (Robstride uses 29-bit identifiers). Each motor exchanges one
 # command and one reply frame per control cycle. Load is kept at or below max_load.
