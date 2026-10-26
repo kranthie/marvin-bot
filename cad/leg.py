@@ -9,15 +9,16 @@ them (motor_mounts), at their STEP-model sizes, and the structure is built aroun
 - hip roll: an L-bracket from the roll output to the top of the hip yaw RS03;
 - thigh: a flange on the yaw output and an outer side plate carrying the knee RS04, under a
   printed shell;
-- shin: a flange on the knee output (inner side), a central web between the two ankle RS03
-  (both bolt to it), and a fork carrying the ankle pitch bearings;
+- shin: two side plates on the shin's centre line with the two ankle RS03 staggered between
+  them (one high and forward under the knee, one low behind the ankle), each bolted to one
+  plate; the plates' lower ends are the ankle fork cheeks;
 - ankle: a cross block, two cranks, two push rods with rod ends;
 - foot: an aluminium plate with heel posts for the rod ends and lugs for the roll bearings, on a
   TPU sole.
 
-A first pass for mass, inertia, part sizes and clearances: plates are pocketed with
-lightening holes, but there are no fastener holes, fillets or bearing details yet, and no
-strength check.
+Plates are rings on the motors' bolt circles joined by straps, not full-width discs, sized by
+cad/strength.py. A first pass for mass, inertia, part sizes and clearances: plates are pocketed with
+lightening holes, but there are no fastener holes, fillets or bearing details yet.
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ from pathlib import Path
 
 import yaml
 
-from .lib import Part, box, cyl, hull, lighten, union
+from .lib import Part, box, cyl, hull, lighten, strap, union
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -82,8 +83,8 @@ def parts() -> list[Part]:
     stub = cyl(30, 14, "x", (back_x - hip_t / 2 - 7, roll_c[1], roll_c[2]))
     # full width (110 mm) up to the top: a narrow neck to the side plate was the weak point
     back = hull(
-        cyl(d04 - 10, hip_t, "x", (back_x, roll_c[1], roll_c[2])),
-        box((hip_t, d04 - 10, 12), (back_x, roll_c[1], 24)),
+        cyl(100, hip_t, "x", (back_x, roll_c[1], roll_c[2])),
+        box((hip_t, 100, 12), (back_x, roll_c[1], 24)),
     )
     # flanges along both vertical edges, pointing back: a channel section, which carries the
     # out-of-plane landing moment far better than the flat plate alone
@@ -112,11 +113,13 @@ def parts() -> list[Part]:
     # a U-yoke around the roll RS04: front plate on its output, rear plate on a far-side bearing
     # on the hip block's stub axle, a bar under the motor joining them
     under = -d04 / 2 - 8  # bar top, below the roll motor
-    front = hull(
+    # a ring on the motor's output bolt circle and a strap down to the bar, not a full disc
+    front = union(
         cyl(80, plate, "x", (out_x + plate / 2, 0, 0)),
+        strap(48, plate, "x", (out_x + plate / 2, 0, 0), (out_x + plate / 2, 0, under + 10)),
         box((plate, 80, plate), (out_x + plate / 2, 0, under - plate / 2)),
     )
-    front = lighten(front, "x", keep=[cyl(60, 40, "x", (out_x, 0, 0))], hole=20, pitch=24, rim=7)
+    front = lighten(front, "x", keep=[cyl(60, 40, "x", (out_x, 0, 0))], hole=14, pitch=20, rim=7)
     rear_x = (roll_c[0] - rj[0]) - t04 / 2 - hip_t - 14 - plate / 2
     rear = hull(
         cyl(brg_d + 16, plate, "x", (rear_x, 0, 0)),
@@ -157,11 +160,13 @@ def parts() -> list[Part]:
     )
     out.append(Part("left_thigh_flange", "left_thigh_link", "al6061", tflange, "cnc"))
     py = t04 / 2 + web_t / 2  # outer side plate, against the knee RS04's outer face
-    tplate = hull(
-        box((60, web_t, 16), (0, py, yaw_out - 8)),
-        cyl(d04 + 4, web_t, "y", (0, py, knee[2])),
+    # a tapered strap from the yaw flange to a ring on the knee motor's stator bolt circle
+    # (~86 mm, STEP model), instead of a plate as wide as the motor
+    tplate = union(
+        hull(box((60, web_t, 16), (0, py, yaw_out - 8)), cyl(46, web_t, "y", (0, py, knee[2]))),
+        cyl(100, web_t, "y", (0, py, knee[2])),
     )
-    tplate = lighten(tplate, "y", keep=[cyl(70, 40, "y", (0, py, knee[2]))])
+    tplate = lighten(tplate, "y", keep=[cyl(70, 40, "y", (0, py, knee[2]))], hole=16, pitch=22)
     # stub axle for the shin's far-side bearing, on the knee axis outside the plate
     tplate = union(tplate, cyl(30, 12, "y", (0, py + web_t / 2 + 6, knee[2])))
     out.append(Part("left_thigh_plate", "left_thigh_link", "al6061", tplate, "cnc"))
@@ -176,29 +181,68 @@ def parts() -> list[Part]:
     )
     out.append(Part("left_thigh_shell", "left_thigh_link", "pa_cf", outer - inner, "print"))
 
-    # --- shin: frame on the knee axis; knee output faces inward (-y)
+    # --- shin: frame on the knee axis; knee output faces inward (-y). Two side plates on the
+    # shin's centre line hold the staggered ankle RS03 between them: a (low) bolts its stator to
+    # the inner plate and its crank hub passes beside the outer plate (the plates are straps
+    # routed clear of the other motor's hub); b (high, forward) the other way round. The plates
+    # run down to become the ankle fork cheeks.
     ka, kb = mounts["left_ankle_a"], mounts["left_ankle_b"]
     ankle_z = J["left_ankle_pitch"][2]
-    fy = -t04 / 2 - plate / 2
-    sflange = hull(
-        cyl(84, plate, "y", (0, fy, 0)),
-        box((50, plate, 15), (0, fy, -d04 / 2 - 30)),
+    yi, yo = -(t03 / 2 + plate / 2), t03 / 2 + plate / 2  # inner and outer side plates
+    ring03 = 86.0  # RS03 stator ring: its ~72 mm mounting-hole circle (STEP model) + margin
+    hub = 40.0  # crank hub, spanning the gap from the motor's output face to the crank
+    w = 30.0  # strap width (cad/strength.py sizes it)
+
+    def cheek_at(y):  # the fork cheek: the plate's lower end, round the ankle bearing
+        return (0.0, y, ankle_z)
+
+    knee_clear = cyl(2 * 68, 200, "y")  # the thigh plate and its stub turn inside r = 68 mm
+    bridge_c = (65.0, -45.0)  # bridge in front of the knee motor, joining the knee yoke
+    inner = union(
+        cyl(84, plate, "y", (0, yi, 0)),
+        cyl(ring03, plate, "y", (ka[0], yi, ka[2])),
+        strap(w, plate, "y", (0, yi, 0), (-20, yi, -110), (ka[0], yi, ka[2]), cheek_at(yi)),
+        strap(30, plate, "y", (0, yi, 0), (bridge_c[0], yi, bridge_c[1])),
+    ) - cyl(22, 20, "y", (0, yi, ankle_z))
+    inner = lighten(
+        inner,
+        "y",
+        keep=[cyl(66, 40, "y", (0, yi, 0)), cyl(64, 40, "y", (ka[0], yi, ka[2]))],
+        hole=14,
+        pitch=20,
+        rim=8,
     )
-    sflange = lighten(sflange, "y", keep=[cyl(64, 40, "y", (0, fy, 0))], hole=22, pitch=25, rim=7)
-    # a U-yoke around the knee RS04: this inner flange on its output, an outer plate on a
-    # far-side bearing on the thigh plate's stub axle, a bridge under the motor joining them
+    outer = (
+        union(
+            cyl(ring03, plate, "y", (kb[0], yo, kb[2])),
+            strap(
+                w,
+                plate,
+                "y",
+                (bridge_c[0], yo, bridge_c[1]),
+                (kb[0], yo, kb[2]),
+                (kb[0], yo, ka[2] - 20),
+                cheek_at(yo),
+            ),
+        )
+        - knee_clear
+        - cyl(22, 20, "y", (0, yo, ankle_z))
+    )
+    outer = lighten(
+        outer, "y", keep=[cyl(64, 40, "y", (kb[0], yo, kb[2]))], hole=14, pitch=20, rim=8
+    )
+    out.append(Part("left_shin_inner", "left_shin_link", "al6061", inner, "service"))
+    out.append(Part("left_shin_outer", "left_shin_link", "al6061", outer, "service"))
+    # the knee's far side: a plate on a bearing on the thigh plate's stub axle, tied to both
+    # side plates by a bridge in front of the knee motor
     oy = t04 / 2 + web_t + 2 + 6 + plate / 2  # outside the thigh plate and its stub
-    outer_pl = hull(
+    outer_pl = union(
         cyl(brg_d + 16, plate, "y", (0, oy, 0)),
-        box((50, plate, 15), (0, oy, -d04 / 2 - 30)),
+        strap(26, plate, "y", (0, oy, 0), (bridge_c[0], oy, bridge_c[1])),
     ) - cyl(brg_d, plate + 2, "y", (0, oy, 0))
-    outer_pl = lighten(
-        outer_pl, "y", keep=[cyl(brg_d + 10, 40, "y", (0, oy, 0))], hole=14, pitch=20
-    )
-    bridge = box((50, oy - fy + plate, 15), (0, (oy + fy) / 2, -d04 / 2 - 30)) - box(
-        (38, oy - fy - plate - 6, 17), (0, (oy + fy) / 2, -d04 / 2 - 30)
-    )  # a U-channel, not a block
-    out.append(Part("left_shin_knee_flange", "left_shin_link", "al6061", sflange, "cnc"))
+    bridge = box((20, oy - yi + plate, 20), (bridge_c[0], (oy + yi) / 2, bridge_c[1])) - box(
+        (14, oy - yi + plate + 2, 14), (bridge_c[0], (oy + yi) / 2, bridge_c[1])
+    )  # a square tube
     out.append(Part("left_shin_knee_outer", "left_shin_link", "al6061", outer_pl, "cnc"))
     out.append(Part("left_shin_bridge", "left_shin_link", "al6061", bridge, "cnc"))
     out.append(
@@ -212,34 +256,21 @@ def parts() -> list[Part]:
             notes="6806-2RS far-side bearing",
         )
     )
-    web_top = -d04 / 2 - 30
-    web = hull(
-        box((50, 6, 15), (0, 0, web_top)),
-        cyl(d03 - 10, 6, "y", (ka[0], 0, ka[2])),
-        box((60, 6, 8), (0, 0, ankle_z + 45)),
-    )
-    web = lighten(web, "y", keep=[cyl(56, 40, "y", (ka[0], 0, ka[2]))])
-    out.append(Part("left_shin_web", "left_shin_link", "al6061", web, "cnc"))
-    fork_top = ankle_z + 45
-
-    def cheek(s):  # a fork cheek with the ankle pitch bearing bore
-        return hull(
-            box((44, web_t, 10), (0, s * 46, fork_top - 5)),
-            cyl(40, web_t, "y", (0, s * 46, ankle_z)),
-        ) - cyl(22, 20, "y", (0, s * 46, ankle_z))
-
-    top = lighten(
-        box((60, 100, web_t), (0, 0, fork_top)), "z", keep=[box((60, 12, 20))], hole=18, pitch=24
-    )
-    fork = union(top, cheek(1), cheek(-1))
-    out.append(Part("left_ankle_fork", "left_shin_link", "al6061", fork, "cnc"))
-    # cranks on the motors' outer faces, pointing back (and slightly down) at neutral
+    # spacer tubes between the side plates, clear of both motors and the ankle cross
+    gap = yo - yi - plate
+    for k, (sx, sz) in enumerate(((-50.0, -130.0), (55.0, -200.0), (-40.0, ankle_z + 35))):
+        tube = cyl(16, gap, "y", (sx, 0, sz)) - cyl(8, gap + 2, "y", (sx, 0, sz))
+        out.append(Part(f"left_shin_spacer_{k}", "left_shin_link", "al6061", tube, "cnc"))
+    # cranks outside the side plates, pointing back (and slightly down) at neutral
     th = math.pi + link["crank_tilt"]
     r = link["crank_radius"] * 1000
+    cy = link["crank_y"] * 1000
     for name, c, s in (("a", ka, 1), ("b", kb, -1)):
-        cy = c[1] + s * (t03 / 2 + 3)
-        tip = (c[0] + r * math.cos(th), cy, c[2] + r * math.sin(th))
-        crank = hull(cyl(36, 6, "y", (c[0], cy, c[2])), cyl(18, 6, "y", tip))
+        tip = (c[0] + r * math.cos(th), s * cy, c[2] + r * math.sin(th))
+        crank = union(
+            hull(cyl(36, 6, "y", (c[0], s * cy, c[2])), cyl(18, 6, "y", tip)),
+            cyl(hub, cy - t03 / 2 - 3, "y", (c[0], s * (t03 / 2 + cy - 3) / 2, c[2])),
+        )
         out.append(Part(f"left_ankle_crank_{name}", "left_shin_link", "al7075", crank, "cnc"))
         # rod from the crank tip to its ball joint on the foot (neutral pose, shin frame)
         foot_end = (
@@ -255,13 +286,13 @@ def parts() -> list[Part]:
                 "bought",
                 rod,
                 "bought",
-                mass_g=45.0,
+                mass_g=30.0 if name == "a" else 45.0,
                 notes="steel tube with two M6 rod ends",
             )
         )
-
     # --- ankle cross and foot: frames on the ankle axes
-    cross = box((44, 76, 30)) - box((32, 64, 32))  # hollow frame
+    cross_w = t03 - 4  # between the shin's side plates
+    cross = box((44, cross_w, 30)) - box((32, cross_w - 12, 32))  # hollow frame
     out.append(Part("left_ankle_cross", "left_ankle_link", "al7075", cross, "cnc"))
     foot = _skel["collisions"][[c["link"] for c in _skel["collisions"]].index("left_foot_link")]
     fl, fw, _ = mm(foot["size"])

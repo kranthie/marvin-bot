@@ -1,9 +1,11 @@
 """Design and check the two-motor ankle linkage.
 
-Each ankle has two motors on the calf, axes along y, each turning a crank of radius r. A push
-rod of fixed length runs from each crank tip to a ball joint on the foot, behind the ankle
-axis (a behind it, b to the side of it, c below it). Moving both cranks the same way pitches
-the foot; moving them opposite ways rolls it.
+Each ankle has two motors on the calf, axes along y, each turning a crank of radius r. The
+motors are staggered: both on the shin's centre line, each at its own (x, z): a with its crank
+on the outer side (+y), b with its crank on the inner side. A push rod of
+fixed length runs from each crank tip to a ball joint on the foot, behind the ankle axis
+(rod_back behind it, rod_side to the side of it, rod_below below it). Moving both cranks the
+same way pitches the foot; moving them opposite ways rolls it.
 
 For a candidate geometry the script solves the linkage exactly over the whole joint range
 (ankle pitch and roll from description/robot.yaml), and reports:
@@ -51,7 +53,10 @@ class Linkage:
 
     def __init__(self, g: dict):
         self.r = g["crank_radius"]
-        self.motor = [np.array([g["motor_x"], s * g["motor_y"], g["motor_z"]]) for s in (1, -1)]
+        self.motor = [
+            np.array([g[k][0], s * g["crank_y"], g[k][1]])
+            for k, s in (("motor_a", 1), ("motor_b", -1))
+        ]
         self.attach = [
             np.array([-g["rod_back"], s * g["rod_side"], -g["rod_below"]]) for s in (1, -1)
         ]
@@ -150,13 +155,15 @@ def report(g, res, model):
     print(
         f"crank r {g['crank_radius'] * 1000:.0f} mm, rods {g['rod_back'] * 1000:.0f} mm behind, "
         f"±{g['rod_side'] * 1000:.0f} mm aside, {g['rod_below'] * 1000:.0f} mm below the "
-        f"ankle axis; motors {g['motor_z'] * 1000:.0f} mm above it"
+        f"ankle axis; motors at x, z = {[round(v * 1000) for v in g['motor_a']]} and "
+        f"{[round(v * 1000) for v in g['motor_b']]} mm"
     )
     if res is None:
         print("  NOT reachable over the whole range")
         return
     lo, hi = res["crank_range_deg"]
-    print(f"  rod length {res['rod_length'][0] * 1000:.0f} mm, crank swing {lo:+.0f}°..{hi:+.0f}°")
+    rods = " and ".join(f"{x * 1000:.0f}" for x in res["rod_length"])
+    print(f"  rod lengths {rods} mm, crank swing {lo:+.0f}°..{hi:+.0f}°")
     print(f"  worst transmission {res['transmission']:.2f} (min {MIN_TRANSMISSION})")
     print(f"  ratios at neutral: pitch {res['ratios'][0]:.2f}, roll {res['ratios'][1]:.2f}")
     print(
@@ -179,33 +186,45 @@ def main() -> int:
 
     if args.search:
         best = None
-        # rods vertical at neutral (crank plane = rod spacing). The two RS03 sit side by side
-        # (56.6 mm thick), so the cranks on their outer faces are at least ~55 mm off centre;
-        # the foot is 110 mm wide
-        for r in np.arange(0.035, 0.0651, 0.005):
-            for back in np.arange(0.035, 0.0701, 0.005):
-                for side in np.arange(0.055, 0.0701, 0.005):
-                    for tilt in np.radians([-20, -10, 0, 10, 20]):
-                        cand = {
-                            **g,
-                            "crank_radius": r,
-                            "rod_back": back,
-                            "rod_side": side,
-                            "motor_y": side,
-                            "crank_tilt": tilt,
-                        }
-                        res = evaluate(cand, pitch, roll, peak, rated, steps=9)
-                        if res is None or res["transmission"] < MIN_TRANSMISSION:
+        # Shin frame: the knee axis is ankle_z above the ankle axis. The high motor must clear
+        # the knee RS04 (radius 60 mm) by 6 mm, the two RS03 (radius 50 mm) must clear each
+        # other by 6 mm, and the low motor must stay 30 mm above the ankle cross's sweep.
+        knee_z = -skel["joints"]["left_ankle_pitch"]["xyz"][2]
+        radius = 0.050
+        # b is the high motor (below the knee), a the low one (above the ankle)
+        for bx in np.arange(-0.060, 0.0501, 0.010):
+            for bz in np.arange(0.160, 0.2101, 0.010):
+                if math.hypot(bx, knee_z - bz) < 0.060 + radius + 0.006:
+                    continue
+                for ax in np.arange(-0.060, 0.0301, 0.010):
+                    for az in np.arange(0.080, 0.1301, 0.010):
+                        if math.hypot(ax - bx, az - bz) < 2 * radius + 0.006:
                             continue
-                        score = min(res["rated"][0] / 30.0, res["rated"][1] / 14.0)
-                        if best is None or score > best[0]:
-                            best = (score, cand)
+                        for r in np.arange(0.045, 0.0651, 0.005):
+                            for back in np.arange(0.040, 0.0801, 0.010):
+                                for side in (0.040, 0.045, 0.050, 0.055):
+                                    for tilt in np.radians([-20, 0, 20]):
+                                        cand = {
+                                            **g,
+                                            "motor_a": [ax, az],
+                                            "motor_b": [bx, bz],
+                                            "crank_radius": r,
+                                            "rod_back": back,
+                                            "rod_side": side,
+                                            "crank_tilt": tilt,
+                                        }
+                                        res = evaluate(cand, pitch, roll, peak, rated, steps=7)
+                                        if res is None or res["transmission"] < MIN_TRANSMISSION:
+                                            continue
+                                        score = min(res["rated"][0] / 30.0, res["rated"][1] / 14.0)
+                                        if best is None or score > best[0]:
+                                            best = (score, cand)
         if best is None:
             print("no geometry meets the transmission limit")
             return 1
         cand = best[1]
         report(cand, evaluate(cand, pitch, roll, peak, rated), model)
-        print("geometry:", {k: round(float(v), 4) for k, v in cand.items()})
+        print("geometry:", {k: np.round(v, 4).tolist() for k, v in cand.items()})
         return 0
 
     res = evaluate(g, pitch, roll, peak, rated)

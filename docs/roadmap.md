@@ -40,7 +40,9 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [ ] Leg CAD: fasteners, bearing seats, hip yaw far-side support
 - [x] Pelvis and torso CAD, first pass (`cad/torso.py`): 0.86 + 1.46 kg (estimates were 1.0 + 1.8); pelvis frame SF 37 in the landing case; robot 39.06 kg
 - [x] Arm and head CAD, first pass (`cad/arm.py`, `cad/head.py`): arms 1.47 kg and grippers 0.18 kg for both (estimates 1.0 and 0.4), head 0.40 kg with the camera; shoulder plates SF 2.4 in a hand-load case; robot 39.20 kg
-- [x] Clip-on covers as an optional add-on (`cad/covers.py`, 0.56 kg, separate URDF) and a generated wiring harness (`tools/build_harness.py`); see [design/assembly_wiring.md](design/assembly_wiring.md)
+- [x] Clip-on covers as an optional add-on (`cad/covers.py`, 0.59 kg, separate URDF) and a generated wiring harness (`tools/build_harness.py`); see [design/assembly_wiring.md](design/assembly_wiring.md)
+- [x] Slim shin with the ankle motors staggered on its centre line (~95 mm wide, was ~132), same ankle torque; plates reduced to rings on the motors' bolt circles and straps; robot 38.71 kg
+- [ ] Retrain the flat and stair policies on the current model (ankle ratios 0.99 / 0.67, 38.71 kg) and rerun the MuJoCo cross-checks
 - [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
 - [ ] Battery cradle, blind-mate connector and electronics bay layout
 

@@ -38,6 +38,13 @@ def hull(*parts: mf.Manifold) -> mf.Manifold:
     return mf.Manifold.batch_hull(list(parts))
 
 
+def strap(width: float, t: float, axis: str, *points) -> mf.Manifold:
+    """A flat strap of `width` and thickness `t` (along `axis`) through `points`, with round
+    ends: the slim link between two motor mounting rings."""
+    discs = [cyl(width, t, axis, p) for p in points]
+    return union(*[hull(a, b) for a, b in zip(discs[:-1], discs[1:], strict=True)])
+
+
 def union(*parts: mf.Manifold) -> mf.Manifold:
     return mf.Manifold.batch_boolean(list(parts), mf.OpType.Add)
 

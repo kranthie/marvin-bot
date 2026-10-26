@@ -21,7 +21,7 @@ from pathlib import Path
 
 import yaml
 
-from .lib import Part, box, cyl, hull, lighten
+from .lib import Part, box, cyl, hull, lighten, strap, union
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -48,9 +48,11 @@ def parts() -> list[Part]:
     waist_z = j["waist_yaw"][2]
     top_z = waist_z - t03 / 2 - t / 2  # under the waist RS03
     for name, s in (("pelvis_side_l", 1), ("pelvis_side_r", -1)):
-        plate = hull(
-            cyl(d04 - 6, t, "y", (0, s * side_y, 0)),
-            box((110, t, 6), (0, s * side_y, top_z)),
+        # a ring on the hip motor and a strap up to a bar under the top plate
+        plate = union(
+            cyl(100, t, "y", (0, s * side_y, 0)),
+            strap(54, t, "y", (0, s * side_y, 0), (0, s * side_y, top_z - 20)),
+            box((110, t, 12), (0, s * side_y, top_z - 3)),
         )
         plate = lighten(plate, "y", keep=[cyl(80, 40, "y", (0, s * side_y, 0))], hole=18, rim=10)
         out.append(Part(name, "pelvis", "al6061", plate, "cnc"))
@@ -73,11 +75,15 @@ def parts() -> list[Part]:
     out.append(Part("torso_waist_flange", "torso_link", "al6061", flange, "cnc"))
     out.append(Part("torso_base", "torso_link", "al6061", base, "cnc"))
     for name, s in (("torso_upright_l", 1), ("torso_upright_r", -1)):
-        up = hull(
+        # an A-frame: two straps from the base to a ring on the shoulder motor's stator
+        ring = (sh[0], s * up_y, sh[2])
+        up = union(
             box((140, t, 12), (0, s * up_y, base_z + 6)),
-            cyl(d03 + 4, t, "y", (sh[0], s * up_y, sh[2])),
+            strap(30, t, "y", (-55, s * up_y, base_z + 12), ring),
+            strap(30, t, "y", (55, s * up_y, base_z + 12), ring),
+            cyl(86, t, "y", ring),
         )
-        up = lighten(up, "y", keep=[cyl(70, 40, "y", (sh[0], s * up_y, sh[2]))], hole=26, pitch=34)
+        up = lighten(up, "y", keep=[cyl(70, 40, "y", ring)], hole=12, pitch=18, rim=7)
         out.append(Part(name, "torso_link", "al6061", up, "service"))
     neck = mounts["neck_yaw"]
     bridge_z = neck[2] + 12.4 + t / 2  # on top of the neck yaw servo

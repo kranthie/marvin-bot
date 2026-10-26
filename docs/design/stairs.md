@@ -15,7 +15,7 @@ How the design got here:
 
 - 35° of ankle dorsiflexion could not climb 17 cm at any leg length; 38° is the minimum, and the design has 40° (decisions, 2026-10-26).
 - Leg length (0.62–0.69 m hip to sole) barely matters in this check; the hip height stays 0.65 m.
-- The two-motor ankle (two RS03, 65 mm cranks, rods ±55 mm) gives 31 N·m pitch and 26 N·m roll continuous at the worst pose, against ~22 and ~14 N·m needed (`tools/ankle_linkage.py`).
+- The two-motor ankle (two RS03 staggered on the shin's centre line, 60 mm cranks, rods 60 mm behind and ±40 mm beside the ankle axis) gives 32 N·m pitch and 25 N·m roll continuous at the worst pose, against ~22 and ~14 N·m needed (`tools/ankle_linkage.py`).
 - The knee range is 0–125°: beyond that the folded calf meets the hip roll motor (`tools/check_packaging.py`).
 
 ## Issue 1: knee heat on slow stairs
@@ -58,7 +58,7 @@ In v3 the terrain curriculum plateaued at level ~1 of 10 with very few falls: wa
 
 ## Issue 3: mass
 
-The leg strength pass (`cad/strength.py`: far-side bearings at the knee and hip roll, a channel-flanged hip block, a ribbed foot) put the robot at 39.55 kg; the pelvis and torso CAD brought it to 39.06 kg, and the arm and head CAD to 39.20 kg (39.76 kg with the optional covers). The hard limit was raised to 40 kg, with the 35 kg target unchanged (decisions, 2026-10-26). Mass feeds issue 1 directly. Savings that keep the computer and the battery as they are:
+The leg strength pass (`cad/strength.py`: far-side bearings at the knee and hip roll, a channel-flanged hip block, a ribbed foot) put the robot at 39.55 kg; the pelvis and torso CAD brought it to 39.06 kg, the arm and head CAD to 39.20 kg, and the slimmer ring-and-strap plates and staggered-ankle shin to 38.71 kg (39.30 kg with the optional covers). The hard limit was raised to 40 kg, with the 35 kg target unchanged (decisions, 2026-10-26). Mass feeds issue 1 directly. Savings that keep the computer and the battery as they are:
 
 | Option | Saves | Trade-off |
 |---|---|---|

@@ -114,18 +114,18 @@ def checks(peak: dict, mass: float) -> list[Check]:
     )
     hand_pitch = j["left_shoulder_roll"] + hand_roll
     return [
+        # the two side plates act together as the shin; the ankle fork is their lower end
         Check(
-            "left_shin_web",
+            "left_shin_inner+left_shin_outer",
             "z",
-            list(np.linspace(-90, -230, 8)),
+            list(np.linspace(-80, -270, 12)),
             tuple(ankle_shin),
             (0.0, ankle_pitch, 0.0),
         ),
-        Check("left_ankle_fork", "z", list(np.linspace(-250, -270, 3)), tuple(ankle_shin)),
         Check(
-            "left_shin_knee_flange+left_shin_knee_outer",
+            "left_shin_inner+left_shin_outer+left_shin_knee_outer+left_shin_bridge",
             "z",
-            list(np.linspace(-30, -85, 6)),
+            list(np.linspace(-30, -80, 6)),
             tuple(ankle_shin),
             (0.0, 1000 * peak["left_knee"], 0.0),
         ),

@@ -24,10 +24,10 @@ left_hip_yoke_back:
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.43532
-  com: [-0.125349, 0.0253243, -0.0496391]
-  inertia: [0.00145131, 0.000931354, 0.000563613, -4.93857e-07, 1.68454e-05, -1.26859e-06]
-  size_mm: [30.0, 110.0, 170.0]
+  mass: 0.40204
+  com: [-0.125638, 0.0250972, -0.0483642]
+  inertia: [0.00125383, 0.000816106, 0.000480138, -1.48072e-07, 1.49038e-05, -1.6739e-06]
+  size_mm: [30.0, 110.0, 165.0]
 left_hip_roll_rear:
   link: left_hip_roll_link
   material: al6061
@@ -60,10 +60,10 @@ left_hip_roll_front:
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.10658
-  com: [-0.05915, -0.00018581, -0.0165462]
-  inertia: [0.000158748, 0.000106732, 5.26553e-05, 1.05248e-19, 5.36013e-20, -9.78103e-08]
-  size_mm: [6.0, 80.0, 114.0]
+  mass: 0.10259
+  com: [-0.05915, 2.6208e-05, -0.0147022]
+  inertia: [0.000145804, 0.000107501, 3.89185e-05, 6.82185e-18, 6.87883e-18, -1.28681e-06]
+  size_mm: [6.0, 80.0, 122.0]
 left_hip_roll_top:
   link: left_hip_roll_link
   material: al6061
@@ -87,10 +87,10 @@ left_thigh_plate:
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.245
-  com: [0.000138544, 0.0316899, -0.13266]
-  inertia: [0.000567902, 0.000762173, 0.000199511, 2.85108e-08, 1.95299e-06, 4.59731e-06]
-  size_mm: [124.0, 18.0, 188.7]
+  mass: 0.18811
+  com: [-5.714e-05, 0.031944, -0.130554]
+  inertia: [0.000420885, 0.000505513, 8.94221e-05, -1.17588e-08, -3.23186e-06, 5.03066e-06]
+  size_mm: [100.0, 18.0, 176.7]
 left_thigh_shell:
   link: left_thigh_link
   material: pa_cf
@@ -100,33 +100,42 @@ left_thigh_shell:
   com: [1.40229e-11, 0.00114633, -0.066248]
   inertia: [0.000108823, 0.0001499, 0.000229358, 9.64934e-14, 8.42671e-15, 6.91752e-07]
   size_mm: [130.0, 116.0, 52.7]
-left_shin_knee_flange:
+left_shin_inner:
   link: left_shin_link
   material: al6061
-  process: cnc
+  process: service
   budget: leg_structure
-  mass: 0.11425
-  com: [1.38789e-05, -0.03085, -0.0204021]
-  inertia: [0.000168012, 0.000217163, 4.9837e-05, 5.92539e-17, 8.74635e-07, 1.7387e-15]
-  size_mm: [84.0, 6.0, 139.5]
+  mass: 0.24254
+  com: [-0.00289883, -0.0313, -0.109091]
+  inertia: [0.00250888, 0.00266305, 0.000155629, 5.17771e-16, -0.000165738, 1.3822e-16]
+  size_mm: [133.0, 6.0, 347.0]
+left_shin_outer:
+  link: left_shin_link
+  material: al6061
+  process: service
+  budget: leg_structure
+  mass: 0.15083
+  com: [0.0389067, 0.0313, -0.144374]
+  inertia: [0.00068827, 0.000756497, 6.91321e-05, -3.3608e-16, -9.6545e-05, -4.67689e-16]
+  size_mm: [98.0, 6.0, 275.0]
 left_shin_knee_outer:
   link: left_shin_link
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.06887
-  com: [0.000718965, 0.04485, -0.0430448]
-  inertia: [8.50005e-05, 0.00010578, 2.11928e-05, 1.25628e-20, 7.59781e-07, -3.57342e-20]
-  size_mm: [58.0, 6.0, 126.5]
+  mass: 0.04613
+  com: [0.0269876, 0.04485, -0.0186837]
+  inertia: [2.29336e-05, 6.17555e-05, 3.90988e-05, -5.36013e-20, 2.14925e-05, 8.48687e-20]
+  size_mm: [107.0, 6.0, 87.0]
 left_shin_bridge:
   link: left_shin_link
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.06741
-  com: [7.06822e-19, 0.007, -0.09]
-  inertia: [6.01404e-05, 2.39343e-05, 8.15469e-05, 3.33519e-22, -4.28811e-21, 0.0]
-  size_mm: [50.0, 81.7, 15.0]
+  mass: 0.04525
+  com: [0.065, 0.006775, -0.045]
+  inertia: [2.76943e-05, 4.49466e-06, 2.76943e-05, -3.12674e-20, -3.57342e-20, 1.34003e-20]
+  size_mm: [20.0, 82.2, 20.0]
 left_knee_bearing:
   link: left_shin_link
   material: bought
@@ -136,69 +145,78 @@ left_knee_bearing:
   com: [9.30241e-19, 0.04485, 1.1628e-19]
   inertia: [4.2579e-06, 8.31164e-06, 4.2579e-06, 1.04303e-21, -7.26751e-23, 1.30379e-22]
   size_mm: [42.0, 7.0, 42.0]
-left_shin_web:
+left_shin_spacer_0:
   link: left_shin_link
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.15965
-  com: [-0.011991, 0.0, -0.159296]
-  inertia: [0.000371814, 0.00046113, 9.02743e-05, -3.72231e-23, 3.10458e-05, -1.78671e-21]
-  size_mm: [93.0, 6.0, 169.0]
-left_ankle_fork:
+  mass: 0.02301
+  com: [-0.05, 5.17713e-19, -0.13]
+  inertia: [6.60163e-06, 9.18831e-07, 6.60163e-06, -2.97785e-21, 1.07203e-19, -1.54848e-21]
+  size_mm: [16.0, 56.6, 16.0]
+left_shin_spacer_1:
   link: left_shin_link
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.13581
-  com: [0.000207526, -0.000271324, -0.258958]
-  inertia: [0.000253774, 8.28211e-05, 0.000240961, 7.35515e-07, -3.934e-07, 5.1434e-07]
-  size_mm: [60.0, 100.0, 68.0]
+  mass: 0.02301
+  com: [0.055, -5.17713e-19, -0.2]
+  inertia: [6.60163e-06, 9.18831e-07, 6.60163e-06, 1.72715e-21, -3.57342e-19, 2.38228e-21]
+  size_mm: [16.0, 56.6, 16.0]
+left_shin_spacer_2:
+  link: left_shin_link
+  material: al6061
+  process: cnc
+  budget: leg_structure
+  mass: 0.02301
+  com: [-0.04, -5.17713e-19, -0.255]
+  inertia: [6.60163e-06, 9.18831e-07, 6.60163e-06, -7.14684e-22, 4.64545e-19, 5.41969e-21]
+  size_mm: [16.0, 56.6, 16.0]
 left_ankle_crank_a:
   link: left_shin_link
   material: al7075
   process: cnc
   budget: leg_structure
-  mass: 0.04057
-  com: [-0.0409362, 0.0633, -0.129041]
-  inertia: [3.5459e-06, 2.66862e-05, 2.33837e-05, 3.719e-20, -3.60909e-06, -2.2314e-19]
-  size_mm: [91.0, 6.0, 38.3]
+  mass: 0.0725
+  com: [-0.021135, 0.0372971, -0.21]
+  inertia: [7.54636e-06, 3.75039e-05, 3.29502e-05, 2.98918e-06, -1.33357e-13, -1.3643e-14]
+  size_mm: [89.0, 15.7, 40.0]
 left_ankle_rod_a:
   link: left_shin_link
   material: bought
   process: bought
   budget: leg_structure
-  mass: 0.045
-  com: [-0.0685064, 0.05915, -0.218143]
-  inertia: [0.00010226, 0.000104774, 3.6039e-06, 8.5301e-07, 1.67811e-05, -5.15618e-06]
-  size_mm: [37.0, 18.3, 164.7]
+  mass: 0.03
+  com: [-0.065, 0.0405, -0.255]
+  inertia: [2.08869e-05, 2.11432e-05, 6.3757e-07, 2.5884e-08, 2.29876e-06, -2.29876e-07]
+  size_mm: [20.0, 11.0, 91.0]
 left_ankle_crank_b:
   link: left_shin_link
   material: al7075
   process: cnc
   budget: leg_structure
-  mass: 0.04057
-  com: [-0.0409362, -0.0633, -0.129041]
-  inertia: [3.5459e-06, 2.66862e-05, 2.33837e-05, 5.5785e-20, -3.60909e-06, 1.8595e-19]
-  size_mm: [91.0, 6.0, 38.3]
+  mass: 0.0725
+  com: [0.028865, -0.0372971, -0.11]
+  inertia: [7.54636e-06, 3.75039e-05, 3.29502e-05, -2.98918e-06, -9.72915e-13, -8.49442e-14]
+  size_mm: [89.0, 15.7, 40.0]
 left_ankle_rod_b:
   link: left_shin_link
   material: bought
   process: bought
   budget: leg_structure
   mass: 0.045
-  com: [-0.0685064, -0.05915, -0.218143]
-  inertia: [0.00010226, 0.000104774, 3.6039e-06, -8.5301e-07, 1.67811e-05, 5.15618e-06]
-  size_mm: [37.0, 18.3, 164.7]
+  com: [-0.04, -0.0405, -0.205]
+  inertia: [0.000137054, 0.000143121, 6.64119e-06, 1.51773e-07, -2.87907e-05, 7.19767e-07]
+  size_mm: [50.0, 11.0, 191.0]
 left_ankle_cross:
   link: left_ankle_link
   material: al7075
   process: cnc
   budget: leg_structure
-  mass: 0.10925
-  com: [-9.07743e-19, 1.81549e-18, 0.0]
-  inertia: [8.49515e-05, 3.89412e-05, 0.000107505, -1.80048e-37, -6.19834e-22, -6.19834e-22]
-  size_mm: [44.0, 76.0, 30.0]
+  mass: 0.08558
+  com: [0.0, 0.0, 7.24263e-20]
+  inertia: [3.6358e-05, 2.85494e-05, 5.20703e-05, 0.0, -4.64876e-22, -3.09917e-22]
+  size_mm: [44.0, 52.6, 30.0]
 left_foot_sole:
   link: left_foot_link
   material: tpu
@@ -241,8 +259,8 @@ left_foot_post_a:
   process: cnc
   budget: feet
   mass: 0.03805
-  com: [-0.055, 0.055, -0.03175]
-  inertia: [7.02806e-06, 7.02806e-06, 2.05491e-06, 5.36013e-20, 0.0, 0.0]
+  com: [-0.06, 0.04, -0.03175]
+  inertia: [7.02806e-06, 7.02806e-06, 2.05491e-06, -3.57342e-20, 8.93355e-21, -8.93355e-21]
   size_mm: [18.0, 18.0, 43.5]
 left_foot_post_b:
   link: left_foot_link
@@ -250,8 +268,8 @@ left_foot_post_b:
   process: cnc
   budget: feet
   mass: 0.03805
-  com: [-0.055, -0.055, -0.03175]
-  inertia: [7.02806e-06, 7.02806e-06, 2.05491e-06, -5.36013e-20, 0.0, 0.0]
+  com: [-0.06, -0.04, -0.03175]
+  inertia: [7.02806e-06, 7.02806e-06, 2.05491e-06, 3.57342e-20, 8.93355e-21, 8.93355e-21]
   size_mm: [18.0, 18.0, 43.5]
 left_foot_lug_front:
   link: left_foot_link
@@ -294,10 +312,10 @@ right_hip_yoke_back:
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.43532
-  com: [-0.125349, -0.0253243, -0.0496391]
-  inertia: [0.00145131, 0.000931354, 0.000563613, 4.93857e-07, 1.68454e-05, 1.26859e-06]
-  size_mm: [30.0, 110.0, 170.0]
+  mass: 0.40204
+  com: [-0.125638, -0.0250972, -0.0483642]
+  inertia: [0.00125383, 0.000816106, 0.000480138, 1.48072e-07, 1.49038e-05, 1.6739e-06]
+  size_mm: [30.0, 110.0, 165.0]
 right_hip_roll_rear:
   link: right_hip_roll_link
   material: al6061
@@ -330,10 +348,10 @@ right_hip_roll_front:
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.10658
-  com: [-0.05915, 0.00018581, -0.0165462]
-  inertia: [0.000158748, 0.000106732, 5.26553e-05, -6.71412e-20, 3.57342e-20, 9.78103e-08]
-  size_mm: [6.0, 80.0, 114.0]
+  mass: 0.10259
+  com: [-0.05915, -2.6208e-05, -0.0147022]
+  inertia: [0.000145804, 0.000107501, 3.89185e-05, -6.81707e-18, 6.86097e-18, 1.28681e-06]
+  size_mm: [6.0, 80.0, 122.0]
 right_hip_roll_top:
   link: right_hip_roll_link
   material: al6061
@@ -357,10 +375,10 @@ right_thigh_plate:
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.245
-  com: [0.000138544, -0.0316899, -0.13266]
-  inertia: [0.000567902, 0.000762173, 0.000199511, -2.85108e-08, 1.95299e-06, -4.59731e-06]
-  size_mm: [124.0, 18.0, 188.7]
+  mass: 0.18811
+  com: [-5.714e-05, -0.031944, -0.130554]
+  inertia: [0.000420885, 0.000505513, 8.94221e-05, 1.17588e-08, -3.23186e-06, -5.03066e-06]
+  size_mm: [100.0, 18.0, 176.7]
 right_thigh_shell:
   link: right_thigh_link
   material: pa_cf
@@ -370,33 +388,42 @@ right_thigh_shell:
   com: [1.40229e-11, -0.00114633, -0.066248]
   inertia: [0.000108823, 0.0001499, 0.000229358, -9.64934e-14, 8.42671e-15, -6.91752e-07]
   size_mm: [130.0, 116.0, 52.7]
-right_shin_knee_flange:
+right_shin_inner:
   link: right_shin_link
   material: al6061
-  process: cnc
+  process: service
   budget: leg_structure
-  mass: 0.11425
-  com: [1.38789e-05, 0.03085, -0.0204021]
-  inertia: [0.000168012, 0.000217163, 4.9837e-05, -5.92587e-17, 8.74635e-07, -1.73867e-15]
-  size_mm: [84.0, 6.0, 139.5]
+  mass: 0.24254
+  com: [-0.00289883, 0.0313, -0.109091]
+  inertia: [0.00250888, 0.00266305, 0.000155629, -5.1778e-16, -0.000165738, -1.3822e-16]
+  size_mm: [133.0, 6.0, 347.0]
+right_shin_outer:
+  link: right_shin_link
+  material: al6061
+  process: service
+  budget: leg_structure
+  mass: 0.15083
+  com: [0.0389067, -0.0313, -0.144374]
+  inertia: [0.00068827, 0.000756497, 6.91321e-05, 3.3608e-16, -9.6545e-05, 4.67689e-16]
+  size_mm: [98.0, 6.0, 275.0]
 right_shin_knee_outer:
   link: right_shin_link
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.06887
-  com: [0.000718965, -0.04485, -0.0430448]
-  inertia: [8.50005e-05, 0.00010578, 2.11928e-05, -1.25628e-20, 7.59781e-07, 0.0]
-  size_mm: [58.0, 6.0, 126.5]
+  mass: 0.04613
+  com: [0.0269876, -0.04485, -0.0186837]
+  inertia: [2.29336e-05, 6.17555e-05, 3.90988e-05, 5.36013e-20, 2.14925e-05, -8.48687e-20]
+  size_mm: [107.0, 6.0, 87.0]
 right_shin_bridge:
   link: right_shin_link
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.06741
-  com: [7.06822e-19, -0.007, -0.09]
-  inertia: [6.01404e-05, 2.39343e-05, 8.15469e-05, -3.33519e-22, 1.47701e-20, 0.0]
-  size_mm: [50.0, 81.7, 15.0]
+  mass: 0.04525
+  com: [0.065, -0.006775, -0.045]
+  inertia: [2.76943e-05, 4.49466e-06, 2.76943e-05, 3.12674e-20, -3.57342e-20, -1.34003e-20]
+  size_mm: [20.0, 82.2, 20.0]
 right_knee_bearing:
   link: right_shin_link
   material: bought
@@ -406,69 +433,78 @@ right_knee_bearing:
   com: [9.30241e-19, -0.04485, 1.1628e-19]
   inertia: [4.2579e-06, 8.31164e-06, 4.2579e-06, -1.04303e-21, 2.70421e-39, 4.51021e-22]
   size_mm: [42.0, 7.0, 42.0]
-right_shin_web:
+right_shin_spacer_0:
   link: right_shin_link
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.15965
-  com: [-0.011991, 0.0, -0.159296]
-  inertia: [0.000371814, 0.00046113, 9.02743e-05, 1.11669e-22, 3.10458e-05, 1.78671e-21]
-  size_mm: [93.0, 6.0, 169.0]
-right_ankle_fork:
+  mass: 0.02301
+  com: [-0.05, -5.17713e-19, -0.13]
+  inertia: [6.60163e-06, 9.18831e-07, 6.60163e-06, 4.16899e-21, 1.07203e-19, 2.73962e-21]
+  size_mm: [16.0, 56.6, 16.0]
+right_shin_spacer_1:
   link: right_shin_link
   material: al6061
   process: cnc
   budget: leg_structure
-  mass: 0.13581
-  com: [0.000207526, 0.000271324, -0.258958]
-  inertia: [0.000253774, 8.28211e-05, 0.000240961, -7.35515e-07, -3.934e-07, -5.1434e-07]
-  size_mm: [60.0, 100.0, 68.0]
+  mass: 0.02301
+  com: [0.055, 5.17713e-19, -0.2]
+  inertia: [6.60163e-06, 9.18831e-07, 6.60163e-06, -1.72715e-21, -2.85874e-19, -2.38228e-21]
+  size_mm: [16.0, 56.6, 16.0]
+right_shin_spacer_2:
+  link: right_shin_link
+  material: al6061
+  process: cnc
+  budget: leg_structure
+  mass: 0.02301
+  com: [-0.04, 5.17713e-19, -0.255]
+  inertia: [6.60163e-06, 9.18831e-07, 6.60163e-06, -4.76456e-22, 4.64545e-19, -3.03741e-21]
+  size_mm: [16.0, 56.6, 16.0]
 right_ankle_crank_a:
   link: right_shin_link
   material: al7075
   process: cnc
   budget: leg_structure
-  mass: 0.04057
-  com: [-0.0409362, -0.0633, -0.129041]
-  inertia: [3.5459e-06, 2.66862e-05, 2.33837e-05, -3.719e-20, -3.60909e-06, 3.719e-20]
-  size_mm: [91.0, 6.0, 38.3]
+  mass: 0.0725
+  com: [-0.021135, -0.0372971, -0.21]
+  inertia: [7.54636e-06, 3.75039e-05, 3.29502e-05, -2.98918e-06, -1.33357e-13, 1.3643e-14]
+  size_mm: [89.0, 15.7, 40.0]
 right_ankle_rod_a:
   link: right_shin_link
   material: bought
   process: bought
   budget: leg_structure
-  mass: 0.045
-  com: [-0.0685064, -0.05915, -0.218143]
-  inertia: [0.00010226, 0.000104774, 3.6039e-06, -8.5301e-07, 1.67811e-05, 5.15618e-06]
-  size_mm: [37.0, 18.3, 164.7]
+  mass: 0.03
+  com: [-0.065, -0.0405, -0.255]
+  inertia: [2.08869e-05, 2.11432e-05, 6.3757e-07, -2.5884e-08, 2.29876e-06, 2.29876e-07]
+  size_mm: [20.0, 11.0, 91.0]
 right_ankle_crank_b:
   link: right_shin_link
   material: al7075
   process: cnc
   budget: leg_structure
-  mass: 0.04057
-  com: [-0.0409362, 0.0633, -0.129041]
-  inertia: [3.5459e-06, 2.66862e-05, 2.33837e-05, -5.5785e-20, -3.60909e-06, -3.3471e-19]
-  size_mm: [91.0, 6.0, 38.3]
+  mass: 0.0725
+  com: [0.028865, 0.0372971, -0.11]
+  inertia: [7.54636e-06, 3.75039e-05, 3.29502e-05, 2.98918e-06, -9.72915e-13, 8.49442e-14]
+  size_mm: [89.0, 15.7, 40.0]
 right_ankle_rod_b:
   link: right_shin_link
   material: bought
   process: bought
   budget: leg_structure
   mass: 0.045
-  com: [-0.0685064, 0.05915, -0.218143]
-  inertia: [0.00010226, 0.000104774, 3.6039e-06, 8.5301e-07, 1.67811e-05, -5.15618e-06]
-  size_mm: [37.0, 18.3, 164.7]
+  com: [-0.04, 0.0405, -0.205]
+  inertia: [0.000137054, 0.000143121, 6.64119e-06, -1.51773e-07, -2.87907e-05, -7.19767e-07]
+  size_mm: [50.0, 11.0, 191.0]
 right_ankle_cross:
   link: right_ankle_link
   material: al7075
   process: cnc
   budget: leg_structure
-  mass: 0.10925
-  com: [-9.07743e-19, -1.81549e-18, 0.0]
-  inertia: [8.49515e-05, 3.89412e-05, 0.000107505, 1.80048e-37, -3.09917e-22, 6.19834e-22]
-  size_mm: [44.0, 76.0, 30.0]
+  mass: 0.08558
+  com: [0.0, 0.0, 7.24263e-20]
+  inertia: [3.6358e-05, 2.85494e-05, 5.20703e-05, 0.0, -4.64876e-22, 3.09917e-22]
+  size_mm: [44.0, 52.6, 30.0]
 right_foot_sole:
   link: right_foot_link
   material: tpu
@@ -511,8 +547,8 @@ right_foot_post_a:
   process: cnc
   budget: feet
   mass: 0.03805
-  com: [-0.055, -0.055, -0.03175]
-  inertia: [7.02806e-06, 7.02806e-06, 2.05491e-06, -5.36013e-20, 0.0, -8.93355e-21]
+  com: [-0.06, -0.04, -0.03175]
+  inertia: [7.02806e-06, 7.02806e-06, 2.05491e-06, 3.57342e-20, 8.93355e-21, 8.93355e-21]
   size_mm: [18.0, 18.0, 43.5]
 right_foot_post_b:
   link: right_foot_link
@@ -520,8 +556,8 @@ right_foot_post_b:
   process: cnc
   budget: feet
   mass: 0.03805
-  com: [-0.055, 0.055, -0.03175]
-  inertia: [7.02806e-06, 7.02806e-06, 2.05491e-06, 5.36013e-20, 0.0, 1.78671e-20]
+  com: [-0.06, 0.04, -0.03175]
+  inertia: [7.02806e-06, 7.02806e-06, 2.05491e-06, -3.57342e-20, 8.93355e-21, -8.93355e-21]
   size_mm: [18.0, 18.0, 43.5]
 right_foot_lug_front:
   link: right_foot_link
@@ -546,19 +582,19 @@ pelvis_side_l:
   material: al6061
   process: cnc
   budget: pelvis
-  mass: 0.21905
-  com: [0.00123407, 0.04415, 0.0184425]
-  inertia: [0.000335545, 0.000548469, 0.000214238, -2.01005e-20, -4.53188e-06, -1.07203e-19]
-  size_mm: [114.0, 6.0, 143.7]
+  mass: 0.16284
+  com: [0.000102418, 0.04415, 0.0166975]
+  inertia: [0.000239799, 0.000343399, 0.000104577, -7.7615e-16, -1.67567e-07, -4.20913e-16]
+  size_mm: [110.0, 6.0, 140.7]
 pelvis_side_r:
   link: pelvis
   material: al6061
   process: cnc
   budget: pelvis
-  mass: 0.21905
-  com: [0.00123407, -0.04415, 0.0184425]
-  inertia: [0.000335545, 0.000548469, 0.000214238, 4.69011e-20, -4.53188e-06, 1.42937e-19]
-  size_mm: [114.0, 6.0, 143.7]
+  mass: 0.16284
+  com: [0.000102418, -0.04415, 0.0166975]
+  inertia: [0.000239799, 0.000343399, 0.000104577, -7.76144e-16, -1.67567e-07, -4.20877e-16]
+  size_mm: [110.0, 6.0, 140.7]
 pelvis_front:
   link: pelvis
   material: al6061
@@ -609,19 +645,19 @@ torso_upright_l:
   material: al6061
   process: service
   budget: torso
-  mass: 0.3413
-  com: [0.00136855, 0.0787, 0.165188]
-  inertia: [0.00209263, 0.00251713, 0.000426555, -9.82691e-20, 1.23481e-06, -2.28699e-18]
-  size_mm: [140.0, 6.0, 264.7]
+  mass: 0.22519
+  com: [9.14789e-05, 0.0787, 0.167358]
+  inertia: [0.0014424, 0.00168185, 0.000240803, 3.53238e-17, 5.29e-06, -2.91591e-17]
+  size_mm: [140.0, 6.0, 258.7]
 torso_upright_r:
   link: torso_link
   material: al6061
   process: service
   budget: torso
-  mass: 0.3413
-  com: [0.00136855, -0.0787, 0.165188]
-  inertia: [0.00209263, 0.00251713, 0.000426555, 1.56337e-19, 1.23481e-06, 2.28699e-18]
-  size_mm: [140.0, 6.0, 264.7]
+  mass: 0.22519
+  com: [9.14789e-05, -0.0787, 0.167358]
+  inertia: [0.0014424, 0.00168185, 0.000240803, 3.53716e-17, 5.29e-06, -3.03026e-17]
+  size_mm: [140.0, 6.0, 258.7]
 torso_bridge:
   link: torso_link
   material: al6061
@@ -654,19 +690,19 @@ left_shoulder_back:
   material: al6061
   process: cnc
   budget: arm_structure
-  mass: 0.13855
-  com: [-0.0318, 0.0440577, -0.0451587]
-  inertia: [0.000185259, 0.000100563, 8.58283e-05, -3.57342e-20, 7.14684e-20, 2.10776e-05]
-  size_mm: [7.0, 96.7, 105.0]
+  mass: 0.12235
+  com: [-0.0318, 0.0433166, -0.0439749]
+  inertia: [0.000145446, 7.96681e-05, 6.67775e-05, -1.01449e-16, 7.79363e-17, 2.0616e-05]
+  size_mm: [7.0, 92.7, 101.0]
 left_shoulder_roll_front:
   link: left_shoulder_roll_link
   material: al6061
   process: cnc
   budget: arm_structure
-  mass: 0.10487
-  com: [0.0318, 5.35828e-05, -0.012873]
-  inertia: [0.000114038, 7.33333e-05, 4.15615e-05, -7.43299e-21, -1.78671e-20, 3.95955e-07]
-  size_mm: [7.0, 72.0, 95.8]
+  mass: 0.10812
+  com: [0.0318, 0.000229373, -0.0163543]
+  inertia: [0.00012922, 9.54842e-05, 3.4619e-05, 9.94955e-17, -1.49512e-16, 7.66868e-07]
+  size_mm: [7.0, 72.0, 111.8]
 left_shoulder_roll_top:
   link: left_shoulder_roll_link
   material: al6061
@@ -753,19 +789,19 @@ right_shoulder_back:
   material: al6061
   process: cnc
   budget: arm_structure
-  mass: 0.13855
-  com: [-0.0318, -0.0440577, -0.0451587]
-  inertia: [0.000185259, 0.000100563, 8.58283e-05, 3.57342e-20, 7.14684e-20, -2.10776e-05]
-  size_mm: [7.0, 96.7, 105.0]
+  mass: 0.12235
+  com: [-0.0318, -0.0433166, -0.0439749]
+  inertia: [0.000145446, 7.96681e-05, 6.67775e-05, 1.01485e-16, 7.7972e-17, -2.0616e-05]
+  size_mm: [7.0, 92.7, 101.0]
 right_shoulder_roll_front:
   link: right_shoulder_roll_link
   material: al6061
   process: cnc
   budget: arm_structure
-  mass: 0.10487
-  com: [0.0318, -5.35828e-05, -0.012873]
-  inertia: [0.000114038, 7.33333e-05, 4.15615e-05, 1.69598e-20, -2.68007e-20, -3.95955e-07]
-  size_mm: [7.0, 72.0, 95.8]
+  mass: 0.10812
+  com: [0.0318, -0.000229373, -0.0163543]
+  inertia: [0.00012922, 9.54842e-05, 3.4619e-05, -9.94955e-17, -1.49503e-16, -7.66868e-07]
+  size_mm: [7.0, 72.0, 111.8]
 right_shoulder_roll_top:
   link: right_shoulder_roll_link
   material: al6061
@@ -888,36 +924,36 @@ left_thigh_cover:
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.04039
-  com: [0.0449127, 0.0335269, -0.0981088]
-  inertia: [8.28856e-05, 8.494e-05, 4.96728e-05, 1.85001e-05, 1.97174e-06, -1.48692e-06]
+  mass: 0.03986
+  com: [0.04442, 0.0332882, -0.0975323]
+  inertia: [8.15863e-05, 8.31626e-05, 4.89114e-05, 1.84534e-05, 1.15098e-06, -1.91189e-06]
   size_mm: [81.0, 84.0, 133.0]
 left_shin_guard:
   link: left_shin_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.05898
-  com: [0.0326271, 3.282e-05, -0.14427]
-  inertia: [0.00023691, 0.000114748, 0.000134988, 7.03737e-07, -2.6608e-06, -1.31653e-07]
-  size_mm: [39.6, 142.7, 150.0]
+  mass: 0.07273
+  com: [0.0559181, 0.0017758, -0.141179]
+  inertia: [0.000251059, 0.000185785, 0.000171414, -7.96871e-07, -1.5432e-05, -4.53161e-07]
+  size_mm: [91.0, 105.1, 150.0]
 left_hip_cap:
   link: left_hip_pitch_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.03259
-  com: [0.00280665, 0.0460315, 0.000555571]
-  inertia: [4.4674e-05, 5.50283e-05, 3.29832e-05, 8.20941e-06, 3.41774e-06, 6.20786e-06]
+  mass: 0.03258
+  com: [0.00284385, 0.0458663, 0.000508939]
+  inertia: [4.4503e-05, 5.48872e-05, 3.28474e-05, 8.08827e-06, 3.36779e-06, 6.29511e-06]
   size_mm: [91.0, 70.9, 106.0]
 left_shoulder_cap:
   link: left_shoulder_pitch_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.03567
-  com: [0.0098902, 0.0673316, -0.0233997]
-  inertia: [5.69311e-05, 5.74186e-05, 5.11109e-05, 7.00336e-06, 5.78098e-06, 1.49524e-05]
+  mass: 0.03607
+  com: [0.00941023, 0.0672642, -0.0235493]
+  inertia: [5.71506e-05, 5.84126e-05, 5.18338e-05, 6.86624e-06, 5.52565e-06, 1.49819e-05]
   size_mm: [82.4, 84.0, 108.8]
 pelvis_front_cover:
   link: pelvis
@@ -951,43 +987,43 @@ torso_collar:
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.05298
-  com: [0.00228454, -2.47605e-09, 0.284878]
-  inertia: [0.000116428, 0.000250028, 0.000356071, -1.03823e-11, 2.40144e-06, -4.02939e-13]
+  mass: 0.05667
+  com: [0.00211642, -5.33385e-10, 0.285163]
+  inertia: [0.00012452, 0.000252687, 0.000366387, -2.61018e-12, 2.71279e-06, -1.02274e-12]
   size_mm: [188.5, 160.0, 38.0]
 right_thigh_cover:
   link: right_thigh_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.04039
-  com: [0.0449127, -0.0335269, -0.0981088]
-  inertia: [8.28856e-05, 8.494e-05, 4.96728e-05, -1.85001e-05, 1.97174e-06, 1.48692e-06]
+  mass: 0.03986
+  com: [0.04442, -0.0332882, -0.0975323]
+  inertia: [8.15863e-05, 8.31626e-05, 4.89114e-05, -1.84534e-05, 1.15098e-06, 1.91189e-06]
   size_mm: [81.0, 84.0, 133.0]
 right_shin_guard:
   link: right_shin_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.05898
-  com: [0.0326271, -3.282e-05, -0.14427]
-  inertia: [0.00023691, 0.000114748, 0.000134988, -7.03737e-07, -2.6608e-06, 1.31653e-07]
-  size_mm: [39.6, 142.7, 150.0]
+  mass: 0.07273
+  com: [0.0559181, -0.0017758, -0.141179]
+  inertia: [0.000251059, 0.000185785, 0.000171414, 7.96871e-07, -1.5432e-05, 4.53161e-07]
+  size_mm: [91.0, 105.1, 150.0]
 right_hip_cap:
   link: right_hip_pitch_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.03259
-  com: [0.00280665, -0.0460315, 0.000555571]
-  inertia: [4.4674e-05, 5.50283e-05, 3.29832e-05, -8.20941e-06, 3.41774e-06, -6.20786e-06]
+  mass: 0.03258
+  com: [0.00284385, -0.0458663, 0.000508939]
+  inertia: [4.4503e-05, 5.48872e-05, 3.28474e-05, -8.08827e-06, 3.36779e-06, -6.29511e-06]
   size_mm: [91.0, 70.9, 106.0]
 right_shoulder_cap:
   link: right_shoulder_pitch_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.03567
-  com: [0.0098902, -0.0673316, -0.0233997]
-  inertia: [5.69311e-05, 5.74186e-05, 5.11109e-05, -7.00336e-06, 5.78098e-06, -1.49524e-05]
+  mass: 0.03607
+  com: [0.00941023, -0.0672642, -0.0235493]
+  inertia: [5.71506e-05, 5.84126e-05, 5.18338e-05, -6.86624e-06, 5.52565e-06, -1.49819e-05]
   size_mm: [82.4, 84.0, 108.8]

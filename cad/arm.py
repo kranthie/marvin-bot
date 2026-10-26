@@ -25,7 +25,7 @@ from pathlib import Path
 
 import yaml
 
-from .lib import Part, box, cyl, hull, lighten, union
+from .lib import Part, box, cyl, hull, lighten, strap, union
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -62,8 +62,9 @@ def parts() -> list[Part]:
     tb = 7.0  # shoulder back and roll front plates: SF 2 in the hand case (cad/strength.py)
     back_x = roll[0] - t03 / 2 - tb / 2
     flange = cyl(76, t, "y", (0, y0 + t / 2, 0)) - roll_clear
-    back = hull(
-        cyl(d03 - 6, tb, "x", (back_x, roll[1], roll[2])),
+    back = union(
+        cyl(86, tb, "x", (back_x, roll[1], roll[2])),  # ring on the stator bolt circle
+        strap(40, tb, "x", (back_x, roll[1], roll[2]), (back_x, y0 + 20, -12)),
         box((tb, 34, 40), (back_x, y0 + 17, -12)),
     )
     back = lighten(back, "x", keep=[cyl(60, 40, "x", (back_x, roll[1], roll[2]))], hole=16, rim=8)
@@ -77,8 +78,9 @@ def parts() -> list[Part]:
     face = t03 / 2
     yaw = j["left_shoulder_yaw"]
     yaw_top = yaw[2] + t06 / 2
-    front = hull(
+    front = union(
         cyl(72, tb, "x", (face + tb / 2, 0, 0)),
+        strap(56, tb, "x", (face + tb / 2, 0, 0), (face + tb / 2, 0, yaw_top + 12)),
         box((tb, 72, t), (face + tb / 2, 0, yaw_top + t / 2)),
     )
     front = lighten(front, "x", keep=[cyl(56, 40, "x", (face, 0, 0))], hole=16, pitch=24, rim=7)

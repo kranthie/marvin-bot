@@ -38,7 +38,7 @@ limbs:
     branch_fuse_a: 40
     root_connectors: {power: '2-pin, rated >= 40 A (XT60 class), keyed', signal: '6-pin latching (CAN
         pairs, ground, spare)'}
-    total_length_m: 1.62
+    total_length_m: 1.79
     segments:
     - frm: pelvis_pdb
       to: left_hip_pitch
@@ -74,7 +74,7 @@ limbs:
       signals: [left_shank]
     - frm: left_knee
       to: left_ankle_a
-      length_m: 0.33
+      length_m: 0.43
       crosses: [left_knee]
       service_loop_m: 0.08
       current_a: 5.3
@@ -82,7 +82,7 @@ limbs:
       signals: [left_shank]
     - frm: left_ankle_a
       to: left_ankle_b
-      length_m: 0.16
+      length_m: 0.23
       crosses: []
       service_loop_m: 0
       current_a: 2.7
@@ -95,7 +95,7 @@ limbs:
     branch_fuse_a: 40
     root_connectors: {power: '2-pin, rated >= 40 A (XT60 class), keyed', signal: '6-pin latching (CAN
         pairs, ground, spare)'}
-    total_length_m: 1.62
+    total_length_m: 1.79
     segments:
     - frm: pelvis_pdb
       to: right_hip_pitch
@@ -131,7 +131,7 @@ limbs:
       signals: [right_shank]
     - frm: right_knee
       to: right_ankle_a
-      length_m: 0.33
+      length_m: 0.43
       crosses: [right_knee]
       service_loop_m: 0.08
       current_a: 5.3
@@ -139,7 +139,7 @@ limbs:
       signals: [right_shank]
     - frm: right_ankle_a
       to: right_ankle_b
-      length_m: 0.16
+      length_m: 0.23
       crosses: []
       service_loop_m: 0
       current_a: 2.7

@@ -58,7 +58,7 @@ The computer's supply is taken before the contactor, so an e-stop cuts every act
 |---|---|---|---|---|
 | Main (battery to torso board) | 78.5 A | 100 A | — | 6 AWG |
 | Trunk (torso to pelvis, across the waist) | 51.3 A | 80 A | 0.57 m | 8 AWG, 4 leg CAN pairs, waist CAN |
-| Leg (each) | 24.3 A | 40 A | 1.62 m | 12 AWG at the root down to 16 AWG; hip and shank CAN |
+| Leg (each) | 24.3 A | 40 A | 1.79 m | 12 AWG at the root down to 16 AWG; hip and shank CAN |
 | Arm (each) | 13.6 A | 20 A | 1.83 m | 16 AWG; arm CAN; 12 V and serial for the gripper |
 | Head | — | — | 0.30 m | 12 V and serial for the neck servos; camera USB-C |
 
@@ -71,7 +71,7 @@ Rules the harness follows:
 - **No wire carries load**: the harness is clipped to the structure on both sides of each loop, so motion only flexes the loop.
 - **CAN**: twisted pair, 120 Ω termination at the hub end and on the last motor of each bus, shield or drain grounded at the hub only. Each leg carries two buses (hip and shank), so its signal connector has 6 pins.
 - **Limb-root connectors**: a keyed 2-pin power connector rated above the branch fuse (XT60 class for legs and arms) and a latching signal connector (CAN pairs, ground, a spare), both mounted on a bulkhead on the parent module next to the limb's first flange.
-- **Paths**: the leg harness drops from the pelvis board between the hip pitch motor and the frame, behind the hip roll motor, down the back of the thigh shell and the shin web to the ankle motors. The arm harness leaves the torso beside the shoulder pitch motor, runs inside the upper-arm and forearm shells (they leave a cable channel; the upper-arm shell has an exit at the elbow for the loop), and ends at the gripper servo.
+- **Paths**: the leg harness drops from the pelvis board between the hip pitch motor and the frame, behind the hip roll motor, down the back of the thigh shell and between the shin's side plates to the ankle motors. The arm harness leaves the torso beside the shoulder pitch motor, runs inside the upper-arm and forearm shells (they leave a cable channel; the upper-arm shell has an exit at the elbow for the loop), and ends at the gripper servo.
 
 ## Covers (add-on)
 
@@ -82,7 +82,7 @@ The bare robot is meant to look finished: graphite printed shells (thigh, upper 
 - clipped on (clip and boss details come with the fastener pass), so they come off without tools for service;
 - carrying no load; they add some fall protection (R53).
 
-The covers weigh 0.56 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 39.20 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.76 kg) adds the covers' mass and visuals; a robot that runs with covers should be trained on it.
+The covers weigh 0.59 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 38.71 kg) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (39.30 kg) adds the covers' mass and visuals; a robot that runs with covers should be trained on it.
 
 ## Still to do
 

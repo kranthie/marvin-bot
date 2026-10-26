@@ -34,10 +34,13 @@ joints:
 # ratios are joint torque per motor torque at the neutral pose, computed by that tool from the
 # geometry, and set the URDF's ankle torque limits as (sum of both motors) x ratio.
 ankle_linkage:
-  # cranks on the motors' outer faces, so motor_y is the crank plane, not the motor centre
-  geometry: {crank_radius: 0.065, crank_tilt: 0.1745, motor_x: -0.018, motor_y: 0.055, motor_z: 0.165, rod_back: 0.055, rod_side: 0.055, rod_below: 0.010}
-  pitch_ratio: 0.86
-  roll_ratio: 0.83
+  # staggered motors on the shin's centre line: a low and just behind the ankle (crank on the
+  # outer side), b high and forward, below the knee (crank on the inner side); (x, z) above the
+  # ankle axis. Each crank sits outside the side plate opposite its motor's mounting face, so
+  # crank_y is the crank plane, not the motor centre
+  geometry: {crank_radius: 0.060, crank_tilt: 0.0, motor_a: [-0.010, 0.080], motor_b: [0.040, 0.180], crank_y: 0.041, rod_back: 0.060, rod_side: 0.040, rod_below: 0.010}
+  pitch_ratio: 0.99
+  roll_ratio: 0.67
 
 # Motor housings sit on the parent link of the joint they drive, at the joint, unless listed here.
 motor_mounts:
@@ -47,10 +50,10 @@ motor_mounts:
   left_shoulder_pitch: {link: torso_link, xyz: [0, 0.110, 0.250]}
   # neck yaw servo lowered into the torso top, clear of the head
   neck_yaw: {link: torso_link, xyz: [0, 0, 0.265]}
-  # the two ankle RS03 side by side (56.6 mm thick, 7 mm apart), 125 mm below the knee so they
-  # clear the knee motor (tools/ankle_linkage.py: motor_z 0.165 above the ankle)
-  left_ankle_a: {link: left_shin_link, xyz: [-0.018, 0.032, -0.125]}
-  left_ankle_b: {link: left_shin_link, xyz: [-0.018, -0.032, -0.125]}
+  # the two ankle RS03 staggered on the shin's centre line (a slim shin): a low, b high and
+  # forward like a kneecap (tools/ankle_linkage.py: ankle_linkage geometry, from the ankle)
+  left_ankle_a: {link: left_shin_link, xyz: [-0.010, 0, -0.210]}
+  left_ankle_b: {link: left_shin_link, xyz: [0.040, 0, -0.110]}
 
 # Structure and equipment, as boxes. "budget" names the mass_budget.yaml item each mass comes
 # from; the masses of each item (both sides counted) must add up to the budget figure.
@@ -83,7 +86,8 @@ bodies:
 collisions:
   - {link: pelvis,            xyz: [0, 0, 0.040],      size: [0.14, 0.18, 0.12]}
   - {link: left_thigh_link,   xyz: [0, 0, -0.060],     size: [0.09, 0.09, 0.16]}
-  - {link: left_shin_link,    xyz: [-0.010, 0, -0.145], size: [0.09, 0.09, 0.19]}  # starts 50 mm below the knee axis
+  - {link: left_shin_link,    xyz: [0.040, 0, -0.113],  size: [0.11, 0.09, 0.105]}  # upper ankle motor, under the knee
+  - {link: left_shin_link,    xyz: [-0.010, 0, -0.213], size: [0.104, 0.09, 0.097]}  # lower ankle motor
   - {link: left_foot_link,    xyz: [0.030, 0, -0.045], size: [0.24, 0.11, 0.03]}
   - {link: torso_link,        xyz: [-0.010, 0, 0.135], size: [0.18, 0.26, 0.25]}  # top 15 mm below the head box
   - {link: head_link,         xyz: [0.010, 0, 0.040],  size: [0.15, 0.16, 0.17]}
