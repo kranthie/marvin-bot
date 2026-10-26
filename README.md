@@ -35,9 +35,11 @@ The joint list, ranges and actuators are defined in [description/robot.yaml](des
 
 ```
 docs/          plan, requirements, roadmap, safety, decisions, design notes
-description/   robot.yaml (joints, sizes, CAN buses), actuators.yaml, mass_budget.yaml
+description/   robot.yaml (joints, sizes, CAN buses), actuators.yaml, mass_budget.yaml,
+               skeleton.yaml (frames, mass placement), urdf/ (generated)
 bom/           bill of materials (bom.csv)
-tools/         checks and generators (description check, BOM summary, concept sketch)
+tools/         checks and generators (description check, BOM summary, URDF, concept sketch)
+sim/mujoco/    MuJoCo checks (standing and joint torques)
 ```
 
 Folders for CAD, electronics, the onboard software, simulation and bench tests are added as each phase reaches them; [docs/plan.md](docs/plan.md) describes the full layout.
@@ -49,6 +51,10 @@ pip install -e ".[dev]"
 ruff check . && ruff format --check .
 python tools/check_description.py   # joints, actuators, CAN load, mass budget, BOM counts
 python tools/bom_summary.py         # BOM totals by phase and group
+python tools/build_urdf.py --check  # URDF matches the description files
+
+pip install -e ".[sim]"
+python sim/mujoco/check_standing.py # stands in MuJoCo; joint torques against ratings
 ```
 
 CI runs the same checks on every push.

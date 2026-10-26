@@ -21,6 +21,16 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] v0.2: compared with Asimov 1 and Roboto Origin; shorter legs, RS06 ankles
 - [x] v0.2 layout locked for phase 1
 
+## Phase 1
+
+- [x] Skeleton (`description/skeleton.yaml`) and URDF generated from the description files (`tools/build_urdf.py`)
+- [x] MuJoCo standing check: crouch and straight poses hold, worst holding torque 40% of rated (`sim/mujoco/check_standing.py`)
+- [ ] Static step-up check on 15-18 cm stairs; compare 0.62, 0.65 and 0.69 m hip-to-sole
+- [ ] Ankle linkage geometry and push-rod loads
+- [ ] Isaac Lab robot config and flat-ground walking policy (port the an earlier prototype tasks)
+- [ ] Rough-terrain and stair policies; MuJoCo cross-check
+- [ ] Code-CAD of the leg (aluminium cores, printed shells), masses fed back into the URDF
+
 ## Open items to verify before ordering
 
 1. RobStride direct quote, lead time and current import tariffs; compare with US resellers.
