@@ -119,6 +119,8 @@ def parts() -> list[Part]:
     )
     upper = o - i - cyl(d06 + 3, t06 + 2, "y", el) - box((200, 200, 40), (0, 0, el[2] - 70))
     upper = upper - box((40, 20, 20), (-30, -10, el[2] + 30))  # harness exit to the elbow loop
+    # a relief at the front above the elbow, where the forearm folds against it
+    upper = upper - box((100, 200, 140), (15 + 50, 0, el[2] + 5))
     out.append(Part("left_upper_arm_shell", "left_upper_arm_link", "pa_cf", upper, "print"))
 
     # --- forearm: frame on the elbow joint (elbow RS06 centred here, output face +y); the

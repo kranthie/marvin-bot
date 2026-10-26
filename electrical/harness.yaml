@@ -5,7 +5,7 @@ main: {current_a: 78.5, power_awg: 6, fuse_a: 100}
 trunk:
   frm: torso_pdb
   to: pelvis_pdb
-  length_m: 0.57
+  length_m: 0.65
   crosses: [waist_yaw]
   service_loop_m: 0.11
   current_a: 51.3
@@ -15,7 +15,7 @@ trunk:
 waist_motor:
   frm: pelvis_pdb
   to: waist_yaw
-  length_m: 0.18
+  length_m: 0.29
   crosses: []
   service_loop_m: 0
   current_a: 2.7
@@ -38,29 +38,29 @@ limbs:
     branch_fuse_a: 40
     root_connectors: {power: '2-pin, rated >= 40 A (XT60 class), keyed', signal: '6-pin latching (CAN
         pairs, ground, spare)'}
-    total_length_m: 1.79
+    total_length_m: 1.97
     segments:
     - frm: pelvis_pdb
       to: left_hip_pitch
-      length_m: 0.19
-      crosses: []
-      service_loop_m: 0
+      length_m: 0.28
+      crosses: [left_hip_roll]
+      service_loop_m: 0.04
       current_a: 24.3
       power_awg: 12
       signals: [left_hip, left_shank]
     - frm: left_hip_pitch
       to: left_hip_roll
-      length_m: 0.34
-      crosses: [left_hip_pitch]
-      service_loop_m: 0.1
+      length_m: 0.25
+      crosses: [left_hip_roll]
+      service_loop_m: 0.04
       current_a: 18.9
       power_awg: 14
       signals: [left_hip, left_shank]
     - frm: left_hip_roll
       to: left_hip_yaw
-      length_m: 0.26
-      crosses: [left_hip_roll]
-      service_loop_m: 0.04
+      length_m: 0.44
+      crosses: [left_hip_pitch, left_hip_roll]
+      service_loop_m: 0.13
       current_a: 13.4
       power_awg: 16
       signals: [left_hip, left_shank]
@@ -95,29 +95,29 @@ limbs:
     branch_fuse_a: 40
     root_connectors: {power: '2-pin, rated >= 40 A (XT60 class), keyed', signal: '6-pin latching (CAN
         pairs, ground, spare)'}
-    total_length_m: 1.79
+    total_length_m: 1.97
     segments:
     - frm: pelvis_pdb
       to: right_hip_pitch
-      length_m: 0.19
-      crosses: []
-      service_loop_m: 0
+      length_m: 0.28
+      crosses: [right_hip_roll]
+      service_loop_m: 0.04
       current_a: 24.3
       power_awg: 12
       signals: [right_hip, right_shank]
     - frm: right_hip_pitch
       to: right_hip_roll
-      length_m: 0.34
-      crosses: [right_hip_pitch]
-      service_loop_m: 0.1
+      length_m: 0.25
+      crosses: [right_hip_roll]
+      service_loop_m: 0.04
       current_a: 18.9
       power_awg: 14
       signals: [right_hip, right_shank]
     - frm: right_hip_roll
       to: right_hip_yaw
-      length_m: 0.26
-      crosses: [right_hip_roll]
-      service_loop_m: 0.04
+      length_m: 0.44
+      crosses: [right_hip_pitch, right_hip_roll]
+      service_loop_m: 0.13
       current_a: 13.4
       power_awg: 16
       signals: [right_hip, right_shank]

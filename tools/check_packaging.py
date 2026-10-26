@@ -10,9 +10,10 @@ forward kinematics of the URDF, and measures the overlap volume (manifold3d) of:
 - collision boxes on links that are not parent and child.
 
 Overlaps within one limb, or between a limb and the body it is mounted on (legs on the pelvis,
-arms and head on the torso), are packaging errors. Overlaps between different limbs (legs
-crossing, a hand touching a hip) are ordinary self-collision, which the simulators model and the
-controllers avoid; they are listed as warnings.
+arms and head on the torso), or between the pelvis and the torso, are packaging errors.
+Overlaps between different limbs, or between an arm and the pelvis (legs crossing, a hand
+touching a hip), are ordinary self-collision, which the simulators model and the controllers
+avoid; they are listed as warnings.
 
 Poses: the default stance; each leg and arm joint swept over its range with the rest at the
 stance; and a few combined poses (deep squat, stair step, sitting, legs crossed in roll and yaw).
@@ -114,13 +115,24 @@ def limb(link: str) -> str:
         side = link.split("_", 1)[0]
         arm = any(k in link for k in ("shoulder", "arm", "forearm", "wrist", "gripper"))
         return f"{side} {'arm' if arm else 'leg'}"
-    return "body"
+    return "pelvis" if link == "pelvis" else "upper body"
 
 
 def same_structure(a: str, b: str) -> bool:
-    """Same limb, or a limb and the body it hangs from."""
+    """Same limb, or a limb and the body it hangs from (legs from the pelvis, arms from the
+    upper body), or the pelvis and the upper body. An arm against the pelvis (a hand at the
+    hip with the waist turned) is self-collision, like an arm against a leg."""
     la, lb = limb(a), limb(b)
-    return la == lb or "body" in (la, lb)
+    if la == lb:
+        return True
+    pair = {la, lb}
+    if pair == {"pelvis", "upper body"}:
+        return True
+    hangs = {"leg": "pelvis", "arm": "upper body"}
+    for x, y in ((la, lb), (lb, la)):
+        if x.endswith(("leg", "arm")) and hangs[x.split()[-1]] == y:
+            return True
+    return False
 
 
 def main() -> int:

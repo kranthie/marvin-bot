@@ -105,9 +105,10 @@ def checks(peak: dict, mass: float) -> list[Check]:
     ankle_shin = j["left_ankle_pitch"]  # ankle axis in the shin frame
     knee_thigh = j["left_knee"]
     ankle_thigh = knee_thigh + ankle_shin
-    yaw = j["left_hip_yaw"]
-    ankle_roll_frame = yaw + ankle_thigh
-    ankle_pitch_frame = j["left_hip_roll"] + ankle_roll_frame
+    # the ankle in each frame up the leg: thigh, hip pitch link, hip roll link, pelvis
+    ankle_pitch_frame = j["left_hip_yaw"] + ankle_thigh
+    ankle_roll_frame = j["left_hip_pitch"] + ankle_pitch_frame
+    ankle_pelvis = j["left_hip_roll"] + ankle_roll_frame
     ankle_pitch = 1000 * peak["left_ankle_pitch"]
     hand_roll = sum(
         j[k] for k in ("left_shoulder_yaw", "left_elbow", "left_wrist_yaw", "left_gripper")
@@ -136,34 +137,43 @@ def checks(peak: dict, mass: float) -> list[Check]:
             tuple(ankle_thigh),
             (0.0, 1000 * peak["left_knee"], 0.0),
         ),
+        # hip pitch link: the U-yoke's two plates round the pitch motor, down to the yaw motor
         Check(
-            "left_hip_roll_front+left_hip_roll_rear",
+            "left_hip_pitch_outer+left_hip_pitch_inner",
             "z",
-            list(np.linspace(-20, 20, 5)),
-            tuple(ankle_roll_frame),
-            (1000 * peak["left_hip_roll"], 0.0, 0.0),
-        ),
-        Check(
-            "left_hip_yoke_back",
-            "z",
-            # load enters at the roll axis (z = -85) and leaves at the top, into the side plate
-            list(np.linspace(-80, 15, 7)),
-            tuple(ankle_pitch_frame),
-            (1000 * peak["left_hip_roll"], 0.0, 0.0),
-        ),
-        Check(
-            "left_hip_yoke_side",
-            "x",
-            list(np.linspace(-100, -20, 6)),
+            list(np.linspace(-40, -105, 6)),
             tuple(ankle_pitch_frame),
             (0.0, 1000 * peak["left_hip_pitch"], 0.0),
         ),
-        # the pelvis frame's four plates carry one leg's landing load as a box section
+        # roll bracket: the plate reaching forward to the pitch motor, and the front plate
+        # carrying it from the roll motor's output
         Check(
-            "pelvis_side_l+pelvis_side_r+pelvis_front+pelvis_back",
-            "z",
-            list(np.linspace(10, 75, 6)),
-            tuple(j["left_hip_pitch"] + ankle_pitch_frame),
+            "left_hip_roll_stator",
+            "x",
+            list(np.linspace(-62, -30, 5)),
+            tuple(ankle_roll_frame),
+            (0.0, 1000 * peak["left_hip_pitch"], 0.0),
+        ),
+        Check(
+            "left_hip_roll_front",
+            "y",
+            list(np.linspace(-50, -25, 4)),
+            tuple(ankle_roll_frame),
+            (1000 * peak["left_hip_roll"], 0.0, 0.0),
+        ),
+        # pelvis: the back plate between a roll motor and the middle, then the top plate and
+        # gussets as a channel carrying one leg's landing to the waist
+        Check(
+            "pelvis_back",
+            "y",
+            list(np.linspace(30, 45, 4)),
+            tuple(ankle_pelvis),
+        ),
+        Check(
+            "pelvis_top+pelvis_gusset_l+pelvis_gusset_r",
+            "x",
+            list(np.linspace(-120, -50, 8)),
+            tuple(ankle_pelvis),
         ),
         Check(
             "left_foot_base+left_foot_rib_a+left_foot_rib_b",

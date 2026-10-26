@@ -218,18 +218,15 @@ def parts() -> list[Part]:
     )
     add("neck_cover", "neck_link", sleeve)
 
-    # --- hip girdle (dark): round the pelvis frame and the waist motor, between the hips; in
-    # front it reaches over the hip pitch motors, behind it stays clear of the hip roll motors
-    # that swing round the hip axis
-    pel = on("pelvis")
+    # --- hip girdle (dark): round the pelvis frame and the waist motor, between the hips
+    # (the hip pitch motors swing round the roll axes on either side of it)
+    pel = [m_ for m_ in on("pelvis") if abs((m_.bounding_box()[1] + m_.bounding_box()[4]) / 2) < 50]
     waist_top = j["waist_yaw"][2] + 18.0  # below the torso shell's bottom edge
-    centre = half("y", 1, -40) ^ half("y", -1, 40)
-    hip_face = j["left_hip_pitch"][1] + t04 / 2 - 4  # short of the hip pitch output flanges
-    front = half("x", 1, 30, -45, None) ^ half("y", 1, -hip_face) ^ half("y", -1, hip_face)
+    centre = half("y", 1, -28) ^ half("y", -1, 28)
     add(
         "pelvis_cover",
         "pelvis",
-        wrap(pel, (centre + front) ^ half("z", -1, waist_top) ^ half("z", 1, -75)),
+        wrap(pel, centre ^ half("z", -1, waist_top) ^ half("z", 1, -75)),
     )
 
     # --- thigh shell: all round the thigh from under the hip yaw motor to the knee, except a
@@ -255,28 +252,33 @@ def parts() -> list[Part]:
         wrap(shin, half("x", 1, 0, ankle_z + 55, -d04 / 2 - 12)),
     )
 
-    # --- glute (dark): over the hip roll motor behind the hip and the yoke round it, above
-    # the roll axis (the roll bracket's plates hang below it and swing round it) and on the
-    # outer side
-    roll_z = skel["motor_mounts"]["left_hip_roll"]["xyz"][2] * 1000
-    glute = (half("x", -1, -66) + half("y", 1, 36)) ^ half("z", 1, roll_z + 8, None, 55)
-    glute = glute ^ half("y", 1, -20)  # clear of the pelvis frame
+    # --- glute (dark): round the hip roll motor behind the hip (fixed in the pelvis) and the
+    # roll bracket round it; carried by the bracket, so it turns about the roll motor's own
+    # axis and never meets it. Behind the hip pitch motor, and outboard of the pelvis frame.
+    rj = j["left_hip_roll"]
+    roll_m = [
+        m_.translate([-rj[0], -rj[1], -rj[2]])
+        for m_ in motors_on("pelvis")
+        if abs((m_.bounding_box()[1] + m_.bounding_box()[4]) / 2 - rj[1]) < 1
+    ]
+    glute = half("x", -1, -66) ^ half("y", 1, 66 - rj[1]) ^ half("z", 1, -75, None, 95)
     add(
         "left_glute_cover",
-        "left_hip_pitch_link",
-        wrap(on("left_hip_pitch_link"), glute, extra=14.0),  # rounded over the flat yoke plates
+        "left_hip_roll_link",
+        wrap(on("left_hip_roll_link") + roll_m, glute, extra=8.0),
     )
-    # --- upper thigh: round the hip yaw motor and the roll bracket's bar, between the roll
-    # motor (which the bracket turns round) and the yaw output, where the thigh shell starts
+    # --- upper thigh: round the hip pitch yoke and the yaw motor, between the pitch motor
+    # (which the yoke turns round) and the yaw output, where the thigh shell starts
     yaw = j["left_hip_yaw"]
     add(
         "left_upper_thigh_cover",
-        "left_hip_roll_link",
+        "left_hip_pitch_link",
         wrap(
-            on("left_hip_roll_link"),
-            half("z", -1, -d04 / 2 - 6)
+            on("left_hip_pitch_link"),
+            half("z", -1, -d04 / 2 - 8)
             ^ half("z", 1, yaw[2] - t03 / 2 + 2)
-            ^ half("x", 1, -55),  # the calf folds up behind it
+            ^ half("x", 1, -45)  # the hip roll motor is behind it when the hip extends
+            ^ half("y", 1, -30),  # and the pelvis inboard of it when the hip flexes
         ),
     )
     # --- shoulder cap: over the top of the shoulder roll motor. The roll link's parts swing
@@ -339,7 +341,20 @@ def _group(link: str) -> str:
             else "leg"
         )
         return f"{side}_{limb}"
-    return "body"
+    return "pelvis" if link == "pelvis" else "upper"
+
+
+def _checked(a: str, b: str) -> bool:
+    """Pairs that must never touch: within a limb, a limb and the body it hangs from (legs from
+    the pelvis, arms from the upper body), the pelvis and the upper body. A hand against a hip
+    or a leg against the other leg is the controller's business, as in check_packaging.py."""
+    ga, gb = _group(a), _group(b)
+    if ga == gb or {ga, gb} == {"pelvis", "upper"}:
+        return True
+    hangs = {"leg": "pelvis", "arm": "upper"}
+    return any(
+        x.endswith(("leg", "arm")) and hangs[x.split("_")[1]] == y for x, y in ((ga, gb), (gb, ga))
+    )
 
 
 def poses(joints: dict, ranges: dict) -> list[tuple[str, dict]]:
@@ -391,8 +406,10 @@ def _rot(axis, q: float) -> np.ndarray:
     return np.eye(3) + np.sin(q) * k + (1 - np.cos(q)) * k @ k
 
 
-def check(min_cm3: float = 0.5) -> list[str]:
-    """Shell-to-part contacts (overlap above min_cm3) over the poses, worst per pair."""
+def check(min_cm3: float = 0.5, parts_too: bool = True) -> list[str]:
+    """Shell-to-part contacts (overlap above min_cm3) over the poses, worst per pair; with
+    `parts_too`, also part-to-part contacts between links beyond the overlap they already
+    have at rest (where parts bolt to the next link's motor)."""
     sys.path.insert(0, str(ROOT / "tools"))
     import build_urdf as bu
 
@@ -402,6 +419,8 @@ def check(min_cm3: float = 0.5) -> list[str]:
     ranges = {j["name"]: j["range"] for j in bu.expand(robot["joints"])}
     body: dict[str, list] = {}
     for p in leg.all_parts() + torso.parts() + arm.all_parts() + head.parts():
+        if "ankle_rod" in p.name or "ankle_crank" in p.name:
+            continue  # drawn at the neutral pose only; they move with the ankle
         body.setdefault(p.link, []).append(p.solid)
     for m in bu.motor_placements():
         d, _, t = (x * 1000 for x in m["envelope"])
@@ -416,6 +435,7 @@ def check(min_cm3: float = 0.5) -> list[str]:
     body_u = {k: hull_free_union(v) for k, v in body.items()}
     shell_u = {k: hull_free_union(v) for k, v in shells.items()}
     worst: dict[tuple, tuple] = {}
+    rest: dict[tuple, float] = {}
     for label, q in poses(joints, ranges):
         world = {"pelvis": (np.eye(3), np.zeros(3))}
         pending = dict(joints)
@@ -432,14 +452,29 @@ def check(min_cm3: float = 0.5) -> list[str]:
             return m.transform(np.hstack([r, t[:, None]]).tolist())
 
         cache = {}
+        if parts_too:
+            placed_b = {k: placed(v, k) for k, v in body_u.items()}
+            for a in body_u:
+                ba = np.array(placed_b[a].bounding_box())
+                for b in body_u:
+                    if b <= a or not _checked(a, b):
+                        continue
+                    ob = np.array(placed_b[b].bounding_box())
+                    if np.any(ba[3:] < ob[:3]) or np.any(ob[3:] < ba[:3]):
+                        continue
+                    v = (placed_b[a] ^ placed_b[b]).volume() / 1000
+                    if label == "zero":
+                        rest[(a, b)] = v
+                    v -= rest.get((a, b), 0.0)
+                    if v > min_cm3 and v > worst.get((a, b, "part"), (0, ""))[0]:
+                        worst[(a, b, "part")] = (v, label)
         for a, sh in shell_u.items():
             sa = placed(sh, a)
             ba = np.array(sa.bounding_box())
             for b in world:
                 if b == a:
                     continue
-                ga, gb = _group(a), _group(b)
-                if ga != "body" and gb != "body" and ga != gb:
+                if not _checked(a, b):
                     continue
                 others = [x for x in (body_u.get(b), shell_u.get(b)) if x is not None]
                 for kind, other in zip(("part", "shell"), others, strict=False):
@@ -452,7 +487,10 @@ def check(min_cm3: float = 0.5) -> list[str]:
                     v = (sa ^ cache[key]).volume() / 1000
                     if v > min_cm3 and v > worst.get((a, b), (0, ""))[0]:
                         worst[(a, b)] = (v, label)
-    return [f"shell on {a:24} x {b:24} {v:6.1f} cm³ at {lbl}" for (a, b), (v, lbl) in worst.items()]
+    return [
+        f"{'part' if len(k) == 3 else 'shell'} on {k[0]:24} x {k[1]:24} {v:6.1f} cm³ at {lbl}"
+        for k, (v, lbl) in worst.items()
+    ]
 
 
 def hull_free_union(solids):

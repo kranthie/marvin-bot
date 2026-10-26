@@ -13,13 +13,15 @@
 # roll and yaw axes are negated by the mirror.
 
 joints:
-  left_hip_pitch:      {parent: pelvis,                  child: left_hip_pitch_link,      xyz: [0, 0.075, 0],       axis: [0, -1, 0]}
-  left_hip_roll:       {parent: left_hip_pitch_link,     child: left_hip_roll_link,       xyz: [0, 0.025, -0.085],  axis: [1, 0, 0]}
-  left_hip_yaw:        {parent: left_hip_roll_link,      child: left_thigh_link,          xyz: [0, 0, -0.060],      axis: [0, 0, -1]}
+  # hip: roll first (its motor fixed in the pelvis, behind the hip), then pitch (its motor at
+  # the hip joint, carried by the roll bracket), then yaw (its motor at the top of the thigh)
+  left_hip_roll:       {parent: pelvis,                  child: left_hip_roll_link,       xyz: [0, 0.100, 0],       axis: [1, 0, 0]}
+  left_hip_pitch:      {parent: left_hip_roll_link,      child: left_hip_pitch_link,      xyz: [0, -0.025, 0],      axis: [0, -1, 0]}
+  left_hip_yaw:        {parent: left_hip_pitch_link,     child: left_thigh_link,          xyz: [0, 0.025, -0.145],  axis: [0, 0, -1]}
   left_knee:           {parent: left_thigh_link,         child: left_shin_link,           xyz: [0, 0, -0.155],      axis: [0, 1, 0]}
   left_ankle_pitch:    {parent: left_shin_link,          child: left_ankle_link,          xyz: [0, 0, -0.290],      axis: [0, -1, 0]}
   left_ankle_roll:     {parent: left_ankle_link,         child: left_foot_link,           xyz: [0, 0, 0],           axis: [1, 0, 0]}
-  waist_yaw:           {parent: pelvis,                  child: torso_link,               xyz: [0, 0, 0.115],       axis: [0, 0, 1]}
+  waist_yaw:           {parent: pelvis,                  child: torso_link,               xyz: [0.025, 0, 0.115],   axis: [0, 0, 1]}  # torso 25 mm ahead of the hips: balances the hip roll motors behind them (check_step_up.py)
   neck_yaw:            {parent: torso_link,              child: neck_link,                xyz: [0, 0, 0.310],       axis: [0, 0, 1]}
   neck_pitch:          {parent: neck_link,               child: head_link,                xyz: [0, 0, 0.035],       axis: [0, 1, 0]}
   left_shoulder_pitch: {parent: torso_link,              child: left_shoulder_pitch_link, xyz: [0, 0.110, 0.250],   axis: [0, -1, 0]}
@@ -44,8 +46,9 @@ ankle_linkage:
 
 # Motor housings sit on the parent link of the joint they drive, at the joint, unless listed here.
 motor_mounts:
-  # hip roll RS04 behind the hip pitch RS04, along its own (x) axis: at the joint origin they overlap
-  left_hip_roll: {link: left_hip_pitch_link, xyz: [-0.090, 0.025, -0.085]}
+  # hip roll RS04 fixed in the pelvis behind the hip pitch RS04, on its own (x) axis: at the
+  # joint origin they would overlap
+  left_hip_roll: {link: pelvis, xyz: [-0.098, 0.100, 0]}
   # shoulder pitch RS03 pulled into the torso along its axis, clear of the shoulder roll RS03;
   # deep in the torso (above the battery and computer) so the arms hang close to the body
   left_shoulder_pitch: {link: torso_link, xyz: [0, 0.080, 0.250]}
@@ -60,7 +63,7 @@ motor_mounts:
 # from; the masses of each item (both sides counted) must add up to the budget figure.
 bodies:
   - {link: pelvis,                   budget: pelvis,        mass: 1.00,  xyz: [0, 0, 0.040],       size: [0.14, 0.18, 0.12]}
-  - {link: pelvis,                   budget: electronics,   mass: 0.50,  xyz: [0, 0, 0.040],       size: [0.08, 0.07, 0.05]}  # inside the pelvis frame
+  - {link: pelvis,                   budget: electronics,   mass: 0.50,  xyz: [-0.094, 0, 0.010],  size: [0.05, 0.034, 0.08]}  # between the hip roll motors and the gussets
   - {link: left_hip_pitch_link,      budget: leg_structure, mass: 0.15,  xyz: [0, 0.015, -0.045],  size: [0.08, 0.04, 0.10]}
   - {link: left_hip_roll_link,       budget: leg_structure, mass: 0.15,  xyz: [0, 0, -0.050],      size: [0.08, 0.06, 0.10]}
   - {link: left_thigh_link,          budget: leg_structure, mass: 0.60,  xyz: [0, 0, -0.060],      size: [0.08, 0.08, 0.16]}
@@ -85,7 +88,9 @@ bodies:
 
 # Collision shapes (boxes). Only these touch the floor or each other in simulation.
 collisions:
-  - {link: pelvis,            xyz: [0, 0, 0.040],      size: [0.14, 0.18, 0.12]}
+  - {link: pelvis,            xyz: [-0.045, 0, 0.035],  size: [0.19, 0.07, 0.11]}  # frame between the hips
+  - {link: pelvis,            xyz: [-0.110, 0.100, 0.005], size: [0.09, 0.13, 0.13]}  # left hip roll motor
+  - {link: pelvis,            xyz: [-0.110, -0.100, 0.005], size: [0.09, 0.13, 0.13]}  # right hip roll motor
   - {link: left_thigh_link,   xyz: [0, 0, -0.060],     size: [0.09, 0.09, 0.16]}
   - {link: left_shin_link,    xyz: [0.040, 0, -0.113],  size: [0.11, 0.09, 0.105]}  # upper ankle motor, under the knee
   - {link: left_shin_link,    xyz: [-0.010, 0, -0.213], size: [0.104, 0.09, 0.097]}  # lower ankle motor

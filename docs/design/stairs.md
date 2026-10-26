@@ -16,7 +16,7 @@ How the design got here:
 - 35° of ankle dorsiflexion could not climb 17 cm at any leg length; 38° is the minimum, and the design has 40° (decisions, 2026-10-26).
 - Leg length (0.62–0.69 m hip to sole) barely matters in this check; the hip height stays 0.65 m.
 - The two-motor ankle (two RS03 staggered on the shin's centre line, 60 mm cranks, rods 60 mm behind and ±40 mm beside the ankle axis) gives 32 N·m pitch and 25 N·m roll continuous at the worst pose, against ~22 and ~14 N·m needed (`tools/ankle_linkage.py`).
-- The knee range is 0–125°: beyond that the folded calf meets the hip roll motor (`tools/check_packaging.py`).
+- The knee range is 0–130° (125° until the hip roll motor moved into the pelvis): beyond that the upper ankle motor meets the thigh shell (`python -m cad.covers --check`).
 
 ## Issue 1: knee heat on slow stairs
 

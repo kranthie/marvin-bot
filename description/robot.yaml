@@ -34,11 +34,12 @@ stance: {hip_pitch: 12, knee: 25, ankle_pitch: 13, shoulder_roll: 8, elbow: 20}
 stance_pelvis_height: 0.636
 
 joints:
-  # legs, pelvis outwards (hip pitch, roll, yaw as on most current humanoids)
-  - {name: "{side}_hip_pitch",      axis: pitch, range: [-40, 120]}
+  # legs, pelvis outwards: the hip is roll, then pitch, then yaw (skeleton.yaml); listed here
+  # in the order the policies use
+  - {name: "{side}_hip_pitch",      axis: pitch, range: [-30, 120]}  # beyond -30° (extension) the hip pitch yoke meets the hip roll motor behind it (cad.covers --check)
   - {name: "{side}_hip_roll",       axis: roll,  range: [-20, 45]}
   - {name: "{side}_hip_yaw",        axis: yaw,   range: [-45, 45]}
-  - {name: "{side}_knee",           axis: pitch, range: [0, 125]}  # beyond 125° the calf meets the hip roll motor behind the hip (check_packaging.py)
+  - {name: "{side}_knee",           axis: pitch, range: [0, 130]}  # beyond 130° the upper ankle motor meets the thigh shell (cad.covers --check)
   - {name: "{side}_ankle_pitch",    axis: pitch, range: [-40, 40]}  # 40° dorsiflexion: 17-20 cm stairs (check_step_up.py)
   - {name: "{side}_ankle_roll",     axis: roll,  range: [-20, 20]}
   # torso and head

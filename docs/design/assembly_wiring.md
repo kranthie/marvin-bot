@@ -9,18 +9,18 @@ The robot is built from seven modules that are assembled and tested on their own
 | Module | Contents | Joins at | Connectors at the joint |
 |---|---|---|---|
 | Torso core | torso frame, chest shell, Orin, electronics bay, battery cradle, shoulder pitch and neck yaw motors | waist RS03 output flange (bolted) | trunk harness: power plus 5 CAN pairs |
-| Pelvis | box frame, waist RS03, hip pitch RS04s, pelvis power board | waist flange; leg flanges | leg root connectors |
-| Leg (×2) | hip roll to foot: 5 actuators, linkage, foot | hip pitch RS04 output flange | 1 power, 1 signal |
+| Pelvis | back plate, top plate and gussets, waist RS03, hip roll RS04s, pelvis power board | waist flange; leg flanges | leg root connectors |
+| Leg (×2) | roll bracket to foot: 5 actuators (hip pitch, yaw, knee, two ankle), linkage, foot | hip roll RS04 output flange and the far-side bearing behind it | 1 power, 1 signal |
 | Arm (×2) | shoulder bracket to gripper: 4 actuators, gripper servo | shoulder pitch RS03 output flange | 1 power, 1 signal |
 | Head | neck bracket, pitch servo, frame, shell, visor, camera | neck yaw servo horn | servo bus, camera USB-C |
 | Battery | 13S pack with BMS | slides into the cradle from the back | blind-mate power and BMS connector |
 | Body shells | clip-on shells (optional) | clips on the parts below | none |
 
-Each limb's first actuator stays on the parent module (hip pitch on the pelvis, shoulder pitch on the torso), so a limb comes off by removing the bolts on one output flange and unplugging two connectors. That meets R63: any actuator in a limb can be changed with only that limb off the robot.
+Each limb's first actuator stays on the parent module (hip roll on the pelvis, shoulder pitch on the torso), so a limb comes off by removing the bolts on one output flange and unplugging two connectors. That meets R63: any actuator in a limb can be changed with only that limb off the robot.
 
 ## Assembly order
 
-1. Pelvis: frame plates, hip pitch RS04s, waist RS03, pelvis power board; bench-test the three motors on a short CAN stub.
+1. Pelvis: back plate with the hip roll RS04s, top plate and gussets, waist RS03, pelvis power board; bench-test the three motors on a short CAN stub.
 2. Legs: build each leg from the hip roll bracket down; set the ankle linkage (rod lengths from `tools/ankle_linkage.py`) with the foot flat at zero; test each leg on the single-leg jig before joining.
 3. Torso core: frame, shoulder pitch RS03s, neck yaw servo, electronics bay, Orin, battery cradle and the e-stop chain; power up without limbs.
 4. Join the torso core to the pelvis at the waist flange; plug in the trunk harness through its service loop.
