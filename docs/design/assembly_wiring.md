@@ -18,6 +18,10 @@ The robot is built from seven modules that are assembled and tested on their own
 
 Each limb's first actuator stays on the parent module (hip roll on the pelvis, shoulder pitch on the torso), so a limb comes off by removing the bolts on one output flange and unplugging two connectors. That meets R63: any actuator in a limb can be changed with only that limb off the robot.
 
+## Making the parts
+
+`python -m cad.export` writes an STL of every made part (mm, sitting on z = 0) and a DXF outline of every flat part (a plate of one thickness: the laser or water-jet service's input, and the mill's 2D toolpaths) to `outputs/parts/`, and two build lists that CI keeps current: `bom/build_parts.csv` (each made part once, mirror pairs as quantity 2, with process, material, stock thickness, mass and size; bought parts and shells listed for completeness) and `bom/build_fasteners.csv` (the actuator bolts from each motor's stator and output hole circles). Right-side parts are the left ones mirrored and are exported as their own files.
+
 ## Assembly order
 
 1. Pelvis: back plate with the hip roll RS04s, top plate and gussets, waist RS03, pelvis power board; bench-test the three motors on a short CAN stub.
