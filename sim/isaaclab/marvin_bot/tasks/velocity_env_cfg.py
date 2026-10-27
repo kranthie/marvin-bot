@@ -44,7 +44,14 @@ from ..robot_cfg import (
 from .curriculums import forward_speed_levels, terrain_levels_tracking
 from .events import randomize_joint_targets
 from .observations import mapped_height_scan
-from .rewards import feet_flat, foot_clearance, forward_progress, sustained_torque
+from .rewards import (
+    feet_flat,
+    foot_clearance,
+    forward_progress,
+    pelvis_height,
+    stand_pose,
+    sustained_torque,
+)
 from .terminations import base_below_ground
 from .terrains import MARVIN_BOT_ROUGH_TERRAINS_CFG
 
@@ -52,6 +59,7 @@ BODIES = "Geometry"
 UPPER_BODY = [*ARM_JOINTS, "waist_yaw"]
 PELVIS_HEIGHT = STANCE_PELVIS_Z  # m, default stance
 SCAN_AHEAD = 0.25  # m, height map centre ahead of the pelvis
+FOOT_FRAME_ABOVE_SOLE = 0.060  # m (description/skeleton.yaml)
 
 
 @configclass
@@ -185,6 +193,25 @@ class MarvinBotRewards(RewardsCfg):
         weight=-1.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINTS)},
     )
+    # posture: walk and climb upright, stand in the stance pose (rough v6 stood with its knees
+    # at 95 degrees, its pelvis 19 cm low)
+    pelvis_height = RewTerm(
+        func=pelvis_height,
+        weight=-10.0,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=FEET),
+            "target": PELVIS_HEIGHT - FOOT_FRAME_ABOVE_SOLE,
+            "tolerance": 0.04,
+        },
+    )
+    stand_pose = RewTerm(
+        func=stand_pose,
+        weight=-0.5,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINTS),
+            "command_name": "base_velocity",
+        },
+    )
     joint_deviation_hip = RewTerm(
         func=mdp.joint_deviation_l1,
         weight=-0.1,
@@ -255,6 +282,8 @@ class MarvinBotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.forward_progress.weight = 1.0
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.25
         self.rewards.termination_penalty.weight = -50.0
+        # knees ran at 73-81% of rated on 15 cm stairs (rough v6): heat costs more on rough ground
+        self.rewards.sustained_torque.weight = -2.0
         self.rewards.dof_acc_l2.weight = -1.0e-7
         self.rewards.dof_acc_l2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_hip_.*", ".*_knee"]

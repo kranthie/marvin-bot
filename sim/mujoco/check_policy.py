@@ -7,7 +7,8 @@ policy's control rate through a command script. Fails if the robot falls, if it 
 walk, turn and stop commands, if it slides its feet instead of stepping, or if any joint's RMS
 torque over a segment exceeds its continuous rating (the steady-state heating, from
 description/actuators.yaml). Prints the step rate,
-the peak torque and the left/right gait (swing, stance, step length, foot lift) per segment.
+the peak torque, the posture (pelvis height above the floor, knee bend) and the left/right gait
+(swing, stance, step length, foot lift) per segment.
 
 Sensor noise at half the training level is added to the observations (--noise, --seed).
 --fast V adds a walk at V m/s before the stop. --stairs H replaces the script with a walk at
@@ -64,6 +65,8 @@ STAIRS_SCRIPT = [
     ("stairs", 30.0, (0.4, 0.0, 0.0)),
     ("stop", 3.0, (0.0, 0.0, 0.0)),
 ]
+_ROBOT = yaml.safe_load((ROOT / "description" / "robot.yaml").read_text())
+STANCE_Z, STANCE_KNEE = _ROBOT["stance_pelvis_height"], _ROBOT["stance"]["knee"]
 FALL_HEIGHT = 0.35  # m, pelvis above the ground under it, as the training termination
 
 
@@ -334,6 +337,8 @@ def main() -> None:
         ground, lift = [0, 0], [None, None]
         swing, stance, length, height, tilt = ([[], []] for _ in range(5))
         top = [0.0, 0.0]
+        posture = []  # pelvis height above the floor under it, mean knee bend (deg)
+        knees = [i for i, n in enumerate(names) if n.endswith("_knee")]
         for k in range(steps):
             last_action = session.run(None, {in_name: observe(cmd, k)})[0][0]
             target = default.copy()
@@ -384,6 +389,10 @@ def main() -> None:
                 vw = data.qvel[0:2]
                 vel.append([c * vw[0] + s * vw[1], -s * vw[0] + c * vw[1]])
                 yaw_rate.append((rot @ data.qvel[3:6])[2])  # world-frame yaw rate
+                q = data.qpos[qadr]
+                posture.append(
+                    [data.qpos[2] - floor_at(data.qpos[0]), np.degrees(np.mean(np.abs(q[knees])))]
+                )
             if renderer is not None and k % 2 == 0:
                 cam.lookat[:] = [data.qpos[0], data.qpos[1], data.qpos[2] - 0.1]
                 renderer.update_scene(data, cam)
@@ -421,6 +430,11 @@ def main() -> None:
         print(
             f"{'':14} heat: RMS torque / rated "
             + ", ".join(f"{names[i]} {rms[i]:.0%}" for i in hot)
+        )
+        h, kb = np.mean(posture, axis=0)
+        print(
+            f"{'':14} posture: pelvis {h * 100:.1f} cm above the floor "
+            f"(stance {STANCE_Z * 100:.1f}), knees bent {kb:.0f} deg (stance {STANCE_KNEE:.0f})"
         )
         if rms.max() > 1.0:
             failures.append(f"'{name}': {names[hot[0]]} RMS torque {rms.max():.0%} of rated")

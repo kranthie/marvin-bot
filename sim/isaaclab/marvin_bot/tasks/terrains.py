@@ -1,7 +1,8 @@
 """Training terrains for Marvin Bot (1.2 m tall, 0.65 m from hip to sole).
 
 Household-scale stairs on over half the tiles: steps from 4 cm up to 20 cm (standard risers are
-17-18 cm) with 28 cm treads, round a 2 m platform, plus random boxes, rough ground and slopes.
+17-18 cm) with 28 cm treads, round a 2 m platform, with a tenth of the tiles steep (14-20 cm) on
+every row, plus random boxes, rough ground and slopes.
 The terrain
 curriculum starts every robot on the easy rows and promotes the ones that cross terrain while
 following their commands.
@@ -20,9 +21,9 @@ MARVIN_BOT_ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     slope_threshold=0.75,
     use_cache=False,
     sub_terrains={
-        "flat": terrain_gen.MeshPlaneTerrainCfg(proportion=0.05),
+        "flat": terrain_gen.MeshPlaneTerrainCfg(proportion=0.1),
         "pyramid_stairs": terrain_gen.MeshPyramidStairsTerrainCfg(
-            proportion=0.3,
+            proportion=0.25,
             step_height_range=(0.04, 0.20),
             step_width=0.28,
             platform_width=2.0,
@@ -30,8 +31,25 @@ MARVIN_BOT_ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
             holes=False,
         ),
         "pyramid_stairs_inv": terrain_gen.MeshInvertedPyramidStairsTerrainCfg(
-            proportion=0.25,
+            proportion=0.2,
             step_height_range=(0.04, 0.20),
+            step_width=0.28,
+            platform_width=2.0,
+            border_width=1.0,
+            holes=False,
+        ),
+        # steep household stairs on every row (rough v6 fell on 18 and 20 cm in the MuJoCo check)
+        "steep_stairs": terrain_gen.MeshPyramidStairsTerrainCfg(
+            proportion=0.06,
+            step_height_range=(0.14, 0.20),
+            step_width=0.28,
+            platform_width=2.0,
+            border_width=1.0,
+            holes=False,
+        ),
+        "steep_stairs_inv": terrain_gen.MeshInvertedPyramidStairsTerrainCfg(
+            proportion=0.04,
+            step_height_range=(0.14, 0.20),
             step_width=0.28,
             platform_width=2.0,
             border_width=1.0,

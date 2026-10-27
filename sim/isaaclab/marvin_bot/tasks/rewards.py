@@ -116,3 +116,30 @@ def forward_progress(env, command_name: str, asset_name: str = "robot") -> torch
     # capped at the commanded speed: uncapped, v4 learned to lunge forward and fall
     progress = torch.clamp(along / speed.clamp(min=1e-6), min=0.0, max=1.0)
     return progress * (speed > 0.1)
+
+
+def pelvis_height(
+    env, asset_cfg: SceneEntityCfg, target: float, tolerance: float, asset_name: str = "robot"
+) -> torch.Tensor:
+    """Penalize a pelvis carried low: how far it sits below ``target - tolerance`` above the
+    lower foot, in metres.
+
+    Measured from the lower foot so it holds on stairs (the trailing foot going up, the leading
+    one going down). Nothing else rewarded height, and rough v6 stood with its knees at 95 degrees
+    and its pelvis 19 cm below the stance height, and climbed 8 cm low; flat v4 walked 2-3 cm low.
+    ``target`` is the stance height of the pelvis above the foot frames; the tolerance leaves the
+    knee room to flex in stance and on a step.
+    """
+    asset = env.scene[asset_name]
+    feet = asset.data.body_pos_w.torch[:, asset_cfg.body_ids, 2]
+    height = asset.data.root_pos_w.torch[:, 2] - feet.min(dim=1).values
+    return torch.clamp(target - tolerance - height, min=0.0)
+
+
+def stand_pose(env, asset_cfg: SceneEntityCfg, command_name: str) -> torch.Tensor:
+    """Penalize leg joints away from the default stance while commanded to stand still (L1, rad)."""
+    asset = env.scene[asset_cfg.name]
+    q = asset.data.joint_pos.torch[:, asset_cfg.joint_ids]
+    q0 = asset.data.default_joint_pos.torch[:, asset_cfg.joint_ids]
+    still = torch.linalg.norm(env.command_manager.get_command(command_name), dim=1) < 0.1
+    return torch.sum(torch.abs(q - q0), dim=1) * still
