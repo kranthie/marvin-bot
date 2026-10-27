@@ -27,6 +27,8 @@ Marvin Bot is designed from scratch, but it learns from many open projects, publ
 - **manifold3d** (https://github.com/elalish/manifold, Apache-2.0) and **trimesh** (https://github.com/mikedh/trimesh, MIT): the code-CAD in `cad/` (solids, booleans, meshes); **fast-simplification** (MIT) decimates the hand meshes. **NumPy**, **PyYAML**, **Pillow**, **ONNX Runtime** and **pytest** for the tools and checks.
 - **bd_warehouse** (https://github.com/gumyr/bd_warehouse, Apache-2.0) and **build123d**: planned sources of parametric fasteners, bearings and code-CAD.
 
+- **Claude** and **Claude Code** (Anthropic): the project is developed with them, from research and design reviews to the code-CAD, simulation and training code and the documentation; commits they contributed to carry a `Co-Authored-By: Claude` line.
+
 ## Component specifications
 
 - **RobStride** official manuals and specifications: https://github.com/RobStride/Product_Information. Actuator figures in `description/actuators.yaml` come from these manuals unless marked otherwise.
