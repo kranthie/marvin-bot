@@ -58,16 +58,27 @@ uv venv --python 3.12 venvs/pyroki
 VIRTUAL_ENV=venvs/pyroki uv pip install -e pyroki
 ```
 
-ProtoMotions keeps its checkpoints, meshes and sample motions in Git LFS (about 6 GB).
+ProtoMotions keeps its checkpoints, meshes and sample motions in Git LFS (about 6 GB). The pipeline was last run on ProtoMotions commit `f69fdca` (2026-10-16); `setup_protomotions.py` edits that checkout (it adds three generated files and registers `marvin_bot` in `robot_configs/factory.py`), so rerun it after updating ProtoMotions or the description.
 
 ## Steps
 
 Run from the ProtoMotions checkout, with `$M` the marvin-bot checkout and `$W` a work folder.
+The source motions are ProtoMotions' SOMA sample, `data/motion_for_trackers/soma23_bones_seed_mini.pt`
+(61 clips). The trackers so far train on eight walking, jogging and turning clips: extract all 61,
+then copy these clips' keypoint files from `$W/keypoints` into the folder you retarget
+(`--keypoints-folder-path`):
+
+```text
+child_walk_180_R_max_003__A076      sad_walk_ff_start_315_R_002__A204_M
+jog_ff_start_180_R_002__A531         walk_ff_start_315_003__A060_M
+jog_ff_stop_180_R_001__A103_M        leaning_walk_arc_cw_stop_003__A166
+idle_turn_360_003__A175_M            happy_walk_ff_stop_180_R_005__A421
+```
 
 ```bash
 venvs/proto/bin/python $M/sim/motion/setup_protomotions.py .
 venvs/proto/bin/python data/scripts/extract_retargeting_input_keypoints_from_packaged_motionlib.py \
-    <soma motions .pt> --output-path $W/keypoints --skeleton-format soma --start-idx 0 --skip-freq 1
+    data/motion_for_trackers/soma23_bones_seed_mini.pt --output-path $W/keypoints --skeleton-format soma --start-idx 0 --skip-freq 1
 venvs/pyroki/bin/python $M/sim/motion/retarget_marvin_bot.py --protomotions . \
     --keypoints-folder-path $W/keypoints --output-dir $W/retargeted --source-type soma --no-visualize
 venvs/pyroki/bin/python $M/sim/motion/retarget_marvin_bot.py --protomotions . \
