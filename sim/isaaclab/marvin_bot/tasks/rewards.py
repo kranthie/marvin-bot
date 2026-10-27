@@ -22,7 +22,7 @@ def foot_clearance(
 
     After Isaac Lab's Spot clearance term. On rough ground the ground is the highest of the pelvis
     height scanner's hits within ``reach`` of each foot, so a swinging foot is pushed over the step
-    edge its toe (15 cm ahead of the ankle) is about to meet. On an earlier prototype, measured from the
+    edge its toe (15 cm ahead of the ankle) is about to meet. Earlier, measured from the
     ground under the ankle, the policies lifted their feet 3.5 cm, caught 3 cm steps with their
     toes, and learned to stop at stairs instead. On flat ground z = 0. Zero for near-zero commands.
 

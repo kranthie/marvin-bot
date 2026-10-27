@@ -37,7 +37,3 @@ Marvin Bot is designed from scratch, but it learns from many open projects, publ
 - **Orbbec** Gemini 335L product documentation (head depth camera).
 - **NVIDIA** Jetson AGX Orin developer kit (P3730) model: its outline and port positions place the computer in `cad/electrical.py`; the model is used locally and not redistributed.
 - Human body proportions for the arm lengths (forearm 0.146 and hand 0.108 of height): D. A. Winter, *Biomechanics and Motor Control of Human Movement*, after Drillis and Contini (1966).
-
-## Predecessor
-
-- **an earlier prototype**, the project's 66 cm servo-driven humanoid, which developed the training pipeline (Isaac Lab velocity and rough-terrain tasks, symmetry augmentation, MuJoCo cross-checks, ONNX export) that this robot reuses.

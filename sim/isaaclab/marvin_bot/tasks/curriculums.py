@@ -38,7 +38,7 @@ def terrain_levels_tracking(
     """Terrain curriculum judged by command tracking and by the ground covered.
 
     Isaac Lab's ``terrain_levels_vel`` promotes robots that walk half a tile from their spawn point;
-    at slow commanded speeds few get that far even when they walk well (seen on an earlier prototype).
+    at slow commanded speeds few get that far even when they walk well (seen earlier).
     Tracking alone isn't enough either: on a stair tile a robot can follow its commands on the
     central platform and never take a stair. So a robot moves up if it lasted the episode, earned
     more than ``up`` of the velocity-tracking reward and ended at least ``min_distance`` from its
