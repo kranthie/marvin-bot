@@ -12,8 +12,9 @@ every few seconds so the legs learn to balance while the upper body moves (later
 The actor sees only what the robot has: the pelvis IMU gyro, gravity from the IMU orientation, the
 command, joint positions and velocities, its last action and, on rough ground, a height map
 around the feet as the robot's terrain map would give it (camera depth fused with odometry, with
-drift, holes, noise and 10 Hz updates; observations.py). The critic also gets the base linear
-velocity and the exact height map.
+drift, holes, noise and 10 Hz updates; observations.py). The IMU and joint readings reach it
+up to one control step (20 ms) late, a random lag per episode. The critic also gets the base
+linear velocity and the exact height map.
 """
 
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
@@ -46,9 +47,11 @@ from .events import randomize_joint_targets
 from .observations import mapped_height_scan
 from .rewards import (
     feet_flat,
+    feet_width,
     foot_clearance,
     forward_progress,
     pelvis_height,
+    pelvis_roll,
     stand_pose,
     sustained_torque,
     swing_feet_level,
@@ -61,6 +64,7 @@ UPPER_BODY = [*ARM_JOINTS, "waist_yaw"]
 PELVIS_HEIGHT = STANCE_PELVIS_Z  # m, default stance
 SCAN_AHEAD = 0.25  # m, height map centre ahead of the pelvis
 FOOT_FRAME_ABOVE_SOLE = 0.060  # m (description/skeleton.yaml)
+OBS_LAG = {"delay_min_lag": 0, "delay_max_lag": 1}  # control steps, sampled per episode
 
 
 @configclass
@@ -71,15 +75,18 @@ class MarvinObservationsCfg:
             func=mdp.imu_ang_vel,
             params={"asset_cfg": SceneEntityCfg("imu")},
             noise=Unoise(n_min=-0.2, n_max=0.2),
+            **OBS_LAG,
         )
         projected_gravity = ObsTerm(
-            func=mdp.projected_gravity, noise=Unoise(n_min=-0.05, n_max=0.05)
+            func=mdp.projected_gravity, noise=Unoise(n_min=-0.05, n_max=0.05), **OBS_LAG
         )
         velocity_commands = ObsTerm(
             func=mdp.generated_commands, params={"command_name": "base_velocity"}
         )
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-0.5, n_max=0.5))
+        joint_pos = ObsTerm(
+            func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01), **OBS_LAG
+        )
+        joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-0.5, n_max=0.5), **OBS_LAG)
         actions = ObsTerm(func=mdp.last_action)
         # rough ground: the terrain map around the feet, with map errors (observations.py)
         height_scan = ObsTerm(
@@ -123,9 +130,11 @@ class MarvinBotRewards(RewardsCfg):
         weight=1.5,
         params={"command_name": "base_velocity", "std": 0.5},
     )
+    # single-support time: at 2.0 the policies dropped double support (0-2% of the stride) and
+    # rocked their whole weight across onto each foot
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
-        weight=2.0,
+        weight=0.5,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET),
@@ -210,7 +219,7 @@ class MarvinBotRewards(RewardsCfg):
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=FEET),
             "target": PELVIS_HEIGHT - FOOT_FRAME_ABOVE_SOLE,
-            "tolerance": 0.04,
+            "tolerance": 0.02,
         },
     )
     stand_pose = RewTerm(
@@ -221,10 +230,28 @@ class MarvinBotRewards(RewardsCfg):
             "command_name": "base_velocity",
         },
     )
+    # side-to-side sway: flat v6 and rough v8 leaned 7-8 degrees over each stance foot with
+    # their feet ~20 cm apart (docs/decisions.md). Keep the pelvis level, the feet nearer the
+    # centre line, and the hip and ankle roll near their stance angles
+    pelvis_roll = RewTerm(func=pelvis_roll, weight=-10.0)
+    feet_width = RewTerm(
+        func=feet_width,
+        weight=-5.0,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=FEET),
+            "command_name": "base_velocity",
+            "target": 0.16,
+            "tolerance": 0.02,
+        },
+    )
     joint_deviation_hip = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.1,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_hip_yaw", ".*_hip_roll"])},
+        weight=-0.3,
+        params={
+            "asset_cfg": SceneEntityCfg(
+                "robot", joint_names=[".*_hip_yaw", ".*_hip_roll", ".*_ankle_roll"]
+            )
+        },
     )
 
 
@@ -240,6 +267,9 @@ class MarvinBotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         newton_mjwarp.solver_cfg.njmax = 400
         newton_mjwarp.solver_cfg.nconmax = 80
         self.sim.physics.default = newton_mjwarp
+        # motors computed by Isaac Lab, not Newton's kernels: those take no command delay on a DC
+        # motor model (robot_cfg.py's DelayedDCMotor)
+        self.sim.use_newton_actuators = False
         # scene
         self.scene.env_spacing = 2.0
         self.scene.robot = replace(MARVIN_BOT_CFG, prim_path="{ENV_REGEX_NS}/Robot")

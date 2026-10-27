@@ -17,6 +17,7 @@ class MarvinBotFlatPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     max_iterations = 2000
     save_interval = 100
     experiment_name = "marvin_bot_flat"
+    torch_compile_mode = "default"  # compiled actor and critic (no CUDA graphs)
     obs_groups = {"actor": ["policy"], "critic": ["critic"]}
     actor = RslRlMLPModelCfg(
         hidden_dims=[256, 128, 128],

@@ -8,8 +8,8 @@ walk, turn and stop commands, if it slides its feet instead of stepping, or if a
 torque over a segment exceeds its continuous rating (the steady-state heating, from
 description/actuators.yaml). Prints the step rate,
 the peak torque, the posture (pelvis height above the floor, knee bend), the left/right gait
-(swing, stance, step length, foot lift) and the side-to-side sway (pelvis sway and roll, torso
-roll, step width) per segment.
+(swing, stance, step length, foot lift) and the side-to-side sway (head and pelvis sway, pelvis
+and torso roll, step width) per segment.
 
 Sensor noise at half the training level is added to the observations (--noise, --seed).
 --fast V adds a walk at V m/s before the stop. --stairs H replaces the script with a walk at
@@ -26,9 +26,7 @@ Needs: pip install -e ".[sim]"
 """
 
 import argparse
-import ast
 import json
-import math
 import re
 import sys
 from pathlib import Path
@@ -39,9 +37,8 @@ import onnxruntime as ort
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from check_standing import DESC, ROOT, URDF, place_on_floor  # noqa: E402
-
-ROBOT_CFG = ROOT / "sim" / "isaaclab" / "marvin_bot" / "robot_cfg.py"
+from check_standing import ROOT, URDF, place_on_floor  # noqa: E402
+from joint_specs import joint_specs  # noqa: E402
 
 PHYSICS_DT = 0.002
 AIR_MIN = 0.04  # s
@@ -71,39 +68,12 @@ STANCE_Z, STANCE_KNEE = _ROBOT["stance_pelvis_height"], _ROBOT["stance"]["knee"]
 FALL_HEIGHT = 0.35  # m, pelvis above the ground under it, as the training termination
 
 
-def joint_specs() -> dict[str, dict]:
-    """Per joint: peak torque, no-load speed, and the training gains, armature and friction
-    (robot_cfg.py's GAINS table, read without importing Isaac Lab)."""
-    robot = yaml.safe_load((DESC / "robot.yaml").read_text())
-    acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
-    link = yaml.safe_load((DESC / "skeleton.yaml").read_text())["ankle_linkage"]
-    gains = None
-    for node in ast.parse(ROBOT_CFG.read_text()).body:
-        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "GAINS":
-            gains = ast.literal_eval(node.value)
-    out = {}
-    for m in robot["motors"]:
-        a = acts[m["model"]]
-        speed = a["no_load_speed_rpm"] * 2 * math.pi / 60
-        for side in ("left", "right") if "{side}" in m["name"] else (None,):
-            drives = [d.replace("{side}", side) if side else d for d in m["drives"]]
-            for d in drives:
-                r = 1.0
-                if len(drives) == 2:
-                    r = link["pitch_ratio"] if d.endswith("pitch") else link["roll_ratio"]
-                effort = a["peak_torque"] * (2 * r if len(drives) == 2 else 1)
-                rated = a["rated_torque"] * (2 * r if len(drives) == 2 else 1)
-                kp, kd, armature, friction = next(v for k, v in gains.items() if re.fullmatch(k, d))
-                out[d] = dict(
-                    effort=effort,
-                    rated=rated,
-                    speed=speed / r,
-                    kp=kp,
-                    kd=kd,
-                    armature=armature,
-                    friction=friction,
-                )
-    return out
+def sideways(xy: np.ndarray, side: np.ndarray, half: int) -> float:
+    """5-95 percentile range of a point's offset across the heading from its moving mean over
+    2 * half samples, in metres."""
+    mean = np.array([xy[max(0, i - half) : i + half].mean(0) for i in range(len(xy))])
+    r = np.sum((xy - mean) * side, axis=1)[half:-half]
+    return float(np.ptp(np.percentile(r, [5, 95]))) if len(r) else float("nan")
 
 
 def build(spec_joints: dict, stairs_height: float | None = None) -> mujoco.MjModel:
@@ -287,6 +257,7 @@ def main() -> None:
 
     world = {g for g in range(model.ngeom) if model.geom_bodyid[g] == 0}  # floor and stairs
     torso = model.body("torso_link").id
+    head = model.body("head_link").id
     feet = [
         next(
             g
@@ -344,9 +315,9 @@ def main() -> None:
         pitch_swing, pitch_land = [[], []], [[], []]
         top = [0.0, 0.0]
         posture = []  # pelvis height above the floor under it, mean knee bend (deg)
-        # side-to-side motion: pelvis position across the heading, pelvis and torso roll (deg),
-        # and each foot's position across the heading at touchdown (step width)
-        sway, land_y = [], [[], []]
+        # side-to-side motion: pelvis and head positions, the sideways direction, pelvis and
+        # torso roll (deg); at each touchdown the distance across the heading to the other foot
+        sway, widths = [], []
         knees = [i for i, n in enumerate(names) if n.endswith("_knee")]
         for k in range(steps):
             last_action = session.run(None, {in_name: observe(cmd, k)})[0][0]
@@ -383,7 +354,8 @@ def main() -> None:
                     touchdowns += 1
                     if k >= steps // 2:
                         pitch_land[i].append(pitch)
-                        land_y[i].append(float(np.array([-heading[1], heading[0]]) @ pos[:2]))
+                        other = data.geom_xpos[feet[1 - i], :2]
+                        widths.append(abs(np.array([-heading[1], heading[0]]) @ (pos[:2] - other)))
                     if k >= steps // 2 and lift[i] is not None:
                         swing[i].append(air[i] * meta["control_dt"])
                         length[i].append(float(heading @ (pos[:2] - lift[i][:2])))
@@ -414,7 +386,9 @@ def main() -> None:
                 trot = data.xmat[torso].reshape(3, 3)
                 sway.append(
                     [
-                        side @ data.qpos[:2],
+                        *data.qpos[:2],
+                        *data.xpos[head, :2],
+                        *side,
                         np.degrees(np.arcsin(np.clip(rot[2, 1], -1, 1))),
                         np.degrees(np.arcsin(np.clip(trot[2, 1], -1, 1))),
                     ]
@@ -480,22 +454,17 @@ def main() -> None:
                 f"stance tilt {lr(tilt, 'deg', 1)}"
             )
             if cmd[2] == 0:  # straight walks only: on a curve the pelvis drifts sideways
-                # sway: pelvis across the heading with the straight-line drift taken out, as the
-                # mean peak-to-peak over each 1 s window; roll the same way
+                # sway, 5-95 percentile range: pelvis and head across the heading about their
+                # 1.2 s moving mean (so a slow change of heading doesn't count), and the roll
                 sw_a = np.array(sway)
-                t = np.arange(len(sw_a))
-                sw_a[:, 0] -= np.polyval(np.polyfit(t, sw_a[:, 0], 1), t)
-                win = max(1, round(1.0 / meta["control_dt"]))
-                pp = [
-                    np.mean(
-                        [np.ptp(sw_a[j : j + win, c]) for j in range(0, len(sw_a) - win + 1, win)]
-                    )
-                    for c in range(3)
-                ]
-                width = abs(np.mean(land_y[0]) - np.mean(land_y[1])) if all(land_y) else np.nan
+                half = round(0.6 / meta["control_dt"])
+                roll = [np.ptp(np.percentile(sw_a[:, c], [5, 95])) for c in (6, 7)]
+                width = np.mean(widths) if widths else np.nan
+                head_cm = sideways(sw_a[:, 2:4], sw_a[:, 4:6], half) * 100
+                pelvis_cm = sideways(sw_a[:, 0:2], sw_a[:, 4:6], half) * 100
                 print(
-                    f"{'':14} sway (peak-to-peak): pelvis side to side {pp[0] * 100:.1f} cm, "
-                    f"pelvis roll {pp[1]:.1f} deg, torso roll {pp[2]:.1f} deg, "
+                    f"{'':14} sway: head side to side {head_cm:.1f} cm, pelvis {pelvis_cm:.1f} cm, "
+                    f"pelvis roll {roll[0]:.1f} deg, torso roll {roll[1]:.1f} deg, "
                     f"step width {width * 100:.1f} cm"
                 )
             sw = [np.abs(p).max() if p else float("nan") for p in pitch_swing]

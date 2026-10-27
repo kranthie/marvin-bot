@@ -6,8 +6,10 @@ ankle linkage ratios from skeleton.yaml (as tools/build_urdf.py does for the URD
 sim/isaaclab/convert_urdf.py turns description/urdf/marvin_bot.urdf into the USD loaded here.
 
 Actuators are DC motor models: torque saturates at the motor's peak and falls linearly to zero
-at its no-load speed. The two ankle joints, driven by a pair of motors through a linkage, are
-modelled in joint space with the pair's combined torque times the linkage ratio.
+at its no-load speed. Each command reaches its motor 0-10 ms late (a random lag per episode),
+for the inference time and the CAN round trip on the real robot. The two ankle joints, driven
+by a pair of motors through a linkage, are modelled in joint space with the pair's combined
+torque times the linkage ratio.
 
 Gains, armature and friction are placeholders until the phase 2 bench test fits them. They
 follow comparable open humanoids of this size (kp 100-150 on the 120 N·m hip and knee joints,
@@ -19,9 +21,11 @@ import math
 from pathlib import Path
 
 import isaaclab.sim as sim_utils
+import torch
 import yaml
-from isaaclab.actuators import DCMotorCfg
+from isaaclab.actuators import DCMotor, DCMotorCfg
 from isaaclab.assets import ArticulationCfg
+from isaaclab.utils import DelayBuffer, configclass
 from isaaclab_newton.sim.schemas import NewtonArticulationCfg
 from isaaclab_physx.sim.schemas import PhysxArticulationCfg, PhysxRigidBodyCfg
 
@@ -122,7 +126,44 @@ def joint_rated() -> dict[str, float]:
     return out
 
 
-def _actuators() -> dict[str, DCMotorCfg]:
+class DelayedDCMotor(DCMotor):
+    """DC motor model whose position target arrives a random number of physics steps late, as
+    Isaac Lab's DelayedPDActuator does for its ideal PD motor."""
+
+    def __init__(self, cfg, *args, **kwargs):
+        super().__init__(cfg, *args, **kwargs)
+        self._delays = [
+            DelayBuffer(cfg.max_delay, self._num_envs, device=self._device) for _ in range(3)
+        ]
+
+    def reset(self, env_ids):
+        super().reset(env_ids)
+        if env_ids is None:
+            env_ids = slice(None)
+        n = len(range(self._num_envs)[env_ids]) if isinstance(env_ids, slice) else len(env_ids)
+        lags = torch.randint(
+            self.cfg.min_delay, self.cfg.max_delay + 1, (n,), dtype=torch.int, device=self._device
+        )
+        for buf in self._delays:
+            buf.set_time_lag(lags, env_ids)
+            buf.reset(env_ids)
+
+    def compute(self, control_action, joint_pos, joint_vel):
+        pos, vel, eff = self._delays
+        control_action.joint_positions = pos.compute(control_action.joint_positions)
+        control_action.joint_velocities = vel.compute(control_action.joint_velocities)
+        control_action.joint_efforts = eff.compute(control_action.joint_efforts)
+        return super().compute(control_action, joint_pos, joint_vel)
+
+
+@configclass
+class DelayedDCMotorCfg(DCMotorCfg):
+    class_type: type = DelayedDCMotor
+    min_delay: int = 0  # physics steps
+    max_delay: int = 2  # 10 ms at the 5 ms physics step
+
+
+def _actuators() -> dict[str, DelayedDCMotorCfg]:
     import re
 
     limits = joint_limits()
@@ -133,7 +174,7 @@ def _actuators() -> dict[str, DCMotorCfg]:
         if len(torques) != 1:
             raise ValueError(f"{pattern}: joints with different motors {torques}")
         torque, speed = torques.pop()
-        out[pattern.replace(".*", "").strip("_") or pattern] = DCMotorCfg(
+        out[pattern.replace(".*", "").strip("_") or pattern] = DelayedDCMotorCfg(
             joint_names_expr=[pattern],
             saturation_effort=torque,
             actuator_effort_limit=torque,

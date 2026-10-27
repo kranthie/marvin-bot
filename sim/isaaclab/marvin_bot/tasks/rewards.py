@@ -158,3 +158,32 @@ def stand_pose(env, asset_cfg: SceneEntityCfg, command_name: str) -> torch.Tenso
     q0 = asset.data.default_joint_pos.torch[:, asset_cfg.joint_ids]
     still = torch.linalg.norm(env.command_manager.get_command(command_name), dim=1) < 0.1
     return torch.sum(torch.abs(q - q0), dim=1) * still
+
+
+def pelvis_roll(env, asset_name: str = "robot") -> torch.Tensor:
+    """Penalize the pelvis rolling sideways: the squared sine of its roll (gravity's sideways
+    component in the pelvis frame).
+
+    The waist only turns, so the torso rolls with the pelvis. Under the general flat-orientation
+    term, which costs 0.02 at 8 degrees, flat v6 and rough v8 leaned 7-8 degrees over each stance
+    foot, a waddle of 20 degrees peak to peak (sim/mujoco/check_policy.py's sway readout).
+    """
+    return torch.square(env.scene[asset_name].data.projected_gravity_b.torch[:, 1])
+
+
+def feet_width(
+    env, asset_cfg: SceneEntityCfg, command_name: str, target: float, tolerance: float
+) -> torch.Tensor:
+    """Penalize a step width (feet apart across the pelvis heading) more than ``tolerance`` from
+    ``target``, in metres, while walking.
+
+    The hips are 20 cm apart; the waddling policies put their feet 18-22 cm apart walking and
+    28-31 cm at 1 m/s, so the pelvis had to travel 8-10 cm side to side to stay over each foot.
+    """
+    asset = env.scene[asset_cfg.name]
+    feet = asset.data.body_pos_w.torch[:, asset_cfg.body_ids, :2]  # (N, 2, 2)
+    heading = asset.data.heading_w.torch
+    side = torch.stack([-torch.sin(heading), torch.cos(heading)], dim=1)
+    width = torch.abs(torch.sum((feet[:, 0] - feet[:, 1]) * side, dim=1))
+    moving = torch.linalg.norm(env.command_manager.get_command(command_name), dim=1) > 0.1
+    return torch.clamp(torch.abs(width - target) - tolerance, min=0.0) * moving

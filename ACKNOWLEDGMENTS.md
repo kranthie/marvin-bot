@@ -18,7 +18,10 @@ Marvin Bot is designed from scratch, but it learns from many open projects, publ
 - **NVIDIA Isaac GR00T N1.7** (https://github.com/NVIDIA/Isaac-GR00T) and **GR00T-WholeBodyControl** (https://github.com/NVlabs/GR00T-WholeBodyControl): the planned vision-language-action model and the decoupled whole-body control approach.
 - **MuJoCo** and **MuJoCo Menagerie** (Google DeepMind): simulation cross-check.
 - **rsl_rl** (ETH Zurich Robotic Systems Lab): PPO training.
-- **GMR** (https://github.com/YanjieZe/GMR) and **BeyondMimic** (https://github.com/HybridRobotics/whole_body_tracking): planned motion retargeting and motion tracking.
+- **ProtoMotions** (NVIDIA, https://github.com/NVlabs/ProtoMotions, Apache-2.0): the motion pipeline in `sim/motion/` runs its keypoint extraction, PyRoki retargeter (G1 version, with Marvin Bot's link map and scaling), converters, motion library and motion-tracking training. Its sample human motions come from the BONES-SEED dataset (Bones Studio, gated licence); they are used locally and not redistributed.
+- **PyRoki** (https://github.com/chungmin99/pyroki, MIT): the kinematics optimiser behind the retargeter.
+- **BeyondMimic** (https://github.com/HybridRobotics/whole_body_tracking, arXiv:2508.08241): the motion-tracking formulation ProtoMotions' tracker follows. **Kimodo** (NVIDIA, https://github.com/nv-tlabs/kimodo) and **GMR** (https://github.com/YanjieZe/GMR): planned motion generation and an alternative retargeter.
+- **mjlab** (https://github.com/mujocolab/mjlab, Apache-2.0): its Unitree G1 velocity task showed the anti-sway terms used in the walking rewards (an upright term and tight hip and ankle roll while walking, no single-support reward).
 - **bd_warehouse** (https://github.com/gumyr/bd_warehouse, Apache-2.0) and **build123d**: planned sources of parametric fasteners, bearings and code-CAD.
 
 ## Component specifications
