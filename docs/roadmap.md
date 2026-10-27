@@ -32,7 +32,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Flat policy v3 passes the MuJoCo cross-check up to 0.8 m/s, joints within their continuous ratings
 - [x] Stairs: rough v5 climbs 10-20 cm stairs up and down in the MuJoCo cross-check, knees at 73-75% of rated (RMS)
 - [x] Heat: RMS torque vs continuous rating per joint in the MuJoCo policy check (walking: knees 60-64% of rated); sustained-torque penalty in training
-- [ ] Rough-terrain and stair policies; MuJoCo cross-check
+- [x] Rough-terrain and stair policies; MuJoCo cross-check (rough v7-v9: 5-20 cm stairs up and down, upright posture)
 - [x] Packaging check with STEP-model actuator envelopes (`tools/check_packaging.py`); thigh layout, knee range and motor positions fixed
 - [x] Code-CAD of the legs, first pass (`cad/leg.py`, `cad/build.py`): every part fits the mill or printer (foot base plates cut by a service); masses and inertias in the URDF
 - [x] Strength check, hand calcs on the CAD sections (`cad/strength.py`): landing case fails five one-sided parts
@@ -47,9 +47,12 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Narrower shoulders: shoulder pitch motors 30 mm deeper in the torso, arms 158 mm off the centre line (was 188), two-plate side frames; shoulder roll range 0-120°; 38.80 kg (39.88 kg with shells)
 - [x] Roll-first hip: hip roll RS04s fixed in the pelvis behind the hips, pitch motors at the hip joints on the roll brackets; knee 0-130° (was 125°), hip pitch -30-120° (was -40°); torso 25 mm ahead of the hips; part-to-part sweep added to `python -m cad.covers --check`; 38.69 kg (39.78 kg with shells)
 - [x] Thigh top a closed box round the hip pitch motor; roll bracket bars over the roll motors; no shells over the roll motors; 38.78 kg (39.74 kg with shells)
-- [ ] Retrain the flat and stair policies on the current model (ankle ratios 0.99 / 0.67, 38.71 kg) and rerun the MuJoCo cross-checks
+- [x] Retrain the flat and stair policies on the current model (39.13 kg) and rerun the MuJoCo cross-checks (flat v7, rough v9)
+- [x] No side-to-side waddle (pelvis roll 20° to 6° peak to peak, head sway 16.5 to 7-8 cm); 0-20 ms sensor and 0-10 ms motor delays in training
+- [ ] Stair robustness: rough v9 falls in 2 of 15 runs on 15-20 cm stairs over five noise seeds
+- [ ] Motion tracking (`sim/motion/`): pipeline runs end to end; a tracker that follows walking clips, then a collision-free arm retarget and a MuJoCo replay
 - [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
-- [ ] Battery cradle, blind-mate connector and electronics bay layout
+- [x] Battery cradle, blind-mate connector and electronics bay layout (`cad/electrical.py`)
 
 ## Phase 2 preparation
 

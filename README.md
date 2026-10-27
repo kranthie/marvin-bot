@@ -1,10 +1,18 @@
 # Marvin Bot
 
-An open humanoid robot, about 1.2 m tall and 35 kg, with 25 powered joints. It is built from off-the-shelf quasi-direct-drive actuators, a CNC-machined aluminium frame and printed structural shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
+An open humanoid robot, about 1.29 m tall and 39 kg, with 25 powered joints. It is built from off-the-shelf quasi-direct-drive actuators, a CNC-machined aluminium frame and printed structural shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
 
-**Status:** phase 1, robot in simulation. Nothing has been built yet. See [docs/roadmap.md](docs/roadmap.md).
+**Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo; a motion-tracking pipeline (human motion to robot skills) is being brought up. See [docs/roadmap.md](docs/roadmap.md).
 
-![Concept layout v0.2](docs/design/concept_v0.svg)
+![Marvin Bot, bare structure and with its clip-on covers (MuJoCo render of the generated model)](docs/media/robot.webp)
+
+## In simulation
+
+| Walking, turning and stopping (flat v7) | 15 cm stairs up and down (rough v9) |
+|---|---|
+| ![Flat-ground policy in MuJoCo](docs/media/flat_walk.webp) | ![Stair policy in MuJoCo](docs/media/stairs_15cm.webp) |
+
+Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor noise (`sim/mujoco/check_policy.py --render`); results for every run are in [sim/isaaclab/README.md](sim/isaaclab/README.md).
 
 ## Goals
 
@@ -27,14 +35,14 @@ The full list is in [docs/requirements.md](docs/requirements.md).
 | Sensing | Pelvis IMU, head-mounted active-stereo depth camera, joint encoders |
 | Power | 48 V nominal (13S Li-ion, ~630 Wh), quick-release pack with a keep-alive supply for the computer |
 | Comms | 6 CAN buses for the actuators, 1 auxiliary CAN bus for the battery |
-| Software | Isaac Lab for training, MuJoCo as a cross-check, ROS 2 Jazzy on the robot, GR00T N1.7 for manipulation |
+| Software | Isaac Lab for training, MuJoCo as a cross-check, ProtoMotions for motion tracking, ROS 2 Jazzy on the robot, GR00T N1.7 for manipulation |
 
 The joint list, ranges and actuators are defined in [description/robot.yaml](description/robot.yaml), the single source of truth for everything else.
 
 ## Repository layout
 
 ```
-docs/          plan, requirements, roadmap, safety, decisions, design notes
+docs/          plan, requirements, roadmap, safety, decisions, design notes, media (renders, clips)
 description/   robot.yaml (joints, sizes, CAN buses), actuators.yaml, mass_budget.yaml,
                skeleton.yaml (frames, mass placement), urdf/ (generated)
 cad/           code-CAD part generators (legs, pelvis, torso, arms, head, clip-on covers),
@@ -44,6 +52,7 @@ bom/           bill of materials (bom.csv); generated build lists of made parts 
 tools/         checks and generators (description check, BOM summary, URDF, harness, sketch)
 sim/mujoco/    MuJoCo checks (standing, step-up, symmetry, policy cross-check)
 sim/isaaclab/  Isaac Lab robot config, walking tasks, robot check, policy export
+sim/motion/    motion pipeline: human motion retargeted to Marvin Bot, tracking policies (ProtoMotions)
 robot/         onboard software (Robstride CAN driver so far)
 bench/         actuator bench tests (phase 2)
 tests/         unit tests
@@ -82,4 +91,4 @@ Vendor CAD models are not redistributed here; see [CONTRIBUTING.md](CONTRIBUTING
 
 ## Safety
 
-A 35 kg robot on a 48 V battery can injure people. Read [docs/safety.md](docs/safety.md) before powering any actuator.
+A 39 kg robot on a 48 V battery can injure people. Read [docs/safety.md](docs/safety.md) before powering any actuator.

@@ -8,6 +8,7 @@ Marvin Bot's Isaac Lab 3.0 package: the articulation config (`marvin_bot/robot_c
 | `convert_urdf.py` | Converts `description/urdf/marvin_bot.urdf` to `usd/` (git-ignored) with Isaac Sim's URDF importer |
 | `check_robot.py` | Checks mass, joint order and limits, kinematics against MuJoCo, and the default stance |
 | `marvin_bot/tasks/` | `MarvinBot-Velocity-Flat` and `MarvinBot-Velocity-Rough` |
+| `../mujoco/check_policy.py` | The MuJoCo cross-check of an exported policy: walk, turn, stop, fast walk or stairs, with posture, sway, heat and gait figures; `--render` saves a video |
 | `export_policy.py` | Exports a checkpoint to `policy.onnx` plus `policy.json` (joint order, default pose, action scale, observation layout, height-map layout) |
 
 ## Setup
@@ -54,6 +55,9 @@ Both follow the decoupled whole-body-control split (GR00T-WholeBodyControl), as 
 - **Commands:** forward −0.3 m/s up to a curriculum limit that starts at 0.5 m/s and grows to 1.2 m/s, sideways ±0.3 m/s, yaw ±1.0 rad/s; 20% of envs stand still.
 - **Terrain (rough):** household stairs with 5–20 cm risers and 28 cm treads, random boxes to 10 cm, rough ground to 5 cm, slopes to 0.4 rad, with a tracking-and-distance terrain curriculum.
 - **Heat:** a penalty on leg joints whose ~1 s running average of (torque / rated torque)² exceeds 0.8, so the policy avoids holding torque above the continuous rating (the static stair check put the knee at ~108%).
+- **Posture:** a penalty on the pelvis sitting more than 2 cm below its stance height above the lower foot (so it holds on stairs), on the leg joints' distance from the stance pose while commanded to stand, and on foot tilt, in contact and in swing.
+- **No waddle:** a penalty on pelvis roll, on step width beyond 16 ± 2 cm while walking, and on hip yaw, hip roll and ankle roll away from the stance; the air-time reward is small (0.5), since a large one paid for long single-support phases, which the robot spent tipping over the standing foot.
+- **Delays:** each robot gets a random lag of 0-20 ms on the IMU and joint observations and 0-10 ms on its motor commands. The delayed motor model runs in Isaac Lab's Python actuator path (`use_newton_actuators = False`), as Newton's own actuators take only the stock motor configs: about 2.5x slower per iteration.
 - **Gait shaping, falls, symmetry, randomization:** as an earlier prototype's tasks, scaled: 8 cm swing clearance, fall below 0.35 m pelvis height or past 1 rad of tilt, left-right mirror augmentation (rule checked by `sim/mujoco/check_symmetry.py`), pushes up to 0.5 m/s, torso mass ±15% and CoM ±3 cm.
 
 ```bash
@@ -66,6 +70,10 @@ python sim/mujoco/check_policy.py <run>/exported --stairs 0.15    # rough-ground
 
 ## Results
 
+| Flat v7 in MuJoCo | Rough v9 on 15 cm stairs |
+|---|---|
+| ![Flat-ground policy](../../docs/media/flat_walk.webp) | ![Stair policy](../../docs/media/stairs_15cm.webp) |
+
 | Run | Training (Isaac Lab, Newton) | MuJoCo cross-check (`check_policy.py`) |
 | --- | --- | --- |
 | flat v2 (2026-10-26) | survives 99.6% of episodes, but barely steps (air-time reward ~0) | stands and turns, does not walk: the clearance reward paid planted feet in full, so standing still won. Fixed: only swinging feet earn it; flat action scale 0.25 → 0.5 |
@@ -74,7 +82,6 @@ python sim/mujoco/check_policy.py <run>/exported --stairs 0.15    # rough-ground
 | rough v3 (2026-10-26, clearance fix) | survives 96.5%; terrain curriculum plateaued at level ~1 of 10 (robots learned to wait at stair bottoms: few falls, little promotion) | passes flat ground (walk 0.48, turn, stop); **climbs 5 cm stairs** up and down (pelvis +27 cm); stops in front of 10 and 15 cm stairs. Next (v4): linear progress reward, tracking width 0.25, stairs on 55% of tiles from 4 cm, 6000 iterations |
 | rough v4 (2026-10-26) | **collapsed**: 99% of episodes end in falls, terrain level 0. The new progress reward had no upper cap, so lunging forward and falling paid more than walking. Fixed (capped at the commanded speed); retrained as v5 | not usable |
 | **rough v5** (2026-10-26, capped progress reward, stair-heavy terrain, heat penalty, 6000 iterations) | survives 97.7%; terrain curriculum reached level ~6 of 10 (v3 stalled at 1) | **climbs 10, 15, 18 and 20 cm stairs** up and down (5 steps each way, 28 cm treads, 0.4 m/s command); passes flat ground (walk 0.51, turn 0.77, stop). Knees on stairs at 73-75% of rated (RMS), hip roll ~60%. 5 cm stairs crossed but pelvis rise 21.5 of 25 cm, just under the check's 90% mark. Trained on the 37.98 kg model, checked on 39.06 kg |
-
 | **flat v4** (2026-10-26, roll-first hip, real actuator outlines, 2000 iterations) | survives 99.5% | **passes**, including a 1.0 m/s fast walk (97 cm steps, symmetric within 1%): walk-and-turn 0.57 for 0.5 m/s, stop; 1.6 steps/s, 6 cm foot lift; hottest joints hip roll ~60% and ankle pitch 58% of rated (RMS), peaks under 70% of peak torque. Trained and checked on the 39.13 kg model |
 | rough v6 (2026-10-26, same model as flat v4, 6000 iterations) | survives 97.3%; terrain level 6.0 of 10 (as v5) | passes flat ground and **15 cm stairs** up and down (pelvis +70.8 of 75 cm). Crosses 5 and 10 cm stairs but the pelvis rise (18.5 of 25, 43.5 of 50 cm) is under the check's 90% mark; falls on the way down 18 cm stairs and on the way up 20 cm. Knees at 73-81% of rated (RMS), hotter than v5. Weaker than v5 was on its own model (10-20 cm); rough v5 run on the current model climbs 10 and 15 cm, falls on 18 cm. Next: retrain from v6 with more 16-20 cm stair tiles and a knee heat penalty |
 | flat v5 (2026-10-26, from flat v4 + 1000 iterations with the posture terms) | survives 99.8% | **passes**; stands in the stance pose (pelvis 63.7 cm, knees 24°; v4 stood at 18°), walks at 61.4 cm as v4; fast walk 0.87 for 1.0 m/s (v4 1.02), 93 cm steps; hottest joint ankle pitch 64% of rated |

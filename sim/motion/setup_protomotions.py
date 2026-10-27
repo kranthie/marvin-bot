@@ -5,7 +5,8 @@ retargeted to a robot. Everything written here is generated from the description
 after any change to it (as tools/build_urdf.py is rerun):
 
   protomotions/data/assets/mjcf/marvin_bot.xml      the robot for simulation: the URDF's links,
-      inertias and collision boxes, a free base, and the motors' armature, friction and peak torque
+      inertias and collision boxes, a free base, and the motors' armature, friction and peak torque;
+      the arms collide with the ground only
   protomotions/data/assets/urdf/for_retargeting/marvin_bot.urdf
       the URDF without visuals, plus the frames the retargeter matches human keypoints to: a toe
       15 cm ahead of each ankle, a hand frame at each wrist pointing down the hand, and a torso
@@ -34,6 +35,11 @@ from joint_specs import DESC, joint_specs  # noqa: E402
 
 URDF = DESC / "urdf" / "marvin_bot.urdf"
 SIDES = ("left", "right")
+ARMS = tuple(
+    f"{s}_{part}"
+    for s in SIDES
+    for part in ("shoulder", "upper_arm", "forearm", "wrist", "gripper")
+)
 TOE = 0.15  # m ahead of the ankle axis, at its height (as G1's retargeting toe frame)
 HAND = math.pi  # the wrist frame's z points up the forearm; the hand frame's points down it
 # The retargeter puts a torso keypoint 0.18 m ahead of and 0.03 m above a frame called
@@ -135,6 +141,14 @@ def mjcf(specs: dict) -> tuple[str, list[str]]:
         if j.name in specs:
             j.armature = specs[j.name]["armature"]
             j.frictionloss = specs[j.name]["friction"]
+    # The arms collide with the ground only. Retargeted human arms pass close to the body, and
+    # the gripper boxes meet the thighs even with the arms hanging straight, which would let
+    # the arms block the legs
+    arms = [b.name for b in spec.bodies if b.name.startswith(ARMS)]
+    for a in arms:
+        for b in spec.bodies[1:]:
+            if b.name != a and not (b.name in arms and b.name < a):
+                spec.add_exclude(bodyname1=a, bodyname2=b.name)
     for name in order:
         effort = specs[name]["effort"]
         spec.add_actuator(
