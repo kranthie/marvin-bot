@@ -1,5 +1,9 @@
 # Concept v0.2
 
+> **Historical:** the v0.2 concept of 2026-10-25, kept as it was. The current design is in the
+> README, `description/robot.yaml` and [decisions.md](../decisions.md); the figures, the drawing
+> (25 DOF with grippers) and the open questions below are not updated.
+
 ![Concept layout v0.2](concept_v0.svg)
 
 The drawing is to scale and shows every powered joint, coloured by actuator model. It is drawn by `tools/sketch_concept.py`, which takes the leg and overall heights and the ankle motor from `description/robot.yaml`. The changes from v0.1 and their reasons are in [decisions.md](../decisions.md).

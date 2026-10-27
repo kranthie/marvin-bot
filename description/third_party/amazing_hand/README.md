@@ -14,7 +14,7 @@ project's MuJoCo models, with the palm and top shells from its `cad/stl` files),
 pins and bushings left out, each part simplified, the parts united into one closed solid,
 decimated to 30,000 triangles and expressed in metres in the hand's frame (wrist interface face
 at z = 0, fingers along +z, palm towards +x). `tools/build_hand_mesh.py` rebuilds them from a
-clone of the original repository.
+clone of the original repository at commit `3e82410` (`git clone https://github.com/pollen-robotics/AmazingHand && git -C AmazingHand checkout 3e82410`; then `pip install -e ".[hand]"` and `python tools/build_hand_mesh.py AmazingHand`).
 
 Marvin Bot uses these meshes to show the hands in its CAD model, renders and URDF, and to check
 the hands' clearance through the joint ranges. The hands themselves are bought as kits. The

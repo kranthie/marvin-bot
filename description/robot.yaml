@@ -16,7 +16,7 @@ robot:
   mass_limit_kg: 41.0     # the full robot: hands and the add-on body shells included
 
 dimensions:
-  hip_axis_height: 0.650   # hip pitch axis to sole (51% of height)
+  hip_axis_height: 0.650   # hip pitch axis to sole (50% of height)
   thigh: 0.300             # hip pitch axis to knee axis
   shin: 0.290              # knee axis to ankle axis
   ankle_height: 0.060      # ankle axis to sole

@@ -20,7 +20,8 @@ them (motor_mounts), at their STEP-model sizes, and the structure is built aroun
 
 Plates are rings on the motors' bolt circles joined by straps, not full-width discs, sized by
 cad/strength.py. A first pass for mass, inertia, part sizes and clearances: plates are pocketed with
-lightening holes, but there are no fastener holes, fillets or bearing details yet.
+lightening holes, and the motor mounts carry the stator and output hole circles, but there are
+no other fastener holes, fillets or bearing details yet.
 """
 
 from __future__ import annotations

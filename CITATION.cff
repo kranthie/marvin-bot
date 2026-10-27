@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use Marvin Bot's design or code, please cite it as below."
+title: "Marvin Bot: an open 1.29 m humanoid robot"
+authors:
+  - name: "The Marvin Bot contributors"
+repository-code: "https://github.com/kranthie/marvin-bot"
+license:
+  - Apache-2.0
+  - CERN-OHL-S-2.0
+type: software
+keywords: [humanoid robot, open hardware, reinforcement learning, motion tracking]

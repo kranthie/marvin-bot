@@ -13,11 +13,14 @@ Marvin Bot's Isaac Lab 3.0 package: the articulation config (`marvin_bot/robot_c
 
 ## Setup
 
-Isaac Lab 3.0 (branch `release/3.0.0`, Isaac Sim 6.2, Python 3.12) installs with uv, outside this repo:
+Isaac Lab 3.0 (Isaac Sim 6.2, Python 3.12) installs with uv, outside this repo. The results below
+used commit `961760bcb91e3af48e7d116292e57e8ecaefc31e` of the moving `release/3.0.0` branch, on one
+NVIDIA RTX PRO 6000 Blackwell (96 GB, driver 595); a smaller RTX GPU should work with fewer robots
+(`--num_envs`), which has not been tried.
 
 ```bash
-git clone https://github.com/isaac-sim/IsaacLab.git --branch release/3.0.0
-cd IsaacLab
+git clone https://github.com/isaac-sim/IsaacLab.git && cd IsaacLab
+git checkout 961760bcb91e3af48e7d116292e57e8ecaefc31e
 uv sync --extra isaacsim --extra importers   # Newton is the default backend; isaacsim adds PhysX and Kit
 uv pip install --no-deps -e <path to this repo>/sim/isaaclab
 export OMNI_KIT_ACCEPT_EULA=YES              # only if you have read and accept NVIDIA's Isaac Sim licence
@@ -30,13 +33,16 @@ launch; setting `OMNI_KIT_ACCEPT_EULA=YES` means you accept it.
 
 ## Convert and check
 
+The URDF refers to the part meshes, which are generated, not committed: first, in this repo's own
+environment, run `pip install -e ".[cad]" && python -m cad.build`.
+
 ```bash
 uv run --no-sync python <repo>/sim/isaaclab/convert_urdf.py      # after any URDF change
 uv run --no-sync python <repo>/sim/isaaclab/check_robot.py       # Newton
 uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --backend physx
 ```
 
-Results (2026-10-26, RTX PRO 6000 Blackwell):
+Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the 39.86 kg model):
 
 | Check | Newton (MuJoCo-Warp) | PhysX |
 | --- | --- | --- |
@@ -67,9 +73,24 @@ Both follow the decoupled whole-body-control split (GR00T-WholeBodyControl):
 uv run --no-sync isaaclab train --rl_library rsl_rl --task MarvinBot-Velocity-Flat --num_envs 4096 --max_iterations 2000
 uv run --no-sync isaaclab train --rl_library rsl_rl --task MarvinBot-Velocity-Rough --num_envs 4096 --max_iterations 3000
 uv run --no-sync python <repo>/sim/isaaclab/export_policy.py --checkpoint logs/rsl_rl/marvin_bot_flat/<run>/model_1999.pt
-python sim/mujoco/check_policy.py <run>/exported --fast 1.0       # from the repo, in its own venv
-python sim/mujoco/check_policy.py <run>/exported --stairs 0.15    # rough-ground policies
+uv run --no-sync python <repo>/sim/isaaclab/export_policy.py --task MarvinBot-Velocity-Rough \
+    --checkpoint logs/rsl_rl/marvin_bot_rough/<run>/model_2999.pt
+# then from this repo, in its own venv (logs/ is in the IsaacLab checkout):
+python sim/mujoco/check_policy.py <IsaacLab>/logs/rsl_rl/marvin_bot_flat/<run>/exported --fast 1.0
+python sim/mujoco/check_policy.py <IsaacLab>/logs/rsl_rl/marvin_bot_rough/<run>/exported --stairs 0.15
 ```
+
+Each run takes about 2.2-2.3 s an iteration on the GPU above (about 1.3 h for 2000 iterations),
+with rsl_rl's default seed (42). The training logs and checkpoints go to `logs/rsl_rl/` in the
+IsaacLab checkout (the rough runs take about 2 GB).
+
+**Reproducing the published policies.** The trained policies are not committed. Flat v7 and rough
+v9 were not trained from scratch: each run resumed the previous one (rsl_rl's `--resume`,
+`--load_run` and `--checkpoint` options) after a change to the rewards, as the results table below
+records (flat v7: about 6000 iterations in all; rough v9: about 14,000), and each stage's task
+config is in the git history at that date. Training from scratch with the current config has not
+been tried yet, and both policies were trained on the model before the hands (39.13 kg). The
+clips in the README replay them with `check_policy.py --render` on the current model.
 
 ## Results
 

@@ -20,7 +20,12 @@ Usage:
   python sim/mujoco/check_policy.py <dir with policy.onnx and policy.json>
   python sim/mujoco/check_policy.py <dir> --fast 1.0
   python sim/mujoco/check_policy.py <dir> --stairs 0.15
-  MUJOCO_GL=egl python sim/mujoco/check_policy.py <dir> --render walk.mp4  # + imageio[ffmpeg]
+  MUJOCO_GL=egl python sim/mujoco/check_policy.py <dir> --render walk.mp4  # a video
+  # the README clips (palms towards the thighs), as an animated WebP:
+  MUJOCO_GL=egl python sim/mujoco/check_policy.py <flat run> --wrist-yaw 90 \\
+      --render docs/media/flat_walk.webp
+  MUJOCO_GL=egl python sim/mujoco/check_policy.py <rough run> --stairs 0.15 --wrist-yaw 90 \\
+      --render docs/media/stairs_15cm.webp
 
 Needs: pip install -e ".[sim]"
 """
@@ -509,9 +514,24 @@ def main() -> None:
             failures.append(f"'{name}': still moving ({np.linalg.norm(v):.2f} m/s, {w:.2f} rad/s)")
 
     if renderer is not None and frames:
-        import imageio.v2 as imageio
+        fps = 0.5 / meta["control_dt"]  # every other control step
+        if args.render.suffix == ".webp":
+            # the README's animations: 480 px wide, about 6 frames a second
+            step = round(fps / 6)
+            ims = [Image.fromarray(f).resize((480, 272), Image.LANCZOS) for f in frames[::step]]
+            ims[0].save(
+                args.render,
+                save_all=True,
+                append_images=ims[1:],
+                duration=round(1000 * step / fps),
+                loop=0,
+                quality=70,
+                method=6,
+            )
+        else:
+            import imageio.v2 as imageio
 
-        imageio.mimsave(args.render, frames, fps=round(0.5 / meta["control_dt"]))
+            imageio.mimsave(args.render, frames, fps=round(fps))
         print(f"saved {args.render}")
     if failures:
         sys.exit("FAIL: " + "; ".join(failures))

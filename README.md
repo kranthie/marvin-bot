@@ -1,8 +1,12 @@
 # Marvin Bot
 
+[![CI](https://github.com/kranthie/marvin-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/kranthie/marvin-bot/actions/workflows/ci.yml) ![Software: Apache-2.0](https://img.shields.io/badge/software-Apache--2.0-blue) ![Hardware: CERN-OHL-S-2.0](https://img.shields.io/badge/hardware-CERN--OHL--S--2.0-blue) ![Stage: simulation](https://img.shields.io/badge/stage-simulation%20only-orange)
+
 An open humanoid robot, about 1.29 m tall and 40 kg, with 27 powered joints and two 8-servo four-finger hands. It is built from off-the-shelf quasi-direct-drive actuators, a CNC-machined aluminium frame and printed structural shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
 
-**Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo; a motion-tracking pipeline (human motion to robot skills) is being brought up. See [docs/roadmap.md](docs/roadmap.md).
+**Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo (the stair policy still falls in 2 of 15 runs on 15–20 cm stairs over five noise seeds); a motion-tracking pipeline (human motion to robot skills) runs end to end but has no tracker that walks yet. See [docs/roadmap.md](docs/roadmap.md).
+
+**Start here:** this README, then [docs/plan.md](docs/plan.md) (phases), [docs/roadmap.md](docs/roadmap.md) (where things stand), [docs/decisions.md](docs/decisions.md) (why things are the way they are) and the [glossary](docs/README.md#glossary). To try it: `pip install -e ".[dev]" && python tools/check_description.py`.
 
 > [!WARNING]
 > **Work in progress, not yet built or tested on hardware.** The designs, policies and scripts
@@ -16,13 +20,15 @@ An open humanoid robot, about 1.29 m tall and 40 kg, with 27 powered joints and 
 
 ![Marvin Bot, bare structure and with its clip-on covers (MuJoCo render of the generated model)](docs/media/robot.webp)
 
+<sub>MuJoCo render of the generated model (`tools/render_robot.py`). Hands: AmazingHand meshes by Pollen Robotics, CC-BY-4.0.</sub>
+
 ## In simulation
 
 | Walking, turning and stopping (flat v7) | 15 cm stairs up and down (rough v9) |
 |---|---|
 | ![Flat-ground policy in MuJoCo](docs/media/flat_walk.webp) | ![Stair policy in MuJoCo](docs/media/stairs_15cm.webp) |
 
-Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor noise (`sim/mujoco/check_policy.py --render`, palms turned in with `--wrist-yaw 90`); results for every run are in [sim/isaaclab/README.md](sim/isaaclab/README.md). Both were trained before the hands were added; the clips replay them on the current model, hands included, where they still pass their checks.
+Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor noise (`sim/mujoco/check_policy.py --render`, palms turned in with `--wrist-yaw 90`); results for every run are in [sim/isaaclab/README.md](sim/isaaclab/README.md). Both were trained before the hands were added; the clips replay them on the current model, hands included, where they still pass their checks. The trained policies are not committed; [sim/isaaclab/README.md](sim/isaaclab/README.md) says how to train and replay them.
 
 ## Goals
 
@@ -30,7 +36,7 @@ Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor n
 - Carry and manipulate light objects with two 6-DOF arms and four-finger hands (1–2 kg is the goal; the v1 hands manage about 0.5 kg), learned from teleoperated demonstrations with a vision-language-action model (GR00T N1.7).
 - Learn skills beyond walking by tracking human motion (gestures, whole-body teleoperation), trained in simulation before the robot is built ([roadmap](docs/roadmap.md#skills-beyond-walking-simulation-before-and-during-the-build)).
 - Look finished without its clip-on covers: the visible parts are the structure, and the covers are an optional add-on.
-- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $12k in parts (the current BOM).
+- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $12k in parts (the current BOM; the Jetson AGX Orin developer kit and the two hand kits are counted as already owned, and the desktop GPU for training is not included).
 - Be fully open: CAD, electronics, firmware, simulation and training code.
 
 The full list is in [docs/requirements.md](docs/requirements.md).
@@ -53,7 +59,7 @@ Every source, with its licence and what was used from it, is in [ACKNOWLEDGMENTS
 |---|---|
 | Height, mass | ~1.29 m; 39.9 kg bare and 40.7 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 41 kg limit with the shells |
 | Joints | 6 per leg, 6 per arm (wrist yaw and pitch), waist yaw, 2 neck, plus an 8-DOF four-finger hand per arm |
-| Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulders), RS06 (shoulder yaw, elbows), RS00 (wrists); serial-bus servos for the neck and wrist pitch; eight small servos in each hand |
+| Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulder pitch and roll), RS06 (shoulder yaw, elbows), RS00 (wrists); serial-bus servos for the neck and wrist pitch; eight small servos in each hand |
 | Compute | Jetson AGX Orin 64 GB; desktop GPU for training and, at first, for the vision-language-action model |
 | Sensing | Pelvis IMU, head-mounted active-stereo depth camera, joint encoders |
 | Power | 48 V nominal (13S Li-ion, ~630 Wh), quick-release pack with a keep-alive supply for the computer |
@@ -74,39 +80,55 @@ cad/           code-CAD part generators (legs, pelvis, torso, arms and hand moun
 electrical/    wiring harness (harness.yaml, generated by tools/build_harness.py)
 bom/           bill of materials (bom.csv); generated build lists of made parts and actuator bolts
 tools/         checks and generators (description check, BOM summary, URDF, harness, hand
-               meshes, README render, concept sketch)
+               meshes, README render, concept sketch, vendor CAD fetch, check_all.sh)
 sim/mujoco/    MuJoCo checks (standing, step-up, symmetry, policy cross-check)
 sim/isaaclab/  Isaac Lab robot config, walking tasks, robot check, policy export
 sim/motion/    motion pipeline: human motion retargeted to Marvin Bot, tracking policies (ProtoMotions)
-robot/         onboard software (Robstride CAN driver so far)
+robot/         onboard software (RobStride CAN driver so far; untested on hardware)
 bench/         actuator bench tests (phase 2)
 tests/         unit tests
 ```
 
-Folders for CAD, electronics, the onboard software, simulation and bench tests are added as each phase reaches them; [docs/plan.md](docs/plan.md) describes the full layout.
+More folders (for example build guides) are added as later phases reach them.
 
 ## Checks
 
 ```bash
-pip install -e ".[dev]"
-ruff check . && ruff format --check .
+python3.12 -m venv .venv && . .venv/bin/activate   # CI uses Python 3.12; 3.10 or later works
+pip install -e ".[dev,cad,sim]"
+tools/check_all.sh                  # every check CI runs, in CI's order
+```
+
+Or one at a time:
+
+```bash
 python tools/check_description.py   # joints, actuators, CAN load, mass budget, BOM counts
 python tools/bom_summary.py         # BOM totals by phase and group
 python tools/build_urdf.py --check  # URDF matches the description files
-python tools/build_harness.py       # wiring harness routes, gauges and fuses (electrical/)
-
-pip install -e ".[cad]"
-python -m cad.build                 # part meshes, masses and inertias; part sizes vs mill and printer
+python tools/build_harness.py --check  # wiring harness routes, gauges and fuses (electrical/)
+python -m cad.build                 # part meshes (needed by every MuJoCo check), masses, sizes
 python -m cad.strength              # hand-calc strength check of the frame and printed parts
 python -m cad.covers --check        # shells and parts swept through the joint ranges
 python -m cad.export                # STL per part, DXF per flat part (outputs/), build BOM (bom/)
-
-pip install -e ".[sim]"
 python sim/mujoco/check_standing.py # stands in MuJoCo; joint torques against ratings
-python tools/render_robot.py        # the robot picture above (docs/media/robot.webp)
+pytest -q tests
+MUJOCO_GL=egl python tools/render_robot.py   # the robot picture above; MUJOCO_GL=egl without a display
 ```
 
-CI runs the same checks on every push.
+CI (`.github/workflows/ci.yml`) runs `tools/check_all.sh` on every push and pull request.
+
+## Build status
+
+Nothing here is ready to build from yet. What exists, and what a builder would still need:
+
+| Area | Status |
+|---|---|
+| Frame | code-CAD, first passes; STL and DXF per part; no drawings, tolerances, fits or fastener lengths |
+| Printed parts | STL; no print settings |
+| Electronics | power topology, wiring harness estimate and bay layout; no schematics or boards; several parts not chosen |
+| Battery | concept only: do not build from it |
+| Assembly | assembly order and wiring notes ([docs/design/assembly_wiring.md](docs/design/assembly_wiring.md)); no assembly drawings or torque values |
+| Software on the robot | RobStride CAN driver and bench scripts, untested |
 
 ## Licences
 

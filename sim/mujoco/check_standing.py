@@ -93,6 +93,10 @@ def rated_torques(direct: dict, pair: dict) -> dict[str, float]:
 
 
 def build() -> tuple[mujoco.MjSpec, dict]:
+    if not (URDF.parent.parent / "meshes").is_dir():
+        raise SystemExit(
+            "description/meshes/ is missing: run `python -m cad.build` first (cad extra)"
+        )
     # keep the URDF's visual geoms (MuJoCo drops them by default) for --render
     urdf = URDF.read_text().replace(
         '<robot name="marvin_bot">',

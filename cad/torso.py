@@ -7,13 +7,14 @@ at their STEP-model sizes:
   the roll brackets' far-side bearings), a top plate carrying the waist RS03, and two gussets
   under it making a channel; the hip pitch motors swing round the roll axes clear of all of
   it. The pelvis electronics sit between the roll motors.
-- torso: a flange on the waist output and a base plate; two uprights carrying the shoulder
-  pitch RS03s on their outer faces (flat profiles, longer than the desktop mill's travel, so
-  cut by an online laser or water-jet service); a top bridge carrying the neck yaw servo; and a
-  printed chest shell (front and sides, open at the back for the battery).
+- torso: a flange on the waist output and a base plate; two side frames (each a lower A-frame
+  outside the battery and an upper plate) carrying the shoulder pitch RS03s (flat profiles, longer
+  than the desktop mill's travel, so cut by an online laser or water-jet service); a top bridge
+  carrying the neck yaw servo; and a printed chest shell (front and sides, open at the back for the
+  battery).
 
-The computer, battery and electronics stay as skeleton.yaml estimate boxes, placed inside this
-structure. Plates are pocketed; no fasteners yet.
+The computer and electronics are laid out by cad/electrical.py; the battery and keep-alive pack
+are skeleton.yaml estimate boxes. Plates are pocketed; no fasteners yet.
 """
 
 from __future__ import annotations

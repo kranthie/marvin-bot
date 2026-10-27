@@ -1,0 +1,21 @@
+name: Bug or wrong result
+description: A check, tool or document that fails or gives a wrong answer
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected and what you got (paste the output).
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit
+      description: Output of `git rev-parse --short HEAD`
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, and the extras installed (for example `.[dev,cad,sim]`).

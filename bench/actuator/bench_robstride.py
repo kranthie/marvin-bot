@@ -15,9 +15,9 @@ Usage:
   python bench/actuator/bench_robstride.py scan --channel can0
   python bench/actuator/bench_robstride.py latency --channel can0 --id 1 --model RS04 --rate 500
   python bench/actuator/bench_robstride.py step --channel can0 --id 1 --model RS04 --kp 150 --kd 5
-  python bench/actuator/bench_robstride.py thermal --id 1 --model RS04 --torque 38 --minutes 10
+  python bench/actuator/bench_robstride.py thermal --id 1 --model RS04 --torque 44 --minutes 10
 
-Needs: pip install python-can; a CAN interface up at 1 Mbit/s (ip link set can0 up type can
+Needs: pip install -e ".[bench]"; a CAN interface up at 1 Mbit/s (ip link set can0 up type can
 bitrate 1000000).
 """
 

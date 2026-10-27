@@ -4,7 +4,7 @@ Runs Isaac Sim's URDF importer, so it needs the isaacsim extra. Run it again aft
 tools/build_urdf.py changes the URDF. The output (sim/isaaclab/usd/) is git-ignored.
 
 Usage (from an Isaac Lab 3.0 checkout, with this package installed; see README.md):
-  uv run --extra isaacsim python <repo>/sim/isaaclab/convert_urdf.py
+  uv run --no-sync python <repo>/sim/isaaclab/convert_urdf.py
 """
 
 import argparse

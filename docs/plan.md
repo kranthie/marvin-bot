@@ -31,16 +31,7 @@ Marvin Bot is built in stages. Each stage ends with a pass check that decides wh
 
 ## Repository growth
 
-Folders are added as phases reach them:
-
-```
-docs/           plan, requirements, roadmap, decisions, safety, design/, build/ (phase 3+)
-description/    robot.yaml, actuators.yaml, mass_budget.yaml, urdf/ (generated, phase 1)
-cad/            code-CAD part generators, purchased-part envelopes, print and machining lists (phase 1)
-electrical/     power, wiring and CAN maps, custom boards (phase 2+)
-bom/            bom.csv
-robot/          onboard software: control loop, drivers, ROS 2 packages, config (phase 2+)
-sim/            Isaac Lab tasks, MuJoCo checks, exported policies (phase 1)
-bench/          bench-test scripts and summarised results (phase 2+)
-tools/          generators and checks
-```
+The current layout is in the README. Still to come, as phases reach them: `docs/build/` (build
+guides, phase 3+), custom boards in `electrical/` (phase 2+), the control loop and ROS 2 packages
+in `robot/` (phase 2+), and summarised bench results in `bench/results/` (phase 2). Trained
+policies are not committed; their training is documented in `sim/isaaclab/README.md`.

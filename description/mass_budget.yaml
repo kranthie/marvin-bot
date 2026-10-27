@@ -5,8 +5,8 @@
 items:
   leg_structure:     {mass: 4.6221, basis: cad, note: "two legs, cad/leg.py second pass: far-side bearings at knee and hip roll, channel-flanged hip block, pocketed plates; passes cad/strength.py; no fasteners yet"}
   feet:              {mass: 1.1752, basis: cad, note: "two feet, cad/leg.py: 5 mm pocketed base with two 6 x 16 mm ribs, heel posts, roll-bearing lugs, 4 mm TPU sole"}
-  pelvis:            {mass: 1.0238, basis: cad, note: "cad/torso.py: box frame of side, front, back and top plates, pocketed"}
-  torso:             {mass: 1.2889, basis: cad, note: "cad/torso.py: waist flange, base plate, two uprights (service-cut), neck bridge, printed chest shell"}
+  pelvis:            {mass: 1.0238, basis: cad, note: "cad/torso.py: back plate carrying the hip roll motors, top plate and gussets (roll-first hip), pocketed"}
+  torso:             {mass: 1.2889, basis: cad, note: "cad/torso.py: waist flange, base plate, two side frames (A-frame and upper plate, service-cut), neck bridge, printed chest shell"}
   arm_structure:     {mass: 1.6256, basis: cad, note: "two arms, cad/arm.py: two-plate shoulder brackets, 7 mm shoulder plates, aluminium motor rings and flanges, printed upper-arm and forearm shells, wrist pitch cradles and hand mounts; no fasteners yet"}
   hands:             {mass: 0.80, basis: datasheet, note: "two bought 8-servo four-finger hands (bom.csv), 0.40 kg each as published, placed by cad/arm.py from their published CAD; to be weighed. Their mounts are in arm_structure"}
   head:              {mass: 0.4349, basis: cad, note: "cad/head.py: neck bracket, printed head frame, helmet shell, visor and camera window, depth camera (0.133 kg)"}
