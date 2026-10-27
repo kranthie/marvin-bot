@@ -78,7 +78,8 @@ Each can be trained in simulation now and retrained once the bench (phase 2) has
 The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (owned; SCS0009 servos at 5 V, 0.40 kg each as published) on a wrist pitch joint driven by the former gripper STS3250 (see decisions.md, 2026-10-27).
 
 - [x] Wrist pitch cradle, hand mount and hand envelope in the CAD; masses, URDF, harness and checks updated; forearm 0.188 m to the wrist pitch axis
-- [ ] Weigh the hands; drill the mount plate to the kit's wrist interface; fit a 12 V to 5 V converter at each wrist
+- [x] Real hand meshes (AmazingHand, CC-BY-4.0, `description/third_party/`) in the CAD, URDF and renders; mount plate drilled to its wrist interface (6 × M3 on Ø42)
+- [ ] Weigh the hands; fit a 12 V to 5 V converter at each wrist
 - [ ] A hand model for manipulation in simulation (the kit's MJCF has placeholder masses and closed linkages; reduce each finger to its two servo joints)
 - [ ] Retrain the walking and stair policies with the hands (0.73 kg more at the arms' ends than the grippers)
 - Later upgrades, in order: compliant fingertips or pads; the kit's stronger-servo variant (STS3032 at 6 V, same protocol as the STS3250s); a second wrist servo for side-to-side tilt; tactile fingertips

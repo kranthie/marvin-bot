@@ -1,6 +1,6 @@
 # Safety
 
-Marvin Bot weighs about 35 kg, runs on a 48 V lithium-ion battery that can deliver well over 100 A, and has joints that produce up to 120 N·m. It can break fingers, cause serious injury when it falls, and start a battery fire. These rules apply from the first actuator bench test onward. They are a first version and will grow with each phase.
+Marvin Bot weighs about 40 kg, runs on a 48 V lithium-ion battery that can deliver well over 100 A, and has joints that produce up to 120 N·m. It can break fingers, cause serious injury when it falls, and start a battery fire. These rules apply from the first actuator bench test onward. They are a first version and will grow with each phase.
 
 ## Before any actuator is powered
 

@@ -15,6 +15,7 @@ Issues and pull requests are welcome.
 
 - Do not commit vendor CAD models (actuators, compute modules, cameras, connectors) unless their licence explicitly allows redistribution. Link to the official download instead, and use simplified envelope models made in this repo.
 - Never use models from sites whose terms forbid redistribution or derived designs (for example McMaster-Carr or GrabCAD) in committed designs.
+- Openly licensed third-party designs that allow redistribution (for example CC-BY-4.0) may be committed under `description/third_party/`, each folder with its licence, the original source and what was changed, and a credit in `ACKNOWLEDGMENTS.md`. They keep their own licence; they are not relicensed under CERN-OHL-S.
 - Specifications quoted in this repo cite their source. Mark figures that come from resellers rather than the manufacturer as unverified.
 - Do not include images, logos or trademarks of other companies.
 

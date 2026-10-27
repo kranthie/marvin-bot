@@ -16,7 +16,7 @@ A ~1.29 m, ~40 kg, 27-DOF open humanoid with 8-DOF hands, on Robstride actuators
 ## Rules
 - Pushing straight to `main` is fine. Keep `ruff check`, `ruff format --check`, `tools/check_description.py`, `tools/bom_summary.py`, `tools/build_urdf.py --check`, `tools/build_harness.py --check` and `sim/mujoco/check_standing.py` passing (CI runs them).
 - Write for future open-source readers: no personal names, local or machine-specific paths, or private links. Keep fabrication tooling generic (no specific printer or mill brands).
-- Do not name commercial humanoid makers whose site terms restrict use of their content or marks; only Unitree and Booster Robotics have been checked and may be named.
+- Do not name commercial humanoid makers whose site terms restrict use of their content or marks; only Unitree and Booster Robotics have been checked and may be named. Pollen Robotics may be named only to attribute the AmazingHand (CC-BY-4.0); do not otherwise use its names or logos.
 - Credit every borrowed project, paper or post in `ACKNOWLEDGMENTS.md` and respect its licence. Asimov v1 is used for ideas only, never its CAD.
 - Do not commit vendor CAD unless its licence allows redistribution.
 - Ask before ordering parts.

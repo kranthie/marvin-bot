@@ -17,7 +17,7 @@ Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor n
 ## Goals
 
 - Walk, turn and stop on flat ground and rough terrain; climb standard household stairs (17–18 cm steps).
-- Carry and manipulate light objects (1–2 kg) with two 5-DOF arms.
+- Carry and manipulate light objects with two 6-DOF arms and four-finger hands (1–2 kg is the goal; the v1 hands manage about 0.5 kg).
 - Look good with or without its outer shell: the shells are part of the structure.
 - Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for roughly $10–12k in parts.
 - Be fully open: CAD, electronics, firmware, simulation and training code.
@@ -87,8 +87,8 @@ CI runs the same checks on every push.
 - Software and documentation: [Apache-2.0](LICENSE)
 - Hardware designs (CAD, drawings, electronics): [CERN-OHL-S-2.0](LICENSES/CERN-OHL-S-2.0.txt)
 
-Vendor CAD models are not redistributed here; see [CONTRIBUTING.md](CONTRIBUTING.md). Credits for the projects and products this design learns from are in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
+Third-party files keep their own licences: the AmazingHand meshes in [description/third_party/](description/third_party/amazing_hand/README.md) are CC-BY-4.0 (Pollen Robotics). Vendor CAD models are not redistributed here; see [CONTRIBUTING.md](CONTRIBUTING.md). Credits for the projects and products this design learns from are in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
 
 ## Safety
 
-A 39 kg robot on a 48 V battery can injure people. Read [docs/safety.md](docs/safety.md) before powering any actuator.
+A 40 kg robot on a 48 V battery can injure people. Read [docs/safety.md](docs/safety.md) before powering any actuator.
