@@ -25,7 +25,7 @@
 
 | ID | Requirement | Target | Level |
 |---|---|---|---|
-| R20 | Arm payload | 1 kg per hand at full reach, 2 kg close to the body | must |
+| R20 | Arm payload | 1 kg per hand at full reach, 2 kg close to the body (the v1 hands limit this to about 0.5 kg: the wrist pitch servo is at 75% of its rating with 0.5 kg at the fingertips, and the finger servos are small) | must |
 | R21 | Hands | open 8-DOF four-finger hands (bought kits) on a wrist pitch joint in v1; stronger hands later | must |
 | R22 | Task learning | fine-tune a VLA (GR00T N1.7) from teleoperation data | should |
 

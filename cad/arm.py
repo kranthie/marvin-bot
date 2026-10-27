@@ -12,8 +12,9 @@ mirror image), around the motors at their STEP-model sizes:
 - forearm: an aluminium flange on the elbow output and a printed shell that wraps under the
   elbow to a cup holding the wrist RS00;
 - wrist: a printed cradle on the wrist RS00's output holding the wrist pitch servo, and a
-  printed U on the servo's horn and an idler pin carrying a plate for the bought hand (modelled
-  as its envelope).
+  printed U on the servo's horn and an idler pin carrying a plate for the bought hand;
+- hand: the AmazingHand (Pollen Robotics, CC-BY-4.0), from the meshes in
+  description/third_party/amazing_hand.
 
 The shells are hollow (2.5 mm walls) and leave a cable path from the shoulder to the hand:
 each joint's harness passes beside the motor in a service loop (docs/design/assembly_wiring.md).
@@ -22,8 +23,11 @@ No fasteners yet.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
+import manifold3d as mf
+import numpy as np
 import yaml
 
 from .lib import Part, box, cyl, hull, lighten, strap, union
@@ -35,6 +39,12 @@ DESC = ROOT / "description"
 _acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
 _skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
 WALL = 2.5  # printed shells
+HAND_MESHES = ROOT / "description" / "third_party" / "amazing_hand"
+# the hand's wrist interface (its R-/L-Wrist_Interface part): a 49 mm round flange with six
+# M3 clearance holes on a 42 mm circle, at these angles (deg) in the palm link frame
+HAND_FLANGE = 49.0
+HAND_PCD = 42.0
+HAND_HOLES = (-10, -50, -130, -170, 110, 70)
 
 
 def env(model: str) -> tuple[float, float]:
@@ -202,37 +212,57 @@ def parts() -> list[Part]:
     out.append(Part("left_wrist_cradle", "left_wrist_link", "pa_cf", cradle, "print"))
 
     # --- hand: frame on the wrist pitch axis. A printed U round the servo's lower end, on the
-    # horn (+y) and the idler pin (-y), with a plate below for the bought hand's wrist
-    # interface (its holes drilled to the hand's pattern)
+    # horn (+y) and the idler pin (-y), with a plate below for the hand's wrist interface: its
+    # round flange (49 mm) centred under the forearm, and its six M3 clearance holes
     plate_z = -22.0  # the plate's lower face; the case's lower corners swing within 17 mm
     hy = s_hi + horn_t
     py = s_lo - WALL - 6.5
     arm_horn = hull(cyl(22, 4, "y", (0, hy + 2, 0)), box((22, 4, 4), (0, hy + 2, plate_z + 2)))
     arm_idle = hull(cyl(16, 4, "y", (0, py, 0)), box((22, 4, 4), (0, py, plate_z + 2)))
     arm_idle = arm_idle - cyl(8.4, 6, "y", (0, py, 0))
-    plate = box((50, hy + 4 - py + 4, 4), (0, (hy + 4 + py - 2) / 2, plate_z + 2))
+    plate = union(
+        box((50, hy + 4 - py + 4, 4), (0, (hy + 4 + py - 2) / 2, plate_z + 2)),
+        cyl(HAND_FLANGE + 4, 4, "z", (0, 0, plate_z + 2)),
+    )
+    for a in HAND_HOLES:
+        c = (HAND_PCD / 2 * math.cos(math.radians(a)), HAND_PCD / 2 * math.sin(math.radians(a)))
+        plate = plate - cyl(3.2, 10, "z", (*c, plate_z + 2))
     mount = union(arm_horn, arm_idle, plate)
     out.append(Part("left_hand_mount", "left_palm_link", "pa_cf", mount, "print"))
-    # the bought hand (0.40 kg as published) as its envelope: palm and four fingers, fingertips
-    # 181 mm below the axis, palm forward (+x); the thumb stands off the palm on the outer side
-    hand = union(
-        box((45, 110, 159), (2.5, 0, plate_z - 79.5)),
-        box((40, 30, 60), (45, 38, plate_z - 70)),
-    )
-    out.append(
-        Part(
-            "left_hand",
-            "left_palm_link",
-            "bought",
-            hand,
-            "bought",
-            mass_g=400.0,
-            notes="8-servo four-finger hand kit (bom.csv); envelope only",
-        )
-    )
+    out.append(hand("left", plate_z))
     return out
 
 
+def hand(side: str, plate_z: float) -> Part:
+    """The bought AmazingHand (0.40 kg as published; the solid is tools/build_hand_mesh.py's
+    output, in the hand's frame): turned fingers down on the plate's lower face, palm forward
+    (+x), so the thumb points outwards."""
+    import trimesh
+
+    mesh = trimesh.load(HAND_MESHES / f"{side}_hand.stl")
+    solid = mf.Manifold(
+        mf.Mesh(
+            vert_properties=np.asarray(mesh.vertices * 1000, np.float32),
+            tri_verts=np.asarray(mesh.faces, np.uint32),
+        )
+    )
+    # half a turn about x: fingers down, y reversed; the interface face on the plate
+    solid = solid.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, plate_z]])
+    return Part(
+        f"{side}_hand",
+        f"{side}_palm_link",
+        "bought",
+        solid,
+        "bought",
+        mass_g=400.0,
+        notes="AmazingHand by Pollen Robotics (CC-BY-4.0), description/third_party/amazing_hand",
+    )
+
+
 def all_parts() -> list[Part]:
+    """Both arms: the right is the left's mirror image, except the right hand, which is the
+    real right hand (its fingers are the same parts as the left's, not mirrored)."""
     left = parts()
-    return left + [p.mirrored() for p in left]
+    right = [p.mirrored() for p in left if p.name != "left_hand"]
+    plate_z = next(p for p in left if p.name == "left_hand_mount").solid.bounding_box()[2]
+    return left + right + [hand("right", plate_z)]
