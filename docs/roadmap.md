@@ -59,6 +59,28 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Robstride CAN protocol driver from the official manuals, frame encoding unit-tested (`robot/drivers/robstride.py`)
 - [x] Bench scripts and procedure: scan, latency, step response, thermal (`bench/`, untested)
 
+## Skills beyond walking (simulation, before and during the build)
+
+Each can be trained in simulation now and retrained once the bench (phase 2) has fitted the actuator models. Published sim-to-real results for comparable humanoids are cited for each.
+
+- [ ] Get up from a fall, face up and face down (HoST, arXiv 2502.08378; arXiv 2502.12152). Phase 5's pass check; also a shoulder and hip torque check at Marvin Bot's mass
+- [ ] Expressive clips through `sim/motion/`: gestures first, then dances; needs the collision-aware arm retarget
+- [ ] A general motion tracker for whole-body teleoperation (SONIC, GR00T-WholeBodyControl; TWIST, HOMIE): one policy that follows any human pose from VR or motion capture, which is how GR00T demonstrations get recorded. Needs far more clips than the 61 samples (the full BONES-SEED set, gated) or SONIC adapted to Marvin Bot
+- [ ] Walk, squat and reach with any arm pose (HOMIE): the waist only turns, so reaching low means squatting
+- [ ] Stairs from depth images: a student policy on simulated depth with camera noise and holes, distilled from rough v9 (Hiking in the Wild, arXiv 2601.07718; PIM, arXiv 2411.14386)
+- [ ] Carry a box between both arms, sit on and stand up from a chair (PhysHSI, arXiv 2510.11072)
+- [ ] Walk to and kick a ball, with the camera's detection noise and latency modelled (RoboCup 2025 work on the Booster T1; PAiD, arXiv 2602.05310)
+- [ ] Manipulation rehearsal in Isaac Sim: teleoperated demonstrations, GR00T-Mimic to multiply them, Cosmos Transfer for photoreal variety, GR00T N1.7 fine-tuning. Cosmos (NVIDIA's world models and open datasets) belongs here, as a source of synthetic training video; the walking and tracking policies do not use camera images
+- Out of scope for this robot: parkour and tall jumps (past the 70%-of-peak torque rule), floor work such as crawling until the shells are in the collision model
+
+## Hands
+
+The 1-DOF gripper (one STS3250, about 0.17 kg each with the servo) pinches; it cannot tilt the hand, since the wrist only turns. In order of cost:
+
+1. Gripper upgrades, a few dollars each: compliant TPU fingers (Fin Ray type) or pads, a linkage that keeps the jaws parallel, and grip force from the servo's load reading.
+2. A wrist pitch joint (one more STS3250 servo, about 75 g a side): the largest gain in reach and grasp angle for its cost; changes the arm CAD and the joint count.
+3. A swappable wrist flange, so an open servo-driven hand can replace the gripper later. Candidates (licence, published cost): an 8-servo four-finger hand on Feetech serial servos with an MJCF model (CC-BY-4.0, about €130-290, 0.40 kg); a 7-servo tendon hand (CC-BY-NC-SA, non-commercial, about $316); an 11-DOF tendon hand (MJCF, about $520-1300, licence for the printed parts not stated). Larger 16-17 DOF research hands (about $1.8-4k) are too big and heavy for a 1.29 m robot. A 0.40 kg hand adds about 0.46 kg to the robot, past the 40 kg limit with the shells.
+
 ## Open items to verify before ordering
 
 1. RobStride direct quote, lead time and current import tariffs; compare with Seeed Studio (list price, ~5% off at 10+ of one model) and confirm Seeed's live prices.
@@ -72,3 +94,4 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
 11. Knee and hip-roll heating on slow stairs (knee 115% of rated in the static check at 39.55 kg): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
+12. Hand choice: wrist pitch servo or not, and whether a chosen hand's licence, servo voltage (the servo bus is 12 V; small hand servos run at 5-6 V) and mass fit.
