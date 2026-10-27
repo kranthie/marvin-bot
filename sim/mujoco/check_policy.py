@@ -7,8 +7,9 @@ policy's control rate through a command script. Fails if the robot falls, if it 
 walk, turn and stop commands, if it slides its feet instead of stepping, or if any joint's RMS
 torque over a segment exceeds its continuous rating (the steady-state heating, from
 description/actuators.yaml). Prints the step rate,
-the peak torque, the posture (pelvis height above the floor, knee bend) and the left/right gait
-(swing, stance, step length, foot lift) per segment.
+the peak torque, the posture (pelvis height above the floor, knee bend), the left/right gait
+(swing, stance, step length, foot lift) and the side-to-side sway (pelvis sway and roll, torso
+roll, step width) per segment.
 
 Sensor noise at half the training level is added to the observations (--noise, --seed).
 --fast V adds a walk at V m/s before the stop. --stairs H replaces the script with a walk at
@@ -285,6 +286,7 @@ def main() -> None:
         return np.concatenate(obs)[None, :]
 
     world = {g for g in range(model.ngeom) if model.geom_bodyid[g] == 0}  # floor and stairs
+    torso = model.body("torso_link").id
     feet = [
         next(
             g
@@ -342,6 +344,9 @@ def main() -> None:
         pitch_swing, pitch_land = [[], []], [[], []]
         top = [0.0, 0.0]
         posture = []  # pelvis height above the floor under it, mean knee bend (deg)
+        # side-to-side motion: pelvis position across the heading, pelvis and torso roll (deg),
+        # and each foot's position across the heading at touchdown (step width)
+        sway, land_y = [], [[], []]
         knees = [i for i, n in enumerate(names) if n.endswith("_knee")]
         for k in range(steps):
             last_action = session.run(None, {in_name: observe(cmd, k)})[0][0]
@@ -378,6 +383,7 @@ def main() -> None:
                     touchdowns += 1
                     if k >= steps // 2:
                         pitch_land[i].append(pitch)
+                        land_y[i].append(float(np.array([-heading[1], heading[0]]) @ pos[:2]))
                     if k >= steps // 2 and lift[i] is not None:
                         swing[i].append(air[i] * meta["control_dt"])
                         length[i].append(float(heading @ (pos[:2] - lift[i][:2])))
@@ -403,6 +409,15 @@ def main() -> None:
                 q = data.qpos[qadr]
                 posture.append(
                     [data.qpos[2] - floor_at(data.qpos[0]), np.degrees(np.mean(np.abs(q[knees])))]
+                )
+                side = np.array([-heading[1], heading[0]])
+                trot = data.xmat[torso].reshape(3, 3)
+                sway.append(
+                    [
+                        side @ data.qpos[:2],
+                        np.degrees(np.arcsin(np.clip(rot[2, 1], -1, 1))),
+                        np.degrees(np.arcsin(np.clip(trot[2, 1], -1, 1))),
+                    ]
                 )
             if renderer is not None and k % 2 == 0:
                 cam.lookat[:] = [data.qpos[0], data.qpos[1], data.qpos[2] - 0.1]
@@ -464,6 +479,25 @@ def main() -> None:
                 f"step {lr(length, 'cm', 100)}, lift {lr(height, 'cm', 100)}, "
                 f"stance tilt {lr(tilt, 'deg', 1)}"
             )
+            if cmd[2] == 0:  # straight walks only: on a curve the pelvis drifts sideways
+                # sway: pelvis across the heading with the straight-line drift taken out, as the
+                # mean peak-to-peak over each 1 s window; roll the same way
+                sw_a = np.array(sway)
+                t = np.arange(len(sw_a))
+                sw_a[:, 0] -= np.polyval(np.polyfit(t, sw_a[:, 0], 1), t)
+                win = max(1, round(1.0 / meta["control_dt"]))
+                pp = [
+                    np.mean(
+                        [np.ptp(sw_a[j : j + win, c]) for j in range(0, len(sw_a) - win + 1, win)]
+                    )
+                    for c in range(3)
+                ]
+                width = abs(np.mean(land_y[0]) - np.mean(land_y[1])) if all(land_y) else np.nan
+                print(
+                    f"{'':14} sway (peak-to-peak): pelvis side to side {pp[0] * 100:.1f} cm, "
+                    f"pelvis roll {pp[1]:.1f} deg, torso roll {pp[2]:.1f} deg, "
+                    f"step width {width * 100:.1f} cm"
+                )
             sw = [np.abs(p).max() if p else float("nan") for p in pitch_swing]
             ld = [np.mean(p) if p else float("nan") for p in pitch_land]
             print(
