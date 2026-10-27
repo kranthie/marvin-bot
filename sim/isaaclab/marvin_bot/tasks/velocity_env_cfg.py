@@ -1,5 +1,5 @@
-"""Velocity-tracking walking tasks for Marvin Bot's legs, after Isaac Lab's G1 velocity tasks
-and an earlier prototype's tasks.
+"""Velocity-tracking walking tasks for Marvin Bot's legs, after Isaac Lab's G1 velocity
+tasks.
 
 MarvinBot-Velocity-Rough trains on stairs, slopes and rough ground (marvin_bot/tasks/terrains.py)
 with a terrain curriculum; MarvinBot-Velocity-Flat is the same task on a plane. Both widen the
@@ -154,7 +154,7 @@ class MarvinBotRewards(RewardsCfg):
         weight=-1.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_ankle_.*", ".*_knee"])},
     )
-    # gait shaping (an earlier prototype's first policy stepped at ~9 steps/s with knee torque at stall)
+    # gait shaping (a first policy in earlier experiments stepped at ~9 steps/s, knee at stall)
     joint_vel_legs = RewTerm(
         func=mdp.joint_vel_l2,
         weight=-1.0e-3,
@@ -165,7 +165,7 @@ class MarvinBotRewards(RewardsCfg):
         weight=-0.2,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINTS)},
     )
-    # gait symmetry and clearance (an earlier prototype's first walking policies limped and shuffled)
+    # gait symmetry and clearance (earlier walking policies limped and shuffled)
     feet_air_time_variance = RewTerm(
         func=mdp.feet_air_time_variance,
         weight=-1.0,
@@ -313,7 +313,7 @@ class MarvinBotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.flat_orientation_l2.weight = -1.0
         self.rewards.action_rate_l2.weight = -0.01
         self.rewards.joint_vel_legs.weight = -5.0e-4
-        # a sharp clearance reward (on an earlier prototype a loose one let the feet barely rise)
+        # a sharp clearance reward (in earlier experiments a loose one let the feet barely rise)
         self.rewards.foot_clearance.params["std"] = 1.0e-4
         # make standing still in front of stairs a poor answer to a walk command: linear progress
         # reward plus a tracking width that still pays partial speed (at std 0.15 rough v3
@@ -336,7 +336,7 @@ class MarvinBotRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
             "contact_forces", body_names=[".*_thigh_link", ".*_shin_link"]
         )
         # terminations: a fall is a tilted or low pelvis. Not body contact: with self-collision on,
-        # the arms and thighs touch the torso and pelvis (it collapsed an earlier prototype's training)
+        # the arms and thighs touch the torso and pelvis (it collapsed training earlier)
         self.terminations.base_contact = None
         self.terminations.bad_orientation = DoneTerm(
             func=mdp.bad_orientation, params={"limit_angle": 1.0}
@@ -400,7 +400,7 @@ class MarvinBotFlatEnvCfg(MarvinBotRoughEnvCfg):
         self.observations.policy.height_scan = None
         self.commands.base_velocity.resampling_time_range = (4.0, 8.0)
         self.rewards.lin_vel_z_l2.weight = -0.2
-        # flat ground: strong smoothness penalties (an earlier prototype's v7 gait). Action scale 0.5
+        # flat ground: strong smoothness penalties (as in earlier experiments). Action scale 0.5
         # as on rough ground: at 0.25 the 37 kg robot never found a stepping gait
         self.actions.joint_pos.scale = 0.5
         self.rewards.action_rate_l2.weight = -0.05

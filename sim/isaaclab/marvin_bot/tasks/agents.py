@@ -43,7 +43,7 @@ class MarvinBotFlatPPORunnerCfg(RslRlOnPolicyRunnerCfg):
         lam=0.95,
         desired_kl=0.01,
         max_grad_norm=1.0,
-        # left-right mirror augmentation: an earlier prototype's policies trained without it limped
+        # left-right mirror augmentation: policies trained without it limped in earlier experiments
         symmetry_cfg=RslRlSymmetryCfg(
             use_data_augmentation=True, data_augmentation_func=compute_symmetric_states
         ),

@@ -1,6 +1,6 @@
 # Isaac Lab
 
-Marvin Bot's Isaac Lab 3.0 package: the articulation config (`marvin_bot/robot_cfg.py`), the walking tasks, and scripts to convert the URDF, check the robot and export policies. It is ported from an earlier prototype's package. Isaac Lab runs on an RTX desktop GPU or a cloud instance, not on the Jetson.
+Marvin Bot's Isaac Lab 3.0 package: the articulation config (`marvin_bot/robot_cfg.py`), the walking tasks, and scripts to convert the URDF, check the robot and export policies. Isaac Lab runs on an RTX desktop GPU or a cloud instance, not on the Jetson.
 
 | File | What it does |
 | --- | --- |
@@ -46,7 +46,7 @@ The standing check uses the stiff holding gains of `sim/mujoco/check_standing.py
 
 ## Walking tasks
 
-Both follow the decoupled whole-body-control split (GR00T-WholeBodyControl), as on an earlier prototype:
+Both follow the decoupled whole-body-control split (GR00T-WholeBodyControl):
 
 - **Actions:** the policy drives the 12 leg joints (position targets around the default stance, 50 Hz).
 - **Upper body:** the waist and arm targets jump to random poses within half their range every 1–3 s, so the legs learn to balance while the upper body moves.
@@ -58,7 +58,7 @@ Both follow the decoupled whole-body-control split (GR00T-WholeBodyControl), as 
 - **Posture:** a penalty on the pelvis sitting more than 2 cm below its stance height above the lower foot (so it holds on stairs), on the leg joints' distance from the stance pose while commanded to stand, and on foot tilt, in contact and in swing.
 - **No waddle:** a penalty on pelvis roll, on step width beyond 16 ± 2 cm while walking, and on hip yaw, hip roll and ankle roll away from the stance; the air-time reward is small (0.5), since a large one paid for long single-support phases, which the robot spent tipping over the standing foot.
 - **Delays:** each robot gets a random lag of 0-20 ms on the IMU and joint observations and 0-10 ms on its motor commands. The delayed motor model runs in Isaac Lab's Python actuator path (`use_newton_actuators = False`), as Newton's own actuators take only the stock motor configs: about 2.5x slower per iteration.
-- **Gait shaping, falls, symmetry, randomization:** as an earlier prototype's tasks, scaled: 8 cm swing clearance, fall below 0.35 m pelvis height or past 1 rad of tilt, left-right mirror augmentation (rule checked by `sim/mujoco/check_symmetry.py`), pushes up to 0.5 m/s, torso mass ±15% and CoM ±3 cm.
+- **Gait shaping, falls, symmetry, randomization:** scaled to this robot: 8 cm swing clearance, fall below 0.35 m pelvis height or past 1 rad of tilt, left-right mirror augmentation (rule checked by `sim/mujoco/check_symmetry.py`), pushes up to 0.5 m/s, torso mass ±15% and CoM ±3 cm.
 
 ```bash
 uv run --no-sync isaaclab train --rl_library rsl_rl --task MarvinBot-Velocity-Flat --num_envs 4096 --max_iterations 2000

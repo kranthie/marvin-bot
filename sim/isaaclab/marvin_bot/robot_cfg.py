@@ -205,7 +205,7 @@ MARVIN_BOT_CFG = ArticulationCfg(
         activate_contact_sensors=True,
         rigid_props=PhysxRigidBodyCfg(max_depenetration_velocity=1.0),
         articulation_props=[
-            # self-collision on: with it off, an earlier prototype's policies learned to pass their
+            # self-collision on: with it off, policies in earlier experiments learned to pass their
             # legs through each other when turning
             PhysxArticulationCfg(
                 enabled_self_collisions=True,
