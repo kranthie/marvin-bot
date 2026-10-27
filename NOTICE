@@ -1,0 +1,31 @@
+Marvin Bot
+Copyright 2026 The Marvin Bot contributors
+https://github.com/kranthie/marvin-bot
+
+Licences by path are listed in README.md ("Licences"). In short: hardware design sources
+(cad/, description/ except third_party/, electrical/, bom/, docs/design/*.svg) are under
+CERN-OHL-S-2.0 (LICENSES/CERN-OHL-S-2.0.txt); everything else is under Apache-2.0 (LICENSE).
+
+Hardware (CERN-OHL-S-2.0): this source describes Open Hardware. You may redistribute and modify
+it and make products using it under the terms of the CERN-OHL-S v2. It is distributed WITHOUT
+ANY EXPRESS OR IMPLIED WARRANTY, INCLUDING OF MERCHANTABILITY, SATISFACTORY QUALITY AND FITNESS
+FOR A PARTICULAR PURPOSE; see the CERN-OHL-S v2 for applicable conditions.
+Source location: https://github.com/kranthie/marvin-bot
+As per CERN-OHL-S v2 section 4, should you produce hardware based on this source, you must
+where practicable maintain the Source Location visible on the external case of the product or
+in its documentation.
+
+Third-party material in this repository:
+
+- description/third_party/amazing_hand/: meshes derived from the AmazingHand by Pollen
+  Robotics (https://github.com/pollen-robotics/AmazingHand), CC-BY-4.0 (mechanical design)
+  and Apache-2.0 (MuJoCo models); see the README and LICENSE in that folder. The hands are
+  bought kits, used as components.
+- sim/isaaclab/ (files marked in their headers): portions adapted from Isaac Lab
+  (https://github.com/isaac-sim/IsaacLab), Copyright (c) 2022-2026, The Isaac Lab Project
+  Developers, BSD-3-Clause (LICENSES/BSD-3-Clause-IsaacLab.txt).
+- CODE_OF_CONDUCT.md: the Contributor Covenant 2.1 (https://www.contributor-covenant.org),
+  CC-BY-4.0.
+
+Not included: vendor CAD (fetched locally by tools/fetch_vendor_cad.py) and motion data (the
+motion pipeline uses data the user obtains under its own licence; see sim/motion/README.md).

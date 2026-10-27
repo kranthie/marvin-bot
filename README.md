@@ -110,10 +110,16 @@ CI runs the same checks on every push.
 
 ## Licences
 
-- Software and documentation: [Apache-2.0](LICENSE)
-- Hardware designs (CAD, drawings, electronics): [CERN-OHL-S-2.0](LICENSES/CERN-OHL-S-2.0.txt)
+Copyright 2026 The Marvin Bot contributors.
 
-Third-party files keep their own licences: the AmazingHand meshes in [description/third_party/](description/third_party/amazing_hand/README.md) are CC-BY-4.0 (Pollen Robotics). Vendor CAD models are not redistributed here; see [CONTRIBUTING.md](CONTRIBUTING.md). Credits for the projects and products this design learns from are in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
+| Path | Licence |
+|---|---|
+| `cad/` (part generators), `description/` (robot description, URDFs, meshes), `electrical/`, `bom/`, `docs/design/*.svg` | [CERN-OHL-S-2.0](LICENSES/CERN-OHL-S-2.0.txt) (hardware) |
+| Everything else: `tools/`, `sim/`, `robot/`, `bench/`, `tests/`, the documentation and media | [Apache-2.0](LICENSE) |
+| `description/third_party/amazing_hand/` | CC-BY-4.0 and Apache-2.0, © Pollen Robotics ([details](description/third_party/amazing_hand/README.md)) |
+| Portions of `sim/isaaclab/` marked in their headers | also BSD-3-Clause, © The Isaac Lab Project Developers ([text](LICENSES/BSD-3-Clause-IsaacLab.txt)) |
+
+[NOTICE](NOTICE) lists the third-party material and the hardware licence's source location. Vendor CAD models and motion data are not redistributed here; see [CONTRIBUTING.md](CONTRIBUTING.md). Credits for the projects and products this design learns from are in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md). Everything is provided as is, without warranty, as these licences state.
 
 ## Safety
 

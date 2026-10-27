@@ -1,9 +1,13 @@
 # AmazingHand meshes
 
 `left_hand.stl` and `right_hand.stl` are derived from the **AmazingHand** by **Pollen Robotics**
-(https://github.com/pollen-robotics/AmazingHand), © Pollen Robotics. They are licensed under the
-[Creative Commons Attribution 4.0 International licence (CC-BY-4.0)](https://creativecommons.org/licenses/by/4.0/),
-like the original mechanical design; they are not covered by this repository's own licences.
+(https://github.com/pollen-robotics/AmazingHand), © Pollen Robotics: the palm and top shells
+from its mechanical design files (`cad/stl`, licensed
+[CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)) and the other parts from its MuJoCo
+models (`Demo/AHSimulation`, in a folder licensed [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0)).
+The meshes are distributed under CC-BY-4.0 and, for the parts from `Demo/`, also under
+Apache-2.0 (see `LICENSE` in this folder). They are not covered by this repository's own
+licences, and are provided as is, without warranties, as both licences state.
 
 Changes from the original: the parts of each hand were placed at their assembled pose (from the
 project's MuJoCo models, with the palm and top shells from its `cad/stl` files), the fasteners,
