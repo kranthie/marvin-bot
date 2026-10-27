@@ -8,9 +8,9 @@ Marvin Bot is designed from scratch, but it learns from many open projects, publ
 - **Roboto Origin** by RoboParty: https://github.com/Roboparty/roboto_origin (hardware and robot description CERN-OHL-W-2.0, training code BSD-3-Clause, onboard software GPL-3.0). An open 1.25 m, 34 kg, 23-DOF humanoid; reference for an all-machined structure, two-motor ankles with a parallel linkage, an off-the-shelf 48 V pack, a published BOM and per-joint actuator gains for Isaac Lab. Used for ideas and reference figures only.
 - **Berkeley Humanoid Lite** (UC Berkeley Hybrid Robotics): https://github.com/HybridRobotics/Berkeley-Humanoid-Lite and arXiv:2504.17249. Lessons on low-cost actuation, printed structures that route load through metal fasteners, and sim-to-real training.
 - **ToddlerBot** (Stanford University): https://github.com/hshi74/toddlerbot. Lessons on zero-point calibration and data collection for a low-cost open humanoid.
-- **K-Scale Labs** (K-Bot): https://github.com/kscalelabs. Reference for an all-Robstride humanoid and open actuator drivers.
-- **Unitree Robotics**: published specifications of the G1 and R1 (https://www.unitree.com) used as size, mass and joint-range benchmarks; the cost-driven design idea of actuator housings carrying structural load.
-- **Booster Robotics**: published specifications of the K1 (https://www.booster.tech) and its design language, where structural limb shells and exposed actuator caps make the robot look finished without a separate cover.
+- **K-Scale Labs** (K-Bot): https://github.com/kscalelabs (hardware CERN-OHL-S, software GPL-3.0). Reference for an all-Robstride humanoid and for open actuator drivers. Ideas only: Marvin Bot's Robstride driver is written from RobStride's manuals, and no K-Scale code or CAD is used.
+- **Unitree Robotics**: published specifications of the G1 and R1 (https://www.unitree.com) used as size, mass and joint-range benchmarks; the cost-driven design idea of actuator housings carrying structural load. The G1 also appears through open-source tools that support it (Isaac Lab's and mjlab's G1 tasks, ProtoMotions' G1 retargeter). No Unitree CAD, images, logos or code are used.
+- **Booster Robotics**: published specifications of the K1 (https://www.booster.tech) as a size benchmark, and its robots as an example of the general idea that structural limb shells and exposed actuator caps can make a robot look finished without a separate cover. No Booster CAD, images, logos or code are used.
 
 ## Software and models
 
