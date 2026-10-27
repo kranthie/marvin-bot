@@ -326,7 +326,9 @@ def main() -> None:
         return float(np.clip(min(up, down), 0, n) * args.stairs)
 
     failures, fell = [], False
-    z0, top_gain = data.qpos[2], 0.0
+    # stair rise is measured from the pelvis's walking height on the flat approach (from its
+    # standing height it would count the dip of walking against the climb)
+    approach, top_z, z_start = [], 0.0, data.qpos[2]
     for name, seconds, cmd in script:
         cmd = np.array(cmd, dtype=np.float32)
         steps = round(seconds / meta["control_dt"])
@@ -336,6 +338,8 @@ def main() -> None:
         # per-foot gait: swing and stance times, step length along the heading, swing height
         ground, lift = [0, 0], [None, None]
         swing, stance, length, height, tilt = ([[], []] for _ in range(5))
+        # sole pitch (deg, toe down +): through swing, and at each touchdown
+        pitch_swing, pitch_land = [[], []], [[], []]
         top = [0.0, 0.0]
         posture = []  # pelvis height above the floor under it, mean knee bend (deg)
         knees = [i for i, n in enumerate(names) if n.endswith("_knee")]
@@ -356,7 +360,9 @@ def main() -> None:
             load.append(np.abs(data.ctrl[aid]) / effort)
             # a step is a touchdown after at least AIR_MIN in the air (ignores contact flicker)
             rot = data.xmat[model.body("pelvis").id].reshape(3, 3)
-            top_gain = max(top_gain, data.qpos[2] - z0)
+            top_z = max(top_z, data.qpos[2])
+            if name == "stairs" and data.qpos[0] < STAIRS["start"] - 0.3:
+                approach.append(data.qpos[2])
             heading = rot[:2, 0] / np.linalg.norm(rot[:2, 0])
             for i, d in enumerate(feet_down()):
                 pos = data.geom_xpos[feet[i]].copy()
@@ -365,8 +371,13 @@ def main() -> None:
                 pos[2] -= np.abs(frame[2]) @ model.geom_size[feet[i]] + floor_at(pos[0])
                 if d and k >= steps // 2:  # foot tilt in stance: sole normal vs vertical
                     tilt[i].append(np.degrees(np.arccos(min(1.0, frame[2, 2]))))
+                pitch = np.degrees(np.arcsin(np.clip(-frame[2, 0], -1, 1)))
+                if not d and k >= steps // 2:
+                    pitch_swing[i].append(pitch)
                 if d and air[i] * meta["control_dt"] >= AIR_MIN:
                     touchdowns += 1
+                    if k >= steps // 2:
+                        pitch_land[i].append(pitch)
                     if k >= steps // 2 and lift[i] is not None:
                         swing[i].append(air[i] * meta["control_dt"])
                         length[i].append(float(heading @ (pos[:2] - lift[i][:2])))
@@ -453,10 +464,17 @@ def main() -> None:
                 f"step {lr(length, 'cm', 100)}, lift {lr(height, 'cm', 100)}, "
                 f"stance tilt {lr(tilt, 'deg', 1)}"
             )
+            sw = [np.abs(p).max() if p else float("nan") for p in pitch_swing]
+            ld = [np.mean(p) if p else float("nan") for p in pitch_land]
+            print(
+                f"{'':14} feet (toe down +): swing pitch up to L {sw[0]:.0f} R {sw[1]:.0f} deg, "
+                f"at touchdown L {ld[0]:+.0f} R {ld[1]:+.0f} deg"
+            )
         if cmd[0] > 0 and rate < 1.0:
             failures.append(f"'{name}': {rate:.1f} steps/s, the feet are sliding, not stepping")
         if name == "stairs":
             end = STAIRS["start"] + 2 * STAIRS["steps"] * STAIRS["tread"] + STAIRS["platform"]
+            top_gain = top_z - (np.mean(approach) if approach else z_start)
             climbed = top_gain >= 0.9 * STAIRS["steps"] * args.stairs
             print(
                 f"{'':14} stairs: pelvis rose {top_gain * 100:.1f} cm of "

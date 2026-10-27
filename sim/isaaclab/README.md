@@ -36,10 +36,10 @@ Results (2026-10-26, RTX PRO 6000 Blackwell):
 
 | Check | Newton (MuJoCo-Warp) | PhysX |
 | --- | --- | --- |
-| Total mass | 37.322 kg | 37.322 kg |
+| Total mass | 39.132 kg | 37.322 kg (earlier model, not rerun) |
 | Joint order, ranges, effort and velocity limits vs the description files | match | match |
-| Link positions vs MuJoCo FK, 8 random poses | worst 0.24 mm | worst 0.17 mm |
-| Default stance, 5 s, holding gains | holds, pelvis 0.634 m, tilt 1.3°, worst joint 9% of peak | holds, 0.634 m, 1.2°, 9% |
+| Link positions vs MuJoCo FK, 8 random poses | worst 0.25 mm | worst 0.17 mm |
+| Default stance (knee 15°), 5 s, holding gains | holds, pelvis 0.644 m, tilt 0.0°, worst joint 4% of peak | knee 25° stance (not rerun): 0.634 m, 1.2°, 9% |
 
 The standing check uses the stiff holding gains of `sim/mujoco/check_standing.py`. With the training gains (ankle kp 40) the robot falls without a policy, as expected: the two ankles' stiffness is below m·g·h, and the policy balances actively.
 
@@ -79,5 +79,7 @@ python sim/mujoco/check_policy.py <run>/exported --stairs 0.15    # rough-ground
 | rough v6 (2026-10-26, same model as flat v4, 6000 iterations) | survives 97.3%; terrain level 6.0 of 10 (as v5) | passes flat ground and **15 cm stairs** up and down (pelvis +70.8 of 75 cm). Crosses 5 and 10 cm stairs but the pelvis rise (18.5 of 25, 43.5 of 50 cm) is under the check's 90% mark; falls on the way down 18 cm stairs and on the way up 20 cm. Knees at 73-81% of rated (RMS), hotter than v5. Weaker than v5 was on its own model (10-20 cm); rough v5 run on the current model climbs 10 and 15 cm, falls on 18 cm. Next: retrain from v6 with more 16-20 cm stair tiles and a knee heat penalty |
 | flat v5 (2026-10-26, from flat v4 + 1000 iterations with the posture terms) | survives 99.8% | **passes**; stands in the stance pose (pelvis 63.7 cm, knees 24°; v4 stood at 18°), walks at 61.4 cm as v4; fast walk 0.87 for 1.0 m/s (v4 1.02), 93 cm steps; hottest joint ankle pitch 64% of rated |
 | **rough v7** (2026-10-26, from rough v6 + 3000 iterations: pelvis-height and stand-pose terms, heat penalty x2, steep 14-20 cm stairs on a tenth of the tiles on every row) | survives 97.7%; terrain level 5.9 of 10 | **passes flat ground and 5, 10, 15, 18 and 20 cm stairs** up and down (pelvis rise 23.0/25, 48.0/50, 72.9/75, 87.7/90, 97.8/100 cm). Upright: stands at 63.6 cm with the knees at 24° (v6: 44 cm, 95°); on stairs the pelvis averages 60.5 cm and the knees 53° (v6: 55.8 cm, 67°). Knees at 19% of rated standing (v6 crouched); hottest joint on stairs ankle pitch 64-67% of rated (RMS), knees 73-81% on v6 |
+| flat v6 (2026-10-26, from flat v5 + 1000 iterations: knee 15° stance, swing foot-level term) | survives 99.9% | **passes**; stands at 64.5 cm with the knees at 13° (stance 64.5, 15°); walks at 62.6 cm (v5 61.4); feet swing at most 11-16° toe down (v5 29-31°, the tilted heels), land 5-9° heel first; 1.7 steps/s, 62 cm steps; fast walk 0.88 for 1.0 m/s |
+| **rough v8** (2026-10-26, from rough v7 + 2000 iterations: knee 15° stance, swing foot-level term) | survives 98.9%; terrain level 6.0 of 10 | **passes flat ground and 5, 10, 15, 18 and 20 cm stairs** up and down (rise measured from the walking height: 25.1/25, 50.1/50, 75.3/75, 90.8/90, 100.2/100 cm). Stands in the stance pose (64.5 cm, 15°); walks and climbs at 60.7 cm, still 3.8 cm under stance, at the edge of the pelvis-height term's 4 cm allowance. Feet swing at most 14-16° toe down (v7 27-29°). Hottest joint on stairs ankle pitch ~60% of rated (RMS). Flat v6 and rough v8 trained on a USD converted before the last CAD changes (38.78 kg, 0.35 kg light); the MuJoCo checks run the current 39.13 kg model, and the USD is now reconverted |
 
 Policies are cross-checked against the current URDF, so rough v2 also coped with the CAD leg masses (0.66 kg heavier) it was not trained on.

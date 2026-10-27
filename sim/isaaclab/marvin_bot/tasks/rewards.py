@@ -63,6 +63,21 @@ def feet_flat(env, sensor_cfg: SceneEntityCfg, asset_cfg: SceneEntityCfg) -> tor
     return torch.sum(tilt * (contact > 0.0), dim=1)
 
 
+def swing_feet_level(env, sensor_cfg: SceneEntityCfg, asset_cfg: SceneEntityCfg) -> torch.Tensor:
+    """Penalize tilted feet in swing: the squared sine of each airborne sole's tilt, summed.
+
+    ``feet_flat``'s counterpart for the swing. With only the stance term, the policies swung
+    their feet toe down by up to 30 degrees (heel high), which reads as a tilted heel and puts
+    the toe first at a stair edge.
+    """
+    air = env.scene[sensor_cfg.name].data.current_air_time.torch[:, sensor_cfg.body_ids]
+    quat = env.scene[asset_cfg.name].data.body_quat_w.torch[:, asset_cfg.body_ids]
+    down = torch.tensor([0.0, 0.0, -1.0], device=quat.device).expand(quat.shape[:-1] + (3,))
+    g = quat_apply_inverse(quat.reshape(-1, 4), down.reshape(-1, 3)).reshape(down.shape)
+    tilt = torch.sum(torch.square(g[..., :2]), dim=-1)
+    return torch.sum(tilt * (air > 0.0), dim=1)
+
+
 _heat: dict[int, torch.Tensor] = {}
 _rated: dict[int, torch.Tensor] = {}
 

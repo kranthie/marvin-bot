@@ -51,6 +51,7 @@ from .rewards import (
     pelvis_height,
     stand_pose,
     sustained_torque,
+    swing_feet_level,
 )
 from .terminations import base_below_ground
 from .terrains import MARVIN_BOT_ROUGH_TERRAINS_CFG
@@ -176,6 +177,14 @@ class MarvinBotRewards(RewardsCfg):
     )
     feet_flat = RewTerm(
         func=feet_flat,
+        weight=-2.0,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET),
+            "asset_cfg": SceneEntityCfg("robot", body_names=FEET),
+        },
+    )
+    swing_feet_level = RewTerm(
+        func=swing_feet_level,
         weight=-2.0,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FEET),
