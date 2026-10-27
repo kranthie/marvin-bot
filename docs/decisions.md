@@ -217,4 +217,4 @@ See [plan.md](plan.md). Parts are bought per phase; only two actuators are bough
 
 ## 2026-10-25: from scratch, with open designs as references
 
-Marvin Bot is a new design. Asimov v1 (Menlo Research) is the main reference for layout and sizing and is used for ideas only, never its CAD. Other references are listed in `ACKNOWLEDGMENTS.md`.
+Marvin Bot is a new design. Asimov v1 is the main reference for layout and sizing and is used for ideas only, never its CAD. Other references are listed in `ACKNOWLEDGMENTS.md`.

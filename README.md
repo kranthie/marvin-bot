@@ -4,6 +4,16 @@ An open humanoid robot, about 1.29 m tall and 40 kg, with 27 powered joints and 
 
 **Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo; a motion-tracking pipeline (human motion to robot skills) is being brought up. See [docs/roadmap.md](docs/roadmap.md).
 
+> [!WARNING]
+> **Work in progress, not yet built or tested on hardware.** The designs, policies and scripts
+> here are shared for reference, research and learning. They have only run in simulation; the
+> motor driver and bench scripts are untested. A robot of this size (about 40 kg, 48 V,
+> joints up to 120 N·m) can cause serious injury, fire or damage if built or run wrongly. Build
+> or power any part of it only if you are experienced with high-power robotics and batteries,
+> follow [docs/safety.md](docs/safety.md), and at your own risk: everything is provided as is,
+> without warranty, under the licences below. Report safety issues privately
+> ([SECURITY.md](SECURITY.md)).
+
 ![Marvin Bot, bare structure and with its clip-on covers (MuJoCo render of the generated model)](docs/media/robot.webp)
 
 ## In simulation
@@ -23,6 +33,17 @@ Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor n
 - Be fully open: CAD, electronics, firmware, simulation and training code.
 
 The full list is in [docs/requirements.md](docs/requirements.md).
+
+## Built on
+
+Marvin Bot is a new design, but it stands on open work by others:
+
+- **Layout and sizing:** the open humanoids [Asimov 1](https://github.com/menloresearch/asimov-1) and [Roboto Origin](https://github.com/Roboparty/roboto_origin) (ideas and reference figures only), with lessons on low-cost building from [Berkeley Humanoid Lite](https://github.com/HybridRobotics/Berkeley-Humanoid-Lite) and [ToddlerBot](https://github.com/hshi74/toddlerbot).
+- **Hands:** the [AmazingHand](https://github.com/pollen-robotics/AmazingHand) by Pollen Robotics (CC-BY-4.0), bought as kits; its meshes are in `description/third_party/`.
+- **Training and simulation:** NVIDIA [Isaac Lab](https://github.com/isaac-sim/IsaacLab) and Newton, [ProtoMotions](https://github.com/NVlabs/ProtoMotions) with [PyRoki](https://github.com/chungmin99/pyroki) for motion tracking, [MuJoCo](https://github.com/google-deepmind/mujoco) for the cross-checks, and [GR00T](https://github.com/NVIDIA/Isaac-GR00T) planned for manipulation.
+- **Actuators:** [RobStride](https://github.com/RobStride/Product_Information)'s published manuals and specifications.
+
+Every source, with its licence and what was used from it, is in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
 
 ## Design at a glance
 
@@ -91,4 +112,8 @@ Third-party files keep their own licences: the AmazingHand meshes in [descriptio
 
 ## Safety
 
-A 40 kg robot on a 48 V battery can injure people. Read [docs/safety.md](docs/safety.md) before powering any actuator.
+A 40 kg robot on a 48 V battery can injure people. Read [docs/safety.md](docs/safety.md) before powering any actuator. Report safety or security issues privately, as described in [SECURITY.md](SECURITY.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Everyone taking part is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
