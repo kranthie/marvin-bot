@@ -1,6 +1,6 @@
 # Assembly, wiring and covers
 
-How the robot comes apart, how the wiring runs, and what the optional covers add. Status as of 2026-10-26: first-pass CAD of every structural part (`cad/`), the electronics bay, battery cradle and limb-root bulkheads at their parts' outlines (`cad/electrical.py`), a generated harness (`tools/build_harness.py` → `electrical/harness.yaml`), and the covers as an add-on (`cad/covers.py`). Fastener holes are in the mounts; clip bosses and the bought parts' datasheet outlines are still to come.
+How the robot comes apart, how the wiring runs, and what the optional covers add. Status as of 2026-10-27: first-pass CAD of every structural part (`cad/`), the electronics bay, battery cradle and limb-root bulkheads at their parts' outlines (`cad/electrical.py`), a generated harness (`tools/build_harness.py` → `electrical/harness.yaml`), and the covers as an add-on (`cad/covers.py`). Fastener holes are in the mounts; clip bosses and the bought parts' datasheet outlines are still to come.
 
 ## Modules
 
@@ -11,7 +11,7 @@ The robot is built from seven modules that are assembled and tested on their own
 | Torso core | torso frame, chest shell, Orin, electronics bay, battery cradle, shoulder pitch and neck yaw motors | waist RS03 output flange (bolted) | trunk harness: power plus 5 CAN pairs |
 | Pelvis | back plate, top plate and gussets, waist RS03, hip roll RS04s, pelvis power board, 12 V servo DC-DC, IMU | waist flange; leg flanges | leg bulkheads |
 | Leg (×2) | roll bracket to foot: 5 actuators (hip pitch, yaw, knee, two ankle), linkage, foot | hip roll RS04 output flange and the far-side bearing behind it | 1 power, 1 signal, at the leg bulkhead |
-| Arm (×2) | shoulder bracket to hand: 5 actuators, wrist pitch servo, hand | shoulder pitch RS03 output flange | 1 power, 1 signal, at the arm bulkhead |
+| Arm (×2) | shoulder bracket to hand: 4 actuators (shoulder roll, yaw, elbow, wrist yaw), wrist pitch servo, hand | shoulder pitch RS03 output flange | 1 power, 1 signal, at the arm bulkhead |
 | Head | neck bracket, pitch servo, frame, shell, visor, camera | neck yaw servo horn | servo bus, camera USB-C |
 | Battery | 13S pack with BMS | slides into the cradle from the back | blind-mate power and BMS connector |
 | Body shells | clip-on shells (optional) | clips on the parts below | none |
@@ -62,7 +62,8 @@ flowchart LR
   PPDB -->|40 A| RLEG[right leg harness]
   PPDB --> WAIST[waist RS03]
   ORIN[Orin] -->|USB-CAN / on-board CAN| BUSES[6 CAN buses + BMS bus]
-  ORIN -->|USB serial| SERVO[Feetech bus: neck, wrist pitch]
+  ORIN -->|USB serial| SERVO[Feetech STS bus: neck, wrist pitch]
+  ORIN -->|USB serial x2| HANDS[Feetech SCS bus per hand, 5 V from a wrist DC-DC]
   ORIN -->|USB-C| CAM[depth camera]
 ```
 
@@ -110,7 +111,7 @@ How they are made and checked:
 - `python -m cad.covers --check` (run in CI) moves every joint to both ends and to half of each end of its range, plus combined poses (deep squat, knee up, arm up, hand to chest, looking down while turned), and fails if any shell touches a part or shell of another link. Shells on one limb are not checked against the other limbs; limb-to-limb contact is the policy's job.
 - They clip on (clip and boss details come with the fastener pass), so they come off without tools, and they carry no load; they add some fall protection (R53).
 
-The shells weigh 0.83 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 39.86 kg with the hands) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (40.68 kg) adds the shells' mass and visuals, inside the 41 kg limit, which applies to the robot with them; a robot that runs with them should be trained on it.
+The shells weigh 0.83 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 39.86 kg with the hands) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (40.69 kg) adds the shells' mass and visuals, inside the 41 kg limit, which applies to the robot with them; a robot that runs with them should be trained on it.
 
 ## Still to do
 

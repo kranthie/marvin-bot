@@ -18,10 +18,10 @@ Sizing assumptions (first pass, to be replaced by bench measurements):
 - a motor's continuous DC current is its rated torque at half its no-load speed, at 80 %
   efficiency, from a 48 V bus; a branch carries half the sum of its motors' currents (they are
   never all at rated output together);
-- wire gauge from a conservative ampacity table for bundled silicone wire, but no finer than
-  16 AWG for actuator power (headroom for peak current, and the size the actuators' power
-  connectors take); the wrist pitch servo and the hand get a 12 V pair from the arm's DC-DC;
-  fuses at the next standard rating above 1.25 x the branch current;
+- wire gauge from a conservative ampacity table for bundled silicone wire, but no finer than 16 AWG
+  for actuator power (headroom for peak current, and the size the actuators' power connectors take);
+  the wrist pitch servo and the hand get a 12 V pair from the servo DC-DC in the pelvis; fuses at
+  the next standard rating above 1.25 x the branch current;
 - run length is the straight distance between motors in the default pose x 1.3, plus each
   crossed joint's service loop (range x 35 mm), plus 80 mm for termination.
 

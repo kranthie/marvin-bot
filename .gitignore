@@ -5,7 +5,7 @@ __pycache__/
 
 # Python packaging
 *.egg-info/
-build/
+/build/
 dist/
 .ruff_cache/
 

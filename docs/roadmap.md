@@ -50,7 +50,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Retrain the flat and stair policies on the current model (39.13 kg) and rerun the MuJoCo cross-checks (flat v7, rough v9)
 - [x] No side-to-side waddle (pelvis roll 20° to 6° peak to peak, head sway 16.5 to 7-8 cm); 0-20 ms sensor and 0-10 ms motor delays in training
 - [ ] Stair robustness: rough v9 falls in 2 of 15 runs on 15-20 cm stairs over five noise seeds
-- [ ] Motion tracking (`sim/motion/`): pipeline runs end to end; a tracker that follows walking clips, then a collision-free arm retarget and a MuJoCo replay
+- [ ] Motion tracking (`sim/motion/`): pipeline runs end to end; a tracker that follows walking clips, then a collision-free arm retarget and a MuJoCo replay. Trackers 1-4 did not walk (ProtoMotions' config leaves out BeyondMimic's global anchor-position reward, so standing still scored well); tracker 5 restores it
 - [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
 - [x] Battery cradle, blind-mate connector and electronics bay layout (`cad/electrical.py`)
 
@@ -96,5 +96,6 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 8. Desktop-CNC feeds and achievable accuracy in 6061 (coupon cuts).
 9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
-11. Knee and hip-roll heating on slow stairs (knee 115% of rated in the static check at 39.55 kg): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
-12. Hand: the kit's real mass, its wrist interface's bolt pattern, and serial bus timing with 8 servos per hand.
+11. Knee and hip-roll heating on slow stairs (knee 44 N·m, 109% of rated, and hip roll 103% in the static check at 39.86 kg): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
+12. Hand: weigh the kits, confirm the 6 × M3 on Ø42 wrist pattern on the real part, and measure serial bus timing with 8 servos per hand.
+13. CAN interfaces: robot.yaml has 7 CAN buses (4 leg, 2 arm, battery), but the BOM has 3 USB-CAN adapters plus the Orin's 2 on-board ports. Either the adapters are dual-channel or two more are needed; settle it with the CAN timing test (item 4).

@@ -8,12 +8,12 @@ requires-python = ">=3.10"
 dependencies = ["pyyaml>=6"]
 
 [project.optional-dependencies]
-dev = ["ruff", "pytest"]
+dev = ["ruff==0.17.3", "pytest"]  # ruff pinned: a new release can change formatting
 bench = ["python-can"]
 sketch = ["matplotlib>=3.8", "numpy"]
-sim = ["mujoco>=3.3", "numpy", "pillow", "onnxruntime"]
+sim = ["mujoco>=3.7", "numpy", "pillow", "onnxruntime", "imageio[ffmpeg]"]  # results: mujoco 3.17.0
 cad = ["manifold3d==3.5.4", "trimesh==5.2.0"]  # pinned: cad_model.yaml must reproduce exactly
-hand = ["fast_simplification"]  # tools/build_hand_mesh.py only
+hand = ["fast_simplification==0.2.0"]  # tools/build_hand_mesh.py only; reproduces the STLs exactly
 
 [build-system]
 requires = ["setuptools>=68"]

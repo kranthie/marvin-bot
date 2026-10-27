@@ -1,0 +1,16 @@
+name: Design question or proposal
+description: A question about the design, or a proposed change to it
+labels: [design]
+body:
+  - type: textarea
+    id: topic
+    attributes:
+      label: Question or proposal
+      description: What you would change and why. Link the decision in docs/decisions.md it touches, if any.
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources
+      description: Datasheets, papers or projects behind it, with their licences if anything would be reused.

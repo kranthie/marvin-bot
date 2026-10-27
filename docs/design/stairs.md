@@ -1,6 +1,6 @@
 # Stair climbing: status and open issues
 
-Requirement R12: climb and descend household stairs with 17–18 cm risers and 25 cm treads. This note collects what the checks and training runs have shown so far, the issues still open, and the plan for closing them. Status as of 2026-10-26, design v0.2 with the second-pass leg CAD and the first-pass pelvis and torso CAD (39.06 kg).
+Requirement R12: climb and descend household stairs with 17–18 cm risers and 25 cm treads. This note collects what the checks and training runs have shown so far, the issues still open, and the plan for closing them. Status as of 2026-10-27: the current CAD with the hands (39.86 kg bare, 40.69 kg with the body shells; limit 41 kg with the shells). Measurements on earlier models are labelled with the run or mass they came from.
 
 ## What the robot can do in principle
 
@@ -8,7 +8,7 @@ Requirement R12: climb and descend household stairs with 17–18 cm risers and 2
 
 | Riser | Possible | Stance knee | Stance hip roll |
 |---|---|---|---|
-| 10–18 cm | yes | 45 N·m: 37% of peak, **112% of continuous rating** | 37 N·m: 31% of peak, 92% of rating |
+| 10–18 cm | yes | 44 N·m: 36% of peak, **109% of continuous rating** | 41 N·m: 34% of peak, 103% of rating |
 | 20 cm | no in the static check (since the leg CAD masses); **the trained policy (rough v5) climbs 20 cm dynamically** | | |
 
 How the design got here:
@@ -20,13 +20,13 @@ How the design got here:
 
 ## Issue 1: knee heat on slow stairs
 
-On a slow step the stance knee holds ~45 N·m against the RS04's 40 N·m continuous rating. Heating goes with torque squared, so ~1.3× the rated heat while it lasts. Three things make the real margin smaller:
+On a slow step the stance knee holds ~44 N·m against the RS04's 40 N·m continuous rating. Heating goes with torque squared, so ~1.3× the rated heat while it lasts. Three things make the real margin smaller:
 
 - The 40 N·m rating assumes a 345 × 345 mm aluminium heat sink; the thigh plate is much smaller, so the motor's real continuous rating in the leg may be 30–35 N·m.
 - Holding a bent knee still gives no cooling from motion.
 - Each extra kilogram of robot adds ~1.1 N·m at the knee in this pose.
 
-**Measured on real climbs (rough v5 in MuJoCo, 2026-10-26): the knees average 73–75% of their continuous rating (RMS) on 10–20 cm stairs, hip roll ~60%.** The trained gait loads each knee for only part of each step, so the static 112% is a worst case the policy avoids. What remains is confirming the RS04's real rating in a thigh-sized mount on the bench (if it is 30–35 N·m rather than 40, stair RMS would be ~85–100%).
+**Measured on real climbs (rough v5 in MuJoCo, 2026-10-26): the knees average 73–75% of their continuous rating (RMS) on 10–20 cm stairs, hip roll ~60%.** The trained gait loads each knee for only part of each step, so the static 109% is a worst case the policy avoids. What remains is confirming the RS04's real rating in a thigh-sized mount on the bench (if it is 30–35 N·m rather than 40, stair RMS would be ~85–100%).
 
 What it is not: a peak-torque problem (38% of peak), or a walking problem. The flat policy v3 walks at up to 0.8 m/s with its knees at ~60% of rated (RMS) and its hottest joint, ankle pitch, at 73% (`sim/mujoco/check_policy.py`).
 
@@ -58,12 +58,12 @@ In v3 the terrain curriculum plateaued at level ~1 of 10 with very few falls: wa
 
 ## Issue 3: mass
 
-The leg strength pass (`cad/strength.py`: far-side bearings at the knee and hip roll, a channel-flanged hip block, a ribbed foot) put the robot at 39.55 kg; the pelvis and torso CAD brought it to 39.06 kg, the arm and head CAD to 39.20 kg, and the slimmer ring-and-strap plates and staggered-ankle shin to 38.71 kg (39.30 kg with the optional covers). The hard limit was raised to 40 kg, with the 35 kg target unchanged (decisions, 2026-10-26). Mass feeds issue 1 directly. Savings that keep the computer and the battery as they are:
+The leg strength pass (`cad/strength.py`: far-side bearings at the knee and hip roll, a channel-flanged hip block, a ribbed foot) put the robot at 39.55 kg; the pelvis and torso CAD brought it to 39.06 kg, the arm and head CAD to 39.20 kg, and the slimmer ring-and-strap plates and staggered-ankle shin to 38.71 kg (39.30 kg with the optional covers). The hard limit was raised to 40 kg, with the 35 kg target unchanged (decisions, 2026-10-26); the hands then brought the robot to 39.86 kg bare and 40.69 kg with the shells, and the limit is now 41 kg with the shells (decisions, 2026-10-27). Mass feeds issue 1 directly. Savings that keep the computer and the battery as they are:
 
 | Option | Saves | Trade-off |
 |---|---|---|
 | Shoulder pitch and roll RS03 → RS06 | ~1.1 kg | shoulder peak 60 → 36 N·m (Asimov limits these joints to 30 / 25 N·m); less margin for push-ups and getting up |
-| Electronics and arms from CAD instead of estimates (pelvis and torso done: −0.5 kg) | ±0.5 kg | unknown until drawn |
+| Electronics and arms from CAD instead of estimates | done | the arms and hands came out heavier |
 | 7075 leg plates, thinned to the same stiffness | ~0.3–0.5 kg | cost, sourcing |
 | Carbon-fibre tube cores for thigh and shin | ~0.5 kg | design work, bonded joints |
 
@@ -84,6 +84,6 @@ Keep the current design (RS04 knee, no reduction stage). Settle it from three me
 
 1. **Trained stair policy:** done (rough v5): knees at 73–75% of rated (RMS) on 10–20 cm stairs.
 2. **Phase 2 bench test:** an RS04 holding 40–45 N·m, bolted to a plate the size of the thigh plate (`bench/actuator/bench_robstride.py thermal`), to measure its real continuous rating in the leg.
-3. **Mass:** torso and arm CAD, replacing estimates.
+3. **Mass:** done: torso, arm, hand and electronics CAD replace the estimates (39.86 kg bare).
 
 If the knee's measured RMS on stairs exceeds its measured continuous rating by more than the cooling options cover, add the 1.5:1 knee stage before ordering the leg actuators (phase 3).

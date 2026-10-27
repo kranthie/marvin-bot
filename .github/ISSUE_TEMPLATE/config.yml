@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Safety or security problem
+    url: https://github.com/kranthie/marvin-bot/security/advisories/new
+    about: Report anything that could cause injury, fire or damage privately, not in a public issue.
