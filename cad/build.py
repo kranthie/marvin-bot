@@ -45,7 +45,9 @@ BUDGET = {
     "shoulder": "arm_structure",
     "upper_arm": "arm_structure",
     "forearm": "arm_structure",
-    "gripper": "grippers",
+    "wrist": "arm_structure",
+    "hand_mount": "arm_structure",
+    "hand": "hands",
     "neck": "head",
     "head": "head",
 }  # name keyword -> budget item; else legs

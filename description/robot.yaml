@@ -13,7 +13,7 @@ robot:
   version: "0.2"
   height: 1.288           # sole to the top of the head, standing straight
   mass_target_kg: 35.0
-  mass_limit_kg: 40.0
+  mass_limit_kg: 41.0     # the full robot: hands and the add-on body shells included
 
 dimensions:
   hip_axis_height: 0.650   # hip pitch axis to sole (51% of height)
@@ -24,7 +24,8 @@ dimensions:
   shoulder_width: 0.416    # outside of the shoulder actuators
   shoulder_height: 1.015   # shoulder pitch axis above the floor
   upper_arm: 0.200         # shoulder roll axis to elbow axis
-  forearm: 0.215           # elbow axis to gripper centre
+  forearm: 0.188           # elbow axis to wrist pitch axis (a person's at this height: ~0.19)
+  hand: 0.181              # wrist pitch axis to fingertips, the bought hand on its mount
   foot_length: 0.240
   foot_width: 0.110
 
@@ -54,7 +55,7 @@ joints:
   - {name: "{side}_shoulder_yaw",   axis: yaw,   range: [-90, 90]}
   - {name: "{side}_elbow",          axis: pitch, range: [0, 135]}
   - {name: "{side}_wrist_yaw",      axis: yaw,   range: [-90, 90]}
-  - {name: "{side}_gripper",        axis: pitch, range: [0, 60], powered_dof: false}  # end effector, not counted as a body DOF
+  - {name: "{side}_wrist_pitch",    axis: pitch, range: [-60, 60]}  # carries the hand (description/mass_budget.yaml: hands)
 
 # Each motor drives one joint directly, or two motors drive a pair of joints through a linkage.
 # output: the direction its output face looks, in the frame of the link carrying it (left side;
@@ -75,7 +76,7 @@ motors:
   - {name: "{side}_wrist_yaw",      model: RS00,    bus: "{side}_arm",   drives: ["{side}_wrist_yaw"], output: [0, 0, -1]}
   - {name: neck_yaw,                model: STS3250, bus: servo,          drives: [neck_yaw], output: [0, 0, 1], length: [1, 0, 0]}
   - {name: neck_pitch,              model: STS3250, bus: servo,          drives: [neck_pitch], output: [0, 1, 0], length: [0, 0, -1]}
-  - {name: "{side}_gripper",        model: STS3250, bus: servo,          drives: ["{side}_gripper"], output: [0, 1, 0], length: [0, 0, -1]}
+  - {name: "{side}_wrist_pitch",    model: STS3250, bus: servo,          drives: ["{side}_wrist_pitch"], output: [0, 1, 0], length: [0, 0, 1]}
 
 # Classic CAN 2.0B at 1 Mbit/s (Robstride uses 29-bit identifiers). Each motor exchanges one
 # command and one reply frame per control cycle. Load is kept at or below max_load.

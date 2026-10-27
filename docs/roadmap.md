@@ -75,11 +75,13 @@ Each can be trained in simulation now and retrained once the bench (phase 2) has
 
 ## Hands
 
-The 1-DOF gripper (one STS3250, about 0.17 kg each with the servo) pinches; it cannot tilt the hand, since the wrist only turns. In order of cost:
+The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (owned; SCS0009 servos at 5 V, 0.40 kg each as published) on a wrist pitch joint driven by the former gripper STS3250 (see decisions.md, 2026-10-27).
 
-1. Gripper upgrades, a few dollars each: compliant TPU fingers (Fin Ray type) or pads, a linkage that keeps the jaws parallel, and grip force from the servo's load reading.
-2. A wrist pitch joint (one more STS3250 servo, about 75 g a side): the largest gain in reach and grasp angle for its cost; changes the arm CAD and the joint count.
-3. A swappable wrist flange, so an open servo-driven hand can replace the gripper later. Candidates (licence, published cost): an 8-servo four-finger hand on Feetech serial servos with an MJCF model (CC-BY-4.0, about €130-290, 0.40 kg); a 7-servo tendon hand (CC-BY-NC-SA, non-commercial, about $316); an 11-DOF tendon hand (MJCF, about $520-1300, licence for the printed parts not stated). Larger 16-17 DOF research hands (about $1.8-4k) are too big and heavy for a 1.29 m robot. A 0.40 kg hand adds about 0.46 kg to the robot, past the 40 kg limit with the shells.
+- [x] Wrist pitch cradle, hand mount and hand envelope in the CAD; masses, URDF, harness and checks updated; forearm 0.188 m to the wrist pitch axis
+- [ ] Weigh the hands; drill the mount plate to the kit's wrist interface; fit a 12 V to 5 V converter at each wrist
+- [ ] A hand model for manipulation in simulation (the kit's MJCF has placeholder masses and closed linkages; reduce each finger to its two servo joints)
+- [ ] Retrain the walking and stair policies with the hands (0.73 kg more at the arms' ends than the grippers)
+- Later upgrades, in order: compliant fingertips or pads; the kit's stronger-servo variant (STS3032 at 6 V, same protocol as the STS3250s); a second wrist servo for side-to-side tilt; tactile fingertips
 
 ## Open items to verify before ordering
 
@@ -94,4 +96,4 @@ The 1-DOF gripper (one STS3250, about 0.17 kg each with the servo) pinches; it c
 9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
 11. Knee and hip-roll heating on slow stairs (knee 115% of rated in the static check at 39.55 kg): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
-12. Hand choice: wrist pitch servo or not, and whether a chosen hand's licence, servo voltage (the servo bus is 12 V; small hand servos run at 5-6 V) and mass fit.
+12. Hand: the kit's real mass, its wrist interface's bolt pattern, and serial bus timing with 8 servos per hand.

@@ -1,6 +1,6 @@
 # Marvin Bot
 
-An open humanoid robot, about 1.29 m tall and 39 kg, with 25 powered joints. It is built from off-the-shelf quasi-direct-drive actuators, a CNC-machined aluminium frame and printed structural shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
+An open humanoid robot, about 1.29 m tall and 40 kg, with 27 powered joints and two 8-servo four-finger hands. It is built from off-the-shelf quasi-direct-drive actuators, a CNC-machined aluminium frame and printed structural shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
 
 **Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo; a motion-tracking pipeline (human motion to robot skills) is being brought up. See [docs/roadmap.md](docs/roadmap.md).
 
@@ -28,9 +28,9 @@ The full list is in [docs/requirements.md](docs/requirements.md).
 
 | | |
 |---|---|
-| Height, mass | ~1.29 m, ≤35 kg target, ≤40 kg limit (current estimate in [description/mass_budget.yaml](description/mass_budget.yaml)) |
-| Joints | 6 per leg, 5 per arm, waist yaw, 2 neck, plus a 1-DOF gripper per arm |
-| Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulders), RS06 (shoulder yaw, elbows), RS00 (wrists); serial-bus servos for neck and grippers |
+| Height, mass | ~1.29 m, ≤35 kg target bare, ≤41 kg limit with the add-on body shells (current estimate in [description/mass_budget.yaml](description/mass_budget.yaml)) |
+| Joints | 6 per leg, 6 per arm (wrist yaw and pitch), waist yaw, 2 neck, plus an 8-DOF four-finger hand per arm |
+| Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulders), RS06 (shoulder yaw, elbows), RS00 (wrists); serial-bus servos for the neck and wrist pitch |
 | Compute | Jetson AGX Orin 64 GB; desktop GPU for training and, at first, for the vision-language-action model |
 | Sensing | Pelvis IMU, head-mounted active-stereo depth camera, joint encoders |
 | Power | 48 V nominal (13S Li-ion, ~630 Wh), quick-release pack with a keep-alive supply for the computer |

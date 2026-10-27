@@ -5,7 +5,8 @@ Checks:
   through a linkage;
 - every motor's model exists in actuators.yaml and its bus exists in robot.yaml;
 - CAN bus load stays at or below the configured maximum at each bus's command rate;
-- the total mass (motors from actuators.yaml plus mass_budget.yaml) is under the hard limit
+- the total mass (motors from actuators.yaml plus mass_budget.yaml, plus the add-on body shells
+  from cad_model.yaml) is under the hard limit
   (a warning above the target);
 - bom/bom.csv lists exactly as many of each motor model as robot.yaml uses (spares excluded).
 
@@ -23,6 +24,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
 BOM = ROOT / "bom" / "bom.csv"
+CAD_MODEL = DESC / "cad_model.yaml"
 SIDES = ("left", "right")
 
 
@@ -119,14 +121,18 @@ def main() -> int:
     motor_mass = sum(acts[k]["mass"] * n for k, n in models.items() if k in acts)
     other = sum(v["mass"] for v in budget["items"].values())
     total = motor_mass + other
+    # the add-on body shells (cad/covers.py) count towards the limit, not the bare robot
+    cad = yaml.safe_load(CAD_MODEL.read_text()) if CAD_MODEL.exists() else {}
+    shells = sum(p["mass"] for p in cad.values() if p["budget"] == "covers")
     target, limit = robot["robot"]["mass_target_kg"], robot["robot"]["mass_limit_kg"]
     print(f"\n{'model':10} {'qty':>4} {'kg':>7}")
     for k, n in sorted(models.items()):
         print(f"{k:10} {n:4d} {acts[k]['mass'] * n:7.2f}")
-    print(f"motors {motor_mass:.2f} kg + other {other:.2f} kg = {total:.2f} kg")
-    print(f"target {target:.1f} kg, hard limit {limit:.1f} kg")
-    if total > limit:
-        errors.append(f"mass {total:.2f} kg over the {limit} kg limit")
+    print(f"motors {motor_mass:.2f} kg + other {other:.2f} kg = {total:.2f} kg bare")
+    print(f"with the body shells ({shells:.2f} kg): {total + shells:.2f} kg")
+    print(f"target {target:.1f} kg bare, hard limit {limit:.1f} kg with the shells")
+    if total + shells > limit:
+        errors.append(f"mass {total + shells:.2f} kg with the shells over the {limit} kg limit")
     elif total > target:
         warnings.append(f"mass {total:.2f} kg is over the {target} kg target")
 

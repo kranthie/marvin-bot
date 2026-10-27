@@ -25,11 +25,17 @@ ProtoMotions checkout, all generated from `description/`; rerun it after a descr
 
 What is specific to Marvin Bot:
 
-- **Scale.** Human keypoints are scaled to Marvin Bot's size (legs about 0.66 of the source's,
-  arms 0.62), then the knees and feet are moved 1.5 and 3 cm out along the hip axis: scaled
-  down, the human's feet end up 12-14 cm apart and Marvin Bot's are 11 cm wide.
+- **Scale.** Human keypoints are scaled to Marvin Bot's size in place of the retargeter's G1
+  scale: the legs uniformly (0.69, the robot's straight leg over the source's standing one), the
+  pelvis target put on the hip axis, the shoulders about the hips (0.62 wide, 0.75 high) and
+  6.5 cm forward, the arms about each shoulder (0.79, reach to the wrist pitch axis). The knees
+  and feet are then moved 1.5 and 3 cm out along the hip axis: scaled down, the human's feet end
+  up 12-14 cm apart and Marvin Bot's are 11 cm wide. The solver also starts from and pulls
+  towards the standing pose rather than the middle of each joint's range. With the source's
+  pelvis and shoulders left high, the solver crouched the robot to reach them (knees at 37-58°
+  through a walk).
 - **Arms collide with the ground only.** The retargeter's self-collision cost is off upstream,
-  and the gripper boxes meet the thighs even with the arms hanging straight, so in the tracking
+  and the hand boxes meet the thighs even with the arms hanging straight, so in the tracking
   model the arms do not collide with the body. A real robot would: the retargeted arms still
   need a collision fix before anything runs on hardware.
 - **Soles.** ProtoMotions' converter puts the lowest body origin 4 cm above the floor, which

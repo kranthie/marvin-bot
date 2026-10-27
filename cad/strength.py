@@ -9,7 +9,7 @@ holes and corners are not included, so the target safety factor is 2 on yield.
 Load cases, at the default straight-limb pose (all link frames aligned; the pelvis takes one
 leg's landing load through its hip):
   landing: at the ankle axis, 3 x body weight up, 0.5 x fore-aft, 0.3 x sideways, together
-  hand: for the arms' aluminium parts, at the gripper: 0.5 x body weight up, 0.25 x
+  hand: for the arms' aluminium parts, at the hand: 0.5 x body weight up, 0.25 x
         fore-aft, 0.15 x sideways (catching a fall or pushing up from the floor on one hand)
   peak torque: the joint's peak torque (description/actuators.yaml, the linkage ratios for the
                ankle) as a moment on the part that reacts it
@@ -117,10 +117,10 @@ def checks(peak: dict, mass: float) -> list[Check]:
     ankle_pelvis = j["left_hip_roll"] + ankle_roll_frame
     ankle_pitch = 1000 * peak["left_ankle_pitch"]
     hand_roll = sum(
-        j[k] for k in ("left_shoulder_yaw", "left_elbow", "left_wrist_yaw", "left_gripper")
+        j[k] for k in ("left_shoulder_yaw", "left_elbow", "left_wrist_yaw", "left_wrist_pitch")
     )
     hand_pitch = j["left_shoulder_roll"] + hand_roll
-    hand_wrist = j["left_gripper"] + np.array([0.0, 0.0, -60.0])  # the grip, below the palm
+    hand_wrist = j["left_wrist_pitch"] + np.array([0.0, 0.0, -60.0])  # the grip, in the hand
     hand_fore = j["left_wrist_yaw"] + hand_wrist
     hand_upper = j["left_elbow"] + hand_fore
     return [
@@ -210,7 +210,7 @@ def checks(peak: dict, mass: float) -> list[Check]:
         ),
         # printed arm shells that carry load (cad/arm.py): the upper-arm shell between the
         # shoulder yaw ring and the elbow ring, the forearm shell down to the wrist cup, the
-        # gripper palm under the wrist
+        # wrist pitch cradle under the wrist
         Check(
             "left_upper_arm_shell",
             "z",
@@ -223,7 +223,7 @@ def checks(peak: dict, mass: float) -> list[Check]:
             "left_forearm_shell", "z", list(np.linspace(-50, -95, 4)), tuple(hand_fore), load="hand"
         ),
         Check(
-            "left_gripper_palm", "z", list(np.linspace(-35, -70, 4)), tuple(hand_wrist), load="hand"
+            "left_wrist_cradle", "z", list(np.linspace(-30, -50, 3)), tuple(hand_wrist), load="hand"
         ),
     ]
 

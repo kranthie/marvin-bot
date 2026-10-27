@@ -338,7 +338,7 @@ def _group(link: str) -> str:
         side, rest = link.split("_", 1)
         limb = (
             "arm"
-            if rest.startswith(("shoulder", "upper_arm", "forearm", "wrist", "gripper"))
+            if rest.startswith(("shoulder", "upper_arm", "forearm", "wrist", "palm"))
             else "leg"
         )
         return f"{side}_{limb}"

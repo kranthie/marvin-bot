@@ -281,7 +281,7 @@ def build(covers: bool = False) -> tuple[str, dict]:
         "thigh": z["left_hip_roll"] + z["left_hip_yaw"] + z["left_knee"],
         "shin": z["left_ankle_pitch"],
         "upper_arm": z["left_shoulder_yaw"] + z["left_elbow"],
-        "forearm": z["left_wrist_yaw"] + z["left_gripper"],
+        "forearm": z["left_wrist_yaw"] + z["left_wrist_pitch"],
         "shoulder_height": dims["hip_axis_height"]
         + joints["waist_yaw"]["xyz"][2]
         + joints["left_shoulder_pitch"]["xyz"][2],

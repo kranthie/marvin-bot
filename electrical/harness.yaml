@@ -177,7 +177,7 @@ limbs:
     branch_fuse_a: 20
     root_connectors: {bulkhead: elec_bulkhead_arm_l, power: '2-pin, rated >= 20 A (XT60 class), keyed',
       signal: '6-pin latching (CAN pairs, ground, spare)'}
-    total_length_m: 1.79
+    total_length_m: 1.75
     segments:
     - frm: torso_pdb
       to: left_shoulder_pitch
@@ -229,8 +229,8 @@ limbs:
       power_awg: 16
       signals: [left_arm, servo]
     - frm: left_wrist_yaw
-      to: left_gripper
-      length_m: 0.31
+      to: left_wrist_pitch
+      length_m: 0.27
       crosses: [left_wrist_yaw]
       service_loop_m: 0.11
       clips:
@@ -245,7 +245,7 @@ limbs:
     branch_fuse_a: 20
     root_connectors: {bulkhead: elec_bulkhead_arm_r, power: '2-pin, rated >= 20 A (XT60 class), keyed',
       signal: '6-pin latching (CAN pairs, ground, spare)'}
-    total_length_m: 1.79
+    total_length_m: 1.75
     segments:
     - frm: torso_pdb
       to: right_shoulder_pitch
@@ -297,8 +297,8 @@ limbs:
       power_awg: 16
       signals: [right_arm, servo]
     - frm: right_wrist_yaw
-      to: right_gripper
-      length_m: 0.31
+      to: right_wrist_pitch
+      length_m: 0.27
       crosses: [right_wrist_yaw]
       service_loop_m: 0.11
       clips:

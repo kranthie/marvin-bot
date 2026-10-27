@@ -188,14 +188,16 @@
     <collision><origin xyz="0 0 -0.08"/><geometry><box size="0.07 0.07 0.17"/></geometry></collision>
   </link>
   <link name="left_wrist_link">
-    <inertial><origin xyz="-0.00142699 -0.00359858 -0.0855718"/><mass value="0.14572"/><inertia ixx="0.00017843" ixy="-1.76786e-06" ixz="-1.43327e-05" iyy="0.000179369" iyz="-9.50248e-06" izz="5.40545e-05"/></inertial>
-    <visual><geometry><mesh filename="../meshes/left_gripper_palm.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><origin xyz="0 -0.0121 -0.1015" rpy="0 0 0"/><geometry><box size="0.0248 0.0358 0.0453"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
+    <inertial><origin xyz="0 -0.00116246 -0.0536634"/><mass value="0.11534"/><inertia ixx="4.38934e-05" ixy="0" ixz="0" iyy="4.80796e-05" iyz="8.76874e-07" izz="3.06842e-05"/></inertial>
+    <visual><geometry><mesh filename="../meshes/left_wrist_cradle.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><origin xyz="0 -0.0121 -0.0515" rpy="0 0 0"/><geometry><box size="0.0248 0.0358 0.0453"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
+    <collision><origin xyz="0 -0.012 -0.052"/><geometry><box size="0.035 0.05 0.05"/></geometry></collision>
   </link>
-  <link name="left_gripper_link">
-    <inertial><origin xyz="0.0176882 0.0006129 -0.0635611"/><mass value="0.02297"/><inertia ixx="2.95183e-05" ixy="6.658e-07" ixz="3.809e-06" iyy="2.78675e-05" iyz="-5.055e-06" izz="4.1636e-06"/></inertial>
-    <visual><geometry><mesh filename="../meshes/left_gripper_jaw.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <collision><origin xyz="0 0 -0.04"/><geometry><box size="0.06 0.08 0.09"/></geometry></collision>
+  <link name="left_palm_link">
+    <inertial><origin xyz="0.00582111 0.00254952 -0.0973489"/><mass value="0.41656"/><inertia ixx="0.00132537" ixy="-5.11463e-05" ixz="-4.2657e-06" iyy="0.00102417" iyz="9.98457e-06" izz="0.000551363"/></inertial>
+    <visual><geometry><mesh filename="../meshes/left_hand_mount.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/left_hand.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
+    <collision><origin xyz="0.005 0 -0.101"/><geometry><box size="0.05 0.11 0.16"/></geometry></collision>
   </link>
   <link name="right_hip_roll_link">
     <inertial><origin xyz="-0.0145134 0.0253681 0.00396263"/><mass value="1.86304"/><inertia ixx="0.00270318" ixy="-0.000526425" ixz="0.000717619" iyy="0.00600396" iyz="0.000200464" izz="0.00485277"/></inertial>
@@ -306,14 +308,16 @@
     <collision><origin xyz="0 0 -0.08"/><geometry><box size="0.07 0.07 0.17"/></geometry></collision>
   </link>
   <link name="right_wrist_link">
-    <inertial><origin xyz="-0.00142699 0.00359858 -0.0855718"/><mass value="0.14572"/><inertia ixx="0.00017843" ixy="1.76786e-06" ixz="-1.43327e-05" iyy="0.000179369" iyz="9.50248e-06" izz="5.40545e-05"/></inertial>
-    <visual><geometry><mesh filename="../meshes/right_gripper_palm.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><origin xyz="0 0.0121 -0.1015" rpy="0 0 0"/><geometry><box size="0.0248 0.0358 0.0453"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
+    <inertial><origin xyz="0 0.00116246 -0.0536634"/><mass value="0.11534"/><inertia ixx="4.38934e-05" ixy="0" ixz="0" iyy="4.80796e-05" iyz="-8.76874e-07" izz="3.06842e-05"/></inertial>
+    <visual><geometry><mesh filename="../meshes/right_wrist_cradle.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><origin xyz="0 0.0121 -0.0515" rpy="0 0 0"/><geometry><box size="0.0248 0.0358 0.0453"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
+    <collision><origin xyz="0 0.012 -0.052"/><geometry><box size="0.035 0.05 0.05"/></geometry></collision>
   </link>
-  <link name="right_gripper_link">
-    <inertial><origin xyz="0.0176882 -0.0006129 -0.0635611"/><mass value="0.02297"/><inertia ixx="2.95183e-05" ixy="-6.658e-07" ixz="3.809e-06" iyy="2.78675e-05" iyz="5.055e-06" izz="4.1636e-06"/></inertial>
-    <visual><geometry><mesh filename="../meshes/right_gripper_jaw.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <collision><origin xyz="0 0 -0.04"/><geometry><box size="0.06 0.08 0.09"/></geometry></collision>
+  <link name="right_palm_link">
+    <inertial><origin xyz="0.00582111 -0.00254952 -0.0973489"/><mass value="0.41656"/><inertia ixx="0.00132537" ixy="5.11463e-05" ixz="-4.2657e-06" iyy="0.00102417" iyz="-9.98457e-06" izz="0.000551363"/></inertial>
+    <visual><geometry><mesh filename="../meshes/right_hand_mount.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/right_hand.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
+    <collision><origin xyz="0.005 0 -0.101"/><geometry><box size="0.05 0.11 0.16"/></geometry></collision>
   </link>
   <joint name="left_hip_roll" type="revolute">
     <parent link="pelvis"/><child link="left_hip_roll_link"/>
@@ -385,10 +389,10 @@
     <origin xyz="0 0 -0.125"/><axis xyz="0 0 -1"/>
     <limit lower="-1.5708" upper="1.5708" effort="14" velocity="32.9867"/>
   </joint>
-  <joint name="left_gripper" type="revolute">
-    <parent link="left_wrist_link"/><child link="left_gripper_link"/>
-    <origin xyz="0 0 -0.09"/><axis xyz="0 -1 0"/>
-    <limit lower="0" upper="1.0472" effort="4.9" velocity="7.85398"/>
+  <joint name="left_wrist_pitch" type="revolute">
+    <parent link="left_wrist_link"/><child link="left_palm_link"/>
+    <origin xyz="0 0 -0.063"/><axis xyz="0 -1 0"/>
+    <limit lower="-1.0472" upper="1.0472" effort="4.9" velocity="7.85398"/>
   </joint>
   <joint name="right_hip_roll" type="revolute">
     <parent link="pelvis"/><child link="right_hip_roll_link"/>
@@ -445,9 +449,9 @@
     <origin xyz="0 0 -0.125"/><axis xyz="0 0 1"/>
     <limit lower="-1.5708" upper="1.5708" effort="14" velocity="32.9867"/>
   </joint>
-  <joint name="right_gripper" type="revolute">
-    <parent link="right_wrist_link"/><child link="right_gripper_link"/>
-    <origin xyz="0 0 -0.09"/><axis xyz="0 -1 0"/>
-    <limit lower="0" upper="1.0472" effort="4.9" velocity="7.85398"/>
+  <joint name="right_wrist_pitch" type="revolute">
+    <parent link="right_wrist_link"/><child link="right_palm_link"/>
+    <origin xyz="0 0 -0.063"/><axis xyz="0 -1 0"/>
+    <limit lower="-1.0472" upper="1.0472" effort="4.9" velocity="7.85398"/>
   </joint>
 </robot>

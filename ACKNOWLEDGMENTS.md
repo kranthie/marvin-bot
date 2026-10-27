@@ -29,7 +29,8 @@ Marvin Bot is designed from scratch, but it learns from many open projects, publ
 ## Component specifications
 
 - **RobStride** official manuals and specifications: https://github.com/RobStride/Product_Information. Actuator figures in `description/actuators.yaml` come from these manuals unless marked otherwise.
-- **Feetech** STS3250 datasheet (neck and gripper servos).
+- **Feetech** STS3250 datasheet (neck and wrist pitch servos).
+- The open-source 8-DOF four-finger hand kit sold by **Seeed Studio** (SKUs 100062181 and 100063642): its design is CC-BY-4.0 and its code Apache-2.0. Its published mass and outline are used for the envelope in `cad/arm.py`; none of its CAD or code is copied here.
 - **Orbbec** Gemini 335L product documentation (head depth camera).
 
 ## Predecessor

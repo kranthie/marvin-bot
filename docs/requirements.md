@@ -7,7 +7,7 @@
 | ID | Requirement | Target | Level |
 |---|---|---|---|
 | R1 | Standing height | 1.20–1.30 m | must |
-| R2 | Total mass with battery | ≤35 kg target, ≤40 kg hard limit (raised from 38 kg after the leg strength pass, 2026-10-26) | must |
+| R2 | Total mass with battery | ≤35 kg target bare; ≤41 kg hard limit for the full robot, hands and body shells included (40 kg bare from 2026-10-26; 41 kg with the shells from 2026-10-27, when the hands came in) | must |
 | R3 | Hip axis to sole | ≥0.65 m (needed for 17–18 cm stairs) | must |
 
 ## Mobility
@@ -26,7 +26,7 @@
 | ID | Requirement | Target | Level |
 |---|---|---|---|
 | R20 | Arm payload | 1 kg per hand at full reach, 2 kg close to the body | must |
-| R21 | Grippers | 1-DOF grippers in v1; dexterous hands later | must |
+| R21 | Hands | open 8-DOF four-finger hands (bought kits) on a wrist pitch joint in v1; stronger hands later | must |
 | R22 | Task learning | fine-tune a VLA (GR00T N1.7) from teleoperation data | should |
 
 ## Power and endurance

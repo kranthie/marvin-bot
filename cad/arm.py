@@ -1,4 +1,4 @@
-"""Arm parts, first pass: aluminium motor brackets, printed structural shells, 1-DOF gripper.
+"""Arm parts, first pass: aluminium motor brackets, printed structural shells, wrist and hand mount.
 
 Built in the arm link frames (mm) of description/skeleton.yaml, left arm (the right arm is the
 mirror image), around the motors at their STEP-model sizes:
@@ -11,10 +11,11 @@ mirror image), around the motors at their STEP-model sizes:
   aluminium ring on the elbow RS06's inner (stator) face; the forearm drives off its outer face;
 - forearm: an aluminium flange on the elbow output and a printed shell that wraps under the
   elbow to a cup holding the wrist RS00;
-- wrist and gripper: a printed palm on the wrist output, carrying the gripper servo and a fixed
-  jaw; a moving jaw on the servo horn.
+- wrist: a printed cradle on the wrist RS00's output holding the wrist pitch servo, and a
+  printed U on the servo's horn and an idler pin carrying a plate for the bought hand (modelled
+  as its envelope).
 
-The shells are hollow (2.5 mm walls) and leave a cable path from the shoulder to the gripper:
+The shells are hollow (2.5 mm walls) and leave a cable path from the shoulder to the hand:
 each joint's harness passes beside the motor in a service loop (docs/design/assembly_wiring.md).
 No fasteners yet.
 """
@@ -174,47 +175,61 @@ def parts() -> list[Part]:
     )
     out.append(Part("left_forearm_shell", "left_forearm_link", "pa_cf", fore, "print"))
 
-    # --- wrist: frame on the wrist joint (RS00 centred here, output face down); the gripper
-    # servo sits on the gripper joint, its axis along y
-    gr = j["left_gripper"]
+    # --- wrist: frame on the wrist yaw joint (RS00 centred here, output face down). The pitch
+    # servo hangs from the RS00's output in a printed cradle, its case running up from its shaft
+    # (the pitch axis, along y); the spline comes out at +y
+    wp = j["left_wrist_pitch"]
     w_out = -t00 / 2
     sv = _acts["STS3250"]["shape"]
     s_len, s_wid = sv["box"]
     s_lo, s_hi = sv["axial"]
     s_off = sv["shaft_offset"]
     horn_t = 3.0
-    # the servo's case runs down from its shaft (robot.yaml: length -z), inside the palm
-    c_top, c_bot = gr[2] - s_off + s_len / 2, gr[2] - s_off - s_len / 2
-    ymid = (s_hi + s_lo) / 2
-    palm_o = hull(
-        cyl(d00 - 2, 4, "z", (0, 0, w_out - 2)),
-        box(
-            (s_wid + 2 * WALL + 2, s_hi - s_lo + 2 * WALL + 2, s_len + 2 * WALL),
-            (0, ymid, (c_top + c_bot) / 2),
-        ),
+    c_top, c_bot = wp[2] + s_off + s_len / 2, wp[2] + s_off - s_len / 2
+    ymid = s_lo / 2  # the case runs from s_lo to 0 along y; the spline from 0 to s_hi
+    case = box((s_wid, -s_lo, s_len), (0, ymid, (c_top + c_bot) / 2))
+    # the cradle holds the case's upper half (its upper mounting ears), leaving the lower end
+    # free for the hand mount to swing round
+    hold = wp[2] + 8
+    cradle_o = hull(
+        cyl(d00 - 2, 3, "z", (0, 0, w_out - 1.5)),
+        box((s_wid + 2 * WALL, -s_lo + 2 * WALL, c_top - hold), (0, ymid, (c_top + hold) / 2)),
     )
-    palm_i = hull(
-        cyl(d00 - 2 - 2 * WALL, 2, "z", (0, 0, w_out - 4 - WALL)),
-        box((s_wid + 2, s_hi - s_lo + 2, s_len), (0, ymid, (c_top + c_bot) / 2)),
-    )
-    palm = palm_o - palm_i
-    palm = palm - cyl(14, 40, "y", (0, s_hi, gr[2]))  # the spline and horn come out of the side
-    jaw_fixed = box((8, 40, 60), (-s_wid / 2 - WALL - 5, ymid, c_bot - 25)) - box(
-        (10, 30, 40), (-s_wid / 2 - WALL - 5, ymid, c_bot - 20)
+    # an idler pin on the case's back (-y) face, on the pitch axis, for the mount's second arm
+    pin = cyl(8, 6, "y", (0, s_lo - WALL - 3, wp[2]))
+    rib = box((8, WALL, hold - wp[2] + 4), (0, s_lo - WALL / 2, (hold + wp[2]) / 2))
+    cradle = union(cradle_o - case - box((s_wid - 6, -s_lo, 20), (0, ymid, hold)), pin, rib)
+    out.append(Part("left_wrist_cradle", "left_wrist_link", "pa_cf", cradle, "print"))
+
+    # --- hand: frame on the wrist pitch axis. A printed U round the servo's lower end, on the
+    # horn (+y) and the idler pin (-y), with a plate below for the bought hand's wrist
+    # interface (its holes drilled to the hand's pattern)
+    plate_z = -22.0  # the plate's lower face; the case's lower corners swing within 17 mm
+    hy = s_hi + horn_t
+    py = s_lo - WALL - 6.5
+    arm_horn = hull(cyl(22, 4, "y", (0, hy + 2, 0)), box((22, 4, 4), (0, hy + 2, plate_z + 2)))
+    arm_idle = hull(cyl(16, 4, "y", (0, py, 0)), box((22, 4, 4), (0, py, plate_z + 2)))
+    arm_idle = arm_idle - cyl(8.4, 6, "y", (0, py, 0))
+    plate = box((50, hy + 4 - py + 4, 4), (0, (hy + 4 + py - 2) / 2, plate_z + 2))
+    mount = union(arm_horn, arm_idle, plate)
+    out.append(Part("left_hand_mount", "left_palm_link", "pa_cf", mount, "print"))
+    # the bought hand (0.40 kg as published) as its envelope: palm and four fingers, fingertips
+    # 181 mm below the axis, palm forward (+x); the thumb stands off the palm on the outer side
+    hand = union(
+        box((45, 110, 159), (2.5, 0, plate_z - 79.5)),
+        box((40, 30, 60), (45, 38, plate_z - 70)),
     )
     out.append(
-        Part("left_gripper_palm", "left_wrist_link", "pa_cf", union(palm, jaw_fixed), "print")
+        Part(
+            "left_hand",
+            "left_palm_link",
+            "bought",
+            hand,
+            "bought",
+            mass_g=400.0,
+            notes="8-servo four-finger hand kit (bom.csv); envelope only",
+        )
     )
-    # moving jaw on the servo horn (+y, beside the palm), swinging about the servo axis
-    hy = s_hi + horn_t + 2.5
-    drop = c_bot - gr[2]  # the palm's bottom, below the shaft
-    jx = s_wid / 2 + 8
-    jaw = union(
-        hull(cyl(24, 5, "y", (0, hy, 0)), box((10, 5, 10), (jx, hy, -20))),
-        box((10, 5, -drop + 30), (jx, hy, (drop - 30) / 2)),
-        box((10, 36, 40), (jx, hy + 2.5 - 18, drop - 50)),
-    )
-    out.append(Part("left_gripper_jaw", "left_gripper_link", "pa_cf", jaw, "print"))
     return out
 
 

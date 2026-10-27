@@ -6,7 +6,7 @@
 # them, at robot.yaml's hip_axis_height above the floor when standing straight.
 # The joint offsets must add up to the lengths in robot.yaml (build_urdf.py checks this):
 #   thigh = hip roll + hip yaw + knee offsets; shin = ankle pitch offset;
-#   upper arm = shoulder yaw + elbow offsets; forearm = wrist yaw + gripper offsets.
+#   upper arm = shoulder yaw + elbow offsets; forearm = wrist yaw + wrist pitch offsets.
 #
 # Joint axes are chosen so that positive angles follow robot.yaml's range convention
 # (pitch + = flexion, roll + = abduction, yaw + = towards the midline); for the right side the
@@ -29,7 +29,7 @@ joints:
   left_shoulder_yaw:   {parent: left_shoulder_roll_link, child: left_upper_arm_link,      xyz: [0, 0, -0.085],      axis: [0, 0, -1]}
   left_elbow:          {parent: left_upper_arm_link,     child: left_forearm_link,        xyz: [0, 0, -0.115],      axis: [0, -1, 0]}
   left_wrist_yaw:      {parent: left_forearm_link,       child: left_wrist_link,          xyz: [0, 0, -0.125],      axis: [0, 0, -1]}
-  left_gripper:        {parent: left_wrist_link,         child: left_gripper_link,        xyz: [0, 0, -0.090],      axis: [0, -1, 0]}
+  left_wrist_pitch:    {parent: left_wrist_link,         child: left_palm_link,           xyz: [0, 0, -0.063],      axis: [0, -1, 0]}  # the pitch servo's case runs up from its shaft to the wrist RS00's output face
 
 # The ankle's two motors drive pitch and roll through cranks and push rods (tools/ankle_linkage.py).
 # Geometry in the shin frame (origin on the ankle axis, x forward, y left, z up), metres; the
@@ -84,7 +84,6 @@ bodies:
   - {link: left_forearm_link,        budget: arm_structure, mass: 0.15,  xyz: [0, 0, -0.065],      size: [0.06, 0.06, 0.12]}
   - {link: left_wrist_link,          budget: arm_structure, mass: 0.05,  xyz: [0, 0, -0.050],      size: [0.05, 0.06, 0.09]}
   - {link: left_forearm_link,        budget: padding,       mass: 0.05,  xyz: [-0.035, 0, -0.010], size: [0.02, 0.06, 0.05]}
-  - {link: left_gripper_link,        budget: grippers,      mass: 0.20,  xyz: [0, 0, -0.040],      size: [0.06, 0.08, 0.09]}
 
 # Collision shapes (boxes). Only these touch the floor or each other in simulation.
 collisions:
@@ -99,4 +98,5 @@ collisions:
   - {link: head_link,         xyz: [0.004, 0, 0.099],  size: [0.16, 0.142, 0.158]}  # helmet, above the neck cut
   - {link: left_upper_arm_link, xyz: [0, 0, -0.060],   size: [0.08, 0.08, 0.14]}
   - {link: left_forearm_link, xyz: [0, 0, -0.080],     size: [0.07, 0.07, 0.17]}
-  - {link: left_gripper_link, xyz: [0, 0, -0.040],     size: [0.06, 0.08, 0.09]}
+  - {link: left_wrist_link,   xyz: [0, -0.012, -0.052], size: [0.035, 0.05, 0.05]}  # wrist pitch servo
+  - {link: left_palm_link,    xyz: [0.005, 0, -0.101], size: [0.05, 0.11, 0.16]}  # hand
