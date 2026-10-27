@@ -170,6 +170,9 @@ def main() -> None:
         script.insert(-1, ("fast walk", 6.0, (args.fast, 0.0, 0.0)))
 
     meta = json.loads((args.policy_dir / "policy.json").read_text())
+    # policies exported before the hands (2026-10-27) name the wrist pitch joint "gripper"
+    for key in ("joint_names", "action_joint_names"):
+        meta[key] = [n.replace("_gripper", "_wrist_pitch") for n in meta[key]]
     rng = np.random.default_rng(args.seed)
     session = ort.InferenceSession(str(args.policy_dir / "policy.onnx"))
     in_name = session.get_inputs()[0].name
