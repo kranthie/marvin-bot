@@ -9,8 +9,9 @@ Topology (docs/design/assembly_wiring.md):
   which feeds the two leg branches and the waist motor.
 - Each limb has one harness: a power pair daisy-chained motor to motor in kinematic order, and
   the CAN pair(s) of that limb's bus(es) beside it (the Feetech serial bus and 12 V for the
-  gripper ride in the arm harness). It plugs in at the limb root through one power connector
-  and one signal connector, so a limb comes off as a unit.
+  wrist pitch servo and the hand ride in the arm harness; the hand's servos run at 5 V from a
+  converter at the wrist, on a serial bus of their own). It plugs in at the limb root through
+  one power connector and one signal connector, so a limb comes off as a unit.
 - Every joint the harness crosses gets a service loop sized for that joint's full range.
 
 Sizing assumptions (first pass, to be replaced by bench measurements):
@@ -19,8 +20,8 @@ Sizing assumptions (first pass, to be replaced by bench measurements):
   never all at rated output together);
 - wire gauge from a conservative ampacity table for bundled silicone wire, but no finer than
   16 AWG for actuator power (headroom for peak current, and the size the actuators' power
-  connectors take); the gripper servo gets a 12 V pair from the arm's DC-DC; fuses at the next
-  standard rating above 1.25 x the branch current;
+  connectors take); the wrist pitch servo and the hand get a 12 V pair from the arm's DC-DC;
+  fuses at the next standard rating above 1.25 x the branch current;
 - run length is the straight distance between motors in the default pose x 1.3, plus each
   crossed joint's service loop (range x 35 mm), plus 80 mm for termination.
 
@@ -67,7 +68,7 @@ LIMBS = {  # harness: hub, motors in kinematic order
     ),
     "{side}_arm": (
         "torso_pdb",
-        ["shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow", "wrist_yaw", "gripper"],
+        ["shoulder_pitch", "shoulder_roll", "shoulder_yaw", "elbow", "wrist_yaw", "wrist_pitch"],
     ),
 }
 

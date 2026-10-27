@@ -66,6 +66,7 @@ ARM_JOINTS = [
     ".*_shoulder_yaw",
     ".*_elbow",
     ".*_wrist_yaw",
+    ".*_wrist_pitch",
 ]
 FEET = ".*_foot_link"
 
@@ -88,7 +89,7 @@ GAINS = {
     ".*_elbow": (30.0, 1.5, 0.01, 0.1),
     ".*_wrist_yaw": (15.0, 0.8, 0.005, 0.05),
     "neck_.*": (10.0, 0.5, 0.002, 0.02),
-    ".*_gripper": (10.0, 0.5, 0.002, 0.02),
+    ".*_wrist_pitch": (10.0, 0.5, 0.002, 0.02),
 }
 
 

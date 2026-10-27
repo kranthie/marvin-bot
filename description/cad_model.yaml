@@ -1018,24 +1018,33 @@ left_forearm_shell:
   com: [0.0, 0.0110494, -0.0660151]
   inertia: [0.000155156, 0.000152291, 7.19451e-05, 0.0, 0.0, -3.59666e-05]
   size_mm: [68.0, 70.2, 158.1]
-left_gripper_palm:
+left_wrist_cradle:
   link: left_wrist_link
   material: pa_cf
   process: print
-  budget: grippers
-  mass: 0.07122
-  com: [-0.0029197, -0.0073629, -0.0809397]
-  inertia: [0.000160094, 0.00015696, 3.83967e-05, -9.851e-07, -1.52959e-05, -1.19315e-05]
-  size_mm: [55.0, 61.0, 153.5]
-left_gripper_jaw:
-  link: left_gripper_link
+  budget: arm_structure
+  mass: 0.04084
+  com: [0.0, -0.003283, -0.0366317]
+  inertia: [1.18945e-05, 1.06284e-05, 1.70265e-05, 0.0, 0.0, -1.4067e-06]
+  size_mm: [55.0, 66.0, 41.3]
+left_hand_mount:
+  link: left_palm_link
   material: pa_cf
   process: print
-  budget: grippers
-  mass: 0.02297
-  com: [0.0176882, 0.0006129, -0.0635611]
-  inertia: [2.95183e-05, 2.78675e-05, 4.1636e-06, 6.658e-07, 3.809e-06, -5.055e-06]
-  size_mm: [37.4, 36.0, 116.2]
+  budget: arm_structure
+  mass: 0.01656
+  com: [0.0, -0.0127979, -0.0163066]
+  inertia: [6.7391e-06, 3.6234e-06, 8.5278e-06, 0.0, 0.0, -3.77e-07]
+  size_mm: [50.0, 55.8, 33.0]
+left_hand:
+  link: left_palm_link
+  material: bought
+  process: bought
+  budget: hands
+  mass: 0.4
+  com: [0.0060621, 0.0031849, -0.100704]
+  inertia: [0.0012013, 0.000906693, 0.000538189, -4.96056e-05, -1.24014e-05, -1.10883e-05]
+  size_mm: [85.0, 110.0, 159.0]
 right_shoulder_roll_mount:
   link: right_shoulder_pitch_link
   material: al6061
@@ -1135,24 +1144,33 @@ right_forearm_shell:
   com: [0.0, -0.0110494, -0.0660151]
   inertia: [0.000155156, 0.000152291, 7.19451e-05, 0.0, 0.0, 3.59666e-05]
   size_mm: [68.0, 70.2, 158.1]
-right_gripper_palm:
+right_wrist_cradle:
   link: right_wrist_link
   material: pa_cf
   process: print
-  budget: grippers
-  mass: 0.07122
-  com: [-0.0029197, 0.0073629, -0.0809397]
-  inertia: [0.000160094, 0.00015696, 3.83967e-05, 9.851e-07, -1.52959e-05, 1.19315e-05]
-  size_mm: [55.0, 61.0, 153.5]
-right_gripper_jaw:
-  link: right_gripper_link
+  budget: arm_structure
+  mass: 0.04084
+  com: [0.0, 0.003283, -0.0366317]
+  inertia: [1.18945e-05, 1.06284e-05, 1.70265e-05, 0.0, 0.0, 1.4067e-06]
+  size_mm: [55.0, 66.0, 41.3]
+right_hand_mount:
+  link: right_palm_link
   material: pa_cf
   process: print
-  budget: grippers
-  mass: 0.02297
-  com: [0.0176882, -0.0006129, -0.0635611]
-  inertia: [2.95183e-05, 2.78675e-05, 4.1636e-06, -6.658e-07, 3.809e-06, 5.055e-06]
-  size_mm: [37.4, 36.0, 116.2]
+  budget: arm_structure
+  mass: 0.01656
+  com: [0.0, 0.0127979, -0.0163066]
+  inertia: [6.7391e-06, 3.6234e-06, 8.5278e-06, 0.0, 0.0, 3.77e-07]
+  size_mm: [50.0, 55.8, 33.0]
+right_hand:
+  link: right_palm_link
+  material: bought
+  process: bought
+  budget: hands
+  mass: 0.4
+  com: [0.0060621, -0.0031849, -0.100704]
+  inertia: [0.0012013, 0.000906693, 0.000538189, 4.96056e-05, -1.24014e-05, 1.10883e-05]
+  size_mm: [85.0, 110.0, 159.0]
 neck_bracket:
   link: neck_link
   material: al6061

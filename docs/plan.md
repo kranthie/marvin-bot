@@ -18,7 +18,7 @@ Marvin Bot is built in stages. Each stage ends with a pass check that decides wh
 | 2 | Actuator bench | One RS04 and one RS03, CAN adapter, bench supply with regen clamp. Measure torque constant, speed, heating, CAN timing, built-in position control; fit actuator models and feed them back into simulation | Manual figures confirmed; models match measurements; CAN at the planned rates works on the Orin | 2–3 weeks |
 | 3 | One leg | Remaining actuators for one leg; machine and print one leg; test on a jig: trajectory tracking, ankle linkage range, gait-like loads for heat, simple hops | Leg tracks simulated motion; linkage reaches its range; nothing overheats | 4–6 weeks |
 | 4 | Lower body | Second leg, pelvis, battery and power system, e-stop, Orin, IMU. Stand on a gantry, walk on the gantry, then walk free | Walks at 0.5 m/s, turns, stops, recovers from pushes, handles low steps | 6–8 weeks |
-| 5 | Torso, arms, head | Waist, arms, grippers, neck, camera; whole-body controller; fall recovery | Walks while carrying objects; gets up after a fall | 4–6 weeks |
+| 5 | Torso, arms, head | Waist, arms, wrist pitch and hands, neck, camera; whole-body controller; fall recovery | Walks while carrying objects; gets up after a fall | 4–6 weeks |
 | 6 | Perception and intelligence | Terrain map from the depth camera for stairs, teleoperation, data collection, GR00T N1.7 fine-tuning; finish the shells | Climbs real stairs using vision; picks up objects on command | ongoing |
 
 ## Workstreams

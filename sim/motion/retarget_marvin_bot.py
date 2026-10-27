@@ -4,10 +4,13 @@ Runs ProtoMotions' G1 retargeter (pyroki/batch_retarget_to_g1_from_keypoints.py)
 except for what is robot-specific:
 - which robot frame each human keypoint is matched to (LINKS), on the retargeting URDF that
   setup_protomotions.py writes (it adds the toe, hand and torso frames);
-- the scale from the human source to Marvin Bot, applied on top of the retargeter's G1 scale
-  (SCALE), with the feet moved apart to Marvin Bot's hip spacing (WIDEN);
+- the scale from the human source to Marvin Bot in place of the retargeter's G1 scale
+  (scale_keypoints), with the feet moved apart to Marvin Bot's hip spacing (WIDEN);
+- the rest pose the solver starts from and pulls towards, the standing pose instead of the
+  middle of each joint's range;
 - the joints held near their rest angle (the retargeter's G1 list names joints Marvin Bot has
-  not got: a waist roll and pitch, wrist pitch).
+  not got: a waist roll and pitch, wrist roll; the wrist pitch is held too, since no keypoint
+  sets the hand's angle).
 
 It checks that PyRoki's joint order is the MJCF's, since the converter that follows reads the
 retargeted joint vector in MJCF order.
@@ -17,6 +20,7 @@ Usage (in the PyRoki environment), then continue with ProtoMotions' converter:
       --keypoints-folder-path keypoints/ --output-dir retargeted/ --source-type soma --no-visualize
 """
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -41,17 +45,54 @@ LINKS = [
     ("left_wrist", "left_hand_link"),
     ("right_wrist", "right_hand_link"),
 ]
-# Source-to-robot scale (x, y, z) for the SOMA source, and the retargeter's own for G1. Legs:
-# horizontal 0.657 is the straight-leg pelvis height ratio (0.65 / 0.99 m) and vertical 0.629
-# the pelvis-to-ankle drop (0.59 / 0.938 m), as the retargeter derives G1's. Upper body: shoulder
-# width and arm length are ~0.6 of the source's, shoulder height above the hips ~0.75
-SCALE = {"lower": (0.657, 0.657, 0.629), "upper": (0.62, 0.62, 0.70)}
+# The retargeter scales its SOMA source for G1 (legs and upper body about the pelvis keypoint,
+# by axis); scale_keypoints undoes that and scales for Marvin Bot instead
 G1_SCALE = {"lower": (0.8, 0.8, 0.807), "upper": (0.8, 0.8, 0.7)}
+# Legs: uniform, the robot's straight hip-to-ankle length over the source's standing one (knee
+# 5-7 deg bent; 0.59 / 0.853 m). The knee is sensitive to this near straight: a target leg 1.5
+# cm short of the robot's holds the knee at 26 deg
+LEG = 0.69
+# Shoulders about the hips: width 0.62 of the source's, height 0.75, which puts them 0.34-0.39
+# m above the hip axis across the clips (the robot's are 0.365). Arms: uniform about each
+# shoulder, the robot's straight-arm reach to the wrist pitch axis over the source's
+# (0.443 / 0.56 m)
+TORSO = (0.62, 0.62, 0.75)
+# and forward (m, along the hips' heading): the source's shoulders are 2.5-4 cm behind its hips,
+# Marvin Bot's 2.5 cm ahead of its own. Left there, the solver sat the robot back to reach them
+SHOULDER_FORWARD = 0.065
+ARM = 0.79
+# The source's pelvis keypoint is 8 cm above its hips; Marvin Bot's pelvis origin is on the hip
+# axis, so its target is put midway between the hip targets. With either this or the shoulders
+# left high, the solver crouches the robot to reach them (knees bent 37-58 deg through a walk)
 # Scaled down, the human's feet end up 12-14 cm apart, often less mid-swing, and Marvin Bot's
 # feet are 11 cm wide: they would clip each other. The knees (keypoints 3, 4) and feet (5-8)
 # move out by this much (m) each, giving 18-20 cm, about the hip spacing (left keypoints are odd)
 WIDEN = {3: 0.015, 4: 0.015, 5: 0.03, 6: 0.03, 7: 0.03, 8: 0.03}
-HOLD = ["neck_yaw", "neck_pitch", "left_gripper", "right_gripper"]
+HOLD = ["neck_yaw", "neck_pitch", "left_wrist_pitch", "right_wrist_pitch"]
+
+
+def scale_keypoints(kp: onp.ndarray) -> onp.ndarray:
+    """The retargeter's SOMA keypoints (T, 18, 3; pelvis, legs 1-8, shoulders, elbows, wrists
+    9-14 with left first, hand and torso aids 15-17), rescaled from G1's size to Marvin Bot's."""
+    root = kp[:, :1]
+    src = kp.copy()  # the unscaled source
+    src[:, 0] = root[:, 0] / G1_SCALE["lower"]
+    src[:, 1:9] = src[:, :1] + (kp[:, 1:9] - root) / G1_SCALE["lower"]
+    src[:, 9:] = src[:, :1] + (kp[:, 9:] - root) / G1_SCALE["upper"]
+    new = src * LEG
+    hips_src, hips = src[:, 1:3].mean(1, keepdims=True), new[:, 1:3].mean(1, keepdims=True)
+    new[:, 0] = hips[:, 0]
+    side = new[:, 1, :2] - new[:, 2, :2]  # along the hip axis, to the left
+    side /= onp.linalg.norm(side, axis=-1, keepdims=True)
+    forward = onp.stack([side[:, 1], -side[:, 0], onp.zeros(len(side))], -1)[:, None]
+    new[:, 9:11] = hips + (src[:, 9:11] - hips_src) * TORSO + SHOULDER_FORWARD * forward
+    new[:, 17] = hips[:, 0] + (src[:, 17] - hips_src[:, 0]) * TORSO
+    for arm, shoulder in ((11, 9), (13, 9), (15, 9), (12, 10), (14, 10), (16, 10)):
+        new[:, arm] = new[:, shoulder] + (src[:, arm] - src[:, shoulder]) * ARM
+    # move the knees and feet outwards along the hip axis (left is +)
+    for k, w in WIDEN.items():
+        new[:, k, :2] += onp.sign(k % 2 - 0.5) * w * side
+    return new
 
 
 def main() -> None:
@@ -71,6 +112,16 @@ def main() -> None:
     if list(robot.joints.actuated_names) != mj_order:
         sys.exit(f"PyRoki joint order {robot.joints.actuated_names} is not the MJCF's {mj_order}")
 
+    # PyRoki's default pose, which the solver starts from and its rest cost pulls every joint
+    # towards, is the middle of each joint's range: for Marvin Bot a 65 deg knee and 45 deg hip
+    # pitch. Near a straight leg that small pull outweighs a centimetre of keypoint error, and
+    # it held the knees at 23 deg or more through a walk. Use the standing pose instead
+    config = (pm / "protomotions/robot_configs/marvin_bot.py").read_text()
+    stance = ast.literal_eval(re.search(r"DEFAULT_JOINT_POS = (\{.*\})", config).group(1))
+    rest = onp.array([stance.get(n, 0.0) for n in mj_order])
+    from_urdf = pk.Robot.from_urdf
+    pk.Robot.from_urdf = lambda urdf, **kw: from_urdf(urdf, default_joint_cfg=rest, **kw)
+
     def indices():
         names = [h for h, _ in LINKS]
         return names, r.jnp.array([r.G1_LINK_NAMES.index(link) for _, link in LINKS])
@@ -80,20 +131,7 @@ def main() -> None:
     def load_motion_data(motion_path, source_type, *args, **kwargs):
         out = list(load(motion_path, source_type, *args, **kwargs))
         if source_type == "soma":
-            # the retargeter returns [root, root + lower body offsets (8), root + upper body
-            # offsets], each part scaled for G1; rescale each part for Marvin Bot
-            kp = out[0]
-            root = kp[:, :1]
-            ratio = {k: onp.array(SCALE[k]) / onp.array(G1_SCALE[k]) for k in SCALE}
-            new = root * ratio["lower"] + (kp - root) * ratio["upper"]
-            new[:, 1:9] = root * ratio["lower"] + (kp[:, 1:9] - root) * ratio["lower"]
-            new[:, 0] = root[:, 0] * ratio["lower"]
-            # move the knees and feet outwards along the hip axis (left is +)
-            side = new[:, 1, :2] - new[:, 2, :2]
-            side /= onp.linalg.norm(side, axis=-1, keepdims=True)
-            for k, w in WIDEN.items():
-                new[:, k, :2] += onp.sign(k % 2 - 0.5) * w * side
-            out[0] = new
+            out[0] = scale_keypoints(out[0])
         return tuple(out)
 
     r.get_humanoid_retarget_indices = indices

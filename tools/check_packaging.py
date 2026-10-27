@@ -90,7 +90,7 @@ def poses(model: mujoco.MjModel, robot: dict) -> list[tuple[str, dict]]:
         return q
 
     out = [("stance", base())]
-    swept = [n for n in names if n.startswith("left_") and "gripper" not in n] + ["waist_yaw"]
+    swept = [n for n in names if n.startswith("left_")] + ["waist_yaw"]
     for n in swept:
         lo, hi = model.jnt_range[model.joint(n).id]
         for v in np.linspace(lo, hi, SWEEP):
@@ -119,7 +119,7 @@ def poses(model: mujoco.MjModel, robot: dict) -> list[tuple[str, dict]]:
 def limb(link: str) -> str:
     if link.startswith(("left_", "right_")):
         side = link.split("_", 1)[0]
-        arm = any(k in link for k in ("shoulder", "arm", "forearm", "wrist", "gripper"))
+        arm = any(k in link for k in ("shoulder", "arm", "forearm", "wrist", "palm"))
         return f"{side} {'arm' if arm else 'leg'}"
     return "pelvis" if link == "pelvis" else "upper body"
 

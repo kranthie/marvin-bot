@@ -44,7 +44,10 @@ gamepad,electronics,Wireless gamepad,,1,60,estimate,P4,planned,no,,
 act-rs03-p5,actuators,Robstride RS03 60 N·m actuator,RS03,5,225,"Seeed 2026-10: $225 each, $214 at 10+ (RobStride list $225)",P5,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,waist yaw; shoulder pitch and roll
 act-rs06-p5,actuators,Robstride RS06 36 N·m actuator,RS06,4,210,"Seeed 2026-10: $210 each, $200 at 10+ (RobStride list $210)",P5,planned,no,https://www.seeedstudio.com/Robostride-06-Actuator-p-6668.html,shoulder yaw and elbow
 act-rs00,actuators,Robstride RS00 14 N·m actuator,RS00,2,138.99,"Seeed 2026-10: $138.99 each, $131.99 at 10+ (RobStride list $125)",P5,planned,no,https://www.seeedstudio.com/Robostride-00-Actuator-p-6664.html,wrist yaw
-servo-sts3250,actuators,Feetech STS3250 serial-bus servo,STS3250,4,45,reseller 2026-10,P5,planned,no,,neck yaw/pitch and grippers
+servo-sts3250,actuators,Feetech STS3250 serial-bus servo,STS3250,4,45,reseller 2026-10,P5,planned,no,,neck yaw/pitch and wrist pitch
+hand-kit,actuators,"Open-source 8-DOF four-finger hand kit, left and right (8 Feetech SCS0009 servos each, 5 V)",,2,99,"Seeed 2025-11: SKUs 100062181 (left), 100063642 (right), $99 each",P5,owned,no,https://www.seeedstudio.com/Amazing-Hand-Open-Source-3D-Printable-Robotic-Hand-Kit.html,"0.40 kg each as published (weigh); its design is CC-BY-4.0, see ACKNOWLEDGMENTS.md"
+dcdc-hand,power,"DC-DC 12 V to 5 V, 3 A, small (in the wrist)",,2,8,estimate,P5,planned,no,,"one per hand: 8 SCS0009 servos at up to 0.3 A each"
+servo-adapter-hand,electronics,Feetech serial-bus USB adapter (hands),,2,15,estimate,P5,planned,no,,"one bus per hand: SCS0009 servos use Feetech's SCS protocol, the STS3250s its STS protocol; the hand kit's own driver board may do instead"
 servo-adapter,electronics,Feetech serial-bus USB adapter,,1,15,estimate,P5,planned,no,,
 dcdc-servo,power,"DC-DC 48 V to 12 V, 10 A, compact (at most 60 x 34 x 25 mm)",,1,60,estimate,P5,planned,no,,"the pelvis channel under the waist motor has room for 60 x 34 x 25 mm; a chassis-mount 150 W module does not fit"
 crossed-roller,mechanical,Crossed-roller bearing for the waist,,1,80,reseller range $20-80,P5,planned,no,,

@@ -13,7 +13,7 @@ The drawing is to scale and shows every powered joint, coloured by actuator mode
 | Thigh, shin | 0.30 m, 0.29 m |
 | Ankle axis height | 0.06 m |
 | Shoulder width | ~0.49 m |
-| Upper arm, forearm to gripper | 0.20 m, 0.215 m |
+| Upper arm, forearm to wrist pitch, hand | 0.20 m, 0.188 m, 0.181 m |
 | Head | ~0.16 m wide, ~0.17 m tall |
 
 ## Design language
