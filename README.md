@@ -43,6 +43,7 @@ Marvin Bot is a new design, but it stands on open work by others:
 - **Hands:** the [AmazingHand](https://github.com/pollen-robotics/AmazingHand) by Pollen Robotics (CC-BY-4.0), bought as kits; its meshes are in `description/third_party/`.
 - **Training and simulation:** NVIDIA [Isaac Lab](https://github.com/isaac-sim/IsaacLab) and Newton, [ProtoMotions](https://github.com/NVlabs/ProtoMotions) with [PyRoki](https://github.com/chungmin99/pyroki) for motion tracking, [MuJoCo](https://github.com/google-deepmind/mujoco) for the cross-checks, and [GR00T](https://github.com/NVIDIA/Isaac-GR00T) planned for manipulation.
 - **Actuators:** [RobStride](https://github.com/RobStride/Product_Information)'s published manuals and specifications.
+- **Built with [Claude](https://claude.ai) and [Claude Code](https://claude.com/claude-code)** (Anthropic): the design, CAD, simulation, training code and documentation were developed with them; commits they contributed to are marked `Co-Authored-By: Claude`.
 
 Every source, with its licence and what was used from it, is in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
 
