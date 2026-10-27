@@ -1,7 +1,8 @@
 """Build Marvin Bot's hand meshes from a local clone of the AmazingHand repository.
 
-The AmazingHand (Pollen Robotics, https://github.com/pollen-robotics/AmazingHand) is an
-open-source 8-DOF four-finger hand; its mechanical design is CC-BY-4.0. Its MuJoCo model
+The AmazingHand (Pollen Robotics, https://github.com/pollen-robotics/AmazingHand) is an open-source
+8-DOF four-finger hand; its mechanical design is CC-BY-4.0 and its MuJoCo models (under Demo/)
+Apache-2.0, so the meshes carry both (see description/third_party/amazing_hand/). Its MuJoCo model
 (Demo/AHSimulation, one per hand) places every part at the assembled pose, with the fingers
 straight; the palm and top shells, which the model leaves out, come from cad/stl and are placed
 like the hand plate. This script merges the parts of each hand, without the fasteners, pins and

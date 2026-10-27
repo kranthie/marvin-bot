@@ -20,8 +20,11 @@ git clone https://github.com/isaac-sim/IsaacLab.git --branch release/3.0.0
 cd IsaacLab
 uv sync --extra isaacsim --extra importers   # Newton is the default backend; isaacsim adds PhysX and Kit
 uv pip install --no-deps -e <path to this repo>/sim/isaaclab
-export OMNI_KIT_ACCEPT_EULA=YES              # the first Isaac Sim launch asks for the Omniverse EULA
+export OMNI_KIT_ACCEPT_EULA=YES              # only if you have read and accept NVIDIA's Isaac Sim licence
 ```
+
+Isaac Sim is NVIDIA software under its own licence, not open source. Read it before the first
+launch; setting `OMNI_KIT_ACCEPT_EULA=YES` means you accept it.
 
 `uv sync` removes packages it doesn't manage, so reinstall this package after any sync and use `uv run --no-sync` for everything else.
 

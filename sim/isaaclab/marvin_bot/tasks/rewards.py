@@ -1,3 +1,7 @@
+# Portions adapted from Isaac Lab (https://github.com/isaac-sim/IsaacLab), Copyright (c) 2022-2026,
+# The Isaac Lab Project Developers, BSD-3-Clause (LICENSES/BSD-3-Clause-IsaacLab.txt). Modified for
+# Marvin Bot; the rest Apache-2.0.
+# SPDX-License-Identifier: Apache-2.0 AND BSD-3-Clause
 """Reward terms for Marvin Bot's tasks."""
 
 import torch
@@ -20,15 +24,17 @@ def foot_clearance(
 ) -> torch.Tensor:
     """Reward moving feet for lifting their soles ``target_height`` above the ground around them.
 
-    After Isaac Lab's Spot clearance term. On rough ground the ground is the highest of the pelvis
-    height scanner's hits within ``reach`` of each foot, so a swinging foot is pushed over the step
+    After the foot-clearance term in Isaac Lab's quadruped velocity task. On rough ground the
+    ground is the highest of the pelvis height scanner's hits within ``reach`` of each foot, so a
+    swinging foot is pushed over the step
     edge its toe (15 cm ahead of the ankle) is about to meet. Earlier, measured from the
     ground under the ankle, the policies lifted their feet 3.5 cm, caught 3 cm steps with their
     toes, and learned to stop at stairs instead. On flat ground z = 0. Zero for near-zero commands.
 
     Only swinging feet earn it: each foot's term is weighted by tanh of its speed, so a planted
-    foot earns nothing. (Weighting the height error by speed instead, as the Spot term does, gave
-    a planted foot the full reward; Marvin Bot's first flat policy learned to stand and shuffle.)
+    foot earns nothing. (Weighting the height error by speed instead, as Isaac Lab's quadruped
+    term does, gave a planted foot the full reward; Marvin Bot's first flat policy learned to
+    stand and shuffle.)
     """
     asset = env.scene[asset_cfg.name]
     feet = asset.data.body_pos_w.torch[:, asset_cfg.body_ids]  # (N, F, 3)

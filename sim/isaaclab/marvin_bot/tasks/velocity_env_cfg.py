@@ -1,3 +1,7 @@
+# Portions adapted from Isaac Lab (https://github.com/isaac-sim/IsaacLab), Copyright (c) 2022-2026,
+# The Isaac Lab Project Developers, BSD-3-Clause (LICENSES/BSD-3-Clause-IsaacLab.txt). Modified for
+# Marvin Bot; the rest Apache-2.0.
+# SPDX-License-Identifier: Apache-2.0 AND BSD-3-Clause
 """Velocity-tracking walking tasks for Marvin Bot's legs, after Isaac Lab's G1 velocity
 tasks.
 

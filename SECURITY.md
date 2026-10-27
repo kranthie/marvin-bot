@@ -17,5 +17,6 @@ vulnerability**). Describe what you found, where (file and line, or the part and
 it could cause harm. You will get an answer as soon as possible; fixes and credit are agreed with
 you before anything is made public.
 
-This is a hobby project at the design stage (nothing has been built yet). The safety rules for
+This is a hobby project at the design stage (nothing has been built yet), provided as is and
+without warranty; reports are handled on a best-effort basis. The safety rules for
 working on the robot are in [docs/safety.md](docs/safety.md).

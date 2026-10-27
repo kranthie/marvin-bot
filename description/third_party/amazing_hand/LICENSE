@@ -1,0 +1,10 @@
+The files in this folder are derived from the AmazingHand by Pollen Robotics
+(https://github.com/pollen-robotics/AmazingHand), Copyright Pollen Robotics.
+
+- Parts from its mechanical design files (cad/stl): Creative Commons Attribution 4.0
+  International, https://creativecommons.org/licenses/by/4.0/legalcode
+- Parts from its MuJoCo models (Demo/AHSimulation): Apache License 2.0, as in the upstream
+  Demo/LICENSE; full text in ../../../LICENSES/Apache-2.0.txt
+
+Changes made for Marvin Bot are listed in README.md in this folder. Provided as is, without
+warranties of any kind.

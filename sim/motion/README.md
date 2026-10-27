@@ -1,12 +1,16 @@
 # Motion pipeline: human motion to a Marvin Bot tracking policy
 
-Status: runs end to end; no tracking policy good enough to use yet. Eight walking, jogging and
-turning clips retarget within every joint limit and train a tracker on Newton. The first tracker
-counted every clip as tracked but shuffled on the spot (it covered 0-32% of the reference's
-distance): the arms' collision boxes, which the retargeted arms pass through, held the legs, and
-the scaled-down feet clipped each other. Both are fixed below and a second tracker is training.
+Status: runs end to end; no tracker walks yet. Eight walking, jogging and turning clips retarget
+within every joint limit. Trackers 1-4 counted the clips as tracked but did not follow them (the
+first shuffled on the spot, covering 0-32% of the reference's distance; later ones stood still);
+tracker 5, with BeyondMimic's global anchor-position reward restored, is being trained.
 
-![A human walk retargeted to Marvin Bot](../../docs/media/retarget_walk.webp)
+> [!IMPORTANT]
+> **Motion data licence.** The sample motions used so far come from the BONES-SEED dataset
+> (Motion Data by [Bones Studio](https://bones.studio)), whose licence grants rights only to
+> non-profit academic institutions and to companies under $1M annual revenue, and requires that
+> credit. Check that you qualify before using it, or use openly licensed motion instead. No
+> motion data, and no render of it, is published in this repository.
 
 Instead of writing rewards for each skill, train a policy that tracks a reference motion
 (BeyondMimic-style motion tracking). A new skill is then a new clip, not new reward code. The
@@ -102,8 +106,9 @@ trains at about 2.5 s an epoch with 4096 robots on one RTX-class GPU.
 
 ## Data licences
 
-Motion data is not committed. Check each source's terms before publishing anything trained on
-it: the BONES-SEED motions (ProtoMotions' sample files and Kimodo's SEED models) are gated,
-for academic use and qualifying startups; Kimodo's weights are under the NVIDIA Open Model
+Motion data is not committed. Check each source's terms before using it or publishing anything
+trained on it: the BONES-SEED motions (ProtoMotions' sample files and Kimodo's SEED models;
+Motion Data by [Bones Studio](https://bones.studio), BONES-SEED License) may be used only by
+non-profit academic institutions and companies under $1M annual revenue, with that credit; Kimodo's weights are under the NVIDIA Open Model
 License, and its text encoder is Meta's gated Llama 3 8B Instruct; ProtoMotions' and PyRoki's
 code is Apache-2.0 and MIT.
