@@ -164,6 +164,12 @@ def main() -> None:
         help="sensor noise as a fraction of the training noise (0 for none)",
     )
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument(
+        "--wrist-yaw",
+        type=float,
+        default=0.0,
+        help="hold the wrist yaw joints here, deg (90: palms towards the thighs)",
+    )
     args = ap.parse_args()
     script = list(STAIRS_SCRIPT if args.stairs else SCRIPT)
     if args.fast and not args.stairs:
@@ -195,12 +201,15 @@ def main() -> None:
     effort = np.array([spec_joints[n]["effort"] for n in names])
     speed = np.array([spec_joints[n]["speed"] for n in names])
 
+    # the joints the policy does not drive are held at the default pose, or at --wrist-yaw
+    hold = default.copy()
+    hold[[i for i, n in enumerate(names) if n.endswith("_wrist_yaw")]] = np.radians(args.wrist_yaw)
     q_act = np.zeros(model.nu)
-    q_act[aid] = default
+    q_act[aid] = hold
     place_on_floor(model, data, q_act)
     substeps = round(meta["control_dt"] / PHYSICS_DT)
     last_action = np.zeros(len(act_idx))
-    target = default.copy()
+    target = hold.copy()
 
     # rough-ground policies: the terrain map around the feet, ray-cast like Isaac Lab's height
     # scanner (yaw-aligned grid, rows of constant y), refreshed at the map rate
@@ -324,8 +333,8 @@ def main() -> None:
         knees = [i for i, n in enumerate(names) if n.endswith("_knee")]
         for k in range(steps):
             last_action = session.run(None, {in_name: observe(cmd, k)})[0][0]
-            target = default.copy()
-            target[act_idx] += scale * last_action
+            target = hold.copy()
+            target[act_idx] = default[act_idx] + scale * last_action
             for _ in range(substeps):
                 q, qd = data.qpos[qadr], data.qvel[vadr]
                 tau = kp * (target - q) - kd * qd
