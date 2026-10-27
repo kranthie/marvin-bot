@@ -5,7 +5,7 @@ except for what is robot-specific:
 - which robot frame each human keypoint is matched to (LINKS), on the retargeting URDF that
   setup_protomotions.py writes (it adds the toe, hand and torso frames);
 - the scale from the human source to Marvin Bot, applied on top of the retargeter's G1 scale
-  (SCALE);
+  (SCALE), with the feet moved apart to Marvin Bot's hip spacing (WIDEN);
 - the joints held near their rest angle (the retargeter's G1 list names joints Marvin Bot has
   not got: a waist roll and pitch, wrist pitch).
 
@@ -47,6 +47,10 @@ LINKS = [
 # width and arm length are ~0.6 of the source's, shoulder height above the hips ~0.75
 SCALE = {"lower": (0.657, 0.657, 0.629), "upper": (0.62, 0.62, 0.70)}
 G1_SCALE = {"lower": (0.8, 0.8, 0.807), "upper": (0.8, 0.8, 0.7)}
+# Scaled down, the human's feet end up 12-14 cm apart, often less mid-swing, and Marvin Bot's
+# feet are 11 cm wide: they would clip each other. The knees (keypoints 3, 4) and feet (5-8)
+# move out by this much (m) each, giving 18-20 cm, about the hip spacing (left keypoints are odd)
+WIDEN = {3: 0.015, 4: 0.015, 5: 0.03, 6: 0.03, 7: 0.03, 8: 0.03}
 HOLD = ["neck_yaw", "neck_pitch", "left_gripper", "right_gripper"]
 
 
@@ -84,6 +88,11 @@ def main() -> None:
             new = root * ratio["lower"] + (kp - root) * ratio["upper"]
             new[:, 1:9] = root * ratio["lower"] + (kp[:, 1:9] - root) * ratio["lower"]
             new[:, 0] = root[:, 0] * ratio["lower"]
+            # move the knees and feet outwards along the hip axis (left is +)
+            side = new[:, 1, :2] - new[:, 2, :2]
+            side /= onp.linalg.norm(side, axis=-1, keepdims=True)
+            for k, w in WIDEN.items():
+                new[:, k, :2] += onp.sign(k % 2 - 0.5) * w * side
             out[0] = new
         return tuple(out)
 
