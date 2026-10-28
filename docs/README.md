@@ -10,6 +10,7 @@
 | [design/concept.md](design/concept.md) | The v0.2 concept (historical) |
 | [design/stairs.md](design/stairs.md) | Stair climbing: status, open issues and options |
 | [design/assembly_wiring.md](design/assembly_wiring.md) | Modules, assembly order, power and wiring |
+| [design/g1_capability_study.md](design/g1_capability_study.md) | What matching Unitree G1's joints and ranges would take: limits, tiers of change, mass and cost |
 | [../sim/isaaclab/README.md](../sim/isaaclab/README.md) | Training the walking and stair policies, and every run's results |
 | [../sim/motion/README.md](../sim/motion/README.md) | The motion-tracking pipeline |
 | [../bench/README.md](../bench/README.md) | Actuator bench tests (phase 2) |
