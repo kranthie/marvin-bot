@@ -15,6 +15,9 @@ except for what is robot-specific:
 It checks that PyRoki's joint order is the MJCF's, since the converter that follows reads the
 retargeted joint vector in MJCF order.
 
+Keypoints converted from other motion capture into the same convention (convert_100style.py)
+take --converted.
+
 Usage (in the PyRoki environment), then continue with ProtoMotions' converter:
   python sim/motion/retarget_marvin_bot.py --protomotions /path/to/ProtoMotions \\
       --keypoints-folder-path keypoints/ --output-dir retargeted/ --source-type soma --no-visualize
@@ -100,6 +103,11 @@ def main() -> None:
     i = argv.index("--protomotions")
     pm = Path(argv.pop(i + 1))
     argv.pop(i)
+    # --converted: keypoints from other motion capture, already in the SOMA keypoint convention
+    # with the pelvis keypoint on the hips (not extracted from a ProtoMotions SOMA motion)
+    converted = "--converted" in argv
+    if converted:
+        argv.remove("--converted")
     sys.path.insert(0, str(pm / "pyroki"))
     import batch_retarget_to_g1_from_keypoints as r  # noqa: PLC0415
     import pyroki as pk  # noqa: PLC0415
@@ -134,6 +142,8 @@ def main() -> None:
             out[0] = scale_keypoints(out[0])
         return tuple(out)
 
+    if converted:
+        r.soma_pelvis_keypoint_on_hips = lambda positions, orientations: positions
     r.get_humanoid_retarget_indices = indices
     r.load_motion_data = load_motion_data
     r.JOINTS_TO_MOVE_LESS = {"soma": HOLD, "smpl": HOLD}

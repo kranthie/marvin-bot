@@ -50,7 +50,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Retrain the flat and stair policies on the current model (39.13 kg) and rerun the MuJoCo cross-checks (flat v7, rough v9)
 - [x] No side-to-side waddle (pelvis roll 20° to 6° peak to peak, head sway 16.5 to 7-8 cm); 0-20 ms sensor and 0-10 ms motor delays in training
 - [ ] Stair robustness: rough v9 falls in 2 of 15 runs on 15-20 cm stairs over five noise seeds
-- [ ] Motion tracking (`sim/motion/`): pipeline runs end to end; a tracker that follows walking clips, then a collision-free arm retarget and a MuJoCo replay. Trackers 1-4 did not walk (ProtoMotions' config leaves out BeyondMimic's global anchor-position reward, so standing still scored well); tracker 5 restores it
+- [ ] Motion tracking (`sim/motion/`): a first tracker, on eight 100STYLE clips, walks straight, turns and walks in a style at 87-101% of the reference's distance after a short run; it falls on the backward walk, the side step and the start-stop clip. Next: a longer run, those clips, the feet's 4 cm float in the reference, a collision-free arm retarget and a MuJoCo replay
 - [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
 - [x] Battery cradle, blind-mate connector and electronics bay layout (`cad/electrical.py`)
 
