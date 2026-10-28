@@ -137,6 +137,14 @@ FACTORY_BRANCH = """    elif robot_name == "marvin_bot":
 """
 
 
+# The bodies the tracker's body rewards score: BeyondMimic's 14 (its G1 pelvis, hip roll, knee,
+# ankle roll, torso, shoulder roll, elbow and wrist links) on Marvin Bot
+TRACKED_BODIES = [
+    "pelvis",
+    *(f"{s}_{b}" for s in SIDES for b in ("hip_roll_link", "shin_link", "foot_link")),
+    "torso_link",
+    *(f"{s}_{b}" for s in SIDES for b in ("shoulder_roll_link", "forearm_link", "palm_link")),
+]
 # The tracker experiment: upstream's BeyondMimic config, edited. Each (old, new) must match once.
 EXPERIMENT_UPSTREAM = "examples/experiments/mimic/mlp_bm_l2c2.py"
 EXPERIMENT_EDITS = [
@@ -170,7 +178,33 @@ EXPERIMENT_EDITS = [
     ),
     (
         "        anchor_pos_error_term_factory,\n",
-        "        anchor_pos_error_term_factory,\n        contact_match_rew_factory,\n",
+        "        anchor_pos_error_term_factory,\n        contact_match_rew_factory,\n"
+        "        relative_body_pos_error_term_factory,\n",
+    ),
+    # end the episode when any body is over 25 cm from the reference's, relative to the torso,
+    # as ProtoMotions' deployed G1 tracker does (g1-bones-deploy): without it an arm left at the
+    # side cost little, and the trackers' hands were 40-75 cm off in the arm skills
+    (
+        '        "behind": anchor_pos_error_term_factory(threshold=0.5),\n',
+        '        "behind": anchor_pos_error_term_factory(threshold=0.5),\n'
+        '        "bad_motion_body_pos": relative_body_pos_error_term_factory(threshold=0.25),\n',
+    ),
+    # BeyondMimic scores 14 key bodies (pelvis, hips, knees, ankles, torso, shoulders, elbows,
+    # wrists); upstream scores all of them, which averages a raised arm's error over Marvin Bot's
+    # 28 bodies (motor links among them), and the trackers left the arms at the sides: reaching
+    # forward, the reference's shoulder went to 139 deg and the robot's to 12
+    (
+        "    return EnvConfig(\n        ref_contact_smooth_window=7,",
+        "    import torch\n\n"
+        f"    key_bodies = {TRACKED_BODIES!r}\n"
+        "    key_bodies = torch.tensor(\n"
+        "        [robot_cfg.kinematic_info.body_names.index(b) for b in key_bodies]\n"
+        "    )\n"
+        "    for key in (\n"
+        '        "relative_body_pos", "relative_body_ori", "body_lin_vel", "body_ang_vel"\n'
+        "    ):\n"
+        '        reward_components[key].static_params["body_indices"] = key_bodies\n\n'
+        "    return EnvConfig(\n        ref_contact_smooth_window=7,",
     ),
     # a looser body velocity term and more exploration
     (

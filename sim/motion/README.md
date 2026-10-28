@@ -61,10 +61,18 @@ What is specific to Marvin Bot:
   exploration (log std -2.3) and a looser body-velocity term (sigma 0.5); and a penalty (-2.0)
   on each foot whose contact differs from the reference's. Without it the trackers hopped,
   with both feet on the ground 70% of the time and both in the air 20%, where the reference
-  steps; upstream's other experiments use -0.1, and -0.5 only halved it.
+  steps; upstream's other experiments use -0.1, and -0.5 only halved it. The body rewards
+  score BeyondMimic's 14 key bodies (pelvis, hips, knees, ankles, torso, shoulders, elbows,
+  wrists) instead of all 28, whose average let an arm hang while the reference raised it (hands
+  40-75 cm off in the arm skills), and an episode ends when any body is 25 cm from the
+  reference's, as in ProtoMotions' deployed G1 tracker; together they brought the hands to
+  8-20 cm in the same skills.
 - **A second check.** ProtoMotions counts a clip as tracked when the torso height stays within
   25 cm of the reference's; `check_tracking.py` also compares the distance covered, the joint
-  angles and the body positions, which is how the first tracker's shuffling showed up.
+  angles and the body positions, all bodies and the hands and feet alone (an average over every
+  body hides a limb that misses), which is how the first tracker's shuffling showed up.
+- **Training size.** 16,384 robots at once keep one RTX-class GPU busy (95%, against 58% with
+  4,096), for twice the simulated steps per hour.
 
 ## Environments
 
@@ -139,12 +147,12 @@ $P $M/sim/motion/fix_sole_height.py . $W/proto
 $P protomotions/components/motion_lib.py --motion-path $W/proto --output-file $W/marvin_bot_motions.pt
 $P protomotions/train_agent.py --robot-name marvin_bot --simulator newton \
     --experiment-path examples/experiments/mimic/mlp_bm_marvin_bot.py --experiment-name marvin_bot_track \
-    --motion-file $W/marvin_bot_motions.pt --num-envs 4096 --batch-size 16384 --headless
+    --motion-file $W/marvin_bot_motions.pt --num-envs 16384 --batch-size 65536 --headless
 $P $M/sim/motion/check_tracking.py \
     results/marvin_bot_track/results/predicted_motion_lib_epoch_<N>.pt $W/marvin_bot_motions.pt
 ```
 
-The tracker trains at about 2.5 s an epoch with 4096 robots on one RTX-class GPU and writes a
+The tracker trains at about 5.6 s an epoch with 16,384 robots on one RTX-class GPU and writes a
 rollout of every clip (`predicted_motion_lib_epoch_<N>.pt`) every 600 epochs, from epoch 200;
 score the latest with `check_tracking.py`. Exporting a tracker and replaying it in MuJoCo are
 not set up yet.
