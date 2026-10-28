@@ -11,10 +11,16 @@ leg's landing load through its hip):
   landing: at the ankle axis, 3 x body weight up, 0.5 x fore-aft, 0.3 x sideways, together
   hand: for the arms' aluminium parts, at the hand: 0.5 x body weight up, 0.25 x
         fore-aft, 0.15 x sideways (catching a fall or pushing up from the floor on one hand)
+  side: a sideways fall onto the knee, 1 x body weight across the leg at the knee axis (an
+        estimate until falls are measured in simulation); for the single thigh plate, which
+        it bends out of plane
   peak torque: the joint's peak torque (description/actuators.yaml, the linkage ratios for the
                ankle) as a moment on the part that reacts it
 
-This is a first-pass check; FEA of the final parts, and fatigue, come later.
+This is a first-pass check; FEA of the final parts, and fatigue, come later. Not covered: the
+torso base, which a hand catch with the arm forward mostly twists (torsion is left out here); a
+finite-element estimate put it at SF 0.8 in that case, so it needs FEA and likely a stiffer,
+pocketed plate before it is made.
 
 Usage:
   python -m cad.strength          # table of the worst station per part and load case
@@ -102,7 +108,7 @@ class Check:
     stations: list[float]  # mm along the axis
     point: tuple  # where the landing (or hand) force acts, in the part's link frame (mm)
     moment: tuple = (0.0, 0.0, 0.0)  # peak-torque case: moment vector (N·mm)
-    load: str = "landing"  # or "hand"
+    load: str = "landing"  # or "hand", "side"
 
 
 def checks(peak: dict, mass: float) -> list[Check]:
@@ -147,6 +153,9 @@ def checks(peak: dict, mass: float) -> list[Check]:
             (0.0, 1000 * peak["left_knee"], 0.0),
         ),
         # hip pitch link: the box round the pitch motor, down to the yaw motor
+        Check(
+            "left_thigh_plate", "z", list(np.linspace(-40, -150, 8)), tuple(knee_thigh), load="side"
+        ),
         Check(
             "left_hip_pitch_outer+left_hip_pitch_inner+left_hip_pitch_front+left_hip_pitch_back",
             "z",
@@ -245,11 +254,12 @@ def main() -> int:
     w = mass * G
     landing = np.array([0.5 * w, 0.3 * w, 3.0 * w])  # N: fore-aft, sideways, up
     hand = np.array([0.25 * w, 0.15 * w, 0.5 * w])
+    side = np.array([0.0, 1.0 * w, 0.0])
     parts = {p.name: p for p in leg.parts() + torso.parts() + arm.parts()}
     worst_sf = np.inf
     print(
         f"robot {mass:.1f} kg; landing load at the ankle {np.round(landing):} N, hand load"
-        f" {np.round(hand):} N; target SF {TARGET}"
+        f" {np.round(hand):} N, side fall at the knee {np.round(side):} N; target SF {TARGET}"
     )
     print(f"{'part':34} {'case':8} {'station':>8} {'stress':>8} {'yield':>6} {'SF':>5}")
     for c in checks(peak, mass):
@@ -270,8 +280,8 @@ def main() -> int:
                 centroid = np.zeros(3)
                 centroid[ax] = s
                 centroid[uv[0]], centroid[uv[1]] = sec[1]
-                if case in ("landing", "hand"):
-                    force = landing if case == "landing" else hand
+                if case in ("landing", "hand", "side"):
+                    force = {"landing": landing, "hand": hand, "side": side}[case]
                     mom = np.cross(np.array(c.point) - centroid, force)  # N·mm
                 else:
                     force = np.zeros(3)

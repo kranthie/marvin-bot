@@ -60,10 +60,13 @@ def lighten(
     hole: float = 22.0,
     pitch: float = 30.0,
     rim: float = 9.0,
+    floor: float | None = None,
 ) -> mf.Manifold:
     """Drill a grid of lightening holes through a flat plate whose thickness runs along
     `normal`, staying `rim` mm inside its outline and out of the `keep` regions (motor mounting
-    faces, bearing bosses)."""
+    faces, bearing bosses). With `floor`, pockets instead: milled from the plate's +normal face,
+    leaving `floor` mm, so the plate keeps its full depth at the ribs between them (stiffer and
+    stronger out of plane than a thinner drilled plate of the same mass)."""
     lo, hi = np.array(plate.bounding_box()[:3]), np.array(plate.bounding_box()[3:])
     ax = "xyz".index(normal)
     inplane = [i for i in range(3) if i != ax]
@@ -81,7 +84,12 @@ def lighten(
         for v in vs + (pitch / 2 if k % 2 else 0):
             c = centre.copy()
             c[inplane[0]], c[inplane[1]] = u, v
-            holes.append(cyl(hole, size[ax] + 2, normal, tuple(c)))
+            if floor is None:
+                holes.append(cyl(hole, size[ax] + 2, normal, tuple(c)))
+            else:
+                depth = size[ax] - floor + 1  # 1 mm past the face
+                c[ax] = hi[ax] + 1 - depth / 2
+                holes.append(cyl(hole, depth, normal, tuple(c)))
     if not holes:
         return plate
     drill = mf.Manifold.batch_boolean(holes, mf.OpType.Add) ^ inner

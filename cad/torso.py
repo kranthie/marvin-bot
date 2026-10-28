@@ -51,7 +51,7 @@ def parts() -> list[Part]:
     # swing round the roll axes, so nothing of the pelvis sits where they go: |y| < 35 mm below
     # z = 45 mm, and x > -66 mm (in front of their back edge) only above that.
     rc = mounts["left_hip_roll"]  # roll motor centre (pelvis frame)
-    hip_t = 8.0
+    hip_t = 6.0  # back plate, with edge flanges: it carries the leg's landing moment (SF 2.1)
     bx = rc[0] - t04 / 2 - hip_t / 2  # back plate, on the roll motors' back faces
     waist_z = j["waist_yaw"][2]
     top_z = waist_z - t03 / 2 - t / 2  # under the waist RS03's driver cap

@@ -60,7 +60,7 @@ def parts() -> list[Part]:
     d03, t03 = env("RS03")
     plate = 6.0  # motor flanges
     web_t = 6.0  # side plates and webs, pocketed
-    hip_t = 8.0  # hip back plate, with edge flanges: it carries the leg's landing moment
+    hip_t = 6.0  # pelvis back plate (cad/torso.py), which the roll bracket's rear plate sits behind
     brg_d, brg_w = 42.0, 7.0  # 6806 far-side bearing (30 x 42 x 7 mm)
     out: list[Part] = []
 
@@ -186,16 +186,24 @@ def parts() -> list[Part]:
         box((60, 16, plate), (0, t04 / 2 + 2, yaw_out - plate / 2)),
     )
     out.append(Part("left_thigh_flange", "left_thigh_link", "al6061", tflange, "cnc"))
-    py = t04 / 2 + web_t / 2  # outer side plate, against the knee RS04's outer face
+    # The thigh plate is a single plate beside the leg's line, so a sideways fall onto the knee
+    # bends it out of plane: from 9 mm stock, pocketed from the outside to a 2 mm floor, it takes
+    # that case at SF 2.3 (cad/strength.py, side fall); the drilled 6 mm plate it replaces was
+    # at SF 0.5 there (finite elements, est. load). A topology-optimised outline could save
+    # about 35 g of the 61 g it adds
+    thigh_t = 9.0
+    py = t04 / 2 + thigh_t / 2  # outer side plate, against the knee RS04's outer face
     # a tapered strap from the yaw flange to a ring on the knee motor's stator bolt circle
     # (~86 mm, STEP model), instead of a plate as wide as the motor
     tplate = union(
-        hull(box((60, web_t, 16), (0, py, yaw_out - 8)), cyl(46, web_t, "y", (0, py, knee[2]))),
-        spider("RS04", knee, "y", -1, t04 / 2, web_t, width=20),
+        hull(box((60, thigh_t, 16), (0, py, yaw_out - 8)), cyl(46, thigh_t, "y", (0, py, knee[2]))),
+        spider("RS04", knee, "y", -1, t04 / 2, thigh_t, width=20),
     )
-    tplate = lighten(tplate, "y", keep=[cyl(70, 40, "y", (0, py, knee[2]))], hole=16, pitch=22)
+    tplate = lighten(
+        tplate, "y", keep=[cyl(70, 40, "y", (0, py, knee[2]))], hole=20, pitch=24, rim=7, floor=2.0
+    )
     # stub axle for the shin's far-side bearing, on the knee axis outside the plate
-    tplate = union(tplate, cyl(30, 12, "y", (0, py + web_t / 2 + 6, knee[2])))
+    tplate = union(tplate, cyl(30, 12, "y", (0, py + thigh_t / 2 + 6, knee[2])))
     out.append(Part("left_thigh_plate", "left_thigh_link", "al6061", tplate, "cnc"))
     # the knee motor's stator bolts to a ring on its body's rear (outer) face; posts join it to
     # the thigh plate over the driver cap
@@ -220,7 +228,8 @@ def parts() -> list[Part]:
     # run down to become the ankle fork cheeks.
     ka, kb = mounts["left_ankle_a"], mounts["left_ankle_b"]
     ankle_z = J["left_ankle_pitch"][2]
-    yi, yo = -(t03 / 2 + plate / 2), t03 / 2 + plate / 2  # inner and outer side plates
+    shin_t = 4.0  # side plates: SF 2.1 at 4 mm (cad/strength.py)
+    yi, yo = -(t03 / 2 + shin_t / 2), t03 / 2 + shin_t / 2  # inner and outer side plates
     hub = 40.0  # crank hub, spanning the gap from the motor's output face to the crank
     w = 38.0  # strap width (cad/strength.py sizes it)
 
@@ -230,13 +239,13 @@ def parts() -> list[Part]:
     knee_clear = cyl(2 * 68, 200, "y")  # the thigh plate and its stub turn inside r = 68 mm
     bridge_c = (65.0, -45.0)  # bridge in front of the knee motor, joining the knee yoke
     inner = union(
-        cyl(84, plate, "y", (0, yi, 0)),
-        spider("RS03", ka, "y", 1, t03 / 2, plate, width=24),
-        strap(w, plate, "y", (0, yi, 0), (-20, yi, -110), (ka[0], yi, ka[2]), cheek_at(yi)),
-        strap(30, plate, "y", (0, yi, 0), (bridge_c[0], yi, bridge_c[1])),
+        cyl(84, shin_t, "y", (0, yi, 0)),
+        spider("RS03", ka, "y", 1, t03 / 2, shin_t, width=24),
+        strap(w, shin_t, "y", (0, yi, 0), (-20, yi, -110), (ka[0], yi, ka[2]), cheek_at(yi)),
+        strap(30, shin_t, "y", (0, yi, 0), (bridge_c[0], yi, bridge_c[1])),
     ) - cyl(22, 20, "y", (0, yi, ankle_z))
     kh = spec("RS04")["holes"]["output"]
-    inner = inner - bolt_holes(kh["n"], kh["thread"], kh["pcd"], "y", (0, yi, 0), plate + 2)
+    inner = inner - bolt_holes(kh["n"], kh["thread"], kh["pcd"], "y", (0, yi, 0), shin_t + 2)
     inner = lighten(
         inner,
         "y",
@@ -247,10 +256,10 @@ def parts() -> list[Part]:
     )
     outer = (
         union(
-            spider("RS03", kb, "y", -1, t03 / 2, plate, width=24),
+            spider("RS03", kb, "y", -1, t03 / 2, shin_t, width=24),
             strap(
                 w,
-                plate,
+                shin_t,
                 "y",
                 (bridge_c[0], yo, bridge_c[1]),
                 (kb[0], yo, kb[2]),

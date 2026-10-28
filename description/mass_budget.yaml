@@ -3,20 +3,22 @@
 # basis: estimate = engineering guess, to be replaced by CAD-computed (cad) and then weighed (weighed).
 
 items:
-  leg_structure:     {mass: 4.6221, basis: cad, note: "two legs, cad/leg.py second pass: far-side bearings at knee and hip roll, channel-flanged hip block, pocketed plates; passes cad/strength.py; no fasteners yet"}
+  leg_structure:     {mass: 4.474, basis: cad, note: "two legs, cad/leg.py second pass: far-side bearings at knee and hip roll, channel-flanged hip block, pocketed plates (4 mm shin plates, 9 mm thigh plates pocketed to a 2 mm floor); passes cad/strength.py; fasteners in their own item"}
   feet:              {mass: 1.1752, basis: cad, note: "two feet, cad/leg.py: 5 mm pocketed base with two 6 x 16 mm ribs, heel posts, roll-bearing lugs, 4 mm TPU sole"}
-  pelvis:            {mass: 1.0238, basis: cad, note: "cad/torso.py: back plate carrying the hip roll motors, top plate and gussets (roll-first hip), pocketed"}
+  pelvis:            {mass: 0.943, basis: cad, note: "cad/torso.py: 6 mm back plate carrying the hip roll motors, top plate and gussets (roll-first hip), pocketed"}
   torso:             {mass: 1.2889, basis: cad, note: "cad/torso.py: waist flange, base plate, two side frames (A-frame and upper plate, service-cut), neck bridge, printed chest shell"}
   arm_structure:     {mass: 1.6256, basis: cad, note: "two arms, cad/arm.py: two-plate shoulder brackets, 7 mm shoulder plates, aluminium motor rings and flanges, printed upper-arm and forearm shells, wrist pitch cradles and hand mounts; no fasteners yet"}
   hands:             {mass: 0.80, basis: datasheet, note: "two bought 8-servo four-finger hands (bom.csv), 0.40 kg each as published, placed by cad/arm.py from their published CAD; to be weighed. Their mounts are in arm_structure"}
   head:              {mass: 0.4349, basis: cad, note: "cad/head.py: neck bracket, printed head frame, helmet shell, visor and camera window, depth camera (0.133 kg)"}
-  compute:           {mass: 1.5, basis: estimate, note: "Jetson AGX Orin developer kit as shipped; to be weighed"}
+  compute:           {mass: 0.877, basis: weighed, note: "Jetson AGX Orin 64 GB developer kit, without its external power supply"}
   battery:           {mass: 3.4, basis: estimate, note: "13S3P 21700 pack with BMS and housing, ~630 Wh"}
   keep_alive:        {mass: 0.4, basis: estimate, note: "50-100 Wh battery for the computer during swaps"}
   electronics:       {mass: 1.4700, basis: cad, note: "cad/electrical.py: each part placed at a typical outline with an estimated mass, plus harness allowances; weigh as bought"}
   padding:           {mass: 0.3, basis: estimate, note: "fall padding at knees, hips, elbows"}
+  fasteners:         {mass: 0.4, basis: estimate, note: "screws, nuts, inserts and dowels, about 4% of the frame; not modelled in the CAD"}
+  limb_harness:      {mass: 0.5, basis: estimate, note: "about 7 m of harness in the legs and arms (electrical/harness.yaml: power pairs, CAN, connectors at each motor); the electronics item covers the trunk bays only"}
 
 # Ideas to bring the total back under the target, with rough savings (kg).
 reductions:
-  - {idea: "Orin module on a compact carrier board instead of the developer kit", saving: 1.0}
+  - {idea: "Orin module on a compact carrier board instead of the developer kit (it needs its own heatsink and fan)", saving: 0.4}
   - {idea: "Lighter leg cores once CAD and simulation give real loads", saving: 0.5}
