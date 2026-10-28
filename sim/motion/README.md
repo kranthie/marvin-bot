@@ -123,11 +123,14 @@ The same eight motions from three openly licensed sources, retargeted and tracke
 |---|---|---|---|
 | Clips through ProtoMotions' motion filter | 8 of 8 | 8 of 8 | 5 of 8 (the rest jump) |
 | Planted foot sliding (median) | 0.07 m/s | 0.06 m/s | 0.43 m/s |
-| Tracker stays up | 5 of 8 | 3 of 8 | 3 of 5 |
+| Tracker stays up | 5 of 8 | 3 of 8; 5 of 8 with gentler prompts | 3 of 5 |
 
-100STYLE is the source: one licence (CC-BY-4.0), 100 styles of one actor, and it tracked best.
+100STYLE is the source: one licence (CC-BY-4.0), 100 styles of one actor, and it tracked well.
 Kimodo's text-to-motion is the way to add motions no dataset has, but its text encoder brings in
-Llama 3's licence. CMU's recordings are older and noisier. In all three, the backward and
+Llama 3's licence, and the prompt has to ask for a pace Marvin Bot can keep: the first prompts
+("a person jogs forward") gave a 2 m/s run, a 400°/s turn and a sidestep that crosses the feet,
+and the tracker fell on all three. Asking for slow, short steps (a 0.8 m/s jog, a 75°/s turn)
+kept it up on the jog and the turn, both at 97-104% of the reference's distance. CMU's recordings are older and noisier. In all three, the backward and
 sideways walks fell, which points at the tracker rather than the data.
 
 ## Data licences
