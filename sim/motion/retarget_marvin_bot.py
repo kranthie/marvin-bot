@@ -9,8 +9,8 @@ except for what is robot-specific:
 - the rest pose the solver starts from and pulls towards, the standing pose instead of the
   middle of each joint's range;
 - the joints held near their rest angle (the retargeter's G1 list names joints Marvin Bot has
-  not got: a waist roll and pitch, wrist roll; the wrist pitch is held too, since no keypoint
-  sets the hand's angle).
+  not got: a waist roll and pitch, wrist roll; the wrist yaw and pitch are held too, at the
+  standing pose's palms-in angle, since no keypoint sets the hand's angle).
 
 It checks that PyRoki's joint order is the MJCF's, since the converter that follows reads the
 retargeted joint vector in MJCF order.
@@ -71,7 +71,14 @@ ARM = 0.79
 # feet are 11 cm wide: they would clip each other. The knees (keypoints 3, 4) and feet (5-8)
 # move out by this much (m) each, giving 18-20 cm, about the hip spacing (left keypoints are odd)
 WIDEN = {3: 0.015, 4: 0.015, 5: 0.03, 6: 0.03, 7: 0.03, 8: 0.03}
-HOLD = ["neck_yaw", "neck_pitch", "left_wrist_pitch", "right_wrist_pitch"]
+HOLD = [
+    "neck_yaw",
+    "neck_pitch",
+    "left_wrist_yaw",
+    "right_wrist_yaw",
+    "left_wrist_pitch",
+    "right_wrist_pitch",
+]
 
 
 def scale_keypoints(kp: onp.ndarray) -> onp.ndarray:

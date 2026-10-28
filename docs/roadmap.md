@@ -50,7 +50,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Retrain the flat and stair policies on the current model (39.13 kg) and rerun the MuJoCo cross-checks (flat v7, rough v9)
 - [x] No side-to-side waddle (pelvis roll 20° to 6° peak to peak, head sway 16.5 to 7-8 cm); 0-20 ms sensor and 0-10 ms motor delays in training
 - [ ] Stair robustness: rough v9 falls in 2 of 15 runs on 15-20 cm stairs over five noise seeds
-- [ ] Motion tracking (`sim/motion/`): a first tracker, on eight 100STYLE clips, walks straight, turns and walks in a style at 87-101% of the reference's distance after a short run; it falls on the backward walk, the side step and the start-stop clip. Next: a longer run, those clips, the feet's 4 cm float in the reference, a collision-free arm retarget and a MuJoCo replay
+- [ ] Motion tracking (`sim/motion/`): a tracker on eleven Kimodo locomotion clips walks, curves, turns in place, jogs, walks backwards and starts and stops (9 of 11; 82-101% of the reference's distance after 2,600 epochs), stepping rather than hopping. Next: the sidesteps, a jog that leaves the ground, the fourteen generated skills, a collision-free arm retarget and a MuJoCo replay
 - [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
 - [x] Battery cradle, blind-mate connector and electronics bay layout (`cad/electrical.py`)
 
@@ -64,7 +64,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 Each can be trained in simulation now and retrained once the bench (phase 2) has fitted the actuator models. Published sim-to-real results for comparable humanoids are cited for each.
 
 - [ ] Get up from a fall, face up and face down (HoST, arXiv 2502.08378; arXiv 2502.12152). Phase 5's pass check; also a shoulder and hip torque check at Marvin Bot's mass
-- [ ] Expressive clips through `sim/motion/`: gestures first, then dances; needs the collision-aware arm retarget
+- [ ] Expressive clips through `sim/motion/`: gestures (waving, pointing, clapping, bowing), squats, a kick and a dance are generated with Kimodo and retargeted, and a tracker for them is training; needs the collision-aware arm retarget before hardware
 - [ ] A general motion tracker for whole-body teleoperation (SONIC, GR00T-WholeBodyControl; TWIST, HOMIE): one policy that follows any human pose from VR or motion capture, which is how GR00T demonstrations get recorded. Needs far more clips than the 61 samples (the full BONES-SEED set, gated) or SONIC adapted to Marvin Bot
 - [ ] Walk, squat and reach with any arm pose (HOMIE): the waist only turns, so reaching low means squatting
 - [ ] Stairs from depth images: a student policy on simulated depth with camera noise and holes, distilled from rough v9 (Hiking in the Wild, arXiv 2601.07718; PIM, arXiv 2411.14386)
