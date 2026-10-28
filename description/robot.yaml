@@ -40,19 +40,19 @@ joints:
   # legs, pelvis outwards: the hip is roll, then pitch, then yaw (skeleton.yaml); listed here
   # in the order the policies use
   - {name: "{side}_hip_pitch",      axis: pitch, range: [-30, 120]}  # beyond -30° (extension) the hip pitch yoke meets the hip roll motor behind it (cad.covers --check)
-  - {name: "{side}_hip_roll",       axis: roll,  range: [-20, 45]}
-  - {name: "{side}_hip_yaw",        axis: yaw,   range: [-45, 45]}
+  - {name: "{side}_hip_roll",       axis: roll,  range: [-30, 45]}
+  - {name: "{side}_hip_yaw",        axis: yaw,   range: [-90, 90]}
   - {name: "{side}_knee",           axis: pitch, range: [0, 130]}  # beyond 130° the upper ankle motor meets the thigh shell (cad.covers --check)
   - {name: "{side}_ankle_pitch",    axis: pitch, range: [-40, 40]}  # 40° dorsiflexion: 17-20 cm stairs (check_step_up.py)
   - {name: "{side}_ankle_roll",     axis: roll,  range: [-20, 20]}
   # torso and head
-  - {name: waist_yaw,               axis: yaw,   range: [-90, 90]}
+  - {name: waist_yaw,               axis: yaw,   range: [-150, 150]}
   - {name: neck_yaw,                axis: yaw,   range: [-60, 60]}
   - {name: neck_pitch,              axis: pitch, range: [-20, 40]}
   # arms
   - {name: "{side}_shoulder_pitch", axis: pitch, range: [-60, 180]}
   - {name: "{side}_shoulder_roll",  axis: roll,  range: [0, 120]}  # with the arms close to the body, below 0° the forearm meets the hip motor (check_packaging.py)
-  - {name: "{side}_shoulder_yaw",   axis: yaw,   range: [-90, 90]}
+  - {name: "{side}_shoulder_yaw",   axis: yaw,   range: [-150, 150]}
   - {name: "{side}_elbow",          axis: pitch, range: [0, 135]}
   - {name: "{side}_wrist_yaw",      axis: yaw,   range: [-90, 90]}
   - {name: "{side}_wrist_pitch",    axis: pitch, range: [-60, 60]}  # carries the hand (description/mass_budget.yaml: hands)
