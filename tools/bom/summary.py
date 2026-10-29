@@ -5,13 +5,13 @@ current price, so the total is the full cost to replicate the robot; the summary
 is owned, ordered and still to buy, from each line's status.
 
 Usage:
-  python tools/bom_summary.py
+  python tools/bom/summary.py
 """
 
 import sys
 from collections import defaultdict
 
-from bom_book import read_book, validate
+from book import read_book, validate
 
 
 def main() -> int:

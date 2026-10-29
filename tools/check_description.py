@@ -18,7 +18,7 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
-from bom_book import read_book
+from bom.book import read_book
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"

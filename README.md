@@ -38,7 +38,7 @@ Separate walking and stair-climbing policies are trained in Isaac Lab and replay
 - Carry and manipulate light objects with two 6-DOF arms and four-finger hands (1–2 kg is the goal; the v1 hands manage about 0.5 kg), learned from teleoperated demonstrations with a vision-language-action model (GR00T N1.7).
 - Learn skills beyond walking by tracking human motion (gestures, whole-body teleoperation), trained in simulation before the robot is built ([roadmap](docs/roadmap.md#skills-beyond-walking-simulation-before-and-during-the-build)).
 - Look finished without its clip-on covers: the visible parts are the structure, and the covers are an optional add-on.
-- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $17.5k in parts at October 2026 prices (`bom/bom.xlsx`, totalled by `tools/bom_summary.py`). That includes the Jetson AGX Orin 64 GB developer kit ($3,499) and the two hand kits, which this build already owns, so it still has about $13.8k to buy. Not included: the desktop CNC mill, the 3D printer, shipping, import duties, and the desktop GPU for training (optional, see `bom/README.md`).
+- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $17.5k in parts at October 2026 prices (`bom/bom.xlsx`, totalled by `tools/bom/summary.py`). That includes the Jetson AGX Orin 64 GB developer kit ($3,499) and the two hand kits, which this build already owns, so it still has about $13.8k to buy. Not included: the desktop CNC mill, the 3D printer, shipping, import duties, and the desktop GPU for training (optional, see `bom/README.md`).
 - Be fully open: CAD, electronics, firmware, simulation and training code.
 
 The full list is in [docs/requirements.md](docs/requirements.md).
@@ -106,8 +106,8 @@ Or one at a time:
 
 ```bash
 python tools/check_description.py   # joints, actuators, CAN load, mass budget, BOM counts
-python tools/bom_summary.py         # BOM totals by phase and group
-python tools/bom_book.py --check    # BOM workbook valid and tidy (python tools/bom_book.py tidies it)
+python tools/bom/summary.py         # BOM totals by phase and group
+python tools/bom/book.py --check    # BOM workbook valid and tidy (python tools/bom/book.py tidies it)
 python tools/build_urdf.py --check  # URDF matches the description files
 python tools/build_harness.py --check  # wiring harness routes, gauges and fuses (electrical/)
 python -m cad.build                 # part meshes (needed by every MuJoCo check), masses, sizes

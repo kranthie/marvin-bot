@@ -18,33 +18,33 @@ build. It has these sheets:
 
 ## Editing
 
-`tools/bom_book.py` keeps the workbook consistent. Either edit the workbook by hand (add a row
+`tools/bom/book.py` keeps the workbook consistent. Either edit the workbook by hand (add a row
 anywhere in a group's sheet, or change a status, price or source) and then tidy it:
 
 ```bash
-python tools/bom_book.py            # re-sort, re-format, rebuild formulas, dropdowns and Summary
+python tools/bom/book.py            # re-sort, re-format, rebuild formulas, dropdowns and Summary
 ```
 
 Or edit it from the command line, which tidies it as well:
 
 ```bash
-python tools/bom_book.py set cells unit_usd=9.95 "price_basis=dealer 2026-11-02"
-python tools/bom_book.py add usb-hub group=electronics "item=USB 3 hub" qty=1 unit_usd=30 phase=P4
-python tools/bom_book.py source cells "vendor=Some dealer" url=https://example.com unit_usd=9.95
-python tools/bom_book.py set compute status=owned
-python tools/bom_book.py remove usb-hub
+python tools/bom/book.py set cells unit_usd=9.95 "price_basis=dealer 2026-11-02"
+python tools/bom/book.py add usb-hub group=electronics "item=USB 3 hub" qty=1 unit_usd=30 phase=P4
+python tools/bom/book.py source cells "vendor=Some dealer" url=https://example.com unit_usd=9.95
+python tools/bom/book.py set compute status=owned
+python tools/bom/book.py remove usb-hub
 ```
 
-`python tools/bom_book.py --check` (CI) fails if a line is invalid (unknown status or group,
+`python tools/bom/book.py --check` (CI) fails if a line is invalid (unknown status or group,
 duplicate id, a sourcing row without its line) or if the workbook isn't tidy.
-`python tools/bom_summary.py` prints the totals. Sheets the tool doesn't manage are left alone. A
+`python tools/bom/summary.py` prints the totals. Sheets the tool doesn't manage are left alone. A
 workbook saved by a spreadsheet program may need one tidy run before `--check` passes again.
 Totals are computed when the file is opened (in Excel or LibreOffice). Previews that don't
 compute formulas show them empty.
 
 ## Cost
 
-At October 2026 prices the full robot comes to about **$17.5k** (`tools/bom_summary.py`). Phase 2
+At October 2026 prices the full robot comes to about **$17.5k** (`tools/bom/summary.py`). Phase 2
 is about $1.0k, phase 3 $3.2k, phase 4 $9.1k, phase 5 $3.8k and phase 6 $0.4k. By group:
 actuators $6.2k, compute and sensors $4.7k (the Jetson AGX Orin 64 GB developer kit alone is
 $3,499, up from $1,999 before NVIDIA's July 2026 price rise), structure and materials $2.6k,

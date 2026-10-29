@@ -12,7 +12,7 @@ Writes:
                                        the actuator bolts: each motor's stator and output hole
                                        circles from description/actuators.yaml
 The workbook's other sheets, and the builder's status and notes columns on these two, are kept
-(tools/bom_book.py).
+(tools/bom/book.py).
 
 The bought parts (the workbook's group sheets) and the cover shells are listed in the made-parts
 sheet for
@@ -34,7 +34,7 @@ import numpy as np
 import trimesh
 import yaml
 
-from tools import bom_book
+from tools.bom import book as bom_book
 
 from . import arm, covers, electrical, head, leg, torso
 

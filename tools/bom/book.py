@@ -7,12 +7,12 @@ from the rows already in the workbook, so hand edits and scripted edits come out
 it does not manage are left alone, and so are the columns a builder fills in (status, build notes).
 
 Usage:
-  python tools/bom_book.py            # normalise bom/bom.xlsx in place (after editing it by hand)
-  python tools/bom_book.py --check    # exit 1 if it has errors or is not normalised (CI)
-  python tools/bom_book.py set cells unit_usd=9.95 "price_basis=dealer 2026-11-02"
-  python tools/bom_book.py add usb-hub group=electronics "item=USB 3 hub" qty=1 unit_usd=30 phase=P4
-  python tools/bom_book.py source cells "vendor=Some dealer" url=https://... unit_usd=9.95
-  python tools/bom_book.py remove usb-hub
+  python tools/bom/book.py            # normalise bom/bom.xlsx in place (after editing it by hand)
+  python tools/bom/book.py --check    # exit 1 if it has errors or is not normalised (CI)
+  python tools/bom/book.py set cells unit_usd=9.95 "price_basis=dealer 2026-11-02"
+  python tools/bom/book.py add usb-hub group=electronics "item=USB 3 hub" qty=1 unit_usd=30 phase=P4
+  python tools/bom/book.py source cells "vendor=Some dealer" url=https://... unit_usd=9.95
+  python tools/bom/book.py remove usb-hub
 Each edit normalises the workbook afterwards. `source` dates the row today unless checked= is
 given. Fields are the column names below (id, group, item, model, phase, status, ...).
 """
@@ -20,7 +20,9 @@ given. Fields are the column names below (id, group, item, model, phase, status,
 import argparse
 import datetime
 import io
+import re
 import sys
+import zipfile
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -28,7 +30,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 BOOK = ROOT / "bom" / "bom.xlsx"
 
 # BOM group -> sheet title, in the order the sheets appear
@@ -242,15 +244,24 @@ def dropdown(ws, columns, field, options, last) -> None:
 COL = {f: get_column_letter(i + 1) for i, (f, *_) in enumerate(LINE_COLUMNS)}
 
 
-def line_sheet(ws, title: str, rows: list[dict]) -> tuple[int, int]:
+def line_value(r: dict) -> float:
+    try:
+        return r["qty"] * r["unit_usd"]
+    except TypeError:
+        return 0
+
+
+def line_sheet(ws, title: str, rows: list[dict], cache: dict) -> tuple[int, int]:
     """One group's lines, a formula per line and a total; return (last line row, total row)."""
     rows = sorted(rows, key=lambda r: (r["phase"], r["spare"], r["item"], r["id"]))
     last = write_rows(ws, LINE_COLUMNS, rows)
-    for n in range(2, last + 1):
+    for n, r in enumerate(rows, start=2):
         ws[f"{COL['line_usd']}{n}"] = f"={COL['qty']}{n}*{COL['unit_usd']}{n}"
+        cache[f"{COL['line_usd']}{n}"] = line_value(r)
     total = last + 2
     ws[f"B{total}"] = f"Total {title.lower()}"
     ws[f"{COL['line_usd']}{total}"] = f"=SUM({COL['line_usd']}2:{COL['line_usd']}{last})"
+    cache[f"{COL['line_usd']}{total}"] = sum(line_value(r) for r in rows)
     for i in range(1, len(LINE_COLUMNS) + 1):
         c = ws.cell(row=total, column=i)
         c.fill, c.font, c.border = TOTAL_FILL, BOLD, TOP
@@ -262,13 +273,16 @@ def line_sheet(ws, title: str, rows: list[dict]) -> tuple[int, int]:
     return last, total
 
 
-def summary_sheet(ws, sheets: list[tuple[str, int, int]], phases: list[str]) -> None:
+def summary_sheet(ws, sheets: list[tuple[str, int, int]], groups: list[list[dict]], cache) -> None:
+    """Totals per group and per phase; cache gets each formula's value, for viewers that do not
+    compute formulas."""
+    phases = sorted({r["phase"] for rows in groups for r in rows})
     ws["A1"] = "Marvin Bot bill of materials"
     ws["A1"].font = Font(bold=True, size=14)
     ws["A2"] = (
         "This workbook is the BOM's source of truth; copy it to track your own build. Set each "
         "line's status to to buy, ordered or owned and the totals follow. After editing, run "
-        "python tools/bom_book.py to tidy it. Prices are indicative: see each line's price "
+        "python tools/bom/book.py to tidy it. Prices are indicative: see each line's price "
         "basis and the Sourcing sheet."
     )
     ws["A2"].alignment = WRAP
@@ -286,10 +300,12 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], phases: list[str]) -> 
             c = ws.cell(row=row, column=i, value=t or None)
             c.fill, c.font = HEADER_FILL, HEADER_FONT
 
-    def sums(row: int, crit: list[tuple[str, str]], sheets_) -> None:
-        ws.cell(row=row, column=3, value=sum_expr(crit, sheets_))
-        for col, status in ((4, "owned"), (5, "ordered"), (6, "to buy")):
-            ws.cell(row=row, column=col, value=sum_expr(crit + [("status", status)], sheets_))
+    def sums(row: int, crit: list[tuple[str, str]], sheets_, rows_) -> None:
+        for col, extra in ((3, []), (4, ["owned"]), (5, ["ordered"]), (6, ["to buy"])):
+            c = crit + [("status", s) for s in extra]
+            ws.cell(row=row, column=col, value=sum_expr(c, sheets_))
+            match = [r for r in rows_ if all(r.get(f) == v for f, v in c)]
+            cache[f"{get_column_letter(col)}{row}"] = sum(line_value(r) for r in match)
 
     def sum_expr(crit, sheets_) -> str:
         if not crit:
@@ -304,19 +320,22 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], phases: list[str]) -> 
         ws.cell(row=row, column=1, value=label)
         for col in "CDEF":
             ws[f"{col}{row}"] = f"=SUM({col}{first}:{col}{row - 1})"
+            cache[f"{col}{row}"] = sum(cache[f"{col}{n}"] for n in range(first, row))
         for c in ws[row][:6]:
             c.fill, c.font, c.border = TOTAL_FILL, BOLD, TOP
 
     head(4, "Group", "Lines")
     r = 5
-    for s in sheets:
+    for s, rows in zip(sheets, groups, strict=True):
         ws.cell(row=r, column=1, value=s[0])
         ws.cell(row=r, column=2, value=f"=COUNTA('{s[0]}'!A2:A{s[1]})")
-        sums(r, [], [s])
+        cache[f"B{r}"] = len(rows)
+        sums(r, [], [s], rows)
         r += 1
     group_total = r
     total_row(r, "Total (full cost to replicate)", 5)
     ws[f"B{r}"] = f"=SUM(B5:B{r - 1})"
+    cache[f"B{r}"] = sum(len(rows) for rows in groups)
     ws[f"B{r}"].fill, ws[f"B{r}"].font, ws[f"B{r}"].border = TOTAL_FILL, BOLD, TOP
     r += 2
     head(r, "Phase", "")
@@ -324,7 +343,7 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], phases: list[str]) -> 
     for p in phases:
         r += 1
         ws.cell(row=r, column=1, value=p)
-        sums(r, [("phase", p)], sheets)
+        sums(r, [("phase", p)], sheets, [r_ for rows in groups for r_ in rows])
     r += 1
     total_row(r, "Total", first)
     for row in ws.iter_rows(min_row=5, max_row=r, min_col=3, max_col=6):
@@ -332,6 +351,8 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], phases: list[str]) -> 
             c.number_format = USD0
     ws.cell(row=r + 1, column=1, value="Check: phases add up to the group total")
     ws.cell(row=r + 1, column=3, value=f'=IF(ROUND(C{r}-C{group_total},2)=0,"OK","MISMATCH")')
+    same = round(cache[f"C{r}"] - cache[f"C{group_total}"], 2) == 0
+    cache[f"C{r + 1}"] = "OK" if same else "MISMATCH"
     r += 3
     ws.cell(row=r, column=1, value=OPTIONAL).alignment = WRAP
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
@@ -339,19 +360,21 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], phases: list[str]) -> 
     ws.freeze_panes = "A4"
 
 
-def normalise(wb, data: dict) -> None:
-    """Rebuild the managed sheets of wb from data; leave other sheets where they are."""
+def normalise(wb, data: dict) -> dict:
+    """Rebuild the managed sheets of wb from data; leave other sheets where they are. Return the
+    formulas' values per sheet and cell, for to_bytes to store with them."""
     managed = [SUMMARY, *GROUPS.values(), SOURCING, PARTS, BOLTS]
     for title in managed:
         if title in wb.sheetnames:
             wb.remove(wb[title])
     ws = {t: wb.create_sheet(t, i) for i, t in enumerate(managed)}
-    sheets = []
+    sheets, groups, cache = [], [], {t: {} for t in managed}
     for group, title in GROUPS.items():
         rows = [r for r in data["lines"] if r["group"] == group]
-        last, total = line_sheet(ws[title], title, rows)
+        last, total = line_sheet(ws[title], title, rows, cache[title])
         sheets.append((title, last, total))
-    summary_sheet(ws[SUMMARY], sheets, sorted({r["phase"] for r in data["lines"]}))
+        groups.append(rows)
+    summary_sheet(ws[SUMMARY], sheets, groups, cache[SUMMARY])
     srcs = sorted(data["sourcing"], key=lambda r: (r["id"], r.get("vendor") or ""))
     write_rows(ws[SOURCING], SOURCING_COLUMNS, srcs)
     dropdown(ws[SOURCING], SOURCING_COLUMNS, "confirmed", ("yes", "no"), len(srcs) + 1)
@@ -365,6 +388,7 @@ def normalise(wb, data: dict) -> None:
     for w in wb.worksheets:
         w.sheet_view.tabSelected = w.title == SUMMARY
     wb.calculation.fullCalcOnLoad = True
+    return cache
 
 
 def fingerprint(wb) -> list:
@@ -389,19 +413,62 @@ def fingerprint(wb) -> list:
     return out
 
 
-def to_bytes(wb) -> bytes:
+def computed(raw: bytes) -> list:
+    """Every cell's stored value, formulas' cached results included (what a preview shows)."""
+    wb = load_workbook(io.BytesIO(raw), data_only=True)
+    return [[c.value for row in ws.iter_rows() for c in row] for ws in wb.worksheets]
+
+
+def to_bytes(wb, cache: dict | None = None) -> bytes:
+    """Save wb; store each formula's value from cache next to it, as a spreadsheet program does,
+    so viewers that do not compute formulas (previews, web views) still show the totals."""
     buf = io.BytesIO()
     wb.save(buf)
-    return buf.getvalue()
+    if not cache:
+        return buf.getvalue()
+    src = zipfile.ZipFile(io.BytesIO(buf.getvalue()))
+    rels = src.read("xl/_rels/workbook.xml.rels").decode()
+    target = {}
+    for rel in re.findall(r"<Relationship [^>]*>", rels):
+        rid, tgt = re.search(r'Id="([^"]+)"', rel), re.search(r'Target="/?(?:xl/)?([^"]+)"', rel)
+        if rid and tgt:
+            target[rid.group(1)] = tgt.group(1)
+    books = src.read("xl/workbook.xml").decode()
+    files = {
+        "xl/" + target[rid]: cache.get(name.replace("&amp;", "&"), {})
+        for name, rid in re.findall(r'<sheet name="([^"]+)"[^>]*r:id="([^"]+)"', books)
+    }
+
+    def fill(values: dict):
+        def put(m):
+            v = values.get(m.group(1))
+            if v is None:
+                return m.group(0)
+            if isinstance(v, str):
+                return f'<c r="{m.group(1)}"{m.group(2)} t="str"><f>{m.group(3)}</f><v>{v}</v>'
+            v = round(v, 2) if isinstance(v, float) else v
+            return f'<c r="{m.group(1)}"{m.group(2)}><f>{m.group(3)}</f><v>{v!r}</v>'
+
+        return put
+
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as dst:
+        for info in src.infolist():
+            data = src.read(info)
+            if files.get(info.filename):
+                xml = data.decode()
+                pattern = r'<c r="([A-Z]+\d+)"([^>]*)><f>(.*?)</f><v\s*/>'
+                data = re.sub(pattern, fill(files[info.filename]), xml).encode()
+            dst.writestr(info, data)
+    return out.getvalue()
 
 
 def normalised_bytes(path: Path, data: dict | None = None) -> tuple[bytes, list, list]:
     """(normalised workbook, its fingerprint, the file's fingerprint)."""
     wb = load_workbook(path)
-    current = fingerprint(wb)
-    normalise(wb, read_wb(wb) if data is None else data)
-    raw = to_bytes(wb)
-    return raw, fingerprint(load_workbook(io.BytesIO(raw))), current
+    current = [fingerprint(wb), computed(path.read_bytes())]
+    raw = to_bytes(wb, normalise(wb, read_wb(wb) if data is None else data))
+    return raw, [fingerprint(load_workbook(io.BytesIO(raw))), computed(raw)], current
 
 
 def save(data: dict | None = None, path: Path = BOOK) -> bool:
@@ -418,9 +485,10 @@ def check(path: Path = BOOK) -> list[str]:
     errors = validate(data)
     _, new, current = normalised_bytes(path)
     if new != current:
-        sheets = [a[0] for a, b in zip(new, current, strict=False) if a != b] or ["sheet order"]
+        pairs = zip(new[0], current[0], strict=False)
+        sheets = [a[0] for a, b in pairs if a != b] or ["stored formula values or sheet order"]
         errors.append(
-            f"{path.name} is not normalised ({', '.join(sheets)}): run python tools/bom_book.py"
+            f"{path.name} is not normalised ({', '.join(sheets)}): run python tools/bom/book.py"
         )
     return errors
 
