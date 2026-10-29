@@ -53,19 +53,34 @@ LINKS = [
 # The retargeter scales its SOMA source for G1 (legs and upper body about the pelvis keypoint,
 # by axis); scale_keypoints undoes that and scales for Marvin Bot instead
 G1_SCALE = {"lower": (0.8, 0.8, 0.807), "upper": (0.8, 0.8, 0.7)}
+# The robot's sizes, from description/ (the scales below follow them; read with re, since the
+# retargeter's environment has no YAML parser)
+DESC = Path(__file__).resolve().parents[2] / "description"
+_ROBOT = (DESC / "robot.yaml").read_text()
+_DIMS = {
+    k: float(re.search(rf"^  {k}: ([0-9.]+)", _ROBOT, re.M).group(1))
+    for k in ("thigh", "shin", "shoulder_height", "hip_axis_height", "upper_arm", "forearm")
+}
+_ROLL_DROP = -float(
+    re.search(
+        r"left_shoulder_roll:.*?xyz: \[[^,]+, [^,]+, ([-0-9.]+)\]",
+        (DESC / "skeleton.yaml").read_text(),
+    ).group(1)
+)
 # Legs: uniform, the robot's straight hip-to-ankle length over the source's standing one (knee
-# 5-7 deg bent; 0.59 / 0.853 m). The knee is sensitive to this near straight: a target leg 1.5
-# cm short of the robot's holds the knee at 26 deg
-LEG = 0.69
-# Shoulders about the hips: width 0.62 of the source's, height 0.75, which puts them 0.34-0.39
-# m above the hip axis across the clips (the robot's are 0.365). Arms: uniform about each
-# shoulder, the robot's straight-arm reach to the wrist pitch axis over the source's
-# (0.443 / 0.56 m)
-TORSO = (0.62, 0.62, 0.75)
+# 5-7 deg bent; 0.853 m). The knee is sensitive to this near straight: a target leg 1.5 cm short
+# of the robot's holds the knee at 26 deg
+LEG = (_DIMS["thigh"] + _DIMS["shin"]) / 0.853
+# Shoulders about the hips: width 0.62 of the source's; height 0.75 for shoulders 0.365 m above
+# the hip axis (0.34-0.39 m across the clips), in proportion for the robot's. Arms: uniform about
+# each shoulder, the robot's straight-arm reach to the wrist pitch axis over the source's (0.56 m)
+_SHOULDER_ABOVE_HIP = _DIMS["shoulder_height"] - _DIMS["hip_axis_height"]
+TORSO = (0.62, 0.62, 0.75 * _SHOULDER_ABOVE_HIP / 0.365)
 # and forward (m, along the hips' heading): the source's shoulders are 2.5-4 cm behind its hips,
 # Marvin Bot's 2.5 cm ahead of its own. Left there, the solver sat the robot back to reach them
 SHOULDER_FORWARD = 0.065
-ARM = 0.79
+_REACH = _ROLL_DROP + _DIMS["upper_arm"] + _DIMS["forearm"]
+ARM = (_REACH + 0.005) / 0.56  # 0.79 for the 0.443 m reach of a 50 mm shoulder drop
 # The source's pelvis keypoint is 8 cm above its hips; Marvin Bot's pelvis origin is on the hip
 # axis, so its target is put midway between the hip targets. With either this or the shoulders
 # left high, the solver crouches the robot to reach them (knees bent 37-58 deg through a walk)
