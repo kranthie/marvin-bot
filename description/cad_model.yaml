@@ -1194,19 +1194,19 @@ head_shell:
   material: pa_cf
   process: print
   budget: head
-  mass: 0.12599
-  com: [-0.0202403, 0.0, 0.0922312]
-  inertia: [0.000537004, 0.00042771, 0.00042397, 0.0, 6.5758e-05, 0.0]
-  size_mm: [138.2, 142.0, 173.6]
+  mass: 0.10001
+  com: [-0.0281016, 0.0, 0.0835984]
+  inertia: [0.000382854, 0.000296006, 0.000318956, 0.0, 7.58789e-05, 0.0]
+  size_mm: [135.7, 142.0, 166.9]
 head_visor:
   link: head_link
   material: pa_cf
   process: print
   budget: head
-  mass: 0.0648
-  com: [0.0548311, 0.0, 0.106837]
-  inertia: [0.000221239, 0.00016199, 0.000106926, 0.0, 3.42868e-05, 0.0]
-  size_mm: [79.5, 133.4, 166.5]
+  mass: 0.09078
+  com: [0.0420057, 0.0, 0.112167]
+  inertia: [0.00034568, 0.000271256, 0.000219212, 0.0, 7.25552e-05, 0.0]
+  size_mm: [113.7, 141.2, 168.1]
 head_window:
   link: head_link
   material: pa_cf

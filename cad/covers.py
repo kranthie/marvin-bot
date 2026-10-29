@@ -3,7 +3,7 @@
 The robot is designed to look finished without them (graphite printed shells, aluminium
 plates, the actuators' own housings). The shells give it a finished body: a smooth light
 torso tapering to the waist, a dark hip girdle, long leg shells, arm sleeves, toe caps and a
-dark neck sleeve under the helmet head, with the joints left visible between them. They add
+light neck sleeve under the helmet head, with the joints left visible between them. They add
 some fall protection.
 
 Each shell is a 1.2 mm printed skin following its link's parts and motors at a 4 mm gap: the
@@ -218,7 +218,7 @@ def parts() -> list[Part]:
             add(f"torso_cover_{name}_{side}", "torso_link", q ^ half("z", 1, seam_z))
             add(f"torso_cover_{name}_{side}_waist", "torso_link", q ^ half("z", -1, seam_z))
 
-    # --- neck sleeve (dark, flexible print): from inside the torso shell's neck opening up
+    # --- neck sleeve (light, flexible print): from inside the torso shell's neck opening up
     # into the helmet, turning with neck yaw; the head pitches over it
     nz = j["neck_pitch"][2]
     bot = -22.0  # just above the torso bridge; flaring towards the collar

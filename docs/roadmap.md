@@ -91,11 +91,12 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 3. Robstride bus current and regen behaviour (sizes the fuse, clamp and precharge).
 4. Real CAN timing with 3–5 motors per bus on the Orin under JetPack 7.2, and the on-board CAN controllers' pin setup.
 5. Depth camera driver support on JetPack 7.2; camera baseline figure (sources disagree).
-6. Primary IMU choice (industrial AHRS or a BMI088 on a microcontroller).
-7. Cell availability (genuine stock) and the built pack's mass.
-8. Desktop-CNC feeds and achievable accuracy in 6061 (coupon cuts).
-9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
-10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
-11. Knee and hip-roll heating on slow stairs (knee 44 N·m, 109% of rated, and hip roll 103% in the static check at 39.86 kg): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
-12. Hand: weigh the kits, confirm the 6 × M3 on Ø42 wrist pattern on the real part, and measure serial bus timing with 8 servos per hand.
-13. CAN interfaces: robot.yaml has 7 CAN buses (4 leg, 2 arm, battery), but the BOM has 3 USB-CAN adapters plus the Orin's 2 on-board ports. Either the adapters are dual-channel or two more are needed; settle it with the CAN timing test (item 4).
+6. The head's camera window crops the depth view to about a third (decisions 2026-10-28): a taller window, the camera at the skin, or a fully IR-transparent visor.
+7. Primary IMU choice (industrial AHRS or a BMI088 on a microcontroller).
+8. Cell availability (genuine stock) and the built pack's mass.
+9. Desktop-CNC feeds and achievable accuracy in 6061 (coupon cuts).
+10. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
+11. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
+12. Knee and hip-roll heating on slow stairs (knee 44 N·m, 109% of rated, and hip roll 103% in the static check at 39.86 kg): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
+13. Hand: weigh the kits, confirm the 6 × M3 on Ø42 wrist pattern on the real part, and measure serial bus timing with 8 servos per hand.
+14. CAN interfaces: robot.yaml has 7 CAN buses (4 leg, 2 arm, battery), but the BOM has 3 USB-CAN adapters plus the Orin's 2 on-board ports. Either the adapters are dual-channel or two more are needed; settle it with the CAN timing test (item 4).

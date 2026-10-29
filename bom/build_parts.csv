@@ -72,8 +72,8 @@ torso_chest_shell,1,print,pa_cf,3D,,153.9,229 x 176 x 107,
 {side}_hand,2,bought,bought,,,400.0,170 x 134 x 119,"AmazingHand by Pollen Robotics (CC-BY-4.0), description/third_party/amazing_hand"
 neck_bracket,1,cnc,al6061,3D,40,84.6,62 x 50 x 40,
 head_frame,1,print,pa_cf,3D,,19.3,110 x 46 x 18,
-head_shell,1,print,pa_cf,3D,,126.0,174 x 142 x 138,
-head_visor,1,print,pa_cf,3D,,64.8,166 x 133 x 80,
+head_shell,1,print,pa_cf,3D,,100.0,167 x 142 x 136,
+head_visor,1,print,pa_cf,3D,,90.8,168 x 141 x 114,
 head_window,1,print,pa_cf,3D,,7.3,110 x 36 x 20,
 head_camera,1,bought,bought,,,133.0,124 x 29 x 27,
 elec_contactor,1,bought,bought,,,180.0,50 x 45 x 35,"main contactor, 48 V DC, opened by the e-stop chain"

@@ -4,7 +4,7 @@ from the front, three-quarter, side and back, standing with the palms towards th
 Kinematic only (no physics): the generated URDFs (tools/build_urdf.py) with the CAD meshes
 (python -m cad.build) are loaded through sim/mujoco/check_standing.py, posed and placed on the
 floor, and coloured in the finish colours: aluminium machined parts, graphite printed parts,
-light covers, a glossy dark head.
+light covers, a light head shell with a glossy dark visor.
 
 Usage (needs the sim extra and the meshes; MUJOCO_GL=egl renders without a display):
   python -m cad.build > /dev/null
@@ -99,11 +99,13 @@ def colour(model: mujoco.MjModel) -> None:
         elif t == mujoco.mjtGeom.mjGEOM_MESH:
             name = model.mesh(model.geom_dataid[g]).name
             p = cad.get(name, {})
-            if name in ("head_shell", "head_visor"):
+            if name == "head_visor":
                 model.geom_rgba[g] = GLOSS
+            elif name in ("head_shell", "neck_cover"):
+                model.geom_rgba[g] = COVER
             elif name == "head_window":
                 model.geom_rgba[g] = [0.10, 0.12, 0.16, 1]
-            elif name in ("pelvis_cover", "neck_cover") or "glute" in name:
+            elif name == "pelvis_cover" or "glute" in name:
                 model.geom_rgba[g] = DARK
             elif p.get("process") == "cover":
                 model.geom_rgba[g] = COVER

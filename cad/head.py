@@ -9,13 +9,16 @@ servos (STS3250, 45.3 x 35.8 x 24.8 mm) and the depth camera (Orbbec Gemini 335L
 - head frame: two plates on the pitch servo's horn and idler, joined by a bridge that carries
   the camera and a top bar that carries the shell;
 - head shell: a helmet, taller than it is wide and narrowing to the chin (the hull of two
-  ellipsoids), 2.5 mm wall, open at the bottom for the neck;
-- visor: the whole face, a separate glossy part, with a flush window in front of the camera
+  ellipsoids), 2.5 mm wall, open at the bottom for the neck; light, like the neck and body
+  shells, behind the visor;
+- visor: the whole face, a separate glossy dark part, ahead of a plane that runs from the
+  back of the crown down to the chin (so the light shell behind it reads as jaw and neck),
+  with a flush window in front of the camera
   (optical-grade, IR-transparent tinted polycarbonate, so the depth camera sees through it;
   its effect on depth noise is a phase 6 test);
 - the camera, as a bought part.
 
-The helmet sits on a dark neck sleeve (cad/covers.py). No fasteners yet.
+The helmet sits on a light neck sleeve (cad/covers.py). No fasteners yet.
 """
 
 from __future__ import annotations
@@ -39,8 +42,8 @@ CROWN = (4.0, 0.0, 94.0), (82.0, 71.0, 84.0)
 CHIN = (28.0, 0.0, 42.0), (50.0, 54.0, 40.0)
 CAMERA = (124.0, 29.0, 27.0, 133.0)  # width, height, depth (mm), mass (g)
 CAMERA_AT = (21.0, 0.0, 92.0)  # its centre, at eye height: half way up the head
-VISOR_X = 34.0  # the visor is the whole face ahead of this plane (at eye height) ...
-VISOR_TILT = 18.0  # ... leaning back this far (degrees), following the face
+VISOR_X = 14.0  # the visor is the whole face ahead of this plane (at eye height) ...
+VISOR_TILT = 28.0  # ... leaning back this far (degrees): from the back of the crown to the chin
 NECK_CUT_Z = 20.0  # the shell's open bottom over the neck axis; the neck sleeve
 NECK_CUT_SLOPE = 0.35  # (cad/covers.py) runs up inside it. The underside rises towards the
 # back of the head (mm up per mm back), from the chin up to where the neck enters
