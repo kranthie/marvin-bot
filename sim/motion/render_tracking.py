@@ -9,11 +9,14 @@ Two steps, in two environments:
       to one .npz;
   render (this repo's environment, with the sim extra and the CAD meshes; MUJOCO_GL=egl without
       a display): draws each clip with the covered robot (tools/render_robot.py) and writes
-      <out dir>/<clip>.webp.
+      <out dir>/<clip>.webp. With --plot, a strip under the scene plots how far the tracker is
+      from its reference, frame by frame: the hands, the feet and the head, each in the pelvis
+      frame (heading-aligned, as sim/motion/check_tracking.py scores them), with a cursor at the
+      current frame.
 
 Usage:
   python sim/motion/render_tracking.py export <predicted_motion_lib.pt> <motions.pt> <out.npz>
-  python sim/motion/render_tracking.py render <motions.npz> <out dir> [clip ...]
+  python sim/motion/render_tracking.py render <motions.npz> <out dir> [clip ...] [--plot]
 """
 
 from __future__ import annotations
@@ -28,6 +31,14 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent.parent
 W, H = 640, 480  # rendered; the WebP is scaled to 480 x 360
 FPS = 15  # WebP frame rate (the references are 30 fps)
+PLOT_H = 130  # height of the error strip in the WebP, pixels
+PLOT_MAX = 0.25  # m at the top of the strip
+# (label, bodies, colour) of the error curves
+CURVES = [
+    ("hands", ("left_palm_link", "right_palm_link"), (220, 90, 40)),
+    ("feet", ("left_foot_link", "right_foot_link"), (40, 140, 70)),
+    ("head", ("head_link",), (90, 70, 200)),
+]
 
 
 def clip_name(path: str) -> str:
@@ -55,7 +66,43 @@ def export(pred: str, ref: str, out: str) -> None:
     print(f"wrote {out}: {sorted({k.split('|')[1] for k in data})}")
 
 
-def render(npz: str, out_dir: str, clips: list[str]) -> None:
+def local_pos(model, dd, bodies: list[int]):
+    """Positions of the bodies relative to the pelvis, rotated so the pelvis faces +x."""
+    pelvis = dd.xpos[1]
+    fwd = dd.xmat[1].reshape(3, 3)[:, 0]
+    th = np.arctan2(fwd[1], fwd[0])
+    c, s = np.cos(-th), np.sin(-th)
+    d = dd.xpos[bodies] - pelvis
+    return np.stack([c * d[:, 0] - s * d[:, 1], s * d[:, 0] + c * d[:, 1], d[:, 2]], -1)
+
+
+def strip(errors: np.ndarray, k: int, font):
+    """The error curves (frames x curves, metres) with a cursor at frame k."""
+    from PIL import Image, ImageDraw  # noqa: PLC0415
+
+    w, h, left, top = 480, PLOT_H, 44, 8
+    im = Image.new("RGB", (w, h), (250, 250, 250))
+    dr = ImageDraw.Draw(im)
+    ph = h - top - 22
+
+    def y(v):
+        return top + ph * (1 - min(v, PLOT_MAX) / PLOT_MAX)
+
+    for cm in (0, 10, 20):
+        dr.line([(left, y(cm / 100)), (w - 6, y(cm / 100))], fill=(215, 215, 215))
+        dr.text((6, y(cm / 100) - 7), f"{cm} cm", fill=(110, 110, 110), font=font)
+    n = len(errors)
+    xs = left + (w - 6 - left) * np.arange(n) / max(n - 1, 1)
+    for j, (label, _, col) in enumerate(CURVES):
+        dr.line(list(zip(xs, [y(v) for v in errors[:, j]], strict=True)), fill=col, width=2)
+        dr.text(
+            (left + 8 + 92 * j, h - 18), f"{label} {100 * errors[k, j]:4.1f}", fill=col, font=font
+        )
+    dr.line([(xs[k], top), (xs[k], top + ph)], fill=(40, 40, 40), width=1)
+    return im
+
+
+def render(npz: str, out_dir: str, clips: list[str], plot: bool = False) -> None:
     sys.path.insert(0, str(ROOT / "tools"))
     import mujoco  # noqa: PLC0415
     import render_robot as rr  # noqa: PLC0415
@@ -71,6 +118,8 @@ def render(npz: str, out_dir: str, clips: list[str]) -> None:
     renderer = mujoco.Renderer(model, H, W)
     opt, pert = mujoco.MjvOption(), mujoco.MjvPerturb()
     font = ImageFont.truetype("DejaVuSans.ttf", 22)
+    small = ImageFont.truetype("DejaVuSans.ttf", 13)
+    groups = [[model.body(b).id for b in bodies] for _, bodies, _ in CURVES]
 
     d = np.load(npz)
     adr = [model.jnt_qposadr[model.joint(str(n)).id] for n in d["joints"]]
@@ -96,12 +145,21 @@ def render(npz: str, out_dir: str, clips: list[str]) -> None:
         ts = np.arange(n) / FPS
         ri = np.minimum((ts / rdt).round().astype(int), len(rp) - 1)
         ti = np.minimum((ts / tdt).round().astype(int), len(tp) - 1)
-        frames = []
+        frames, errors = [], []
         for k in range(n):
             # both start at the origin, so the ghost shows where the robot should be
             pose(data, tp[ti[k]], tq[ti[k]], tj[ti[k]], tp[0] * [1, 1, 0])
             pose(ghost, rp[ri[k]], rq[ri[k]], rj[ri[k]], rp[0] * [1, 1, 0])
             cam = mujoco.MjvCamera()
+            if plot:
+                errors.append(
+                    [
+                        np.linalg.norm(
+                            local_pos(model, data, g) - local_pos(model, ghost, g), axis=1
+                        ).mean()
+                        for g in groups
+                    ]
+                )
             mid = (data.qpos[:2] + ghost.qpos[:2]) / 2
             cam.lookat[:] = [mid[0], mid[1], 0.75]
             cam.distance, cam.azimuth, cam.elevation = 2.7, 215, -8
@@ -114,6 +172,13 @@ def render(npz: str, out_dir: str, clips: list[str]) -> None:
             im = Image.fromarray(renderer.render())
             ImageDraw.Draw(im).text((14, 10), clip.replace("_", " "), fill=(25, 27, 31), font=font)
             frames.append(im.resize((480, 360), Image.LANCZOS))
+        if plot:
+            errors = np.array(errors)
+            for k, im in enumerate(frames):
+                both = Image.new("RGB", (480, 360 + PLOT_H))
+                both.paste(im, (0, 0))
+                both.paste(strip(errors, k, small), (0, 360))
+                frames[k] = both
         path = Path(out_dir) / f"{clip}.webp"
         frames[0].save(
             path,
@@ -138,11 +203,12 @@ def main() -> None:
     r.add_argument("npz")
     r.add_argument("out_dir")
     r.add_argument("clips", nargs="*")
+    r.add_argument("--plot", action="store_true", help="add the error strip under the scene")
     args = ap.parse_args()
     if args.cmd == "export":
         export(args.pred, args.ref, args.out)
     else:
-        render(args.npz, args.out_dir, args.clips)
+        render(args.npz, args.out_dir, args.clips, args.plot)
 
 
 if __name__ == "__main__":

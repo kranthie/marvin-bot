@@ -139,6 +139,8 @@ for f in $W/keypoints/*.npy; do
       --output-dir $W/retargeted --source-type soma --no-visualize \
       --save-contacts-only --contacts-dir $W/contacts ) &
 done; wait
+$P $M/sim/motion/add_head_motion.py $W/npz $W/retargeted \
+    protomotions/data/assets/urdf/for_retargeting/marvin_bot.urdf
 $P data/scripts/convert_pyroki_retargeted_robot_motions_to_proto.py \
     --retargeted-motion-dir $W/retargeted --output-dir $W/proto --robot-type marvin_bot \
     --contact-labels-dir $W/contacts --apply-motion-filter --force-remake
@@ -155,6 +157,39 @@ The tracker trains at about 5.6 s an epoch with 16,384 robots on one RTX-class G
 rollout of every clip (`predicted_motion_lib_epoch_<N>.pt`) every 600 epochs, from epoch 200;
 score the latest with `check_tracking.py`. Exporting a tracker and replaying it in MuJoCo are
 not set up yet.
+
+`add_head_motion.py` sets the neck from the human's head: ProtoMotions' retargeter (built for a
+robot without a neck) has no head keypoint, so before it every reference looked straight ahead.
+
+**Checking the clips before training** (`check_clips.py`). Each layer runs on Kimodo's human clip
+and the third again on the robot reference, so a failure points at generation or at retargeting:
+
+1. *Text match*: NVIDIA's text-motion retrieval model for SOMA (TMR-SOMA-RP-v1, which Kimodo's
+   benchmark scores with) gives each clip its similarity to its own prompt and that prompt's rank
+   among all 25; a clip another prompt describes better is suspect.
+2. *Quality*: Kimodo's benchmark metrics: foot sliding while in contact (its published Skate is
+   2-4 cm/s), contact consistency, and the hips' distance from the root path asked for.
+3. *Skill checks*: a geometric test of what each prompt asked for (the hands meet in a clap, a
+   hand above the shoulder swinging in a wave, the pelvis dropping in a squat, the speed, turn and
+   direction of a walk), in units of the standing head height so it runs on both bodies.
+4. *Review renders*: the human as a stick figure beside the robot reference, with the checks.
+
+```bash
+../venvs/kimodo/bin/python $M/sim/motion/check_clips.py human $W/npz       # layers 1-3
+$P $M/sim/motion/render_tracking.py export $W/marvin_bot_motions.pt $W/marvin_bot_motions.pt $W/ref.npz
+python sim/motion/check_clips.py robot $W/ref.npz                            # layer 3, this repo's env
+MUJOCO_GL=egl python sim/motion/check_clips.py render $W/npz $W/ref.npz <out dir>   # layer 4
+```
+
+On the 25 clips (2026-10-29) every clip ranks its own prompt first or second and slides 1-3 cm/s
+in contact (the jog 8), but five do less than asked: the wave waves for 2 s of 8, the arm raise
+lifts the arms about 45° rather than to the sides, the march stops after 3 s, and the idle and
+the dance sway barely move (1-2 cm). On the robot two more fall short: the clap's palms meet
+once rather than three times, and the pick-up's hands stop 27 cm above the floor (with no waist
+pitch the robot cannot bend over to reach it).
+
+`render_tracking.py render --plot` adds a strip under a tracked clip plotting how far the hands,
+feet and head are from the reference's, frame by frame.
 
 `convert_100style.py` turns [100STYLE](https://zenodo.org/records/8127870) motion capture
 (CC-BY-4.0) into keypoints instead (then retarget with `--converted` and skip the Kimodo and
