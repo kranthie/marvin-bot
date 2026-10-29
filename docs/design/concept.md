@@ -12,7 +12,7 @@ The drawing is to scale and shows every powered joint, coloured by actuator mode
 
 | | |
 |---|---|
-| Height | 1.288 m (head CAD, 2026-10-26; 1.215 m in the concept) |
+| Height | 1.438 m (longer torso and legs, 2026-10-29; 1.288 m before; 1.215 m in the concept) |
 | Hip axis to sole | 0.65 m (53% of height; sized for 17–18 cm stairs) |
 | Thigh, shin | 0.30 m, 0.29 m |
 | Ankle axis height | 0.06 m |

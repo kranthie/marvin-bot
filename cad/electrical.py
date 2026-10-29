@@ -6,8 +6,8 @@ the torso and pelvis frames (mm). Placed so nothing overlaps the frame, the moto
 other (`python -m cad.covers --check` and the rest-pose audit), with the wiring in mind:
 
 - the battery slides out of the back of the torso between two side guides and a latch plate;
-  its anti-spark blind-mate connector (AS150 class) sits at its front-top corner and seats in
-  a socket over the computer, beside (not over) the computer's buttons;
+  it sits high, on a shelf under the shoulder motors; its anti-spark blind-mate connector
+  (AS150 class) sits at its front-top corner and seats in a socket at the front of its bay;
 - the torso bay above the computer holds the main power path in order (contactor and
   precharge, then the torso power board), the computer's DC-DC (fed before the contactor, so
   an e-stop keeps it up), the e-stop relay and the three USB-CAN adapters next to the
@@ -73,9 +73,9 @@ TORSO = [
     (
         "elec_battery_socket",
         (31, 21, 11),
-        (-16, 40, 163),
+        (-16, 40, 243),
         15,
-        "battery connector, cradle half (AS150 class)",
+        "battery connector, cradle half (AS150 class), at the front of the battery bay",
     ),
     (
         "elec_harness_torso",
@@ -134,7 +134,7 @@ def parts() -> list[Part]:
                 f"elec_bulkhead_arm_{side}",
                 "torso_link",
                 "bought",
-                box((30, 10, 28), (-62, s * 48, 228)),
+                box((30, 10, 28), (-62, s * 48, 100)),
                 "bought",
                 mass_g=15,
                 notes="arm power and signal connectors",

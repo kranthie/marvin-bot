@@ -7,11 +7,12 @@ at their STEP-model sizes:
   the roll brackets' far-side bearings), a top plate carrying the waist RS03, and two gussets
   under it making a channel; the hip pitch motors swing round the roll axes clear of all of
   it. The pelvis electronics sit between the roll motors.
-- torso: a flange on the waist output and a base plate; two side frames (each a lower A-frame
-  outside the battery and an upper plate) carrying the shoulder pitch RS03s (flat profiles, longer
-  than the desktop mill's travel, so cut by an online laser or water-jet service); a top bridge
-  carrying the neck yaw servo; and a printed chest shell (front and sides, open at the back for the
-  battery).
+- torso: a flange on the waist output and a base plate; two side frames (each a lower frame
+  that leans out from the computer's width at the base to the battery's under the shoulders,
+  and an upper plate) carrying the shoulder pitch RS03s (flat profiles, longer than the desktop
+  mill's travel, so cut by an online laser or water-jet service); a shelf carrying the battery
+  high, under the shoulder motors, so the torso narrows to the waist; a top bridge carrying the
+  neck yaw servo; and a printed chest shell (front and sides, open at the back for the battery).
 
 The computer and electronics are laid out by cad/electrical.py; the battery and keep-alive pack
 are skeleton.yaml estimate boxes. Plates are pocketed; no fasteners yet.
@@ -112,27 +113,39 @@ def parts() -> list[Part]:
     base_z = out_z + t + t / 2
     sh = mounts["left_shoulder_pitch"]  # shoulder pitch RS03 centre (torso frame)
     # The shoulder motors sit deep in the torso (narrow shoulders), deeper than the battery is
-    # wide, so each side frame is two plates: a lower A-frame outside the battery, and an
-    # upper plate against the shoulder motor's inner face, above the battery and computer,
-    # joined by two spacers clear of the motor
+    # wide, so each side frame is two plates: a lower frame outside the battery, and an upper
+    # plate against the shoulder motor's inner face, above the battery and computer, joined by
+    # two spacers clear of the motor. The battery, the widest part, sits high on a shelf under
+    # the shoulder motors, and the lower frames lean in to the computer's width at the base:
+    # the torso narrows to the waist
     bat = next(b for b in _skel["bodies"] if b["budget"] == "battery")
     y_low = bat["size"][1] * 1000 / 2 + 6 + t / 2
+    comp = next(b for b in _skel["bodies"] if b["budget"] == "compute")
+    y_bot = comp["size"][1] * 1000 / 2 + 6 + t / 2  # the frame narrows to the computer at the base
+    bat_floor = (bat["xyz"][2] - bat["size"][2] / 2) * 1000  # the battery's shelf
     up_y = sh[1] - spec("RS03")["rear"] - t / 2  # on the motors' body rear faces (caps inboard)
     # the frame runs from behind the battery to just ahead of the computer standing on edge
     fx0, fx1 = -95.0, 55.0
     tops = ((-70.0, sh[2] - 18), (42.0, sh[2] - 58))  # back and front spacers (x, z)
-    base = box((fx1 - fx0, 2 * y_low - t, t), ((fx0 + fx1) / 2, 0, base_z))  # between the plates
+    base = box((fx1 - fx0, 2 * y_bot - t, t), ((fx0 + fx1) / 2, 0, base_z))  # between the plates
     base = lighten(base, "z", keep=[cyl(60, 40, "z", (0, 0, base_z))], hole=22, rim=10)
     out.append(Part("torso_waist_flange", "torso_link", "al6061", flange, "cnc"))
     out.append(Part("torso_base", "torso_link", "al6061", base, "cnc"))
+    # the battery shelf, clear of the computer plate in front
+    sx0, sx1 = fx0 + 5, (bat["xyz"][0] + bat["size"][0] / 2) * 1000 + 2
+    shelf = box((sx1 - sx0, 2 * y_low - 2 * t, 4.0), ((sx0 + sx1) / 2, 0, bat_floor - 2.0))
+    shelf = lighten(shelf, "z", hole=18, pitch=24, rim=7)
+    out.append(Part("torso_battery_shelf", "torso_link", "al6061", shelf, "cnc"))
     gap = y_low - up_y - t
     for side, s in (("l", 1), ("r", -1)):
         (bx, bz), (fx, fz) = tops
         low = union(
-            box((fx1 - fx0 - 10, t, 12), ((fx0 + fx1) / 2, s * y_low, base_z + 6)),
-            strap(30, t, "y", (fx0 + 20, s * y_low, base_z + 12), (bx, s * y_low, bz)),
-            strap(30, t, "y", (fx1 - 20, s * y_low, base_z + 12), (fx, s * y_low, fz)),
-            strap(24, t, "y", (fx0 + 15, s * y_low, 140), (fx1 - 10, s * y_low, 140)),
+            box((fx1 - fx0 - 10, t, 12), ((fx0 + fx1) / 2, s * y_bot, base_z + 6)),
+            strap(30, t, "y", (fx0 + 20, s * y_bot, base_z + 12), (fx0 + 20, s * y_low, bat_floor)),
+            strap(30, t, "y", (fx1 - 20, s * y_bot, base_z + 12), (fx1 - 20, s * y_low, bat_floor)),
+            strap(30, t, "y", (fx0 + 20, s * y_low, bat_floor), (bx, s * y_low, bz)),
+            strap(30, t, "y", (fx1 - 20, s * y_low, bat_floor), (fx, s * y_low, fz)),
+            strap(24, t, "y", (fx0 + 15, s * y_low, bat_floor), (fx1 - 10, s * y_low, bat_floor)),
         )
         low = lighten(low, "y", hole=12, pitch=18, rim=7)
         out.append(Part(f"torso_upright_{side}", "torso_link", "al6061", low, "service"))
@@ -163,23 +176,24 @@ def parts() -> list[Part]:
     # the computer stands on edge, fan forward, its I/O ports toward the sides (cable room to
     # the uprights) and its buttons up; it bolts by the feet on its underside to a plate behind
     # it, tied to the lower uprights
-    comp = next(b for b in _skel["bodies"] if b["budget"] == "compute")
     cx0 = (comp["xyz"][0] - comp["size"][0] / 2) * 1000  # its back face (the underside)
     cz = comp["xyz"][2] * 1000
     oplate = union(
         box((3, 104, 104), (cx0 - 1.5, 0, cz)),
-        *[box((3, y_low - 50, 20), (cx0 - 1.5, s * (y_low + 50) / 2, cz)) for s in (1, -1)],
+        *[box((3, y_bot - 50, 20), (cx0 - 1.5, s * (y_bot + 50) / 2, cz)) for s in (1, -1)],
     )
     oplate = lighten(oplate, "x", hole=14, pitch=20, rim=8)
     out.append(Part("torso_compute_plate", "torso_link", "al6061", oplate, "cnc"))
     # chest shell: front and sides, 2 mm, open at the back (battery) and top and bottom
     z0, z1 = base_z + t, sh[2] + 20
     outer = hull(
-        box((118, 2 * y_low + 2 * t + 6, 2), (-1, 0, z0)),
+        box((118, 2 * y_bot + 2 * t + 6, 2), (-1, 0, z0)),
+        box((124, 2 * y_low + 2 * t + 6, 2), (0, 0, bat_floor)),
         box((124, 2 * y_low + 2 * t + 6, 2), (0, 0, z1)),
     )
     inner_s = hull(
-        box((114, 2 * y_low + 2 * t + 2, 4), (-1, 0, z0)),
+        box((114, 2 * y_bot + 2 * t + 2, 4), (-1, 0, z0)),
+        box((120, 2 * y_low + 2 * t + 2, 4), (0, 0, bat_floor)),
         box((120, 2 * y_low + 2 * t + 2, 4), (0, 0, z1)),
     )
     shell = outer - inner_s - box((80, 400, 1000), (-45 - 40, 0, 0))  # open back
@@ -187,5 +201,8 @@ def parts() -> list[Part]:
     # intake vents over the computer's fan
     for k in range(-3, 4):
         shell = shell - box((20, 7, 80), (60, k * 13.0, cz))
-    out.append(Part("torso_chest_shell", "torso_link", "pa_cf", shell, "print"))
+    # in two pieces, upper and lower, each inside the printer's 250 mm
+    split = box((400, 400, 400), (0, 0, (z0 + z1) / 2 + 200))
+    out.append(Part("torso_chest_shell_upper", "torso_link", "pa_cf", shell ^ split, "print"))
+    out.append(Part("torso_chest_shell_lower", "torso_link", "pa_cf", shell - split, "print"))
     return out

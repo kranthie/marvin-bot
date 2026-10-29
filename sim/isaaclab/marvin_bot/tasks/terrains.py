@@ -2,7 +2,7 @@
 # The Isaac Lab Project Developers, BSD-3-Clause (LICENSES/BSD-3-Clause-IsaacLab.txt). Modified for
 # Marvin Bot; the rest Apache-2.0.
 # SPDX-License-Identifier: Apache-2.0 AND BSD-3-Clause
-"""Training terrains for Marvin Bot (1.29 m tall, 0.65 m from hip to sole).
+"""Training terrains for Marvin Bot (1.44 m tall, 0.70 m from hip to sole).
 
 Household-scale stairs on over half the tiles: steps from 4 cm up to 20 cm (standard risers are
 17-18 cm) with 28 cm treads, round a 2 m platform, with a tenth of the tiles steep (14-20 cm) on

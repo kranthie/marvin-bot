@@ -231,7 +231,7 @@ def parts() -> list[Part]:
     shin_t = 4.0  # side plates: SF 2.1 at 4 mm (cad/strength.py)
     yi, yo = -(t03 / 2 + shin_t / 2), t03 / 2 + shin_t / 2  # inner and outer side plates
     hub = 40.0  # crank hub, spanning the gap from the motor's output face to the crank
-    w = 38.0  # strap width (cad/strength.py sizes it)
+    w = 44.0  # strap width (cad/strength.py sizes it: 44 mm for the 315 mm shin)
 
     def cheek_at(y):  # the fork cheek: the plate's lower end, round the ankle bearing
         return (0.0, y, ankle_z)

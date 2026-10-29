@@ -210,7 +210,7 @@ def parts() -> list[Part]:
     skin = (outer_b ^ box((BIG, 2 * sh_y, BIG))) - (inner_b ^ box((BIG, 2 * (sh_y - SKIN), BIG)))
     # each half in four pieces (left and right, chest and waist): a whole half is too big to
     # print; the seams run down the middle and round the body under the chest
-    seam_z = 150.0
+    seam_z = 200.0
     for name, s_ in (("front", 1), ("back", -1)):
         part = skin ^ body ^ half("x", s_, -20)
         for side, sy in (("l", 1), ("r", -1)):

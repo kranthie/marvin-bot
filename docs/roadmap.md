@@ -96,6 +96,6 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 8. Desktop-CNC feeds and achievable accuracy in 6061 (coupon cuts).
 9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
-11. Knee and hip-roll heating on slow stairs (knee 44 N·m, 109% of rated, and hip roll 103% in the static check at 39.86 kg): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
+11. Knee and hip-roll heating on slow stairs (knee 47 N·m, 118% of rated, and hip roll 105% in the static check on the 1.44 m model, decisions 2026-10-29; the parked 1.5:1 knee stage would also cover longer legs): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
 12. Hand: weigh the kits, confirm the 6 × M3 on Ø42 wrist pattern on the real part, and measure serial bus timing with 8 servos per hand.
 13. CAN interfaces: robot.yaml has 7 CAN buses (4 leg, 2 arm, battery), but the BOM has 3 USB-CAN adapters plus the Orin's 2 on-board ports. Either the adapters are dual-channel or two more are needed; settle it with the CAN timing test (item 4).

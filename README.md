@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/kranthie/marvin-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/kranthie/marvin-bot/actions/workflows/ci.yml) ![Software: Apache-2.0](https://img.shields.io/badge/software-Apache--2.0-blue) ![Hardware: CERN-OHL-S-2.0](https://img.shields.io/badge/hardware-CERN--OHL--S--2.0-blue) ![Stage: simulation](https://img.shields.io/badge/stage-simulation%20only-orange)
 
-An open humanoid robot, about 1.29 m tall and 40 kg, with 27 powered joints and two 8-servo four-finger hands. It is built from off-the-shelf quasi-direct-drive actuators, a CNC-machined aluminium frame and printed structural shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
+An open humanoid robot, about 1.44 m tall and 41 kg, with 27 powered joints and two 8-servo four-finger hands. It is built from off-the-shelf quasi-direct-drive actuators, a CNC-machined aluminium frame and printed structural shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
 
 **Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo (the stair policy still falls in 2 of 15 runs on 15–20 cm stairs over five noise seeds); a motion-tracking pipeline (generated human motion to robot skills) has a tracker that walks, turns, jogs, walks backwards and starts and stops by following reference clips, not yet replayed in MuJoCo. See [docs/roadmap.md](docs/roadmap.md).
 
@@ -57,7 +57,7 @@ Every source, with its licence and what was used from it, is in [ACKNOWLEDGMENTS
 
 | | |
 |---|---|
-| Height, mass | ~1.29 m; 39.9 kg bare and 40.7 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 41 kg limit with the shells |
+| Height, mass | ~1.44 m; 40.4 kg bare and 41.4 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 42 kg limit with the shells |
 | Joints | 6 per leg, 6 per arm (wrist yaw and pitch), waist yaw, 2 neck, plus an 8-DOF four-finger hand per arm |
 | Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulder pitch and roll), RS06 (shoulder yaw, elbows), RS00 (wrists); serial-bus servos for the neck and wrist pitch; eight small servos in each hand |
 | Compute | Jetson AGX Orin 64 GB; desktop GPU for training and, at first, for the vision-language-action model |
