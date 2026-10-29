@@ -181,12 +181,15 @@ python sim/motion/check_clips.py robot $W/ref.npz                            # l
 MUJOCO_GL=egl python sim/motion/check_clips.py render $W/npz $W/ref.npz <out dir>   # layer 4
 ```
 
-On the 25 clips (2026-10-29) every clip ranks its own prompt first or second and slides 1-3 cm/s
-in contact (the jog 8), but five do less than asked: the wave waves for 2 s of 8, the arm raise
-lifts the arms about 45° rather than to the sides, the march stops after 3 s, and the idle and
-the dance sway barely move (1-2 cm). On the robot two more fall short: the clap's palms meet
-once rather than three times, and the pick-up's hands stop 27 cm above the floor (with no waist
-pitch the robot cannot bend over to reach it).
+On the first 25 clips (2026-10-29) every clip ranked its own prompt first or second and slid
+0.2-3.8 cm/s in contact, but five did less than asked: the wave waved for 2 s of 8, the arm raise
+lifted the arms about 45° rather than to the sides, the march stopped after 3 s, and the idle and
+the dance sway barely moved (1-2 cm; a root path pinned at the start held their hips still).
+`generate_kimodo.py` now keeps the sample with the fewest failed skill checks; with sharper
+prompts, no root path for the idle and the dance, and 8 samples each, all 25 pass and every clip
+ranks its own prompt first except the reach (second, after the two-hand wave). On the robot two
+fall short of the human: the clap's palms meet once rather than three times, and the pick-up's
+hands stop 27 cm above the floor (with no waist pitch the robot cannot bend over to reach it).
 
 `render_tracking.py render --plot` adds a strip under a tracked clip plotting how far the hands,
 feet and head are from the reference's, frame by frame.

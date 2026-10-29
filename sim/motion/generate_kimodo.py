@@ -5,8 +5,9 @@ path: the speed, heading and direction of travel of the hips, frame by frame. Th
 pace, which wording alone does not: "a person jogs forward" gave a 2 m/s run and "turns around"
 a 400 deg/s spin, both too fast for Marvin Bot once scaled to its size (about 0.7 of a person's
 speed). Speeds here are at human scale. Several samples are generated per clip and the one with
-the least planted-foot sliding, crossing of the feet and root jerk is kept; the kick, which needs
-no root path, keeps the sample with the highest kick.
+the fewest failed skill checks (check_clips.py: the hands meet in a clap, a hand above the shoulder
+in a wave...) is kept, and among those the one with the least planted-foot sliding, crossing of the
+feet and root jerk (the kick: the highest kick).
 
 Kimodo's prompting advice is followed: each prompt starts with "A person", covers one or two
 behaviours at medium detail and stays within what the model was trained on (locomotion,
@@ -96,10 +97,21 @@ LOCOMOTION = {
         np.minimum(ramp(1.0, 1.8, 0, 0.6), ramp(5.5, 6.3, 0.6, 0)),
         0.0,
     ),
-    "idle": ("A person stands still and shifts their weight from foot to foot.", *STILL),
+    # no root path for the idle and the dance: a path pinned at the start holds the hips there too,
+    # and both clips barely moved (1-2 cm)
+    "idle": (
+        "A person stands relaxed and slowly shifts their weight from one foot to the other.",
+        None,
+        None,
+        0.0,
+    ),
 }
 SKILLS = {
-    "wave": ("A person stands and waves hello with their right hand.", *STILL),
+    # (the first wording waved for 2 s of 8)
+    "wave": (
+        "A person stands and waves hello with their right hand raised above their shoulder.",
+        *STILL,
+    ),
     "wave_both": ("A person stands and waves both hands above their head.", *STILL),
     "point": ("A person stands and points to the right with their right hand.", *STILL),
     "clap": ("A person stands and claps their hands in front of their chest.", *STILL),
@@ -107,8 +119,9 @@ SKILLS = {
         "A person stands and reaches forward with both hands, then lowers them.",
         *STILL,
     ),
-    "arms_raise": (
-        "A person stands and slowly raises both arms to the sides, then lowers them.",
+    "arms_raise": (  # (the first wording lifted the arms about 45°)
+        "A person stands and slowly raises both arms straight out to the sides to shoulder "
+        "height, then lowers them.",
         *STILL,
     ),
     "look_around": ("A person stands and looks around to the left and to the right.", *STILL),
@@ -118,8 +131,14 @@ SKILLS = {
         *STILL,
     ),
     "squat": ("A person does slow squats with their arms forward.", *STILL),
-    "march": ("A person marches in place, lifting their knees.", *STILL),
-    "dance_sway": ("A happy person sways side to side to music, moving their arms.", *STILL),
+    # (the first wording marched for 3 s and stood)
+    "march": ("A person marches in place continuously, lifting their knees high.", *STILL),
+    "dance_sway": (
+        "A happy person dances, swaying their hips from side to side to music.",
+        None,
+        None,
+        0.0,
+    ),
     "carry_walk": (
         "A person walks forward slowly carrying a box in front of them with both hands.",
         ramp(0.3, 1.5, 0, 0.6),
@@ -185,7 +204,9 @@ def main() -> None:
     names = [c for g in args.clips for c in groups.get(g, [g])]
     args.out.mkdir(parents=True, exist_ok=True)
 
+    import check_clips  # noqa: PLC0415
     import torch  # noqa: PLC0415
+    from check_clips import soma_points  # noqa: PLC0415
     from kimodo import load_model  # noqa: PLC0415
     from kimodo.constraints import load_constraints_lst  # noqa: PLC0415
     from kimodo.exports.motion_io import save_kimodo_npz  # noqa: PLC0415
@@ -222,18 +243,36 @@ def main() -> None:
             post_processing=True,  # foot-skate clean-up and exact constraint following
             return_numpy=True,
         )
-        joints = out["posed_joints"]
-        if speed is None:
-            scores = [kick_badness(j, joint_names) for j in joints]
-        else:
-            scores = [badness(j, th, joint_names) for j in joints]
-        best = int(np.argmin(scores))
-        sample = {
-            k: (v[best] if hasattr(v, "shape") and v.ndim and v.shape[0] == args.samples else v)
-            for k, v in out.items()
-        }
+
+        def pick(k: int, out=out) -> dict:
+            return {
+                key: (v[k] if hasattr(v, "shape") and v.ndim and v.shape[0] == args.samples else v)
+                for key, v in out.items()
+            }
+
+        scores = []
+        for k in range(args.samples):
+            s = pick(k)
+            fails = sum(
+                not ok for _, ok, _ in check_clips.tests(name, soma_points(s, joint_names), 1 / FPS)
+            )
+            j = s["posed_joints"]
+            if name == "kick":
+                b = kick_badness(j, joint_names)
+            else:
+                h = s["global_root_heading"]
+                b = badness(
+                    j, th if speed is not None else np.arctan2(h[:, 1], h[:, 0]), joint_names
+                )
+            scores.append((fails, b))
+        best = min(range(args.samples), key=lambda k: scores[k])
+        sample = pick(best)
         save_kimodo_npz(str(args.out / f"{name}.npz"), sample)
-        print(f"{name:14} sample {best} of {args.samples}", flush=True)
+        print(
+            f"{name:14} sample {best} of {args.samples}: {scores[best][0]} failed checks "
+            f"(all samples: {[f for f, _ in scores]})",
+            flush=True,
+        )
         torch.cuda.empty_cache()
 
 
