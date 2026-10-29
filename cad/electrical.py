@@ -141,7 +141,7 @@ def parts() -> list[Part]:
             )
         )
 
-    # battery cradle: side guides on the base plate, a latch plate at the back (the pack slides
+    # battery cradle: side guides on the battery shelf, a latch plate at the back (the pack slides
     # out backwards once the latch is lifted)
     bat = next(b for b in _skel["bodies"] if b["budget"] == "battery")
     bx, by, bz = (v * 1000 for v in bat["xyz"])

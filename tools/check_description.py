@@ -6,8 +6,7 @@ Checks:
 - every motor's model exists in actuators.yaml and its bus exists in robot.yaml;
 - CAN bus load stays at or below the configured maximum at each bus's command rate;
 - the total mass (motors from actuators.yaml plus mass_budget.yaml, plus the add-on body shells
-  from cad_model.yaml) is under the hard limit
-  (a warning above the target);
+  from cad_model.yaml) is under the hard limit (a warning above the target);
 - bom/bom.csv lists exactly as many of each motor model as robot.yaml uses (spares excluded).
 
 Usage:

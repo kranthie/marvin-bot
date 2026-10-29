@@ -6,10 +6,8 @@
 
 Household-scale stairs on over half the tiles: steps from 4 cm up to 20 cm (standard risers are
 17-18 cm) with 28 cm treads, round a 2 m platform, with a tenth of the tiles steep (14-20 cm) on
-every row, plus random boxes, rough ground and slopes.
-The terrain
-curriculum starts every robot on the easy rows and promotes the ones that cross terrain while
-following their commands.
+every row, plus random boxes, rough ground and slopes. The terrain curriculum starts every robot
+on the easy rows and promotes the ones that cross terrain while following their commands.
 """
 
 import isaaclab.terrains as terrain_gen
