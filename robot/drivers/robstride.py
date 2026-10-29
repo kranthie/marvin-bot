@@ -7,8 +7,8 @@ https://github.com/RobStride/Product_Information
 Classic CAN 2.0B at 1 Mbit/s with 29-bit identifiers:
 
     bits 28-24  communication type
-    bits 23-8   data area 2 (host CAN ID in bits 15-8 for most types; the feed-forward torque
-                for type 1; status bits for type 2 replies)
+    bits 23-8   data area 2 (the host CAN ID in bits 15-8 for most types; the feed-forward
+                torque for type 1; status bits for type 2 replies)
     bits 7-0    destination CAN ID
     8 data bytes
 
@@ -119,18 +119,18 @@ def control_frame(
 
 def simple_frame(kind: int, motor_id: int, host_id: int, byte0: int = 0) -> tuple[int, bytes]:
     """Enable (3), stop (4; byte0 = 1 also clears faults) or set zero (6; byte0 = 1)."""
-    return arbitration_id(kind, host_id << 8, motor_id), bytes([byte0, 0, 0, 0, 0, 0, 0, 0])
+    return arbitration_id(kind, host_id, motor_id), bytes([byte0, 0, 0, 0, 0, 0, 0, 0])
 
 
 def param_write_frame(motor_id: int, host_id: int, index: int, value: float | int, kind: str = "f"):
     """Single parameter write (type 18, lost on power-off): index and value little-endian.
     ``kind`` is the struct code of the value: "f" for float parameters, "B" for uint8."""
     raw = struct.pack("<" + kind, value).ljust(4, b"\0")
-    return arbitration_id(PARAM_WRITE, host_id << 8, motor_id), struct.pack("<HH", index, 0) + raw
+    return arbitration_id(PARAM_WRITE, host_id, motor_id), struct.pack("<HH", index, 0) + raw
 
 
 def param_read_frame(motor_id: int, host_id: int, index: int) -> tuple[int, bytes]:
-    return arbitration_id(PARAM_READ, host_id << 8, motor_id), struct.pack("<HHI", index, 0, 0)
+    return arbitration_id(PARAM_READ, host_id, motor_id), struct.pack("<HHI", index, 0, 0)
 
 
 @dataclass

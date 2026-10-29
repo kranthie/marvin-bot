@@ -12,9 +12,15 @@ import robstride as rs  # noqa: E402
 
 
 def test_identifier_layout():
-    arb = rs.arbitration_id(rs.ENABLE, 0xFD << 8, 0x7F)
-    assert arb == (3 << 24) | (0xFD << 16) | 0x7F
-    assert rs.split_id(arb) == (3, 0xFD00, 0x7F)
+    arb = rs.arbitration_id(rs.ENABLE, 0xFD, 0x7F)
+    assert arb == (3 << 24) | (0xFD << 8) | 0x7F
+    assert rs.split_id(arb) == (3, 0xFD, 0x7F)
+
+
+def test_host_id_in_bits_15_8():
+    """Enable, stop and parameter frames carry the host ID in identifier bits 15-8."""
+    arb, _ = rs.simple_frame(rs.ENABLE, 0x7F, 0xFD)
+    assert arb == (3 << 24) | (0xFD << 8) | 0x7F
 
 
 def test_uint_mapping_ends_and_middle():
@@ -71,7 +77,7 @@ def test_feedback_parse():
 
 def test_param_frames():
     arb, data = rs.param_write_frame(3, 0xFD, rs.RUN_MODE, 0, "B")
-    assert rs.split_id(arb) == (rs.PARAM_WRITE, 0xFD00, 3)
+    assert rs.split_id(arb) == (rs.PARAM_WRITE, 0xFD, 3)
     assert data == bytes([0x05, 0x70, 0, 0, 0, 0, 0, 0])
     arb, data = rs.param_write_frame(3, 0xFD, rs.LIMIT_SPD, 2.5)
     assert struct.unpack("<HHf", data) == (rs.LIMIT_SPD, 0, 2.5)
