@@ -233,7 +233,7 @@ Alternatives: CubeMars (2–3× the price per N·m), Damiao (fewer verified spec
 
 ## 2026-10-25: six motor CAN buses plus one battery bus
 
-Robstride uses classic CAN 2.0B with 29-bit identifiers at 1 Mbit/s, and each motor needs a command and a reply frame per cycle. Six motors on one bus at 500 Hz would load it to roughly 80–90%. Each leg gets two buses (hip: 3 motors; shank: knee and two ankle motors) at 500 Hz; each arm gets one bus at 250 Hz, with the waist on the right arm's bus. All stay at or below 45% load. A seventh bus carries battery telemetry. The Orin's two on-board CAN controllers (with 3.3 V transceivers) and isolated USB-CAN adapters (gs_usb, SocketCAN) provide the buses; a microcontroller bridge is the fallback if bench tests show too much jitter.
+Robstride uses classic CAN 2.0B with 29-bit identifiers at 1 Mbit/s, and each motor needs a command and a reply frame per cycle. Six motors on one bus at 500 Hz would load it to roughly 80–90%. Each leg gets two buses (hip: 3 motors; shank: knee and two ankle motors) at 500 Hz; each arm gets one bus at 250 Hz, with the waist on the right arm's bus. All stay at or below 48% load (worst-case 160-bit frames). A seventh bus carries battery telemetry. The Orin's two on-board CAN controllers (with 3.3 V transceivers) and isolated USB-CAN adapters (gs_usb, SocketCAN) provide the buses; a microcontroller bridge is the fallback if bench tests show too much jitter.
 
 ## 2026-10-25: power: 13S3P quick-release pack, keep-alive supply, 4.1 V charging
 

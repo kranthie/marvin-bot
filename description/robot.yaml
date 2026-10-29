@@ -93,7 +93,7 @@ motors:
 # command and one reply frame per control cycle. Load is kept at or below max_load.
 can:
   bitrate: 1000000
-  bits_per_frame: 150        # 29-bit ID, 8 data bytes, worst-case bit stuffing
+  bits_per_frame: 160        # 29-bit ID, 8 data bytes: 131 bits plus up to 29 stuff bits
   frames_per_motor_cycle: 2
   max_load: 0.6
   buses:
