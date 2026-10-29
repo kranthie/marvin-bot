@@ -106,7 +106,7 @@ Or one at a time:
 
 ```bash
 python tools/check_description.py   # joints, actuators, CAN load, mass budget, BOM counts
-python tools/bom/summary.py         # BOM totals by phase and group
+python tools/bom/summary.py         # BOM totals by group; quantity of each motor model
 python tools/bom/book.py --check    # BOM workbook valid and tidy (python tools/bom/book.py tidies it)
 python tools/build_urdf.py --check  # URDF matches the description files
 python tools/build_harness.py --check  # wiring harness routes, gauges and fuses (electrical/)

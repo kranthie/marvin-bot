@@ -1,4 +1,4 @@
-"""Print BOM totals by phase and by group from bom/bom.xlsx, and check its rows.
+"""Print BOM totals by group from bom/bom.xlsx, and the quantity of each model; check its rows.
 
 Prices are estimates or reseller listings (see each line's price basis). Owned items carry their
 current price, so the total is the full cost to replicate the robot; the summary also gives what
@@ -11,29 +11,24 @@ Usage:
 import sys
 from collections import defaultdict
 
-from book import read_book, validate
+from book import line_value, read_book, validate
 
 
 def main() -> int:
     data = read_book()
     errors = validate(data)
     rows = [r for r in data["lines"] if isinstance(r.get("qty"), int)]
-    by_phase: dict[str, float] = defaultdict(float)
     by_group: dict[str, float] = defaultdict(float)
     by_status: dict[str, float] = defaultdict(float)
     for r in rows:
-        try:
-            cost = r["qty"] * r["unit_usd"]
-        except TypeError:
-            continue
-        by_phase[r["phase"]] += cost
+        cost = line_value(r)
         by_group[r["group"]] += cost
         by_status[r["status"]] += cost
 
-    total = sum(by_phase.values())
-    print(f"{'phase':8} {'USD':>9}")
-    for k in sorted(by_phase):
-        print(f"{k:8} {by_phase[k]:9,.0f}")
+    total = sum(by_group.values())
+    print(f"{'model':8} {'qty':>4} {'spares':>6}")
+    for r in sorted((r for r in rows if r.get("model")), key=lambda r: r["model"]):
+        print(f"{r['model']:8} {r['qty']:4d} {r['spares']:6d}")
     print(f"\n{'group':12} {'USD':>9}")
     for k, v in sorted(by_group.items(), key=lambda kv: -kv[1]):
         print(f"{k:12} {v:9,.0f}")

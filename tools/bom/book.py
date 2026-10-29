@@ -10,11 +10,12 @@ Usage:
   python tools/bom/book.py            # normalise bom/bom.xlsx in place (after editing it by hand)
   python tools/bom/book.py --check    # exit 1 if it has errors or is not normalised (CI)
   python tools/bom/book.py set cells unit_usd=9.95 "price_basis=dealer 2026-11-02"
-  python tools/bom/book.py add usb-hub group=electronics "item=USB 3 hub" qty=1 unit_usd=30 phase=P4
+  python tools/bom/book.py add usb-hub group=electronics "item=USB 3 hub" qty=1 unit_usd=30
   python tools/bom/book.py source cells "vendor=Some dealer" url=https://... unit_usd=9.95
   python tools/bom/book.py remove usb-hub
 Each edit normalises the workbook afterwards. `source` dates the row today unless checked= is
-given. Fields are the column names below (id, group, item, model, phase, status, ...).
+given. Fields are the column names below (id, group, item, model, status, qty, spares, ...).
+Each item has one line: qty is what the robot uses, spares the extra units bought.
 """
 
 import argparse
@@ -53,7 +54,6 @@ SUMMARY, SOURCING, PARTS, BOLTS = (
 )
 STATUSES = ("to buy", "ordered", "owned")
 PART_STATUSES = ("to make", "ordered", "made")
-PHASES = ("P1", "P2", "P3", "P4", "P5", "P6")
 # Not in the BOM: shown on the summary so a replicator sees it, never added to the totals
 OPTIONAL = (
     "Optional, not counted: a desktop RTX GPU with 24-32 GB for training and GR00T fine-tuning "
@@ -68,10 +68,9 @@ LINE_COLUMNS = [
     ("id", "ID", 18, None),
     ("item", "Item", 48, None),
     ("model", "Model", 9, None),
-    ("phase", "Phase", 7, None),
     ("status", "Status", 9, None),
-    ("spare", "Spare", 7, None),
     ("qty", "Qty", 6, "0"),
+    ("spares", "Spares", 7, "0"),
     ("unit_usd", "Unit USD", 11, USD),
     ("line_usd", "Line USD", 12, USD),
     ("price_basis", "Price basis", 44, None),
@@ -173,12 +172,10 @@ def validate(data: dict) -> list[str]:
             errors.append(f"{i}: unknown group {r.get('group')}")
         if r.get("status") not in STATUSES:
             errors.append(f"{i}: status must be one of {', '.join(STATUSES)}")
-        if r.get("spare") not in ("yes", "no"):
-            errors.append(f"{i}: spare must be yes or no")
-        if r.get("phase") not in PHASES:
-            errors.append(f"{i}: phase must be one of {', '.join(PHASES)}")
-        if not isinstance(r.get("qty"), int) or not isinstance(r.get("unit_usd"), int | float):
-            errors.append(f"{i}: qty must be a whole number and unit_usd a number")
+        if not all(isinstance(r.get(f), int) and r[f] >= 0 for f in ("qty", "spares")):
+            errors.append(f"{i}: qty and spares must be whole numbers (0 or more)")
+        if not isinstance(r.get("unit_usd"), int | float):
+            errors.append(f"{i}: unit_usd must be a number")
         if not r.get("item"):
             errors.append(f"{i}: no item")
     for r in data["sourcing"]:
@@ -193,10 +190,6 @@ def validate(data: dict) -> list[str]:
         if r.get("status") not in STATUSES:
             errors.append(f"{BOLTS}: {r.get('actuator')}: status must be {', '.join(STATUSES)}")
     return errors
-
-
-def cost(r: dict) -> float:
-    return r["qty"] * r["unit_usd"]
 
 
 # ---- writing -------------------------------------------------------------------------------
@@ -245,18 +238,20 @@ COL = {f: get_column_letter(i + 1) for i, (f, *_) in enumerate(LINE_COLUMNS)}
 
 
 def line_value(r: dict) -> float:
+    """Cost of a line: the units used plus the spares."""
     try:
-        return r["qty"] * r["unit_usd"]
+        return (r["qty"] + r["spares"]) * r["unit_usd"]
     except TypeError:
         return 0
 
 
 def line_sheet(ws, title: str, rows: list[dict], cache: dict) -> tuple[int, int]:
     """One group's lines, a formula per line and a total; return (last line row, total row)."""
-    rows = sorted(rows, key=lambda r: (r["phase"], r["spare"], r["item"], r["id"]))
+    rows = sorted(rows, key=lambda r: (r["item"], r["id"]))
     last = write_rows(ws, LINE_COLUMNS, rows)
     for n, r in enumerate(rows, start=2):
-        ws[f"{COL['line_usd']}{n}"] = f"={COL['qty']}{n}*{COL['unit_usd']}{n}"
+        units = f"({COL['qty']}{n}+{COL['spares']}{n})"
+        ws[f"{COL['line_usd']}{n}"] = f"={units}*{COL['unit_usd']}{n}"
         cache[f"{COL['line_usd']}{n}"] = line_value(r)
     total = last + 2
     ws[f"B{total}"] = f"Total {title.lower()}"
@@ -268,15 +263,12 @@ def line_sheet(ws, title: str, rows: list[dict], cache: dict) -> tuple[int, int]
     ws[f"{COL['line_usd']}{total}"].number_format = USD0
     ws.freeze_panes = "C2"
     dropdown(ws, LINE_COLUMNS, "status", STATUSES, last)
-    dropdown(ws, LINE_COLUMNS, "spare", ("yes", "no"), last)
-    dropdown(ws, LINE_COLUMNS, "phase", PHASES, last)
     return last, total
 
 
 def summary_sheet(ws, sheets: list[tuple[str, int, int]], groups: list[list[dict]], cache) -> None:
-    """Totals per group and per phase; cache gets each formula's value, for viewers that do not
-    compute formulas."""
-    phases = sorted({r["phase"] for rows in groups for r in rows})
+    """Totals per group; cache gets each formula's value, for viewers that do not compute
+    formulas."""
     ws["A1"] = "Marvin Bot bill of materials"
     ws["A1"].font = Font(bold=True, size=14)
     ws["A2"] = (
@@ -332,28 +324,14 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], groups: list[list[dict
         cache[f"B{r}"] = len(rows)
         sums(r, [], [s], rows)
         r += 1
-    group_total = r
     total_row(r, "Total (full cost to replicate)", 5)
     ws[f"B{r}"] = f"=SUM(B5:B{r - 1})"
     cache[f"B{r}"] = sum(len(rows) for rows in groups)
     ws[f"B{r}"].fill, ws[f"B{r}"].font, ws[f"B{r}"].border = TOTAL_FILL, BOLD, TOP
-    r += 2
-    head(r, "Phase", "")
-    first = r + 1
-    for p in phases:
-        r += 1
-        ws.cell(row=r, column=1, value=p)
-        sums(r, [("phase", p)], sheets, [r_ for rows in groups for r_ in rows])
-    r += 1
-    total_row(r, "Total", first)
     for row in ws.iter_rows(min_row=5, max_row=r, min_col=3, max_col=6):
         for c in row:
             c.number_format = USD0
-    ws.cell(row=r + 1, column=1, value="Check: phases add up to the group total")
-    ws.cell(row=r + 1, column=3, value=f'=IF(ROUND(C{r}-C{group_total},2)=0,"OK","MISMATCH")')
-    same = round(cache[f"C{r}"] - cache[f"C{group_total}"], 2) == 0
-    cache[f"C{r + 1}"] = "OK" if same else "MISMATCH"
-    r += 3
+    r += 2
     ws.cell(row=r, column=1, value=OPTIONAL).alignment = WRAP
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
     ws.row_dimensions[r].height = 48
@@ -539,7 +517,7 @@ def parse_fields(pairs: list[str], columns) -> dict:
         field, sep, value = p.partition("=")
         if not sep or field not in known or field == "line_usd":
             raise SystemExit(f"expected field=value with a field in {sorted(known)}: {p}")
-        if field == "qty":
+        if field in ("qty", "spares"):
             out[field] = int(value)
         elif field == "unit_usd":
             out[field] = float(value) if "." in value else int(value) if value else None
@@ -576,7 +554,7 @@ def main() -> int:
     elif args.command == "add":
         if args.id in lines:
             raise SystemExit(f"line {args.id} exists: use set")
-        row = {"status": "to buy", "spare": "no"} | parse_fields(args.fields, LINE_COLUMNS)
+        row = {"status": "to buy", "spares": 0} | parse_fields(args.fields, LINE_COLUMNS)
         data["lines"].append(dict(row, id=args.id))
     elif args.command == "source":
         if args.id not in lines:
