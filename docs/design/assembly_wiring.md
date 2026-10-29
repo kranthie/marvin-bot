@@ -94,7 +94,7 @@ Rules the harness follows:
 
 ## Body shells (add-on)
 
-The bare robot is meant to look finished: graphite printed shells (thigh, upper arm, forearm, chest), bead-blasted aluminium plates, the actuators' own housings and a glossy helmet head. The body shells are an optional layer that gives it a finished body in the style of current commercial humanoids: a helmet head with a full-face glossy visor over a slim dark neck, a smooth light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them. The style is the general language only; the shapes are this project's own.
+The bare robot is meant to look finished: graphite printed shells (thigh, upper arm, forearm, chest), bead-blasted aluminium plates, the actuators' own housings and a glossy helmet head. The body shells are an optional layer that gives it a finished body: a helmet head with a full-face glossy visor over a slim dark neck, a smooth light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them.
 
 | Shell | Pieces | Notes |
 |---|---|---|
