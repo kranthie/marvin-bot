@@ -90,11 +90,12 @@
     <visual><geometry><mesh filename="../meshes/left_ankle_cross.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
   </link>
   <link name="left_foot_link">
-    <inertial><origin xyz="0.0159403 -0.000362834 -0.0451744"/><mass value="0.5876"/><inertia ixx="0.000654197" ixy="2.35798e-06" ixz="0.000152317" iyy="0.00265624" iyz="-1.77504e-06" izz="0.0030358"/></inertial>
+    <inertial><origin xyz="0.00864612 -0.00100453 -0.0441839"/><mass value="0.55411"/><inertia ixx="0.00056103" ixy="3.89078e-05" ixz="9.80288e-05" iyy="0.00208771" iyz="-2.99319e-06" izz="0.00238259"/></inertial>
     <visual><geometry><mesh filename="../meshes/left_foot_sole.stl"/></geometry><material name="tpu"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_foot_base.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_foot_rib_a.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_foot_rib_b.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/left_foot_rib_c.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_foot_post_a.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_foot_post_b.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_foot_lug_front.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
@@ -265,11 +266,12 @@
     <visual><geometry><mesh filename="../meshes/right_ankle_cross.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
   </link>
   <link name="right_foot_link">
-    <inertial><origin xyz="0.0159403 0.000362834 -0.0451744"/><mass value="0.5876"/><inertia ixx="0.000654197" ixy="-2.35798e-06" ixz="0.000152317" iyy="0.00265624" iyz="1.77504e-06" izz="0.0030358"/></inertial>
+    <inertial><origin xyz="0.00864612 0.00100453 -0.0441839"/><mass value="0.55411"/><inertia ixx="0.00056103" ixy="-3.89078e-05" ixz="9.80288e-05" iyy="0.00208771" iyz="2.99319e-06" izz="0.00238259"/></inertial>
     <visual><geometry><mesh filename="../meshes/right_foot_sole.stl"/></geometry><material name="tpu"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_foot_base.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_foot_rib_a.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_foot_rib_b.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/right_foot_rib_c.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_foot_post_a.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_foot_post_b.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_foot_lug_front.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>

@@ -15,7 +15,7 @@ them (motor_mounts), at their STEP-model sizes, and the structure is built aroun
   them (one high and forward under the knee, one low behind the ankle), each bolted to one
   plate; the plates' lower ends are the ankle fork cheeks;
 - ankle: a cross block, two cranks, two push rods with rod ends;
-- foot: an aluminium plate with heel posts for the rod ends and lugs for the roll bearings, on a
+- foot: a shoe-shaped aluminium plate (a slight V toe) with heel posts for the rod ends and lugs for the roll bearings, on a
   TPU sole.
 
 Plates are rings on the motors' bolt circles joined by straps, not full-width discs, sized by
@@ -346,7 +346,7 @@ def parts() -> list[Part]:
     fl, fw, _ = mm(foot["size"])
     fx = foot["xyz"][0] * 1000
     sole_bot = (foot["xyz"][2] - foot["size"][2] / 2) * 1000
-    sole = box((fl, fw, 4), (fx, 0, sole_bot + 2))
+    sole = shoe(fl, fw, 4, fx, sole_bot + 2)
     out.append(Part("left_foot_sole", "left_foot_link", "tpu", sole, "print"))
     pz = sole_bot + 4 + 2.5
     posts = [
@@ -366,12 +366,16 @@ def parts() -> list[Part]:
     ]
     # the base is longer than the desktop mill's travel: a flat plate cut by an online
     # laser or water-jet service; posts and lugs are machined and bolted on
-    fbase = lighten(box((fl - 10, fw - 10, 5), (fx, 0, pz)), "z", hole=24, pitch=30, rim=10)
+    fbase = lighten(shoe(fl - 10, fw - 10, 5, fx, pz), "z", hole=24, pitch=30, rim=10)
     out.append(Part("left_foot_base", "left_foot_link", "al6061", fbase, "service"))
     # stiffening ribs along the foot either side of the lugs (bolted on; the base is a flat plate)
     for k, ry in (("rib_a", 24), ("rib_b", -24)):
-        rib = box((fl - 50, 6, 16), (fx + 10, ry, pz + 2.5 + 8))  # 190 mm: fits the mill
+        rib = box((fl - 90, 6, 16), (fx - 10, ry, pz + 2.5 + 8))  # 150 mm, short of the toe
         out.append(Part(f"left_foot_{k}", "left_foot_link", "al6061", rib, "cnc"))
+    # and one down the middle of the toe, from ahead of the front lug to near the tip
+    toe_end = fx + (fl - 10) / 2 - 3
+    rib = box((toe_end - 40, 6, 20), ((toe_end + 40) / 2, -6, pz + 2.5 + 10))
+    out.append(Part("left_foot_rib_c", "left_foot_link", "al6061", rib, "cnc"))
     for name, solid in (
         ("post_a", posts[0]),
         ("post_b", posts[1]),
@@ -380,6 +384,18 @@ def parts() -> list[Part]:
     ):
         out.append(Part(f"left_foot_{name}", "left_foot_link", "al6061", solid, "cnc"))
     return out
+
+
+def shoe(length: float, width: float, t: float, xc: float, z: float):
+    """A foot outline like a shoe's, `length` along x (centred at xc) and `width` at the ball:
+    a heel with rounded corners (full width there, for the rod-end posts), the widest point at
+    the ball, and a toe that narrows in a slight V to a small round point set towards the
+    inside (-y on the left foot, like the big toe), `t` thick at height z."""
+    back, front = xc - length / 2, xc + length / 2
+    heel = [cyl(0.4 * width, t, "z", (back + 0.2 * width, s * 0.3 * width, z)) for s in (1, -1)]
+    ball = [cyl(0.3 * width, t, "z", (back + 0.66 * length, s * 0.35 * width, z)) for s in (1, -1)]
+    toe = cyl(0.36 * width, t, "z", (front - 0.18 * width, -0.06 * width, z))
+    return hull(*heel, *ball, toe)
 
 
 def all_parts() -> list[Part]:

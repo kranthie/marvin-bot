@@ -4,7 +4,7 @@
 
 items:
   leg_structure:     {mass: 4.6821, basis: cad, note: "two legs, cad/leg.py second pass: far-side bearings at knee and hip roll, channel-flanged hip block, pocketed plates (4 mm shin plates with 44 mm straps, 9 mm thigh plates pocketed to a 2 mm floor); thigh 325 mm, shin 315 mm; passes cad/strength.py; fasteners in their own item"}
-  feet:              {mass: 1.1752, basis: cad, note: "two feet, cad/leg.py: 5 mm pocketed base with two 6 x 16 mm ribs, heel posts, roll-bearing lugs, 4 mm TPU sole"}
+  feet:              {mass: 1.1082, basis: cad, note: "two feet, cad/leg.py: 5 mm pocketed shoe-shaped base with two 6 x 16 mm side ribs and a 6 x 20 mm toe rib, heel posts, roll-bearing lugs, 4 mm TPU sole"}
   pelvis:            {mass: 0.943, basis: cad, note: "cad/torso.py: 6 mm back plate carrying the hip roll motors, top plate and gussets (roll-first hip), pocketed"}
   torso:             {mass: 1.6125, basis: cad, note: "cad/torso.py: waist flange, base plate, two side frames (a lower frame leaning out from the base, an upper plate; service-cut), battery shelf, neck bridge, printed chest shell"}
   arm_structure:     {mass: 1.5807, basis: cad, note: "two arms, cad/arm.py: two-plate shoulder brackets, 7 mm shoulder plates, aluminium motor rings and flanges, printed upper-arm and forearm shells, wrist pitch cradles and hand mounts; no fasteners yet"}

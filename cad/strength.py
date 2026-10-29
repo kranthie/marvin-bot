@@ -194,7 +194,7 @@ def checks(peak: dict, mass: float) -> list[Check]:
             tuple(ankle_pelvis),
         ),
         Check(
-            "left_foot_base+left_foot_rib_a+left_foot_rib_b",
+            "left_foot_base+left_foot_rib_a+left_foot_rib_b+left_foot_rib_c",
             "x",
             list(np.linspace(40, 140, 6)),
             (150.0, 0.0, -60.0),

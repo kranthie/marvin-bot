@@ -303,37 +303,46 @@ left_foot_sole:
   material: tpu
   process: print
   budget: feet
-  mass: 0.12144
-  com: [0.03, 0.0, -0.058]
-  inertia: [0.000122614, 0.000583074, 0.000705364, 0.0, 0.0, 0.0]
+  mass: 0.10486
+  com: [0.016975, -0.000607, -0.058]
+  inertia: [9.34067e-05, 0.000407698, 0.000500825, 6.4273e-06, 0.0, 0.0]
   size_mm: [240.0, 110.0, 4.0]
 left_foot_base:
   link: left_foot_link
   material: al6061
   process: service
   budget: feet
-  mass: 0.20066
-  com: [0.0316423, -0.0010625, -0.0535]
-  inertia: [0.000203068, 0.000952035, 0.00115427, -9.897e-07, 0.0, 0.0]
+  mass: 0.17144
+  com: [0.0175814, -0.0017188, -0.0535]
+  inertia: [0.00015415, 0.000656821, 0.000810257, 1.29866e-05, 0.0, 0.0]
   size_mm: [230.0, 100.0, 5.0]
 left_foot_rib_a:
   link: left_foot_link
   material: al6061
   process: cnc
   budget: feet
-  mass: 0.04925
-  com: [0.04, 0.024, -0.043]
-  inertia: [1.1984e-06, 0.000149205, 0.000148302, 0.0, 0.0, 0.0]
-  size_mm: [190.0, 6.0, 16.0]
+  mass: 0.03888
+  com: [0.02, 0.024, -0.043]
+  inertia: [9.461e-07, 7.37294e-05, 7.30166e-05, 0.0, 0.0, 0.0]
+  size_mm: [150.0, 6.0, 16.0]
 left_foot_rib_b:
   link: left_foot_link
   material: al6061
   process: cnc
   budget: feet
-  mass: 0.04925
-  com: [0.04, -0.024, -0.043]
-  inertia: [1.1984e-06, 0.000149205, 0.000148302, 0.0, 0.0, 0.0]
-  size_mm: [190.0, 6.0, 16.0]
+  mass: 0.03888
+  com: [0.02, -0.024, -0.043]
+  inertia: [9.461e-07, 7.37294e-05, 7.30166e-05, 0.0, 0.0, 0.0]
+  size_mm: [150.0, 6.0, 16.0]
+left_foot_rib_c:
+  link: left_foot_link
+  material: al6061
+  process: cnc
+  budget: feet
+  mass: 0.03305
+  com: [0.091, -0.006, -0.041]
+  inertia: [1.2007e-06, 2.97542e-05, 2.87518e-05, 0.0, 0.0, 0.0]
+  size_mm: [102.0, 6.0, 20.0]
 left_foot_post_a:
   link: left_foot_link
   material: al6061
@@ -672,37 +681,46 @@ right_foot_sole:
   material: tpu
   process: print
   budget: feet
-  mass: 0.12144
-  com: [0.03, 0.0, -0.058]
-  inertia: [0.000122614, 0.000583074, 0.000705364, 0.0, 0.0, 0.0]
+  mass: 0.10486
+  com: [0.016975, 0.000607, -0.058]
+  inertia: [9.34067e-05, 0.000407698, 0.000500825, -6.4273e-06, 0.0, 0.0]
   size_mm: [240.0, 110.0, 4.0]
 right_foot_base:
   link: right_foot_link
   material: al6061
   process: service
   budget: feet
-  mass: 0.20066
-  com: [0.0316423, 0.0010625, -0.0535]
-  inertia: [0.000203068, 0.000952035, 0.00115427, 9.897e-07, 0.0, 0.0]
+  mass: 0.17144
+  com: [0.0175814, 0.0017188, -0.0535]
+  inertia: [0.00015415, 0.000656821, 0.000810257, -1.29866e-05, 0.0, 0.0]
   size_mm: [230.0, 100.0, 5.0]
 right_foot_rib_a:
   link: right_foot_link
   material: al6061
   process: cnc
   budget: feet
-  mass: 0.04925
-  com: [0.04, -0.024, -0.043]
-  inertia: [1.1984e-06, 0.000149205, 0.000148302, 0.0, 0.0, 0.0]
-  size_mm: [190.0, 6.0, 16.0]
+  mass: 0.03888
+  com: [0.02, -0.024, -0.043]
+  inertia: [9.461e-07, 7.37294e-05, 7.30166e-05, 0.0, 0.0, 0.0]
+  size_mm: [150.0, 6.0, 16.0]
 right_foot_rib_b:
   link: right_foot_link
   material: al6061
   process: cnc
   budget: feet
-  mass: 0.04925
-  com: [0.04, 0.024, -0.043]
-  inertia: [1.1984e-06, 0.000149205, 0.000148302, 0.0, 0.0, 0.0]
-  size_mm: [190.0, 6.0, 16.0]
+  mass: 0.03888
+  com: [0.02, 0.024, -0.043]
+  inertia: [9.461e-07, 7.37294e-05, 7.30166e-05, 0.0, 0.0, 0.0]
+  size_mm: [150.0, 6.0, 16.0]
+right_foot_rib_c:
+  link: right_foot_link
+  material: al6061
+  process: cnc
+  budget: feet
+  mass: 0.03305
+  com: [0.091, 0.006, -0.041]
+  inertia: [1.2007e-06, 2.97542e-05, 2.87518e-05, 0.0, 0.0, 0.0]
+  size_mm: [102.0, 6.0, 20.0]
 right_foot_post_a:
   link: right_foot_link
   material: al6061
@@ -1572,10 +1590,10 @@ left_toe_cover:
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.02226
-  com: [0.103592, 0.0, -0.0276662]
-  inertia: [3.88815e-05, 2.52012e-05, 5.23142e-05, 0.0, 6.3774e-06, 0.0]
-  size_mm: [99.6, 119.9, 62.4]
+  mass: 0.01751
+  com: [0.0964676, -0.0021052, -0.0269602]
+  inertia: [2.01379e-05, 1.79974e-05, 2.82567e-05, 9.595e-07, 3.504e-06, -1.147e-07]
+  size_mm: [99.6, 119.9, 63.6]
 right_thigh_cover:
   link: right_thigh_link
   material: pa_cf
@@ -1635,7 +1653,7 @@ right_toe_cover:
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.02226
-  com: [0.103592, 0.0, -0.0276662]
-  inertia: [3.88815e-05, 2.52012e-05, 5.23142e-05, 0.0, 6.3774e-06, 0.0]
-  size_mm: [99.6, 119.9, 62.4]
+  mass: 0.01751
+  com: [0.0964676, 0.0021052, -0.0269602]
+  inertia: [2.01379e-05, 1.79974e-05, 2.82567e-05, -9.595e-07, 3.504e-06, 1.147e-07]
+  size_mm: [99.6, 119.9, 63.6]
