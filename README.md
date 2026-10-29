@@ -28,7 +28,7 @@ An open humanoid robot, about 1.44 m tall and 41 kg, with 27 powered joints and 
 |---|---|
 | ![Flat-ground policy in MuJoCo](docs/media/flat_walk.webp) | ![Stair policy in MuJoCo](docs/media/stairs_15cm.webp) |
 
-Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor noise (`sim/mujoco/check_policy.py --render`, palms turned in with `--wrist-yaw 90`); results for every run are in [sim/isaaclab/README.md](sim/isaaclab/README.md). Both were trained before the hands were added; the clips replay them on the current model, hands included, where they still pass their checks. The trained policies are not committed; [sim/isaaclab/README.md](sim/isaaclab/README.md) says how to train and replay them.
+Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor noise (`sim/mujoco/check_policy.py --render`, palms turned in with `--wrist-yaw 90`); results for every run are in [sim/isaaclab/README.md](sim/isaaclab/README.md). Both were trained on the earlier 1.29 m body, before the hands were added; the clips replay them on the current 1.44 m model, where they still pass their checks but walk with the knees bent about 40° (15° intended) until they are retrained for it. The trained policies are not committed; [sim/isaaclab/README.md](sim/isaaclab/README.md) says how to train and replay them.
 
 ## Goals
 
