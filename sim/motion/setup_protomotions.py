@@ -6,7 +6,7 @@ after any change to it (as tools/build_urdf.py is rerun):
 
   protomotions/data/assets/mjcf/marvin_bot.xml      the robot for simulation: the URDF's links,
       inertias and collision boxes, a free base, and the motors' armature, friction and peak torque;
-      the arms collide with the ground only
+      the arms collide with the body and each other
   protomotions/data/assets/urdf/for_retargeting/marvin_bot.urdf
       the URDF without visuals, plus the frames the retargeter matches human keypoints to: a toe
       15 cm ahead of each ankle, a hand frame on each wrist pitch axis pointing down the hand,
@@ -258,14 +258,17 @@ def mjcf(specs: dict) -> tuple[str, list[str]]:
         if j.name in specs:
             j.armature = specs[j.name]["armature"]
             j.frictionloss = specs[j.name]["friction"]
-    # The arms collide with the ground only. Retargeted human arms pass close to the body, and
-    # the hand boxes meet the thighs even with the arms hanging straight, which would let the
-    # arms block the legs
+    # The arms collide with the body, the legs and each other, but not within one arm or at the
+    # shoulders against the torso (overlapping boxes at a joint). The retargeter keeps the
+    # references' arms out of the body (retarget_marvin_bot.py); with the palms turned in, the
+    # standing pose has no contacts
     arms = [b.name for b in spec.bodies if b.name.startswith(ARMS)]
-    for a in arms:
-        for b in spec.bodies[1:]:
-            if b.name != a and not (b.name in arms and b.name < a):
-                spec.add_exclude(bodyname1=a, bodyname2=b.name)
+    for i, a in enumerate(arms):
+        for b in arms[i + 1 :]:
+            if a.split("_")[0] == b.split("_")[0]:
+                spec.add_exclude(bodyname1=a, bodyname2=b)
+        if "shoulder" in a:
+            spec.add_exclude(bodyname1=a, bodyname2="torso_link")
     for name in order:
         effort = specs[name]["effort"]
         spec.add_actuator(

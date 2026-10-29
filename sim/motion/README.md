@@ -37,10 +37,11 @@ What is specific to Marvin Bot:
   towards the standing pose rather than the middle of each joint's range. With the source's
   pelvis and shoulders left high, the solver crouched the robot to reach them (knees at 37-58°
   through a walk).
-- **Arms collide with the ground only.** The retargeter's self-collision cost is off upstream,
-  and the hand boxes meet the thighs even with the arms hanging straight, so in the tracking
-  model the arms do not collide with the body. A real robot would: the retargeted arms still
-  need a collision fix before anything runs on hardware.
+- **Arms kept out of the body.** Upstream's retargeter leaves its self-collision cost off, and
+  the retargeted arms passed through the body: hands 4-10 cm into the thighs in most walking
+  frames, the palms 9 cm through each other in the clap. `retarget_marvin_bot.py` turns it on
+  for the arms against the trunk, the legs and the other arm, which leaves no frame with an arm
+  inside the body, and the tracking model's arms collide with the body and each other too.
 - **Motions at Marvin Bot's pace.** `generate_kimodo.py` gives every locomotion clip and
   in-place skill a root path, so the speed and turn rate are set rather than worded: Kimodo's
   idea of "jogs forward" was a 2 m/s run, which no tracker followed. Of four samples per clip it

@@ -8,6 +8,8 @@ except for what is robot-specific:
   (scale_keypoints), with the feet moved apart to Marvin Bot's hip spacing (WIDEN);
 - the rest pose the solver starts from and pulls towards, the standing pose instead of the
   middle of each joint's range;
+- self-collision of the arms against the trunk, legs and other arm (COLLISION_EDITS), which
+  upstream leaves off;
 - the joints held near their rest angle (the retargeter's G1 list names joints Marvin Bot has
   not got: a waist roll and pitch, wrist roll; the wrist yaw and pitch are held too, at the
   standing pose's palms-in angle, since no keypoint sets the hand's angle).
@@ -81,6 +83,79 @@ HOLD = [
 ]
 
 
+# Self-collision. Upstream builds no collision model and leaves the cost out ("turned off for
+# now"), and the retargeted arms passed through the body: hands 4-10 cm into the thighs in
+# 18-92% of walking frames, the palms 9 cm through each other in the clap. These edits to the
+# upstream script (each must match once) turn it on, for the arms against the trunk, the legs
+# and the other arm only: links that already touch in the standing pose are left out
+SELF_COLLISION = 10.0
+COLLISION_EDITS = [
+    (
+        "    # robot_coll = pk.collision.RobotCollision.from_urdf(urdf)\n    robot_coll = None\n",
+        "    robot_coll = pk.collision.RobotCollision.from_urdf(\n"
+        "        urdf, user_ignore_pairs=marvin_collision_ignore(urdf)\n    )\n",
+    ),
+    (
+        "        self_collision=0.0,  # turned off for now\n",
+        f"        self_collision={SELF_COLLISION},\n",
+    ),
+    (
+        "        # pk.costs.self_collision_cost(\n"
+        "        #     jax.tree.map(lambda x: x[None], robot),\n"
+        "        #     jax.tree.map(lambda x: x[None], robot_coll),\n"
+        "        #     var_joints,\n"
+        "        #     margin=0.01,\n"
+        '        #     weight=weights["self_collision"],\n'
+        "        # ),\n",
+        "        pk.costs.self_collision_cost(\n"
+        "            jax.tree.map(lambda x: x[None], robot),\n"
+        "            jax.tree.map(lambda x: x[None], robot_coll),\n"
+        "            var_joints,\n"
+        "            margin=0.02,\n"
+        '            weight=weights["self_collision"],\n'
+        "        ),\n",
+    ),
+]
+ARM_LINKS = ("upper_arm_link", "forearm_link", "wrist_link", "palm_link")
+BODY_LINKS = ("pelvis", "torso_body", "thigh_link", "shin_link")
+
+
+def marvin_collision_ignore(urdf) -> tuple[tuple[str, str], ...]:
+    """Every pair of links except an arm's lower links against the trunk, the legs and the other
+    arm. All links are listed: the URDF passed in is loaded without its collision meshes."""
+    links = list(urdf.link_map)
+
+    def arm_side(n):
+        return n.split("_")[0] if n.endswith(ARM_LINKS) else None
+
+    def checked(a, b):
+        for x, y in ((a, b), (b, a)):
+            side = arm_side(x)
+            if side and (y.endswith(BODY_LINKS) or (arm_side(y) and arm_side(y) != side)):
+                return True
+        return False
+
+    return tuple((a, b) for i, a in enumerate(links) for b in links[i + 1 :] if not checked(a, b))
+
+
+def load_retargeter(pm: Path):
+    """ProtoMotions' G1 retargeting script with COLLISION_EDITS applied, as a module."""
+    import types  # noqa: PLC0415
+
+    path = pm / "pyroki" / "batch_retarget_to_g1_from_keypoints.py"
+    src = path.read_text()
+    for old, new in COLLISION_EDITS:
+        if src.count(old) != 1:
+            sys.exit(f"{path} has changed upstream; update COLLISION_EDITS:\n{old}")
+        src = src.replace(old, new)
+    module = types.ModuleType("batch_retarget_to_g1_from_keypoints")
+    module.__file__ = str(path)
+    module.marvin_collision_ignore = marvin_collision_ignore
+    sys.modules[module.__name__] = module
+    exec(compile(src, str(path), "exec"), module.__dict__)
+    return module
+
+
 def scale_keypoints(kp: onp.ndarray) -> onp.ndarray:
     """The retargeter's SOMA keypoints (T, 18, 3; pelvis, legs 1-8, shoulders, elbows, wrists
     9-14 with left first, hand and torso aids 15-17), rescaled from G1's size to Marvin Bot's."""
@@ -116,7 +191,7 @@ def main() -> None:
     if converted:
         argv.remove("--converted")
     sys.path.insert(0, str(pm / "pyroki"))
-    import batch_retarget_to_g1_from_keypoints as r  # noqa: PLC0415
+    r = load_retargeter(pm)
     import pyroki as pk  # noqa: PLC0415
     import yourdfpy  # noqa: PLC0415
 
