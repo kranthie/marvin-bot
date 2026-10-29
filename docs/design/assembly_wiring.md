@@ -1,6 +1,6 @@
 # Assembly, wiring and covers
 
-How the robot comes apart, how the wiring runs, and what the optional covers add. Status as of 2026-10-27: first-pass CAD of every structural part (`cad/`), the electronics bay, battery cradle and limb-root bulkheads at their parts' outlines (`cad/electrical.py`), a generated harness (`tools/build_harness.py` → `electrical/harness.yaml`), and the covers as an add-on (`cad/covers.py`). Fastener holes are in the mounts; clip bosses and the bought parts' datasheet outlines are still to come.
+How the robot comes apart, how the wiring runs, and what the optional covers add. Status as of 2026-10-29: first-pass CAD of every structural part (`cad/`), the electronics bay, battery cradle and limb-root bulkheads at their parts' outlines (`cad/electrical.py`), a generated harness (`tools/build_harness.py` → `electrical/harness.yaml`), and the covers as an add-on (`cad/covers.py`). Fastener holes are in the mounts; clip bosses and the bought parts' datasheet outlines are still to come.
 
 ## Modules
 
@@ -35,10 +35,10 @@ Each limb's first actuator stays on the parent module (hip roll on the pelvis, s
 
 | Where | What, in power-flow order |
 |---|---|
-| Torso, back | 13S pack on the base plate between two printed side guides; a latch plate behind it. It slides out backwards with the back shell off; its blind-mate connector (AS150 class) is at its front-top corner and seats in a socket over the computer, beside the computer's buttons. |
+| Torso, back, high | 13S pack on a shelf under the shoulder motors, behind the electronics bay, between two printed side guides; a latch plate behind it. It slides out backwards with the back shell off; its blind-mate connector (AS150 class) is at its front-top corner and seats in a socket at the front of its bay. |
 | Torso, middle | the computer on edge: fan forward (vents in the chest shell), I/O ports to the sides, buttons up, bolted by its feet to a plate behind it. |
 | Torso, bay above the computer | main contactor and precharge, torso power board (bus bars, arm fuses), e-stop receiver and watchdog relay; the computer's DC-DC (fed ahead of the contactor); three isolated USB-CAN adapters beside the computer's USB ports. |
-| Torso, behind the neck | keep-alive allowance (the parts that stay powered during an e-stop). |
+| Torso, low at the back | keep-alive pack under the battery (keeps the computer up during a pack swap). |
 | Shoulder plates | the arm bulkheads, behind the shoulder pitch motors. |
 | Pelvis channel, under the waist motor | 12 V DC-DC for the servos (a compact 10 A brick, at most 60 × 34 × 25 mm), the IMU near the hip axes. |
 | Pelvis, between the hip roll motors | pelvis power board (leg fuses) with the leg bulkheads under it. |
@@ -76,10 +76,10 @@ The computer's supply is taken before the contactor, so an e-stop cuts every act
 | Harness | Branch current | Fuse | Length | Carries |
 |---|---|---|---|---|
 | Main (battery to torso board) | 78.5 A | 100 A | — | 6 AWG |
-| Trunk (torso to pelvis, across the waist) | 51.3 A | 80 A | 0.60 m | 8 AWG, 4 leg CAN pairs, waist CAN |
-| Leg (each) | 24.3 A | 40 A | 1.82 m | 12 AWG at the root down to 16 AWG; hip and shank CAN |
-| Arm (each) | 13.6 A | 20 A | 1.79 m | 16 AWG; arm CAN; 12 V and serial for the wrist pitch servo and the hand |
-| Head | — | — | 0.36 m | 12 V and serial for the neck servos; camera USB-C |
+| Trunk (torso to pelvis, across the waist) | 51.3 A | 80 A | 0.68 m | 8 AWG, 4 leg CAN pairs, waist CAN |
+| Leg (each) | 24.3 A | 40 A | 1.96 m | 12 AWG at the root down to 16 AWG; hip and shank CAN |
+| Arm (each) | 13.6 A | 20 A | 1.91 m | 16 AWG; arm CAN; 12 V and serial for the wrist pitch servo and the hand |
+| Head | — | — | 0.49 m | 12 V and serial for the neck servos; camera USB-C |
 
 The currents are continuous estimates: rated torque at half the no-load speed, 80% efficiency, 48 V, with half the branch's motors at rated output at once. Peak currents are several times higher for short periods; the fuse and gauge choices are first-pass, and the real bus currents come from the phase 2 bench test (open item 3 in [roadmap.md](../roadmap.md)).
 
@@ -111,7 +111,7 @@ How they are made and checked:
 - `python -m cad.covers --check` (run in CI) moves every joint to both ends and to half of each end of its range, plus combined poses (deep squat, knee up, arm up, hand to chest, looking down while turned), and fails if any shell touches a part or shell of another link. Shells on one limb are not checked against the other limbs; limb-to-limb contact is the policy's job.
 - They clip on (clip and boss details come with the fastener pass), so they come off without tools, and they carry no load; they add some fall protection (R53).
 
-The shells weigh 0.83 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 39.86 kg with the hands) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (40.69 kg) adds the shells' mass and visuals, inside the 41 kg limit, which applies to the robot with them; a robot that runs with them should be trained on it.
+The shells weigh 0.95 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 40.35 kg with the hands) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (41.30 kg) adds the shells' mass and visuals, inside the 42 kg limit, which applies to the robot with them; a robot that runs with them should be trained on it.
 
 ## Still to do
 

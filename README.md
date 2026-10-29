@@ -57,7 +57,7 @@ Every source, with its licence and what was used from it, is in [ACKNOWLEDGMENTS
 
 | | |
 |---|---|
-| Height, mass | ~1.44 m; 40.4 kg bare and 41.4 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 42 kg limit with the shells |
+| Height, mass | ~1.44 m; 40.4 kg bare and 41.3 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 42 kg limit with the shells |
 | Joints | 6 per leg, 6 per arm (wrist yaw and pitch), waist yaw, 2 neck, plus an 8-DOF four-finger hand per arm |
 | Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulder pitch and roll), RS06 (shoulder yaw, elbows), RS00 (wrists); serial-bus servos for the neck and wrist pitch; eight small servos in each hand |
 | Compute | Jetson AGX Orin 64 GB; desktop GPU for training and, at first, for the vision-language-action model |

@@ -1,7 +1,7 @@
 [project]
 name = "marvin-bot"
 version = "0.0.1"
-description = "An open 1.29 m, 27-DOF humanoid with four-finger hands, on RobStride actuators and a Jetson AGX Orin"
+description = "An open 1.44 m, 27-DOF humanoid with four-finger hands, on RobStride actuators and a Jetson AGX Orin"
 readme = "README.md"
 license = "Apache-2.0 AND CERN-OHL-S-2.0"
 requires-python = ">=3.10"

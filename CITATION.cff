@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use Marvin Bot's design or code, please cite it as below."
-title: "Marvin Bot: an open 1.29 m humanoid robot"
+title: "Marvin Bot: an open 1.44 m humanoid robot"
 authors:
   - name: "The Marvin Bot contributors"
 repository-code: "https://github.com/kranthie/marvin-bot"

@@ -42,7 +42,7 @@ uv run --no-sync python <repo>/sim/isaaclab/check_robot.py       # Newton
 uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --backend physx
 ```
 
-Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the 39.86 kg model):
+Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the current 40.35 kg model):
 
 | Check | Newton (MuJoCo-Warp) | PhysX |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ Both follow the decoupled whole-body-control split (GR00T-WholeBodyControl):
 - **Critic observations:** the same plus base linear velocity and the exact height map.
 - **Commands:** forward −0.3 m/s up to a curriculum limit that starts at 0.5 m/s and grows to 1.2 m/s, sideways ±0.3 m/s, yaw ±1.0 rad/s; 20% of envs stand still.
 - **Terrain (rough):** household stairs with 5–20 cm risers and 28 cm treads, random boxes to 10 cm, rough ground to 5 cm, slopes to 0.4 rad, with a tracking-and-distance terrain curriculum.
-- **Heat:** a penalty on leg joints whose ~1 s running average of (torque / rated torque)² exceeds 0.8, so the policy avoids holding torque above the continuous rating (the static stair check put the knee at ~108%).
+- **Heat:** a penalty on leg joints whose ~1 s running average of (torque / rated torque)² exceeds 0.8, so the policy avoids holding torque above the continuous rating (the static stair check puts the knee at ~118% of its rating on the current model).
 - **Posture:** a penalty on the pelvis sitting more than 2 cm below its stance height above the lower foot (so it holds on stairs), on the leg joints' distance from the stance pose while commanded to stand, and on foot tilt, in contact and in swing.
 - **No waddle:** a penalty on pelvis roll, on step width beyond 16 ± 2 cm while walking, and on hip yaw, hip roll and ankle roll away from the stance; the air-time reward is small (0.5), since a large one paid for long single-support phases, which the robot spent tipping over the standing foot.
 - **Delays:** each robot gets a random lag of 0-20 ms on the IMU and joint observations and 0-10 ms on its motor commands. The delayed motor model runs in Isaac Lab's Python actuator path (`use_newton_actuators = False`), as Newton's own actuators take only the stock motor configs: about 2.5x slower per iteration.

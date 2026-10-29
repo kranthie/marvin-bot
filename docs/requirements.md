@@ -6,8 +6,8 @@
 
 | ID | Requirement | Target | Level |
 |---|---|---|---|
-| R1 | Standing height | 1.20–1.30 m | must |
-| R2 | Total mass with battery | ≤35 kg target bare; ≤41 kg hard limit for the robot as it runs, hands and body shells included (history in decisions.md) | must |
+| R1 | Standing height | about 1.44 m (1.20–1.30 m until 2026-10-29, when the torso and legs grew for human proportions; decisions.md) | must |
+| R2 | Total mass with battery | ≤35 kg target bare; ≤42 kg hard limit for the robot as it runs, hands and body shells included (history in decisions.md) | must |
 | R3 | Hip axis to sole | ≥0.65 m (needed for 17–18 cm stairs) | must |
 
 ## Mobility

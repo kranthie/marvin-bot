@@ -13,10 +13,10 @@ The drawing is to scale and shows every powered joint, coloured by actuator mode
 | | |
 |---|---|
 | Height | 1.438 m (longer torso and legs, 2026-10-29; 1.288 m before; 1.215 m in the concept) |
-| Hip axis to sole | 0.65 m (53% of height; sized for 17–18 cm stairs) |
-| Thigh, shin | 0.30 m, 0.29 m |
+| Hip axis to sole | 0.70 m (49% of height; 0.65 m in the concept, sized for 17–18 cm stairs) |
+| Thigh, shin | 0.325 m, 0.315 m (0.30 m, 0.29 m in the concept) |
 | Ankle axis height | 0.06 m |
-| Shoulder width | ~0.49 m |
+| Shoulder width | 0.416 m (~0.49 m in the concept) |
 | Upper arm, forearm to wrist pitch, hand | 0.20 m, 0.188 m, 0.181 m |
 | Head | ~0.16 m wide, ~0.17 m tall |
 

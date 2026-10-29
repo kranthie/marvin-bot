@@ -81,7 +81,7 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 - [x] Real hand meshes (AmazingHand, CC-BY-4.0, `description/third_party/`) in the CAD, URDF and renders; mount plate drilled to its wrist interface (6 × M3 on Ø42)
 - [ ] Weigh the hands; fit a 12 V to 5 V converter at each wrist
 - [ ] A hand model for manipulation in simulation (the kit's MJCF has placeholder masses and closed linkages; reduce each finger to its two servo joints)
-- [ ] Retrain the walking and stair policies with the hands (0.73 kg more at the arms' ends than the grippers)
+- [ ] Retrain the walking and stair policies on the current model: the hands (0.73 kg more at the arms' ends than the grippers) and the 1.44 m body (decisions, 2026-10-29)
 - Later upgrades, in order: compliant fingertips or pads; the kit's stronger-servo variant (STS3032 at 6 V, same protocol as the STS3250s); a second wrist servo for side-to-side tilt; tactile fingertips
 
 ## Open items to verify before ordering

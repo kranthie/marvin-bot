@@ -208,8 +208,8 @@ class MarvinBotRewards(RewardsCfg):
     forward_progress = RewTerm(
         func=forward_progress, weight=0.0, params={"command_name": "base_velocity"}
     )
-    # heat: holding leg torque above the continuous rating (a slow stair step put the knee at
-    # ~108% of its rating in the static check, sim/mujoco/check_step_up.py)
+    # heat: holding leg torque above the continuous rating (a slow stair step puts the knee at
+    # ~118% of its rating in the static check, sim/mujoco/check_step_up.py)
     sustained_torque = RewTerm(
         func=sustained_torque,
         weight=-1.0,
