@@ -30,7 +30,7 @@ dimensions:
   foot_width: 0.110
 
 # Default stance (degrees, robot.yaml convention, same values on both sides): the pose the
-# walking policies act around and the robot starts from. Pelvis 0.645 m above the floor in it.
+# walking policies act around and the robot starts from. Pelvis 0.694 m above the floor in it.
 # Knee 15° (was 25°: the policies walked and climbed in a crouch); hip and ankle pitch keep
 # the foot flat and the CoM over the feet (CoM 106 mm inside the feet, tilt 0.1° standing).
 stance: {hip_pitch: 6, knee: 15, ankle_pitch: 9, shoulder_roll: 8, elbow: 20}
