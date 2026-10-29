@@ -1,30 +1,34 @@
 id,group,item,model,qty,unit_usd,price_basis,phase,status,spare,source,notes
-act-rs04-p2,actuators,Robstride RS04 120 N·m actuator,RS04,1,255,"Seeed listing 2026-10, unverified: $255 each, $242 at 10+ (RobStride list $255)",P2,planned,no,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,bench test; becomes a hip or knee motor
-act-rs03-p2,actuators,Robstride RS03 60 N·m actuator,RS03,1,225,"Seeed listing 2026-10, unverified: $225 each, $214 at 10+ (RobStride list $225)",P2,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,bench test; becomes an ankle motor
-can-usb-p2,electronics,Isolated USB-CAN adapter (gs_usb / SocketCAN),,1,90,estimate (reseller range $73-107),P2,planned,no,,candleLight-compatible with galvanic isolation
+act-rs04-p2,actuators,Robstride RS04 120 N·m actuator,RS04,1,255,"Seeed 2026-10-29: $255 each, $242 at 10+, in stock (RobStride list $255)",P2,planned,no,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,bench test; becomes a hip or knee motor
+act-rs03-p2,actuators,Robstride RS03 60 N·m actuator,RS03,1,225,"Seeed 2026-10-29: $225 each, $214 at 10+, in stock (RobStride list $225)",P2,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,bench test; becomes an ankle motor
+can-usb-p2,electronics,"Isolated USB-CAN adapter, single channel (CANable Pro class; candleLight / gs_usb)",,1,60,"reseller listing 2026-10-29, unverified: CANable Pro $60, Pro 1.1 (5 kV) $70",P2,planned,no,https://reach.dog/shop/openlight-labs/products/canable-pro-isolated-usb-to-can-adapter,stays with the bench rig for testing spares
 can-robstride-dbg,electronics,RobStride USB-to-CAN debug adapter (official GUI tool),,1,15,"Seeed listing 2026-10, unverified: $15 each, $14 at 10+",P2,planned,no,https://www.seeedstudio.com/Robostride-CAN-USB-Driver-Board-p-6708.html,"for RobStride's configuration GUI (IDs, firmware); check whether it works as a SocketCAN bus before using it on the robot"
 psu-bench,power,48 V 20 A bench power supply,,1,250,estimate,P2,planned,no,,for bench and gantry tests
 regen-clamp,power,Regen clamp (brake resistor chopper or TVS ~56-58 V),,1,40,estimate,P2,planned,no,,needed whenever a bench supply is used
 estop-wired,safety,Latching e-stop button and contactor driver,,1,40,estimate,P2,planned,no,,
 contactor,power,Main contactor (48 V DC rated),,1,60,estimate,P2,planned,no,,opened by the e-stop chain
-can-cable,electronics,Twisted-pair CAN cable and connectors,,1,50,estimate,P2,planned,no,,
-act-rs04-p3,actuators,Robstride RS04 120 N·m actuator,RS04,2,255,"Seeed listing 2026-10, unverified: $255 each, $242 at 10+ (RobStride list $255)",P3,planned,no,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,completes one leg (hip pitch/roll/knee)
-act-rs03-p3,actuators,Robstride RS03 60 N·m actuator,RS03,2,225,"Seeed listing 2026-10, unverified: $225 each, $214 at 10+ (RobStride list $225)",P3,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,hip yaw and second ankle motor for the first leg
-alu-6061,materials,6061-T6 aluminium plate and bar stock,,1,300,estimate,P3,planned,no,,leg cores and brackets for both legs and pelvis
-alu-7075,materials,7075-T6 bar for highly loaded flanges and ankle cranks,,1,100,estimate,P3,planned,no,,
-fil-cfnylon,materials,Carbon-fibre nylon filament (kg),,4,95,typical first-party price 2026-10,P3,planned,no,,structural shells; needs a hardened nozzle and dry storage
-fil-petgcf,materials,PETG-CF filament (kg),,2,33,typical price 2026-10,P3,planned,no,,jigs and non-structural parts
-fil-tpu,materials,TPU 95A filament (kg),,1,42,typical price 2026-10,P3,planned,no,,soles and bumpers
-bearing-68xx,mechanical,Thin-section ball bearings (68xx) for far-side joint support,,6,20,reseller range $10-28,P3,planned,no,,hip roll; hip yaw; knee (both legs)
-rod-ends,mechanical,M5-M6 steel-ball rod ends for ankle push rods,,8,8,estimate,P3,planned,no,,size from simulated linkage loads
-push-rods,mechanical,Ankle push rods (aluminium or carbon tube with inserts),,4,10,estimate,P3,planned,no,,
-fasteners,mechanical,Metric fasteners; heat-set inserts; dowel pins; threadlocker,,1,180,estimate,P3,planned,no,,
+can-cable,electronics,"Twisted-pair CAN cable, connectors and 120 Ω terminations",,1,50,estimate,P2,planned,no,,
+act-rs04-p3,actuators,Robstride RS04 120 N·m actuator,RS04,2,255,"Seeed 2026-10-29: $255 each, $242 at 10+, in stock (RobStride list $255)",P3,planned,no,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,completes one leg (hip pitch/roll/knee)
+act-rs03-p3,actuators,Robstride RS03 60 N·m actuator,RS03,2,225,"Seeed 2026-10-29: $225 each, $214 at 10+, in stock (RobStride list $225)",P3,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,hip yaw and second ankle motor for the first leg
+alu-6061,structure,6061-T6 aluminium plate and bar stock,,1,300,estimate,P3,planned,no,,"leg cores and brackets for both legs; about 6 kg of finished CNC 6061 across the robot (build_parts.csv)"
+alu-7075,structure,7075-T6 bar for highly loaded flanges and ankle cranks,,1,100,estimate,P3,planned,no,,
+machining-legs,structure,"Online machining: shin inner and outer plates, foot bases (6 pocketed 4-5 mm 6061 plates)",,1,450,"estimate, not quoted (typical online CNC price for pocketed plates)",P3,planned,no,,"too large for a desktop mill; process ""service"" in build_parts.csv"
+fil-cfnylon,structure,Carbon-fibre nylon filament (kg),,4,95,typical first-party price 2026-10,P3,planned,no,,structural shells; needs a hardened nozzle and dry storage
+fil-petgcf,structure,PETG-CF filament (kg),,2,33,typical price 2026-10,P3,planned,no,,jigs and non-structural parts
+fil-tpu,structure,TPU 95A filament (kg),,1,42,typical price 2026-10,P3,planned,no,,soles and bumpers
+bearing-6806,structure,6806-2RS thin-section ball bearing (30 x 42 x 7 mm) for far-side joint support,,6,10,"2026-10-29: $6.45 (Zoro, 61806-2RS) to CA$25.68 (VXB); budget grades ~$8",P3,planned,no,https://www.zoro.com/ezo-deep-groove-30mm-bore-42mm-od-sealed-6806-2rsc0srl/i/G2080051,"hip roll, hip pitch and knee, both legs"
+rod-ends,structure,M6 steel-ball rod ends for ankle push rods,,8,8,estimate,P3,planned,no,,two per push rod; size from simulated linkage loads
+push-rods,structure,Ankle push rods (steel tube with threaded inserts),,4,10,estimate,P3,planned,no,,two per ankle
+fasteners,fasteners,Metric fasteners; heat-set inserts; dowel pins; threadlocker,,1,180,estimate,P3,planned,no,,"includes the 348 actuator bolts in build_fasteners.csv (12.9 socket head, M3-M5)"
 endmills,tooling,Carbide 3-flute end mills for aluminium (1/8 and 1/4 in),,8,20,reseller range $14-33,P3,planned,no,,
 leg-jig,tooling,Single-leg test jig (aluminium extrusion),,1,120,estimate,P3,planned,no,,
-act-rs04-p4,actuators,Robstride RS04 120 N·m actuator,RS04,3,255,"Seeed listing 2026-10, unverified: $255 each, $242 at 10+ (RobStride list $255)",P4,planned,no,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,second leg
-act-rs03-p4,actuators,Robstride RS03 60 N·m actuator,RS03,3,225,"Seeed listing 2026-10, unverified: $225 each, $214 at 10+ (RobStride list $225)",P4,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,hip yaw and ankle motors for the second leg
-cells,power,Molicel P45B 21700 cells,,39,8.5,US reseller 2026-10 ($8.25-8.75),P4,planned,no,,13S3P pack ~630 Wh; buy from an authorised dealer
-bms,power,13S smart BMS 150 A with CAN telemetry,,1,145,reseller 2026-10,P4,planned,no,,check precharge support
+print-tools,tooling,Hardened-steel nozzle and filament dryer,,1,80,estimate,P3,planned,no,,carbon-fibre nylon wears brass nozzles and must be printed dry
+hand-tools,tooling,"Hand tools: torque screwdriver and hex bits, crimp tools, multimeter, digital scale (5 kg x 1 g)",,1,200,estimate,P3,planned,no,,the scale weighs parts against the mass budget; a desktop CNC mill and 3D printer are assumed and not counted
+act-rs04-p4,actuators,Robstride RS04 120 N·m actuator,RS04,3,255,"Seeed 2026-10-29: $255 each, $242 at 10+, in stock (RobStride list $255)",P4,planned,no,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,second leg
+act-rs03-p4,actuators,Robstride RS03 60 N·m actuator,RS03,3,225,"Seeed 2026-10-29: $225 each, $214 at 10+, in stock (RobStride list $225)",P4,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,hip yaw and ankle motors for the second leg
+machining-pelvis,structure,"Online machining: pelvis back (20 mm, 3D), pelvis top and two gussets (6 mm plates)",,1,400,"estimate, not quoted (typical online CNC price)",P4,planned,no,,"too large for a desktop mill; process ""service"" in build_parts.csv"
+cells,power,Molicel P45B 21700 cells,,39,9.95,"2026-10-29: $9.95 (Batteries in a Flash, in stock); 18650 Battery Store $9.99 regular",P4,planned,no,https://www.18650batterystore.com/products/molicel-p45b,13S3P pack ~630 Wh; buy from an authorised dealer
+bms,power,13S smart BMS 150 A with CAN telemetry,,1,145,"2026-10-29: JK 8-24S 150 A $145 (18650 Battery Store, sold out); Daly 13S 150 A with CAN also sold",P4,planned,no,https://www.18650batterystore.com/products/jk-b2a24s15p-bms,check its CAN protocol and precharge support
 pack-hw,power,Pack housing; nickel strip; quick-release cradle,,1,80,estimate,P4,planned,no,,
 batt-conn,power,Anti-spark blind-mate battery connector (AS150 class),,2,15,estimate,P4,planned,no,,one on the pack and one on the cradle
 charger,power,13S charger adjustable to 4.1 V per cell,,1,300,reseller 2026-10,P4,planned,no,,daily charging at 4.1 V per cell
@@ -33,29 +37,34 @@ precharge,power,Precharge resistor and relay,,1,20,estimate,P4,planned,no,,
 dcdc-compute,power,DC-DC 75 V-input to 19-20 V; at least 120 W (computer),,1,80,estimate,P4,planned,no,,upstream of the contactor
 keepalive,power,Keep-alive battery 50-100 Wh for the computer,,1,80,estimate,P4,planned,no,,lets the computer stay up during a pack swap
 ideal-diode,power,Ideal-diode OR circuit (LTC4359 class) for the computer rail,,1,40,estimate,P4,planned,no,,
-estop-rf,safety,Wireless e-stop receiver and watchdog relay,,1,80,estimate,P4,planned,no,,in series with the wired e-stop
-can-usb-p4,electronics,Isolated USB-CAN adapter (gs_usb / SocketCAN),,3,90,estimate (reseller range $73-107),P4,planned,no,,leg buses and battery bus; the two on-board CAN ports cover the rest
-can-xcvr,electronics,3.3 V CAN transceiver boards for the Orin's on-board CAN,,2,10,estimate,P4,planned,no,,
-imu,electronics,Primary IMU (industrial AHRS; or BMI088 on a microcontroller),,1,730,distributor 2026-10,P4,planned,no,,decide after bench test; the existing USB AHRS IMU is the backup
+spot-welder,tooling,"Battery spot welder and pack supplies (fish paper, insulating rings, Kapton)",,1,150,estimate,P4,planned,no,,or have the pack built by a battery shop
+estop-rf,safety,Wireless e-stop: handheld transmitter; receiver and watchdog relay,,1,80,estimate,P4,planned,no,,in series with the wired e-stop
+can-usb-p4,electronics,"Isolated USB-CAN adapter, dual channel (InnoMaker USB2CAN-X2 class; SocketCAN)",,2,130,"unconfirmed 2026-10-29: no live US listing found; ~$126 (AED 462) at a UAE marketplace",P4,planned,no,https://github.com/INNO-MAKER/usb2can,"one per leg (hip and shank buses), 3 kV isolation per its manual; with can-usb-batt and the Orin's two on-board ports (arm buses) this covers all 7 CAN buses in robot.yaml in the 3 adapter outlines of the electronics bay"
+can-usb-batt,electronics,"Isolated USB-CAN adapter, single channel (CANable Pro class; candleLight / gs_usb)",,1,60,"reseller listing 2026-10-29, unverified: CANable Pro $60, Pro 1.1 (5 kV) $70",P4,planned,no,https://reach.dog/shop/openlight-labs/products/canable-pro-isolated-usb-to-can-adapter,battery (BMS) bus
+can-xcvr,electronics,3.3 V CAN transceiver boards for the Orin's on-board CAN,,2,10,estimate,P4,planned,no,,arm buses
+usb-hub,electronics,"Compact USB 3 hub, 4-port",,1,30,estimate,P4,planned,no,,"the dev kit has 4 USB-A and 2 USB-C ports; the robot uses 3 CAN adapters, 3 servo adapters, the camera, the IMU and the gamepad receiver"
+compute,compute,Jetson AGX Orin 64 GB developer kit,,1,3499,"NVIDIA list price since July 2026 (was $1,999); SparkFun 2026-10-29: $3,499, backorder",P4,owned,no,https://marketplace.nvidia.com/en-us/enterprise/robotics-edge/jetson-agx-orin-developer-kit/,"owned by this build; a replicator buys it"
+nvme,compute,"NVMe SSD, 1 TB, M.2 2280",,1,100,estimate,P4,planned,no,,the dev kit's 64 GB eMMC is too small for logs and datasets
+imu,compute,Primary IMU (industrial AHRS; or BMI088 on a microcontroller),,1,730,distributor 2026-10,P4,planned,no,,decide after bench test; the existing USB AHRS IMU is the backup
+imu-backup,compute,Low-cost USB AHRS IMU,,1,35,estimate,P2,owned,no,,backup IMU and bench use
 harness,electronics,Silicone wire; connectors; strain relief; sleeving,,1,200,estimate,P4,planned,no,,
+limb-conn,electronics,"Limb-root connectors: XT60-class power pair and latching signal pair, per limb",,4,12,estimate,P4,planned,no,,on the bulkheads beside each limb's first flange
+gamepad,electronics,Wireless gamepad,,1,60,estimate,P4,planned,no,,
 gantry,safety,Gantry frame; harness and hoist,,1,300,estimate,P4,planned,no,,
 padding,safety,Fall padding foam,,1,50,estimate,P4,planned,no,,
-gamepad,electronics,Wireless gamepad,,1,60,estimate,P4,planned,no,,
-act-rs03-p5,actuators,Robstride RS03 60 N·m actuator,RS03,5,225,"Seeed listing 2026-10, unverified: $225 each, $214 at 10+ (RobStride list $225)",P5,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,waist yaw; shoulder pitch and roll
-act-rs06-p5,actuators,Robstride RS06 36 N·m actuator,RS06,4,210,"Seeed listing 2026-10, unverified: $210 each, $200 at 10+ (RobStride list $210)",P5,planned,no,https://www.seeedstudio.com/Robostride-06-Actuator-p-6668.html,shoulder yaw and elbow
-act-rs00,actuators,Robstride RS00 14 N·m actuator,RS00,2,138.99,"Seeed listing 2026-10, unverified: $138.99 each, $131.99 at 10+ (RobStride list $125)",P5,planned,no,https://www.seeedstudio.com/Robostride-00-Actuator-p-6664.html,wrist yaw
-servo-sts3250,actuators,Feetech STS3250 serial-bus servo,STS3250,4,45,reseller 2026-10,P5,planned,no,,neck yaw/pitch and wrist pitch
-hand-kit,actuators,"AmazingHand open-source 8-DOF four-finger hand kit, left and right (8 Feetech SCS0009 servos each, 5 V)",,2,99,"Seeed 2025-11: SKUs 100062181 (left), 100063642 (right), $99 each",P5,owned,no,https://www.seeedstudio.com/Amazing-Hand-Open-Source-3D-Printable-Robotic-Hand-Kit.html,"0.40 kg each as published (weigh); its design is CC-BY-4.0, see ACKNOWLEDGMENTS.md"
-dcdc-hand,power,"DC-DC 12 V to 5 V, 3 A, small (in the wrist)",,2,8,estimate,P5,planned,no,,"one per hand: 8 SCS0009 servos at up to 0.3 A each"
-servo-adapter-hand,electronics,Feetech serial-bus USB adapter (hands),,2,15,estimate,P5,planned,no,,"one bus per hand: SCS0009 servos use Feetech's SCS protocol, the STS3250s its STS protocol; the hand kit's own driver board may do instead"
-servo-adapter,electronics,Feetech serial-bus USB adapter,,1,15,estimate,P5,planned,no,,
+spare-rs04,actuators,Spare Robstride RS04,RS04,1,255,"Seeed 2026-10-29: $255 each, $242 at 10+, in stock (RobStride list $255)",P4,planned,yes,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,
+spare-rs03,actuators,Spare Robstride RS03,RS03,1,225,"Seeed 2026-10-29: $225 each, $214 at 10+, in stock (RobStride list $225)",P4,planned,yes,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,
+act-rs03-p5,actuators,Robstride RS03 60 N·m actuator,RS03,5,225,"Seeed 2026-10-29: $225 each, $214 at 10+, in stock (RobStride list $225)",P5,planned,no,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,waist yaw; shoulder pitch and roll
+act-rs06-p5,actuators,Robstride RS06 36 N·m actuator,RS06,4,210,"Seeed 2026-10-29: $210 each, $200 at 10+, in stock (RobStride list $210)",P5,planned,no,https://www.seeedstudio.com/Robostride-06-Actuator-p-6668.html,shoulder yaw and elbow
+act-rs00,actuators,Robstride RS00 14 N·m actuator,RS00,2,138.99,"Seeed 2026-10-29: $138.99 each, $131.99 at 10+, in stock (RobStride list $125)",P5,planned,no,https://www.seeedstudio.com/Robostride-00-Actuator-p-6664.html,wrist yaw
+servo-sts3250,actuators,Feetech STS3250 serial-bus servo,STS3250,4,97,"2026-10-29: $97 (AIFit Lab, ST-3250-C001, backordered); $125 elsewhere (sold out)",P5,planned,no,https://aifitlab.com/products/feetech-sts3250-servo-motor,neck yaw/pitch and wrist pitch; check the variant (C001 or C002) before ordering
+servo-adapter,electronics,Feetech serial-bus USB adapter (Waveshare Bus Servo Adapter (A) class),,1,5,"Waveshare 2026-10-29: $4.99 (SKU 25514)",P5,planned,no,https://www.waveshare.com/bus-servo-adapter-a.htm,STS3250 bus (neck and wrist pitch)
 dcdc-servo,power,"DC-DC 48 V to 12 V, 10 A, compact (at most 60 x 34 x 25 mm)",,1,60,estimate,P5,planned,no,,"the pelvis channel under the waist motor has room for 60 x 34 x 25 mm; a chassis-mount 150 W module does not fit"
-crossed-roller,mechanical,Crossed-roller bearing for the waist,,1,80,reseller range $20-80,P5,planned,no,,
-materials-upper,materials,Aluminium and filament for torso; arms; head,,1,250,estimate,P5,planned,no,,
-camera,electronics,Orbbec Gemini 335L depth camera,,1,359,Orbbec store 2026-10,P6,planned,no,https://store.orbbec.com/products/gemini-335l,check the JetPack 7.2 driver before ordering
-spare-rs04,actuators,Spare Robstride RS04,RS04,1,255,"Seeed listing 2026-10, unverified: $255 each, $242 at 10+ (RobStride list $255)",P4,planned,yes,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,
-spare-rs03,actuators,Spare Robstride RS03,RS03,1,225,"Seeed listing 2026-10, unverified: $225 each, $214 at 10+ (RobStride list $225)",P4,planned,yes,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,
-spare-rs06,actuators,Spare Robstride RS06,RS06,1,210,"Seeed listing 2026-10, unverified: $210 each, $200 at 10+ (RobStride list $210)",P5,planned,yes,https://www.seeedstudio.com/Robostride-06-Actuator-p-6668.html,
-compute,electronics,Jetson AGX Orin 64 GB developer kit,,1,0,owned,P4,owned,no,,
-imu-backup,electronics,Low-cost USB AHRS IMU,,1,0,owned,P2,owned,no,,backup IMU and bench use
-limb-conn,electronics,"Limb-root connectors: XT60-class power pair and latching signal pair, per limb",,4,12,estimate,P4,planned,no,,on the bulkheads beside each limb's first flange
+crossed-roller,structure,Crossed-roller bearing for the waist,,1,80,reseller range $20-80,P5,planned,no,,
+machining-torso,structure,Online machining: two torso uprights (25 mm 6061; 3D),,1,350,"estimate, not quoted (typical online CNC price)",P5,planned,no,,"too large for a desktop mill; process ""service"" in build_parts.csv"
+materials-upper,structure,Aluminium and filament for torso; arms; head,,1,250,estimate,P5,planned,no,,
+spare-rs06,actuators,Spare Robstride RS06,RS06,1,210,"Seeed 2026-10-29: $210 each, $200 at 10+, in stock (RobStride list $210)",P5,planned,yes,https://www.seeedstudio.com/Robostride-06-Actuator-p-6668.html,
+hand-kit,hands,"AmazingHand open-source 8-DOF four-finger hand kit, left and right (8 Feetech SCS0009 servos each, 5 V)",,2,99,"Seeed 2026-10-29: $99 each, $97 at 10+, in stock; SKUs 100062181 (left), 100063642 (right)",P5,owned,no,https://www.seeedstudio.com/Amazing-Hand-Open-Source-3D-Printable-Robotic-Hand-Kit.html,"owned by this build; the listing does not say what is in the box, so check that servos are included. 0.40 kg each as published (weigh); its design is CC-BY-4.0, see ACKNOWLEDGMENTS.md"
+dcdc-hand,hands,"DC-DC 12 V to 5 V, 3 A, small (in the wrist)",,2,8,estimate,P5,planned,no,,"one per hand: 8 SCS0009 servos at up to 0.3 A each"
+servo-adapter-hand,hands,Feetech serial-bus USB adapter (Waveshare Bus Servo Adapter (A) class),,2,5,"Waveshare 2026-10-29: $4.99 (SKU 25514)",P5,planned,no,https://www.waveshare.com/bus-servo-adapter-a.htm,"one bus per hand: SCS0009 servos use Feetech's SCS protocol, the STS3250s its STS protocol; the hand kit's own driver board may do instead"
+camera,compute,Orbbec Gemini 335L depth camera,,1,359,"Orbbec store list $359 (store page rate-limited 2026-10-29); RobotShop US $413 with tariffs",P6,planned,no,https://store.orbbec.com/products/gemini-335l,check the JetPack 7.2 driver before ordering

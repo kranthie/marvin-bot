@@ -1,0 +1,29 @@
+id,vendor,kind,url,unit_usd,tiers,availability,checked,confirmed,notes
+act-rs04-p2,Seeed Studio,official reseller,https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html,255,$242 at 10+,"in stock, China warehouse; lead time not shown",2026-10-29,yes,RobStride's own site links to Seeed and Amazon for ordering
+act-rs03-p2,Seeed Studio,official reseller,https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html,225,$214 at 10+,"in stock, China warehouse",2026-10-29,yes,
+act-rs06-p5,Seeed Studio,official reseller,https://www.seeedstudio.com/Robostride-06-Actuator-p-6668.html,210,$200 at 10+,"in stock, China warehouse",2026-10-29,yes,
+act-rs00,Seeed Studio,official reseller,https://www.seeedstudio.com/Robostride-00-Actuator-p-6664.html,138.99,$131.99 at 10+,"in stock, China warehouse",2026-10-29,yes,RobStride list $125
+can-robstride-dbg,Seeed Studio,official reseller,https://www.seeedstudio.com/Robostride-CAN-USB-Driver-Board-p-6708.html,15,$14 at 10+,,2026-10,no,price from an earlier check; not reopened
+compute,NVIDIA Marketplace,official,https://marketplace.nvidia.com/en-us/enterprise/robotics-edge/jetson-agx-orin-developer-kit/,3499,,reported out of stock 2026-10-21,2026-10-29,no,"page timed out; list price raised from $1,999 to $3,499 in July 2026 (NVIDIA developer FAQ, reported by CNX Software)"
+compute,SparkFun,distributor,https://www.sparkfun.com/nvidia-jetson-agx-orin-64gb-developer-kit.html,3499,,backorder,2026-10-29,yes,SKU DEV-22099
+compute,CNX Software (news),price report,https://www.cnx-software.com/2026/07/22/nvidia-increases-the-price-of-jetson-modules-and-devkits-by-up-to-101/,3499,,,2026-10-29,yes,source for the July 2026 price change
+hand-kit,Seeed Studio (left),official reseller,https://www.seeedstudio.com/Amazing-Hand-Open-Source-3D-Printable-Robotic-Hand-Kit.html,99,$97 at 10+,"in stock, China warehouse",2026-10-29,yes,SKU 100062181; box contents not listed
+hand-kit,Seeed Studio (right),official reseller,https://www.seeedstudio.com/Amazing-Hand-Right-Hand-The-Open-Source-Robotic-Hand-Developer-Kit.html,99,$97 at 10+,"in stock, China warehouse",2026-10-29,yes,SKU 100063642; box contents not listed
+hand-kit,Pollen Robotics AmazingHand,open-source design,https://github.com/pollen-robotics/AmazingHand,,,,2026-10-29,yes,"bill of materials and print files for building the hand from parts (the project gives under €200 per hand, plus the control board)"
+servo-sts3250,AIFit Lab,reseller,https://aifitlab.com/products/feetech-sts3250-servo-motor,97,,backordered,2026-10-29,yes,ST-3250-C001 with bracket
+servo-sts3250,RCDrone,reseller,https://rcdrone.top/products/feetech-sts3250-servo-motor,125,,sold out,2026-10-29,yes,
+servo-sts3250,OpenELAB,reseller,https://openelab.io/products/feetech-sts3250-c002-servo-12v,,€75.85,,2026-10-29,yes,"STS3250-C002 variant (12 V, 50 kg·cm, 1:345); check it suits the neck and wrist"
+servo-adapter,Waveshare,official,https://www.waveshare.com/bus-servo-adapter-a.htm,4.99,,,2026-10-29,yes,Bus Servo Adapter (A) SKU 25514; supports ST and SC series
+servo-adapter,Feetech FE-URT-1 (RobotShop UK),distributor,https://uk.robotshop.com/products/fe-urt-1-usb-to-ttl-485-bus-programmer,,£13.67,1 left,2026-10-29,yes,Feetech's own programmer; alternative
+camera,Orbbec store,official,https://store.orbbec.com/products/gemini-335l,359,,,2026-10-29,no,store page rate-limited; $359 is the list price shown by resellers
+camera,RobotShop,distributor,https://www.robotshop.com/products/orbbec-gemini-335l-camera,413,,5 in stock,2026-10-29,yes,includes US tariffs
+cells,18650 Battery Store,authorised dealer,https://www.18650batterystore.com/products/molicel-p45b,9.99,sale $5.19 when in stock,sold out,2026-10-29,yes,regular price $9.99
+cells,Batteries in a Flash,dealer,https://www.batteriesinaflash.com/regular-rechargeable-batteries/molicel-inr-21700-p45b-3-6-volt-4500mah-45a-lithium-ion-cell,9.95,$8.95 at 600+,in stock,2026-10-29,yes,
+bms,18650 Battery Store,dealer,https://www.18650batterystore.com/products/jk-b2a24s15p-bms,145,,sold out,2026-10-29,yes,"JK-B2A24S15P, 8-24S 150 A, 2 A active balancing; confirm its CAN protocol"
+can-usb-p2,Openlight Labs (CANable Pro),official,https://reach.dog/shop/openlight-labs/products/canable-pro-isolated-usb-to-can-adapter,60,,,2026-10-29,no,"Pro 1.1 (5 kV) $70; candleLight firmware gives gs_usb SocketCAN"
+can-usb-p2,RobotShop (CANable Pro clone),distributor,https://robotshop.com/products/eyou-robotics-can-usb-adapter-canable-pro,42,,,2026-10-29,no,third-party CANable Pro build
+can-usb-p4,InnoMaker USB2CAN-X2 (docs),official,https://github.com/INNO-MAKER/usb2can,,,,2026-10-29,yes,"two channels, 3 kV isolation, SocketCAN; no live US price found"
+can-usb-p4,Carrefour UAE marketplace,marketplace,https://www.carrefouruae.com/mafuae/en/miscellaneous/innomaker-dual-channels-usb-to-can-converter-for-raspberry-pi5-4-pi3b-pi3-pi-zero-w-jetson-nano-tinker-board-any-sbcs-desktop-laptop-support-windows-linux-mac-os-android-venus-os-/p/1881649107638,126,,,2026-10-29,no,AED 462 incl. VAT; the only listing with a price
+bearing-6806,Zoro,distributor,https://www.zoro.com/ezo-deep-groove-30mm-bore-42mm-od-sealed-6806-2rsc0srl/i/G2080051,,,,2026-10-29,no,EZO 6806-2RS; a 61806-2RS listing showed $6.45
+bearing-6806,Simply Bearings,distributor,https://simplybearings.co.uk/shop/p170125/68062RS-Budget-Rubber-Sealed-Thin-Section-Deep-Groove-Ball-Bearing-30x42x7mm/product_info.html,,£6.33 ex VAT; £5.64 at 4+,,2026-10-29,yes,budget grade
+dcdc-servo,Bravo Electro,distributor,https://www.bravoelectro.com/ddr-120c-12.html,67.26,$61.24 at 10+,,2026-10-29,yes,"Mean Well DDR-120C-12 (33.6-67.2 V in, 12 V 10 A) is a DIN-rail module and too big for the pelvis channel; reference price only"

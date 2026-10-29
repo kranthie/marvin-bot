@@ -86,7 +86,7 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 
 ## Open items to verify before ordering
 
-1. RobStride direct quote, lead time and current import tariffs; compare with Seeed Studio (list price, ~5% off at 10+ of one model) and confirm Seeed's live prices.
+1. RobStride direct quote, lead time and current import tariffs; compare with Seeed Studio (Seeed's live prices confirmed 2026-10-29: list price, ~5% off at 10+ of one model). Price the unquoted lines in `bom/bom.csv` (online machining, IMU, BMS, charger, power parts) before each phase's order.
 2. Robstride output-bearing type, backlash and moment ratings (decides the far-side bearing design).
 3. Robstride bus current and regen behaviour (sizes the fuse, clamp and precharge).
 4. Real CAN timing with 3–5 motors per bus on the Orin under JetPack 7.2, and the on-board CAN controllers' pin setup.
@@ -98,4 +98,4 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
 11. Knee and hip-roll heating on slow stairs (knee 47 N·m, 118% of rated, and hip roll 105% in the static check on the 1.44 m model, decisions 2026-10-29; the parked 1.5:1 knee stage would also cover longer legs): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
 12. Hand: weigh the kits, confirm the 6 × M3 on Ø42 wrist pattern on the real part, and measure serial bus timing with 8 servos per hand.
-13. CAN interfaces: robot.yaml has 7 CAN buses (4 leg, 2 arm, battery), but the BOM has 3 USB-CAN adapters plus the Orin's 2 on-board ports. Either the adapters are dual-channel or two more are needed; settle it with the CAN timing test (item 4).
+13. CAN interfaces: robot.yaml has 7 CAN buses (4 leg, 2 arm, battery). The BOM now covers them with the Orin's 2 on-board ports (arms), one dual-channel isolated USB-CAN adapter per leg and a single-channel one for the battery, which fit the electronics bay's 3 adapter outlines. Confirm with the CAN timing test (item 4) that a dual-channel adapter carries two 500 Hz buses on one USB link, and find a live US price for it (none was found in October 2026); otherwise use 5 single-channel adapters and make room for 2 more in the bay.

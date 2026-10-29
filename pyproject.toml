@@ -14,6 +14,7 @@ sketch = ["matplotlib>=3.8", "numpy"]
 sim = ["mujoco>=3.7", "numpy", "pillow", "onnxruntime", "imageio[ffmpeg]"]  # results: mujoco 3.17.0
 cad = ["manifold3d==3.5.4", "trimesh==5.2.0"]  # pinned: cad_model.yaml must reproduce exactly
 hand = ["fast_simplification==0.2.0"]  # tools/build_hand_mesh.py only; reproduces the STLs exactly
+bom = ["openpyxl>=3.1"]  # tools/build_bom_xlsx.py only
 
 [build-system]
 requires = ["setuptools>=68"]
