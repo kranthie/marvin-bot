@@ -438,13 +438,21 @@ def robot(npz: str, out: Path | None) -> None:
 
 BONES = [
     ("Hips", "Spine1"), ("Spine1", "Spine2"), ("Spine2", "Chest"), ("Chest", "Neck1"),
-    ("Neck1", "Head"), ("Head", "HeadEnd"),
+    ("Neck1", "Head"),
     *[(f"{s}{a}", f"{s}{b}") for s in ("Left", "Right") for a, b in (
-        ("Shoulder", "Arm"), ("Arm", "ForeArm"), ("ForeArm", "Hand"), ("Hand", "HandMiddleEnd"),
+        ("Shoulder", "Arm"), ("Arm", "ForeArm"), ("ForeArm", "Hand"),
         ("Leg", "Shin"), ("Shin", "Foot"), ("Foot", "ToeBase"), ("ToeBase", "ToeEnd"))],
     ("Chest", "LeftShoulder"), ("Chest", "RightShoulder"),
     ("Hips", "LeftLeg"), ("Hips", "RightLeg"),
 ]  # fmt: skip
+
+
+# each finger as a chain from the hand: thumb (3 joints) and four fingers (4)
+FINGERS = [
+    [f"{s}Hand"] + [f"{s}Hand{n}{i}" for i in range(1, k + 1)] + [f"{s}Hand{n}End"]
+    for s in ("Left", "Right")
+    for n, k in (("Thumb", 3), ("Index", 4), ("Middle", 4), ("Ring", 4), ("Pinky", 4))
+]
 
 
 def render(npz_dir: str, robot_npz: str, out_dir: str, only: list[str]) -> None:
@@ -505,13 +513,28 @@ def render(npz_dir: str, robot_npz: str, out_dir: str, only: list[str]) -> None:
             himg = Image.new("RGB", (W, H), (236, 238, 242))
             dr = ImageDraw.Draw(himg)
             eye = look * [1, 1, 0] + [0, 0, 0.75] - fwd * DIST
+
+            def proj(x, eye=eye, s=s):
+                v = x * s - eye
+                depth = v @ fwd
+                return (W / 2 + f * (v @ right) / depth, H / 2 - f * (v @ up) / depth), depth
+
+            def at(jn, hi=hi, hj=hj):
+                return proj(hj[hi, names.index(jn)])[0]
+
+            blue = (60, 110, 200)
             for a, b in BONES:
-                pts = []
-                for jn in (a, b):
-                    v = hj[hi, names.index(jn)] * s - eye
-                    depth = v @ fwd
-                    pts.append((W / 2 + f * (v @ right) / depth, H / 2 - f * (v @ up) / depth))
-                dr.line(pts, fill=(60, 110, 200), width=4)
+                dr.line([at(a), at(b)], fill=blue, width=4)
+            for chain in FINGERS:
+                dr.line([at(jn) for jn in chain], fill=blue, width=2)
+            # the head: a disc round the middle of the skull, a dot where the eyes are
+            top, base = hj[hi, names.index("HeadEnd")], hj[hi, names.index("Head")]
+            (cx, cy), depth = proj((top + base) / 2)
+            r = 0.6 * f * s * np.linalg.norm(top - base) / depth
+            dr.ellipse([cx - r, cy - r, cx + r, cy + r], outline=blue, width=3)
+            eyes = (hj[hi, names.index("LeftEye")] + hj[hi, names.index("RightEye")]) / 2
+            ex, ey = proj(eyes)[0]
+            dr.ellipse([ex - 3, ey - 3, ex + 3, ey + 3], fill=(200, 80, 60))
             both = Image.new("RGB", (2 * W, H + 120), (250, 250, 250))
             both.paste(himg, (0, 0))
             both.paste(rimg, (W, 0))
