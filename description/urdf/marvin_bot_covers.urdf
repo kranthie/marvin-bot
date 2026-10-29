@@ -160,11 +160,11 @@
     <visual><origin xyz="0 -0.0121 0.0235" rpy="0 0 0"/><geometry><box size="0.0248 0.0358 0.0453"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
   </link>
   <link name="head_link">
-    <inertial><origin xyz="0.0123528 -0.000610593 0.0933903"/><mass value="0.35031"/><inertia ixx="0.00100491" ixy="-2.64721e-06" ixz="5.33327e-05" iyy="0.000948508" iyz="-5.88456e-06" izz="0.00101863"/></inertial>
+    <inertial><origin xyz="0.0327626 -0.000582225 0.0926908"/><mass value="0.36741"/><inertia ixx="0.00102843" ixy="-7.01349e-06" ixz="6.5322e-05" iyy="0.00130721" iyz="-5.73549e-06" izz="0.00138787"/></inertial>
     <visual><geometry><mesh filename="../meshes/head_frame.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_shell.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_visor.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_window.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_camera_frame.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_camera.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
     <collision><origin xyz="0.004 0 0.099"/><geometry><box size="0.16 0.142 0.158"/></geometry></collision>
   </link>

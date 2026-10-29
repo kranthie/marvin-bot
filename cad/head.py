@@ -6,17 +6,22 @@ servos (STS3250, 45.3 x 35.8 x 24.8 mm) and the depth camera (Orbbec Gemini 335L
 
 - neck bracket: a plate on the neck yaw servo's horn (the servo sits in the torso bridge) and
   two cheeks cradling the neck pitch servo;
-- head frame: two plates on the pitch servo's horn and idler, joined by a bridge that carries
-  the camera and a top bar that carries the shell;
+- head frame: two plates on the pitch servo's horn and idler, joined by a bridge with an arm
+  forward under the camera, and a top bar that carries the shell;
 - head shell: a helmet, taller than it is wide and narrowing to the chin (the hull of two
   ellipsoids), 2.5 mm wall, open at the bottom for the neck; light, like the neck and body
   shells, behind the visor;
 - visor: the whole face, a separate glossy dark part, ahead of a plane that runs from the
-  back of the crown down to the chin (so the light shell behind it reads as jaw and neck),
-  with a flush window in front of the camera
-  (optical-grade, IR-transparent tinted polycarbonate, so the depth camera sees through it;
-  its effect on depth noise is a phase 6 test);
-- the camera, as a bought part.
+  back of the crown down to the chin (so the light shell behind it reads as jaw and neck);
+- camera frame: a light printed sleeve round the camera, like a spectacle frame across the
+  face. The camera's front is level with the face's front on the centre line and nothing is
+  ahead of its lenses (a window behind the curved face let through only about a third of its
+  view); being straight, its ends stand clear of the round face. The sleeve is only the part
+  outside the helmet, glued into its opening in the visor; the camera slides in from the front
+  and screws to an arm from the head frame by its tripod thread underneath;
+- the camera, as a bought part, with the outline of Orbbec's model of it (OrbbecSDK_ROS2,
+  Apache-2.0, fetched by tools/fetch_vendor_cad.py): a 124 x 29 mm stadium (fully rounded
+  ends), 27 mm deep, its lenses 4 mm behind the front.
 
 The helmet sits on a light neck sleeve (cad/covers.py). No fasteners yet.
 """
@@ -41,7 +46,16 @@ WALL = 2.5
 CROWN = (4.0, 0.0, 94.0), (82.0, 71.0, 84.0)
 CHIN = (28.0, 0.0, 42.0), (50.0, 54.0, 40.0)
 CAMERA = (124.0, 29.0, 27.0, 133.0)  # width, height, depth (mm), mass (g)
-CAMERA_AT = (21.0, 0.0, 92.0)  # its centre, at eye height: half way up the head
+CAMERA_Z = 92.0  # at eye height: half way up the head
+# its front level with the helmet's front on the centre line
+CAMERA_FRONT = CROWN[0][0] + CROWN[1][0] * np.sqrt(
+    1 - ((CAMERA_Z - CROWN[0][2]) / CROWN[1][2]) ** 2
+)
+CAMERA_AT = (CAMERA_FRONT - CAMERA[2] / 2, 0.0, CAMERA_Z)  # its centre
+FRAME_RIM = 3.0  # the camera frame's wall
+FRAME_GAP = 0.3  # round the camera, and round the frame where it passes through the shell
+TRIPOD_BACK = 15.8  # its tripod thread behind its front (Orbbec's URDF: 11.7 behind the lenses)
+HEAD_FRAME_FRONT = 7.5  # the head frame's bridge (front face); the camera arm runs forward from it
 VISOR_X = 14.0  # the visor is the whole face ahead of this plane (at eye height) ...
 VISOR_TILT = 28.0  # ... leaning back this far (degrees): from the back of the crown to the chin
 NECK_CUT_Z = 20.0  # the shell's open bottom over the neck axis; the neck sleeve
@@ -83,18 +97,21 @@ def parts() -> list[Part]:
     bracket = union(hub, base, cradle, *cheeks)
     out.append(Part("neck_bracket", "neck_link", "al6061", bracket, "cnc"))
 
-    # --- head frame: side plates on the pitch servo's horn (+y) and idler (-y), a camera mount
-    # and a top bar joining them
+    # --- head frame: side plates on the pitch servo's horn (+y) and idler (-y), a bridge with an
+    # arm forward to the camera's tripod thread, and a top bar joining them
     cx, cy, cz = CAMERA_AT
     cw, ch, cd, cmass = CAMERA
-    back = cx - cd / 2  # the camera's back face
+    back = HEAD_FRAME_FRONT
     y_horn = s_hi + horn_t + 1.5
     y_idler = s_lo - 2.5
     plates = [box((back + 10, 3, 110), ((back - 10) / 2, y, 50)) for y in (y_horn, y_idler)]
     span = y_horn - y_idler + 3
-    bridge = box((4, span, 22), (back - 2, (y_horn + y_idler) / 2, cz))  # the camera bolts here
+    bridge = box((4, span, 22), (back - 2, (y_horn + y_idler) / 2, cz))
+    arm_top = cz - ch / 2 - FRAME_GAP  # under the camera, to just past its tripod thread
+    arm_end = CAMERA_FRONT - TRIPOD_BACK + 8
+    arm = box((arm_end - (back - 4), 16, 9), ((arm_end + back - 4) / 2, 0, arm_top - 4.5))
     top = box((back + 10, span, 4), ((back - 10) / 2, (y_horn + y_idler) / 2, 103))
-    out.append(Part("head_frame", "head_link", "pa_cf", union(*plates, bridge, top), "print"))
+    out.append(Part("head_frame", "head_link", "pa_cf", union(*plates, bridge, arm, top), "print"))
 
     # --- shell and visor
     outer = hull(ellipsoid(CROWN[1], CROWN[0]), ellipsoid(CHIN[1], CHIN[0]))
@@ -108,17 +125,31 @@ def parts() -> list[Part]:
         .rotate([0, np.degrees(np.arctan(NECK_CUT_SLOPE)), 0])
         .translate([0, 0, NECK_CUT_Z])
     )
-    skin = (outer - inner) - under
+    # the camera frame: a stadium sleeve from the head frame's bridge to the camera's front
+    length = CAMERA_FRONT - HEAD_FRAME_FRONT
+    mid = (CAMERA_FRONT + HEAD_FRAME_FRONT) / 2
+    rim = FRAME_GAP + FRAME_RIM
+    sleeve_out = stadium(cw + 2 * rim, ch + 2 * rim, length, mid, cz)
+    socket = stadium(cw + 2 * FRAME_GAP, ch + 2 * FRAME_GAP, length + 2, mid, cz)
+    through = stadium(
+        cw + 2 * (2 * FRAME_GAP + FRAME_RIM), ch + 2 * (2 * FRAME_GAP + FRAME_RIM), length, mid, cz
+    )
+    skin = ((outer - inner) - under) - through
     face = (
         box((big, big, big), (big / 2, 0, 0))
         .rotate([0, -VISOR_TILT, 0])
         .translate([VISOR_X, 0, cz])
     )
     out.append(Part("head_shell", "head_link", "pa_cf", skin - face, "print"))
-    window = box((80, cw - 14, ch - 9), (cx + 40, 0, cz))  # in front of lenses and projector
-    visor = (skin ^ face) - window
-    out.append(Part("head_visor", "head_link", "pa_cf", visor, "print"))
-    out.append(Part("head_window", "head_link", "pa_cf", skin ^ face ^ window, "print"))
-    cam = box((cd, cw, ch), CAMERA_AT)
+    out.append(Part("head_visor", "head_link", "pa_cf", skin ^ face, "print"))
+    frame = (sleeve_out - socket) - inner  # only the part outside the helmet
+    out.append(Part("head_camera_frame", "head_link", "pa_cf", frame, "print"))
+    cam = stadium(cw, ch, cd, cx, cz)
     out.append(Part("head_camera", "head_link", "bought", cam, "bought", mass_g=cmass))
     return out
+
+
+def stadium(length: float, height: float, depth: float, x_mid: float, z: float):
+    """A stadium (a slot with fully rounded ends) facing +x: length along y, centred on y = 0."""
+    r = height / 2
+    return hull(*[cyl(height, depth, "x", (x_mid, s * (length / 2 - r), z)) for s in (1, -1)])

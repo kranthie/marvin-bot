@@ -103,8 +103,8 @@ def colour(model: mujoco.MjModel) -> None:
                 model.geom_rgba[g] = GLOSS
             elif name in ("head_shell", "neck_cover"):
                 model.geom_rgba[g] = COVER
-            elif name == "head_window":
-                model.geom_rgba[g] = [0.10, 0.12, 0.16, 1]
+            elif name == "head_camera_frame":
+                model.geom_rgba[g] = COVER
             elif name == "pelvis_cover" or "glute" in name:
                 model.geom_rgba[g] = DARK
             elif p.get("process") == "cover":

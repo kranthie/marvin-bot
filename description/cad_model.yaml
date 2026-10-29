@@ -1185,10 +1185,10 @@ head_frame:
   material: pa_cf
   process: print
   budget: head
-  mass: 0.01927
-  com: [-2.33e-05, -0.0111, 0.0658791]
-  inertia: [2.92631e-05, 2.3106e-05, 7.2325e-06, 0.0, -5.939e-07, 0.0]
-  size_mm: [17.5, 45.8, 110.0]
+  mass: 0.0311
+  com: [0.0155179, -0.0068783, 0.0684733]
+  inertia: [3.08395e-05, 4.12625e-05, 2.61235e-05, -3.3246e-06, -2.6368e-06, -5.55e-07]
+  size_mm: [88.2, 45.8, 110.0]
 head_shell:
   link: head_link
   material: pa_cf
@@ -1203,27 +1203,27 @@ head_visor:
   material: pa_cf
   process: print
   budget: head
-  mass: 0.09078
-  com: [0.0420057, 0.0, 0.112167]
-  inertia: [0.00034568, 0.000271256, 0.000219212, 0.0, 7.25552e-05, 0.0]
-  size_mm: [113.7, 141.2, 168.1]
-head_window:
+  mass: 0.08181
+  com: [0.0397483, 0.0, 0.114384]
+  inertia: [0.000322424, 0.000259323, 0.000194884, 0.0, 6.84538e-05, 0.0]
+  size_mm: [114.1, 141.2, 168.1]
+head_camera_frame:
   link: head_link
   material: pa_cf
   process: print
   budget: head
-  mass: 0.00725
-  com: [0.0733695, 0.0, 0.0919818]
-  inertia: [8.6819e-06, 9.05e-07, 9.1022e-06, 0.0, -7.1e-09, 0.0]
-  size_mm: [36.4, 110.0, 20.0]
+  mass: 0.02149
+  com: [0.0685855, 0.0, 0.0917442]
+  inertia: [6.19927e-05, 7.512e-06, 6.23944e-05, 0.0, -2.0e-08, 0.0]
+  size_mm: [58.4, 130.6, 35.6]
 head_camera:
   link: head_link
   material: bought
   process: bought
   budget: head
   mass: 0.133
-  com: [0.021, 0.0, 0.092]
-  inertia: [0.000179738, 1.74008e-05, 0.000178497, 0.0, 0.0, 0.0]
+  com: [0.0724768, 0.0, 0.092]
+  inertia: [0.000163887, 1.69486e-05, 0.000163098, 0.0, 0.0, 0.0]
   size_mm: [27.0, 124.0, 29.0]
 elec_contactor:
   link: torso_link
