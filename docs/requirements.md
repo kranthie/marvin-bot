@@ -60,6 +60,6 @@
 | ID | Requirement | Target | Level |
 |---|---|---|---|
 | R60 | Fabrication | parts fit a desktop CNC mill (about 200 × 150 mm usable) and a desktop FDM printer, or can be ordered from online machining services | must |
-| R61 | Parts cost | ≈$14k for one robot excluding the onboard computer (≈$17.5k with it, October 2026 prices; `bom/bom.csv`) | should |
+| R61 | Parts cost | ≈$14k for one robot excluding the onboard computer (≈$17.5k with it, October 2026 prices; `bom/bom.xlsx`) | should |
 | R62 | Openness | all designs, code and models in this repo under its licences; vendor CAD linked, not copied | must |
 | R63 | Serviceability | each actuator replaceable without disassembling more than one limb | should |

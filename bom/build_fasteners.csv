@@ -1,9 +1,0 @@
-actuator,face,thread,qty,notes
-RS00,output,M3,12,"socket head, 12.9; length = plate + thread engagement, per part"
-RS00,stator,M3,12,"socket head, 12.9; length = plate + thread engagement, per part"
-RS03,output,M4,66,"socket head, 12.9; length = plate + thread engagement, per part"
-RS03,stator,M4,88,"socket head, 12.9; length = plate + thread engagement, per part"
-RS04,output,M5,54,"socket head, 12.9; length = plate + thread engagement, per part"
-RS04,stator,M4,60,"socket head, 12.9; length = plate + thread engagement, per part"
-RS06,output,M4,24,"socket head, 12.9; length = plate + thread engagement, per part"
-RS06,stator,M3,32,"socket head, 12.9; length = plate + thread engagement, per part"

@@ -1,6 +1,6 @@
 """Electronics, power and battery layout: where each bought part sits, at its outline.
 
-A first layout of the parts in the BOM (bom/bom.csv), as boxes at their outlines (typical sizes
+A first layout of the parts in the BOM (bom/bom.xlsx), as boxes at their outlines (typical sizes
 for the class of part; replace with the chosen part's datasheet outline when it is bought), in
 the torso and pelvis frames (mm). Placed so nothing overlaps the frame, the motors or each
 other (`python -m cad.covers --check` and the rest-pose audit), with the wiring in mind:

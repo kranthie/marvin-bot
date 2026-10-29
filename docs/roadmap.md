@@ -86,7 +86,7 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 
 ## Open items to verify before ordering
 
-1. RobStride direct quote, lead time and current import tariffs; compare with Seeed Studio (Seeed's live prices confirmed 2026-10-29: list price, ~5% off at 10+ of one model). Price the unquoted lines in `bom/bom.csv` (online machining, IMU, BMS, charger, power parts) before each phase's order.
+1. RobStride direct quote, lead time and current import tariffs; compare with Seeed Studio (Seeed's live prices confirmed 2026-10-29: list price, ~5% off at 10+ of one model). Price the unquoted lines in `bom/bom.xlsx` (online machining, IMU, BMS, charger, power parts) before each phase's order.
 2. Robstride output-bearing type, backlash and moment ratings (decides the far-side bearing design).
 3. Robstride bus current and regen behaviour (sizes the fuse, clamp and precharge).
 4. Real CAN timing with 3–5 motors per bus on the Orin under JetPack 7.2, and the on-board CAN controllers' pin setup.

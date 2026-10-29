@@ -12,6 +12,7 @@ python -m cad.covers --check
 python -m cad.build > /dev/null  # meshes (git-ignored) for the MuJoCo checks
 python tools/check_description.py
 python tools/bom_summary.py
+python tools/bom_book.py --check
 python tools/ankle_linkage.py --check
 python tools/build_urdf.py --check
 python tools/build_harness.py --check

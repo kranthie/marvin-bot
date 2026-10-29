@@ -7,22 +7,21 @@ Checks:
 - CAN bus load stays at or below the configured maximum at each bus's command rate;
 - the total mass (motors from actuators.yaml plus mass_budget.yaml, plus the add-on body shells
   from cad_model.yaml) is under the hard limit (a warning above the target);
-- bom/bom.csv lists exactly as many of each motor model as robot.yaml uses (spares excluded).
+- bom/bom.xlsx lists exactly as many of each motor model as robot.yaml uses (spares excluded).
 
 Usage:
   python tools/check_description.py
 """
 
-import csv
 import sys
 from collections import Counter
 from pathlib import Path
 
 import yaml
+from bom_book import read_book
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
-BOM = ROOT / "bom" / "bom.csv"
 CAD_MODEL = DESC / "cad_model.yaml"
 SIDES = ("left", "right")
 
@@ -147,10 +146,8 @@ def main() -> int:
         warnings.append(f"mass {total:.2f} kg is over the {target} kg target")
 
     # BOM motor counts
-    with BOM.open(newline="") as f:
-        rows = list(csv.DictReader(f))
     in_bom: Counter = Counter()
-    for r in rows:
+    for r in read_book()["lines"]:
         if r["model"] and r["spare"] != "yes":
             in_bom[r["model"]] += int(r["qty"])
     for k in sorted(set(models) | set(in_bom)):

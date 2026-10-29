@@ -5,24 +5,27 @@ Writes:
   outputs/parts/dxf/<part>.dxf         the outline of each flat part (a plate of one thickness),
                                        for the laser or water-jet service and for the mill's
                                        2D toolpaths (git-ignored)
-  bom/build_parts.csv                  every made part: quantity (mirror pairs counted once,
+  bom/bom.xlsx, sheet "Made parts (CAD)"
+                                       every made part: quantity (mirror pairs counted once,
                                        quantity 2), process, material, stock, mass, size
-  bom/build_fasteners.csv              the actuator bolts: each motor's stator and output hole
+  bom/bom.xlsx, sheet "Actuator bolts (CAD)"
+                                       the actuator bolts: each motor's stator and output hole
                                        circles from description/actuators.yaml
+The workbook's other sheets, and the builder's status and notes columns on these two, are kept
+(tools/bom_book.py).
 
-The bought parts (bom/bom.csv) and the cover shells are listed in build_parts.csv for
+The bought parts (the workbook's group sheets) and the cover shells are listed in the made-parts
+sheet for
 completeness; only made parts get files. A part is flat when its volume is its mid-thickness
 outline times its thickness (within 2%), so its DXF is the whole part; other parts are milled
 or printed from the STL.
 
 Usage:
   python -m cad.export           # write the files
-  python -m cad.export --check   # exit 1 if the BOM files are out of date (CI)
+  python -m cad.export --check   # exit 1 if the workbook's CAD sheets are out of date (CI)
 """
 
 import argparse
-import csv
-import io
 import re
 import sys
 from pathlib import Path
@@ -31,12 +34,12 @@ import numpy as np
 import trimesh
 import yaml
 
+from tools import bom_book
+
 from . import arm, covers, electrical, head, leg, torso
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "outputs" / "parts"
-PARTS_CSV = ROOT / "bom" / "build_parts.csv"
-FASTENERS_CSV = ROOT / "bom" / "build_fasteners.csv"
 STOCK_MM = [3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60]  # common plate thicknesses
 PAIR = re.compile(r"^(left|right)_|_(l|r)$")
 
@@ -146,29 +149,21 @@ def build_fasteners():
     ]
 
 
-def to_csv(rows) -> str:
-    buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=list(rows[0]), lineterminator="\n")
-    w.writeheader()
-    w.writerows(rows)
-    return buf.getvalue()
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     rows, files = build_parts(all_parts())
-    texts = {PARTS_CSV: to_csv(rows), FASTENERS_CSV: to_csv(build_fasteners())}
+    bolts = build_fasteners()
+    data = bom_book.read_book()
     if args.check:
-        stale = [p.name for p, t in texts.items() if not p.exists() or p.read_text() != t]
+        stale = bom_book.generated_stale(data, rows, bolts)
         if stale:
-            print(f"{', '.join(stale)} out of date: run python -m cad.export")
+            print(f"{', '.join(stale)} out of date in bom/bom.xlsx: run python -m cad.export")
             return 1
         print("build BOM up to date")
         return 0
-    for path, text in texts.items():
-        path.write_text(text)
+    changed = bom_book.save(bom_book.merge_generated(data, rows, bolts))
     n_flat = 0
     for name, (p, shape) in files.items():
         if p.process in ("bought", "cover"):
@@ -185,7 +180,7 @@ def main() -> int:
             n_flat += 1
     made = sum(r["qty"] for r in rows if r["process"] not in ("bought", "cover"))
     print(f"{made} made parts ({len(files)} files, {n_flat} flat with a DXF) in {OUT}")
-    print(f"wrote {PARTS_CSV.relative_to(ROOT)} and {FASTENERS_CSV.relative_to(ROOT)}")
+    print(f"bom/bom.xlsx {'updated' if changed else 'unchanged'}")
     return 0
 
 

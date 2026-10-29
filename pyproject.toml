@@ -5,7 +5,7 @@ description = "An open 1.44 m, 27-DOF humanoid with four-finger hands, on RobStr
 readme = "README.md"
 license = "Apache-2.0 AND CERN-OHL-S-2.0"
 requires-python = ">=3.10"
-dependencies = ["pyyaml>=6"]
+dependencies = ["pyyaml>=6", "openpyxl>=3.1,<4"]  # openpyxl: the BOM workbook
 
 [project.optional-dependencies]
 dev = ["ruff==0.17.3", "pytest"]  # ruff pinned: a new release can change formatting
@@ -14,7 +14,6 @@ sketch = ["matplotlib>=3.8", "numpy"]
 sim = ["mujoco>=3.7", "numpy", "pillow", "onnxruntime", "imageio[ffmpeg]"]  # results: mujoco 3.17.0
 cad = ["manifold3d==3.5.4", "trimesh==5.2.0"]  # pinned: cad_model.yaml must reproduce exactly
 hand = ["fast_simplification==0.2.0"]  # tools/build_hand_mesh.py only; reproduces the STLs exactly
-bom = ["openpyxl>=3.1"]  # tools/build_bom_xlsx.py only
 
 [build-system]
 requires = ["setuptools>=68"]
