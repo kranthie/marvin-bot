@@ -1,13 +1,11 @@
 # Motion pipeline: human motion to a Marvin Bot tracking policy
 
-Status: a tracker walks. Trained on eleven 8 s locomotion clips generated with Kimodo for
-2,600 epochs (about two hours on one GPU), it follows nine: walking at two speeds, curving left
-and right, starting and stopping, turning in place, jogging, walking backwards and standing,
-covering 82-101% of the reference's distance with the bodies 3-5 cm from the reference. It
-steps one foot at a time; it still spends more of each stride on both feet than the reference
-(26-33% against 10-15%) and does not leave the ground while jogging. It falls on the two
-sidesteps. Fourteen more skills (gestures, squatting and picking up, marching, a kick, a dance,
-walking with a box) are generated and retargeted, and a tracker for all of them is training.
+Status: one tracker follows all 25 clips generated with Kimodo (locomotion, sidesteps, turns,
+a jog, a march, a kick, squatting and picking up, a bow, a dance and arm gestures) on the 1.44 m
+model. Trained for 4,800 epochs (16,384 environments, batch 65,536, about 7.5 hours on one GPU),
+every clip stays upright; joint errors are 8-13° RMS on most clips and the hands 3-9 cm from the
+reference's, with the two-hand wave (35°, 12 cm), reach (18°) and clap (hands 11 cm) the weakest.
+The clips with the reference as a ghost are on the [skills page](../../docs/skills.md).
 Nothing has been replayed in MuJoCo yet.
 
 Instead of writing rewards for each skill, train a policy that tracks a reference motion

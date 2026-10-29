@@ -4,7 +4,7 @@
 
 An open humanoid robot, about 1.44 m tall and 41 kg, with 27 powered joints and two 8-servo four-finger hands. It is built from off-the-shelf quasi-direct-drive actuators, a CNC-machined aluminium frame and printed structural shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
 
-**Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo (the stair policy still falls in 2 of 15 runs on 15–20 cm stairs over five noise seeds); a motion-tracking pipeline (generated human motion to robot skills) has a tracker that walks, turns, jogs, walks backwards and starts and stops by following reference clips, not yet replayed in MuJoCo. See [docs/roadmap.md](docs/roadmap.md).
+**Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo (the stair policy still falls in 2 of 15 runs on 15–20 cm stairs over five noise seeds); a motion-tracking policy follows 25 generated human motions (walking, turning, jogging, kicking, squatting, gestures; see the [skills page](docs/skills.md)), not yet replayed in MuJoCo. See [docs/roadmap.md](docs/roadmap.md).
 
 **Start here:** this README, then [docs/plan.md](docs/plan.md) (phases), [docs/roadmap.md](docs/roadmap.md) (where things stand), [docs/decisions.md](docs/decisions.md) (why things are the way they are) and the [glossary](docs/README.md#glossary). To try it: `pip install -e ".[dev]" && python tools/check_description.py`.
 
@@ -24,11 +24,13 @@ An open humanoid robot, about 1.44 m tall and 41 kg, with 27 powered joints and 
 
 ## In simulation
 
-| Walking, turning and stopping (flat v7) | 15 cm stairs up and down (rough v9) |
-|---|---|
-| ![Flat-ground policy in MuJoCo](docs/media/flat_walk.webp) | ![Stair policy in MuJoCo](docs/media/stairs_15cm.webp) |
+| Walking | Clapping | Kicking |
+|---|---|---|
+| ![Walking: the tracker (solid) and its reference motion (blue)](docs/media/skills/walk.webp) | ![Clapping](docs/media/skills/clap.webp) | ![Kicking](docs/media/skills/kick.webp) |
 
-Policies are trained in Isaac Lab on Newton and replayed in MuJoCo with sensor noise (`sim/mujoco/check_policy.py --render`, palms turned in with `--wrist-yaw 90`); results for every run are in [sim/isaaclab/README.md](sim/isaaclab/README.md). Both were trained on the earlier 1.29 m body, before the hands were added; the clips replay them on the current 1.44 m model, where they still pass their checks but walk with the knees bent about 40° (15° intended) until they are retrained for it. The trained policies are not committed; [sim/isaaclab/README.md](sim/isaaclab/README.md) says how to train and replay them.
+One motion-tracking policy plays 25 skills on the current 1.44 m model: the solid robot is the trained policy, the translucent blue robot the reference motion it follows (human motion generated with Kimodo and retargeted to Marvin Bot). It is trained on Newton in ProtoMotions and every clip stays upright; all 25, with their tracking errors, are on the [skills page](docs/skills.md), and the pipeline is in [sim/motion/README.md](sim/motion/README.md). Not yet replayed in MuJoCo.
+
+Separate walking and stair-climbing policies are trained in Isaac Lab and replayed in MuJoCo with sensor noise; their clips and results are in [sim/isaaclab/README.md](sim/isaaclab/README.md). They were trained on the earlier 1.29 m body and still pass their checks on the current model, but walk with the knees bent about 40° (15° intended) until they are retrained for it.
 
 ## Goals
 
