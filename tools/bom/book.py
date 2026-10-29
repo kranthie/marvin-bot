@@ -170,8 +170,8 @@ def validate(data: dict) -> list[str]:
         ids.add(i)
         if r.get("group") not in GROUPS:
             errors.append(f"{i}: unknown group {r.get('group')}")
-        if r.get("status") not in STATUSES:
-            errors.append(f"{i}: status must be one of {', '.join(STATUSES)}")
+        if r.get("status") not in (None, *STATUSES):
+            errors.append(f"{i}: status must be empty or one of {', '.join(STATUSES)}")
         if not all(isinstance(r.get(f), int) and r[f] >= 0 for f in ("qty", "spares")):
             errors.append(f"{i}: qty and spares must be whole numbers (0 or more)")
         if not isinstance(r.get("unit_usd"), int | float):
@@ -184,11 +184,11 @@ def validate(data: dict) -> list[str]:
         if r.get("confirmed") not in ("yes", "no"):
             errors.append(f"Sourcing: {r.get('id')}: confirmed must be yes or no")
     for r in data["parts"]:
-        if r.get("status") not in PART_STATUSES:
-            errors.append(f"{PARTS}: {r.get('part')}: status must be {', '.join(PART_STATUSES)}")
+        if r.get("status") not in (None, *PART_STATUSES):
+            errors.append(f"{PARTS}: {r.get('part')}: unknown status {r.get('status')}")
     for r in data["bolts"]:
-        if r.get("status") not in STATUSES:
-            errors.append(f"{BOLTS}: {r.get('actuator')}: status must be {', '.join(STATUSES)}")
+        if r.get("status") not in (None, *STATUSES):
+            errors.append(f"{BOLTS}: {r.get('actuator')}: unknown status {r.get('status')}")
     return errors
 
 
@@ -228,7 +228,7 @@ def write_rows(ws, columns, rows) -> int:
 
 def dropdown(ws, columns, field, options, last) -> None:
     col = get_column_letter([f for f, *_ in columns].index(field) + 1)
-    dv = DataValidation(type="list", formula1='"' + ",".join(options) + '"', allow_blank=False)
+    dv = DataValidation(type="list", formula1='"' + ",".join(options) + '"', allow_blank=True)
     dv.error = f"Choose one of: {', '.join(options)}"
     dv.add(f"{col}2:{col}{max(last, 2)}")
     ws.add_data_validation(dv)
@@ -272,8 +272,9 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], groups: list[list[dict
     ws["A1"] = "Marvin Bot bill of materials"
     ws["A1"].font = Font(bold=True, size=14)
     ws["A2"] = (
-        "This workbook is the BOM's source of truth; copy it to track your own build. Set each "
-        "line's status to to buy, ordered or owned and the totals follow. After editing, run "
+        "This workbook is the BOM's source of truth; copy it to track your own build. Set a "
+        "line's status to owned or ordered as you go (empty counts as to buy) and the totals "
+        "follow. After editing, run "
         "python tools/bom/book.py to tidy it. Prices are indicative: see each line's price "
         "basis and the Sourcing sheet."
     )
@@ -293,11 +294,14 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], groups: list[list[dict
             c.fill, c.font = HEADER_FILL, HEADER_FONT
 
     def sums(row: int, crit: list[tuple[str, str]], sheets_, rows_) -> None:
-        for col, extra in ((3, []), (4, ["owned"]), (5, ["ordered"]), (6, ["to buy"])):
+        for col, extra in ((3, []), (4, ["owned"]), (5, ["ordered"])):
             c = crit + [("status", s) for s in extra]
             ws.cell(row=row, column=col, value=sum_expr(c, sheets_))
             match = [r for r in rows_ if all(r.get(f) == v for f, v in c)]
             cache[f"{get_column_letter(col)}{row}"] = sum(line_value(r) for r in match)
+        # to buy: everything not owned or ordered, so an empty status counts as to buy
+        ws.cell(row=row, column=6, value=f"=C{row}-D{row}-E{row}")
+        cache[f"F{row}"] = cache[f"C{row}"] - cache[f"D{row}"] - cache[f"E{row}"]
 
     def sum_expr(crit, sheets_) -> str:
         if not crit:
@@ -498,12 +502,12 @@ def merge_generated(data: dict, parts: list[dict], bolts: list[dict]) -> dict:
     new_parts = []
     for r in parts:
         old = old_parts.get(r["part"], {})
-        extra = {"status": old.get("status") or "to make", "build_notes": old.get("build_notes")}
+        extra = {"status": old.get("status"), "build_notes": old.get("build_notes")}
         new_parts.append({k: blank(v) for k, v in r.items()} | extra)
     new_bolts = []
     for r in bolts:
         old = old_bolts.get((r["actuator"], r["face"]), {})
-        new_bolts.append(dict(r, status=old.get("status") or "to buy"))
+        new_bolts.append(dict(r, status=old.get("status")))
     return dict(data, parts=new_parts, bolts=new_bolts)
 
 
@@ -554,7 +558,7 @@ def main() -> int:
     elif args.command == "add":
         if args.id in lines:
             raise SystemExit(f"line {args.id} exists: use set")
-        row = {"status": "to buy", "spares": 0} | parse_fields(args.fields, LINE_COLUMNS)
+        row = {"spares": 0} | parse_fields(args.fields, LINE_COLUMNS)
         data["lines"].append(dict(row, id=args.id))
     elif args.command == "source":
         if args.id not in lines:

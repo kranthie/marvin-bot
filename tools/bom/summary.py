@@ -23,7 +23,7 @@ def main() -> int:
     for r in rows:
         cost = line_value(r)
         by_group[r["group"]] += cost
-        by_status[r["status"]] += cost
+        by_status[r["status"] or "to buy"] += cost
 
     total = sum(by_group.values())
     print(f"{'model':8} {'qty':>4} {'spares':>6}")

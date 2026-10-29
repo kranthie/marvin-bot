@@ -38,7 +38,7 @@ Separate walking and stair-climbing policies are trained in Isaac Lab and replay
 - Carry and manipulate light objects with two 6-DOF arms and four-finger hands (1–2 kg is the goal; the v1 hands manage about 0.5 kg), learned from teleoperated demonstrations with a vision-language-action model (GR00T N1.7).
 - Learn skills beyond walking by tracking human motion (gestures, whole-body teleoperation), trained in simulation before the robot is built ([roadmap](docs/roadmap.md#skills-beyond-walking-simulation-before-and-during-the-build)).
 - Look finished without its clip-on covers: the visible parts are the structure, and the covers are an optional add-on.
-- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $17.5k in parts at October 2026 prices (`bom/bom.xlsx`, totalled by `tools/bom/summary.py`). That includes the Jetson AGX Orin 64 GB developer kit ($3,499) and the two hand kits, which this build already owns, so it still has about $13.8k to buy. Not included: the desktop CNC mill, the 3D printer, shipping, import duties, and the desktop GPU for training (optional, see `bom/README.md`).
+- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $17.5k in parts at October 2026 prices (`bom/bom.xlsx`, totalled by `tools/bom/summary.py`). That includes the Jetson AGX Orin 64 GB developer kit ($3,499) and the two hand kits. Copy the workbook to track what you own and still need to buy. Not included: the desktop CNC mill, the 3D printer, shipping, import duties, and the desktop GPU for training (optional, see `bom/README.md`).
 - Be fully open: CAD, electronics, firmware, simulation and training code.
 
 The full list is in [docs/requirements.md](docs/requirements.md).
