@@ -15,8 +15,8 @@ them (motor_mounts), at their STEP-model sizes, and the structure is built aroun
   them (one high and forward under the knee, one low behind the ankle), each bolted to one
   plate; the plates' lower ends are the ankle fork cheeks;
 - ankle: a cross block, two cranks, two push rods with rod ends;
-- foot: a shoe-shaped aluminium plate (a slight V toe) with heel posts for the rod ends and lugs for the roll bearings, on a
-  TPU sole.
+- foot: a shoe-shaped aluminium plate (a slight V toe) with heel posts for the rod ends and
+  lugs for the roll bearings, on a TPU sole.
 
 Plates are rings on the motors' bolt circles joined by straps, not full-width discs, sized by
 cad/strength.py. A first pass for mass, inertia, part sizes and clearances: plates are pocketed with
