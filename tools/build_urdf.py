@@ -14,8 +14,9 @@ Model:
 - the code-CAD parts (description/cad_model.yaml, from cad/build.py) replace skeleton.yaml's
   estimate boxes for the budget items they cover, with their computed masses and inertias and
   their meshes as visuals;
-- collision geometry is the skeleton's boxes; visuals are the remaining estimate boxes, the
-  CAD meshes and the motor housings;
+- collision geometry is the skeleton's boxes; visuals are the remaining estimate boxes (except
+  the fasteners and limb harness, spread through their links), the CAD meshes and the motor
+  housings;
 - the clip-on covers (cad/covers.py, an optional add-on) go only into a second URDF,
   marvin_bot_covers.urdf, with their masses; the default model is the bare robot.
 
@@ -47,6 +48,8 @@ MOTOR_COLOURS = {
     "STS3250": "0.88 0.66 0.0 1",
 }
 BODY_COLOUR = "0.19 0.20 0.23 1"
+# budget items spread through their links (a box per link for the mass and inertia), not drawn
+NOT_DRAWN = {"fasteners", "limb_harness"}
 CAD_COLOURS = {  # machined aluminium, printed shells and soles, bought hardware
     "cnc": "0.72 0.74 0.77 1",
     "service": "0.72 0.74 0.77 1",
@@ -309,6 +312,8 @@ def build(covers: bool = False) -> tuple[str, dict]:
     visuals: dict[str, list[str]] = {n: [] for n in links}
     for b in bodies:
         links[b["link"]].append((b["mass"], b["xyz"], box_inertia(b["mass"], b["size"])))
+        if b["budget"] in NOT_DRAWN:
+            continue
         visuals[b["link"]].append(
             f'<visual><origin xyz="{fmt(b["xyz"])}"/><geometry><box size="{fmt(b["size"])}"/>'
             f'</geometry><material name="body"><color rgba="{BODY_COLOUR}"/></material></visual>'

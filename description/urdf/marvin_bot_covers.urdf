@@ -3,7 +3,6 @@
 <robot name="marvin_bot">
   <link name="pelvis">
     <inertial><origin xyz="-0.0680818 1.04901e-05 0.0304792"/><mass value="5.35506"/><inertia ixx="0.0500753" ixy="1.3135e-05" ixz="-0.0121264" iyy="0.0325865" iyz="1.26826e-05" izz="0.0526941"/></inertial>
-    <visual><origin xyz="0 0 0.04"/><geometry><box size="0.14 0.18 0.12"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/pelvis_back.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/pelvis_roll_mount_l.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/pelvis_roll_mount_r.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
@@ -56,8 +55,6 @@
   <link name="left_thigh_link">
     <inertial><origin xyz="0.00045009 0.00403371 -0.135845"/><mass value="2.03853"/><inertia ixx="0.00546614" ixy="3.57259e-06" ixz="2.45192e-05" iyy="0.00651174" iyz="-0.000125218" izz="0.00273274"/></inertial>
     <visual><origin xyz="0.04 0 -0.1"/><geometry><box size="0.02 0.08 0.06"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="0 0 -0.06"/><geometry><box size="0.08 0.08 0.16"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.03 0 -0.08"/><geometry><box size="0.02 0.04 0.16"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_thigh_flange.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_thigh_plate.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_thigh_knee_mount.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
@@ -70,8 +67,6 @@
   <link name="left_shin_link">
     <inertial><origin xyz="0.0124766 0.000465492 -0.150377"/><mass value="2.79161"/><inertia ixx="0.0147981" ixy="-0.000104404" ixz="-0.00349675" iyy="0.0172916" iyz="-5.40075e-05" izz="0.00530901"/></inertial>
     <visual><origin xyz="0.04 0 -0.03"/><geometry><box size="0.02 0.08 0.06"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="0 0 -0.14"/><geometry><box size="0.07 0.07 0.24"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.03 0 -0.14"/><geometry><box size="0.02 0.04 0.24"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_shin_inner.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_shin_outer.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_ankle_mount_a.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
@@ -116,7 +111,6 @@
     <visual><origin xyz="0.01 0 0.1"/><geometry><box size="0.072 0.11 0.11"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><origin xyz="-0.062 0 0.1255"/><geometry><box size="0.06 0.14 0.17"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><origin xyz="-0.068 0 0.24"/><geometry><box size="0.05 0.08 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="0 0 0.15"/><geometry><box size="0.16 0.24 0.26"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_waist_flange.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_base.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/torso_upright_l.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
@@ -193,8 +187,6 @@
   </link>
   <link name="left_upper_arm_link">
     <inertial><origin xyz="-0.00374072 -0.00237323 -0.102833"/><mass value="0.88874"/><inertia ixx="0.00131402" ixy="-1.48078e-05" ixz="8.93916e-05" iyy="0.00154345" iyz="-1.90511e-05" izz="0.000705962"/></inertial>
-    <visual><origin xyz="0 0 -0.06"/><geometry><box size="0.07 0.07 0.12"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.03 0 -0.06"/><geometry><box size="0.02 0.03 0.12"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_upper_arm_ring.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_upper_arm_elbow_ring.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_upper_arm_shell.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
@@ -206,7 +198,6 @@
   <link name="left_forearm_link">
     <inertial><origin xyz="-0.00540422 0.00411814 -0.0897653"/><mass value="0.54587"/><inertia ixx="0.00162092" ixy="-1.21485e-05" ixz="0.000175308" iyy="0.00165955" iyz="-0.000181911" izz="0.000389361"/></inertial>
     <visual><origin xyz="-0.035 0 -0.01"/><geometry><box size="0.02 0.06 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.03 0 -0.06"/><geometry><box size="0.02 0.03 0.1"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_forearm_flange.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_forearm_shell.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_forearm_cover.stl"/></geometry><material name="pa_cf"><color rgba="0.88 0.89 0.91 1"/></material></visual>
@@ -253,8 +244,6 @@
   <link name="right_thigh_link">
     <inertial><origin xyz="0.00045009 -0.00403371 -0.135845"/><mass value="2.03853"/><inertia ixx="0.00546614" ixy="-3.57259e-06" ixz="2.45192e-05" iyy="0.00651174" iyz="0.000125218" izz="0.00273274"/></inertial>
     <visual><origin xyz="0.04 0 -0.1"/><geometry><box size="0.02 0.08 0.06"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="0 0 -0.06"/><geometry><box size="0.08 0.08 0.16"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.03 0 -0.08"/><geometry><box size="0.02 0.04 0.16"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_thigh_flange.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_thigh_plate.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_thigh_knee_mount.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
@@ -267,8 +256,6 @@
   <link name="right_shin_link">
     <inertial><origin xyz="0.0124766 -0.000465492 -0.150377"/><mass value="2.79161"/><inertia ixx="0.0147981" ixy="0.000104404" ixz="-0.00349675" iyy="0.0172916" iyz="5.40075e-05" izz="0.00530901"/></inertial>
     <visual><origin xyz="0.04 0 -0.03"/><geometry><box size="0.02 0.08 0.06"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="0 0 -0.14"/><geometry><box size="0.07 0.07 0.24"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.03 0 -0.14"/><geometry><box size="0.02 0.04 0.24"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_shin_inner.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_shin_outer.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_ankle_mount_a.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
@@ -327,8 +314,6 @@
   </link>
   <link name="right_upper_arm_link">
     <inertial><origin xyz="-0.00374072 0.00237323 -0.102833"/><mass value="0.88874"/><inertia ixx="0.00131402" ixy="1.48078e-05" ixz="8.93916e-05" iyy="0.00154345" iyz="1.90511e-05" izz="0.000705962"/></inertial>
-    <visual><origin xyz="0 0 -0.06"/><geometry><box size="0.07 0.07 0.12"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.03 0 -0.06"/><geometry><box size="0.02 0.03 0.12"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_upper_arm_ring.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_upper_arm_elbow_ring.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_upper_arm_shell.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
@@ -340,7 +325,6 @@
   <link name="right_forearm_link">
     <inertial><origin xyz="-0.00540422 -0.00411814 -0.0897653"/><mass value="0.54587"/><inertia ixx="0.00162092" ixy="1.21485e-05" ixz="0.000175308" iyy="0.00165955" iyz="0.000181911" izz="0.000389361"/></inertial>
     <visual><origin xyz="-0.035 0 -0.01"/><geometry><box size="0.02 0.06 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
-    <visual><origin xyz="-0.03 0 -0.06"/><geometry><box size="0.02 0.03 0.1"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_forearm_flange.stl"/></geometry><material name="al6061"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_forearm_shell.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_forearm_cover.stl"/></geometry><material name="pa_cf"><color rgba="0.88 0.89 0.91 1"/></material></visual>
