@@ -51,11 +51,22 @@ joints:
   - {name: neck_pitch,              axis: pitch, range: [-20, 40]}
   # arms
   - {name: "{side}_shoulder_pitch", axis: pitch, range: [-60, 180]}
-  - {name: "{side}_shoulder_roll",  axis: roll,  range: [0, 120]}  # with the arms close to the body, below 0° the forearm meets the hip motor (check_packaging.py)
+  - {name: "{side}_shoulder_roll",  axis: roll,  range: [-20, 120]}  # below 0° only with the arm forward (coupled_limits)
   - {name: "{side}_shoulder_yaw",   axis: yaw,   range: [-150, 150]}
   - {name: "{side}_elbow",          axis: pitch, range: [0, 135]}
   - {name: "{side}_wrist_yaw",      axis: yaw,   range: [-90, 90]}
   - {name: "{side}_wrist_pitch",    axis: pitch, range: [-60, 60]}  # carries the hand (description/mass_budget.yaml: hands)
+
+# Limits that depend on another joint: the joint's lowest angle, piecewise linear in the other
+# joint's angle (degrees; 0 outside the points given, as the joint's own range then applies).
+# Shoulder roll below 0° brings the hands to the midline (clapping, reaching, both hands on a
+# box): with the arm hanging it puts the upper arm into the torso, so it is allowed only with the
+# arm swung forward. At -20° beyond these points the shoulder yaw motor meets the chest shell,
+# and past 135° of pitch the upper arm meets the head (cad.covers --check checks every point
+# and the midpoints). The controller and the retargeter enforce it; in simulation the arms
+# collide with the body.
+coupled_limits:
+  - {joint: "{side}_shoulder_roll", by: "{side}_shoulder_pitch", min: [[20, 0], [45, -10], [75, -10], [90, -20], [135, -20], [150, 0]]}
 
 # Each motor drives one joint directly, or two motors drive a pair of joints through a linkage.
 # output: the direction its output face looks, in the frame of the link carrying it (left side;

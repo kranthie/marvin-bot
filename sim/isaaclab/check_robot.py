@@ -225,6 +225,7 @@ def check_standing(sim, robot: Articulation, failures: list[str]) -> None:
 
 def main() -> None:
     sim_cfg = SimulationCfg(dt=DT, device=args.device, physics=physics_cfg(args.backend))
+    sim_cfg.use_newton_actuators = False  # the delayed DC motors run in the Python actuator path
     with launch_simulation(sim_cfg, args):
         sim = SimulationContext(sim_cfg)
         scene = instantiate(CheckSceneCfg(num_envs=1, env_spacing=4.0))

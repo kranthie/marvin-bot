@@ -400,7 +400,7 @@
   <joint name="left_shoulder_roll" type="revolute">
     <parent link="left_shoulder_pitch_link"/><child link="left_shoulder_roll_link"/>
     <origin xyz="0 0.048 -0.025"/><axis xyz="1 0 0"/>
-    <limit lower="0" upper="2.0944" effort="60" velocity="20.4204"/>
+    <limit lower="-0.349066" upper="2.0944" effort="60" velocity="20.4204"/>
   </joint>
   <joint name="left_shoulder_yaw" type="revolute">
     <parent link="left_shoulder_roll_link"/><child link="left_upper_arm_link"/>
@@ -460,7 +460,7 @@
   <joint name="right_shoulder_roll" type="revolute">
     <parent link="right_shoulder_pitch_link"/><child link="right_shoulder_roll_link"/>
     <origin xyz="0 -0.048 -0.025"/><axis xyz="-1 0 0"/>
-    <limit lower="0" upper="2.0944" effort="60" velocity="20.4204"/>
+    <limit lower="-0.349066" upper="2.0944" effort="60" velocity="20.4204"/>
   </joint>
   <joint name="right_shoulder_yaw" type="revolute">
     <parent link="right_shoulder_roll_link"/><child link="right_upper_arm_link"/>

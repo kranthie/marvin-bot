@@ -358,15 +358,24 @@ def _checked(a: str, b: str) -> bool:
     )
 
 
-def poses(joints: dict, ranges: dict) -> list[tuple[str, dict]]:
-    """Each joint at both ends and half of each end of its range (the others at zero), and
-    some combined poses."""
+def poses(joints: dict, ranges: dict, coupled: list | None = None) -> list[tuple[str, dict]]:
+    """Each joint at both ends and half of each end of its range (the others at zero), each
+    point of a coupled limit and the midpoints between them, and some combined poses."""
+    coupled = coupled or []
     out = [("zero", {})]
     for name in joints:
         lo, hi = ranges[name]
         for q in (lo, lo / 2, hi / 2, hi):
-            if q:
+            if q and not any(c["joint"] == name and q < 0 for c in coupled):
                 out.append((f"{name} {q:+.0f}", {name: q}))
+    for c in coupled:
+        pts = c["min"]
+        mids = [[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] for a, b in zip(pts, pts[1:], strict=False)]
+        for by, q in pts + mids:
+            if q:
+                out.append(
+                    (f"{c['joint']} {q:+.0f} at {c['by']} {by:+.0f}", {c["by"]: by, c["joint"]: q})
+                )
     for side in ("left", "right"):
         out += [
             (
@@ -426,6 +435,7 @@ def check(min_cm3: float = 0.5, parts_too: bool = True) -> list[str]:
     skel = yaml.safe_load((ROOT / "description" / "skeleton.yaml").read_text())
     joints = bu.mirrored(skel["joints"], key_is_name=True)
     ranges = {j["name"]: j["range"] for j in bu.expand(robot["joints"])}
+    coupled = bu.expand(robot.get("coupled_limits", []))
     body: dict[str, list] = {}
     for p in leg.all_parts() + torso.parts() + arm.all_parts() + head.parts():
         if "ankle_rod" in p.name or "ankle_crank" in p.name:
@@ -443,7 +453,7 @@ def check(min_cm3: float = 0.5, parts_too: bool = True) -> list[str]:
     shell_u = {k: hull_free_union(v) for k, v in shells.items()}
     worst: dict[tuple, tuple] = {}
     rest: dict[tuple, float] = {}
-    for label, q in poses(joints, ranges):
+    for label, q in poses(joints, ranges, coupled):
         world = {"pelvis": (np.eye(3), np.zeros(3))}
         pending = dict(joints)
         while pending:

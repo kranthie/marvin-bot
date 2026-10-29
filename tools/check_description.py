@@ -76,6 +76,17 @@ def main() -> int:
         lo, hi = j["range"]
         if not lo < hi:
             errors.append(f"{name}: range {j['range']} is not increasing")
+    for c in expand(robot.get("coupled_limits", [])):
+        if c["joint"] not in joints or c["by"] not in joints:
+            errors.append(f"coupled limit {c['joint']} by {c['by']}: unknown joint")
+            continue
+        lo, hi = joints[c["joint"]]["range"]
+        blo, bhi = joints[c["by"]]["range"]
+        bys = [b for b, _ in c["min"]]
+        if bys != sorted(bys) or not all(blo <= b <= bhi and lo <= q <= hi for b, q in c["min"]):
+            errors.append(
+                f"coupled limit {c['joint']} by {c['by']}: points outside the ranges or unsorted"
+            )
 
     drivers: dict[str, list[str]] = {n: [] for n in joints}
     for m in motors:

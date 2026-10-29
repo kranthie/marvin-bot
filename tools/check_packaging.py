@@ -91,11 +91,18 @@ def poses(model: mujoco.MjModel, robot: dict) -> list[tuple[str, dict]]:
 
     out = [("stance", base())]
     swept = [n for n in names if n.startswith("left_")] + ["waist_yaw"]
+    coupled = {c["joint"]: c for c in bu.expand(robot.get("coupled_limits", []))}
     for n in swept:
         lo, hi = model.jnt_range[model.joint(n).id]
         for v in np.linspace(lo, hi, SWEEP):
             q = base()
             q[n] = v
+            c = coupled.get(n)
+            if c and math.degrees(v) < 0:
+                # below 0 only where the coupled limit allows it: the other joint in the middle of
+                # the span that does
+                ok = [b for b, m in c["min"] if m <= math.degrees(v) + 0.05]
+                q[c["by"]] = math.radians((ok[0] + ok[-1]) / 2)
             out.append((f"{n} {math.degrees(v):+.0f}°", q))
     combos = {
         "deep squat": {"hip_pitch": 110, "knee": 125, "ankle_pitch": 40},
