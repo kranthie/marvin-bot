@@ -31,26 +31,27 @@ export function partGeometry(p, AB) {
 export function partMaterial(p) {
   const metal = /al60|al70|steel/i.test(p.material || '') || p.cat === 'actuator';
   return new THREE.MeshStandardMaterial({
-    color: new THREE.Color(p.rgba[0], p.rgba[1], p.rgba[2]),
+    // URDF colours are sRGB values, as a colour picker gives them
+    color: new THREE.Color().setRGB(p.rgba[0], p.rgba[1], p.rgba[2], THREE.SRGBColorSpace),
     metalness: metal ? 0.6 : 0.0,
     roughness: metal ? 0.38 : 0.55,
-    envMapIntensity: metal ? 0.9 : 0.3,
+    envMapIntensity: metal ? 0.8 : 0.25,
     transparent: true,
   });
 }
 
-// Filmic tone mapping and an image-based "studio" environment for reflections, plus a key light
+// Neutral tone mapping (keeps base colours true, unlike filmic curves that grey them) and an image-based "studio" environment for reflections, plus a key light
 // that casts soft shadows. Returns the key light so a viewer can aim it.
 export function setupLighting(renderer, scene) {
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.85;
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 0.9;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   pmrem.dispose();
   scene.add(new THREE.HemisphereLight(0xdfe8f5, 0x1a1f26, 0.25));
-  const key = new THREE.DirectionalLight(0xffffff, 2.2);
+  const key = new THREE.DirectionalLight(0xffffff, 1.8);
   key.position.set(2, -1.5, 3.2);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
