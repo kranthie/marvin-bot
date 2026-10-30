@@ -6,16 +6,18 @@ Two steps, in two environments:
   export (ProtoMotions environment, from its checkout, which has Marvin Bot's MJCF): reads the
       rollout a training run wrote (results/<run>/results/predicted_motion_lib_epoch_*.pt) and
       the packaged reference motions it was trained on, and writes joint angles and base poses
-      to one .npz;
+      to one .npz; --mujoco adds the same tracker's MuJoCo replay (sim/motion/replay_mujoco.py);
   render (this repo's environment, with the sim extra and the CAD meshes; MUJOCO_GL=egl without
       a display): draws each clip with the covered robot (tools/render_robot.py) and writes
-      <out dir>/<clip>.webp. With --plot, a strip under the scene plots how far the tracker is
-      from its reference, frame by frame: the hands, the feet and the head, each in the pelvis
-      frame (heading-aligned, as sim/motion/check_tracking.py scores them), with a cursor at the
-      current frame.
+      <out dir>/<clip>.webp. A MuJoCo replay in the .npz is drawn as a translucent orange robot
+      over the solid (Newton) one, so where the two simulators part is visible. With --plot, a
+      strip under the scene plots how far the tracker is from its reference, frame by frame: the
+      hands, the feet and the head, each in the pelvis frame (heading-aligned, as
+      sim/motion/check_tracking.py scores them), with a cursor at the current frame.
 
 Usage:
-  python sim/motion/render_tracking.py export <predicted_motion_lib.pt> <motions.pt> <out.npz>
+  python sim/motion/render_tracking.py export <predicted_motion_lib.pt> <motions.pt> <out.npz> \
+      [--mujoco <rollout.pt>]
   python sim/motion/render_tracking.py render <motions.npz> <out dir> [clip ...] [--plot]
 """
 
@@ -47,13 +49,16 @@ def clip_name(path: str) -> str:
     return re.sub(r"^(soma_)?proto_", "", name)
 
 
-def export(pred: str, ref: str, out: str) -> None:
+def export(pred: str, ref: str, out: str, mujoco_rollout: str | None = None) -> None:
     import torch  # noqa: PLC0415
 
     xml = Path("protomotions/data/assets/mjcf/marvin_bot.xml").read_text()
     joints = [n for n in re.findall(r'<joint name="([^"]+)"', xml) if n != "root"]
     data = {}
-    for kind, path in (("ref", ref), ("track", pred)):
+    runs = [("ref", ref), ("track", pred)] + (
+        [("mujoco", mujoco_rollout)] if mujoco_rollout else []
+    )
+    for kind, path in runs:
         lib = torch.load(path, weights_only=False, map_location="cpu")
         for i, f in enumerate(lib["motion_files"]):
             s, n = int(lib["length_starts"][i]), int(lib["motion_num_frames"][i])
@@ -115,6 +120,7 @@ def render(npz: str, out_dir: str, clips: list[str], plot: bool = False) -> None
     model.geom_size[floor, :2] = 40.0
     model.mat_texrepeat[model.geom_matid[floor]] *= scale
     ghost = mujoco.MjData(model)
+    other = mujoco.MjData(model)
     renderer = mujoco.Renderer(model, H, W)
     opt, pert = mujoco.MjvOption(), mujoco.MjvPerturb()
     font = ImageFont.truetype("DejaVuSans.ttf", 22)
@@ -141,6 +147,7 @@ def render(npz: str, out_dir: str, clips: list[str], plot: bool = False) -> None
     for clip in clips or names:
         rp, rq, rj, rdt = series("ref", clip)
         tp, tq, tj, tdt = series("track", clip)
+        mj = series("mujoco", clip) if f"mujoco|{clip}|pos" in d.files else None
         n = int(len(rp) * rdt * FPS)
         ts = np.arange(n) / FPS
         ri = np.minimum((ts / rdt).round().astype(int), len(rp) - 1)
@@ -150,6 +157,12 @@ def render(npz: str, out_dir: str, clips: list[str], plot: bool = False) -> None
             # both start at the origin, so the ghost shows where the robot should be
             pose(data, tp[ti[k]], tq[ti[k]], tj[ti[k]], tp[0] * [1, 1, 0])
             pose(ghost, rp[ri[k]], rq[ri[k]], rj[ri[k]], rp[0] * [1, 1, 0])
+            ghosts = [(ghost, [0.35, 0.6, 1.0, 0.28])]  # the reference: translucent blue
+            if mj:
+                mp, mq, mjq, mdt = mj
+                mi = min(round(ts[k] / mdt), len(mp) - 1)
+                pose(other, mp[mi], mq[mi], mjq[mi], mp[0] * [1, 1, 0])
+                ghosts.append((other, [1.0, 0.55, 0.15, 0.35]))  # MuJoCo: translucent orange
             cam = mujoco.MjvCamera()
             if plot:
                 errors.append(
@@ -165,12 +178,23 @@ def render(npz: str, out_dir: str, clips: list[str], plot: bool = False) -> None
             cam.distance, cam.azimuth, cam.elevation = 2.7, 215, -8
             renderer.update_scene(data, cam)
             scn = renderer.scene
-            first = scn.ngeom
-            mujoco.mjv_addGeoms(model, ghost, opt, pert, mujoco.mjtCatBit.mjCAT_DYNAMIC, scn)
-            for g in range(first, scn.ngeom):
-                scn.geoms[g].rgba[:] = [0.35, 0.6, 1.0, 0.28]  # the reference: translucent blue
+            for dd, rgba in ghosts:
+                first = scn.ngeom
+                mujoco.mjv_addGeoms(model, dd, opt, pert, mujoco.mjtCatBit.mjCAT_DYNAMIC, scn)
+                for g in range(first, scn.ngeom):
+                    scn.geoms[g].rgba[:] = rgba
             im = Image.fromarray(renderer.render())
-            ImageDraw.Draw(im).text((14, 10), clip.replace("_", " "), fill=(25, 27, 31), font=font)
+            draw = ImageDraw.Draw(im)
+            draw.text((14, 10), clip.replace("_", " "), fill=(25, 27, 31), font=font)
+            if mj:
+                for i, (label, col) in enumerate(
+                    (
+                        ("Newton", (60, 60, 60)),
+                        ("MuJoCo", (230, 120, 20)),
+                        ("reference", (70, 130, 230)),
+                    )
+                ):
+                    draw.text((W - 150, 12 + 26 * i), label, fill=col, font=font)
             frames.append(im.resize((480, 360), Image.LANCZOS))
         if plot:
             errors = np.array(errors)
@@ -199,6 +223,7 @@ def main() -> None:
     e.add_argument("pred")
     e.add_argument("ref")
     e.add_argument("out")
+    e.add_argument("--mujoco", help="the same tracker's MuJoCo replay (replay_mujoco.py)")
     r = sub.add_parser("render")
     r.add_argument("npz")
     r.add_argument("out_dir")
@@ -206,7 +231,7 @@ def main() -> None:
     r.add_argument("--plot", action="store_true", help="add the error strip under the scene")
     args = ap.parse_args()
     if args.cmd == "export":
-        export(args.pred, args.ref, args.out)
+        export(args.pred, args.ref, args.out, args.mujoco)
     else:
         render(args.npz, args.out_dir, args.clips, args.plot)
 

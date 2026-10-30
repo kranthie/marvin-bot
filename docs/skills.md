@@ -8,10 +8,12 @@ clip stays upright. Under each clip: the hands' and feet's mean distance from wh
 puts them, measured relative to the pelvis.
 
 The clips are rendered with `sim/motion/render_tracking.py`; how they are made, trained and scored
-is in [sim/motion/README.md](../sim/motion/README.md). This is simulation only: the policy has not
-been replayed in MuJoCo or run on hardware. The weakest skills are the two-handed ones (clap, the
-two-hand wave, arms raise: hands 12–16 cm off), and the squat and pick-up stop 7–11 cm short of
-the reference's lowest point.
+is in [sim/motion/README.md](../sim/motion/README.md). This is simulation only, though in two
+simulators: replayed in MuJoCo (`sim/motion/replay_mujoco.py`) with sensor noise and the motors'
+torque-speed limits, every clip stays upright and the hands, feet and joints track as closely as
+in Newton, where it was trained. It has not run on hardware. The weakest skills are the
+two-handed ones (clap, the two-hand wave, arms raise: hands 12–16 cm off), and the squat and
+pick-up stop 7–11 cm short of the reference's lowest point.
 
 ## Walking and turning
 

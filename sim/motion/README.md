@@ -6,7 +6,8 @@ model. Trained for about 5,000 epochs (16,384 environments, batch 65,536, about 
 GPU), every clip stays upright; the hands are 3-9 cm and the feet 2.5-7 cm from the reference's on
 most clips, with the two-handed clips the weakest (clap, two-hand wave, arms raise: hands 12-16 cm).
 The clips with the reference as a ghost are on the [skills page](../../docs/skills.md).
-Nothing has been replayed in MuJoCo yet.
+Replayed in MuJoCo (`replay_mujoco.py`), it tracks as in training: see
+[the MuJoCo check](#the-mujoco-check).
 
 Instead of writing rewards for each skill, train a policy that tracks a reference motion
 (BeyondMimic-style motion tracking). A new skill is then a new clip, not new reward code. The
@@ -164,8 +165,34 @@ $P $M/sim/motion/check_tracking.py \
 
 The tracker trains at about 5.6 s an epoch with 16,384 robots on one RTX-class GPU and writes a
 rollout of every clip (`predicted_motion_lib_epoch_<N>.pt`) every 600 epochs, from epoch 200;
-score the latest with `check_tracking.py`. Exporting a tracker and replaying it in MuJoCo are
-not set up yet.
+score the latest with `check_tracking.py`.
+
+### The MuJoCo check
+
+The tracker is exported to ONNX with ProtoMotions' own tool and replayed in MuJoCo, clip by clip,
+on the training MJCF with the motors as the walking policies' MuJoCo check models them (PD clipped
+by the torque-speed line, joint armature and friction, none of which Newton's built-in PD has) and
+sensor noise on the joint angles, joint speeds and pelvis rate:
+
+```bash
+$P deployment/export_bm_tracker_onnx.py --checkpoint results/marvin_bot_track/last.ckpt --output $W/onnx
+$P $M/sim/motion/replay_mujoco.py $W/onnx/unified_pipeline.onnx $W/marvin_bot_motions.pt $W/mujoco.pt
+$P $M/sim/motion/check_tracking.py $W/mujoco.pt $W/marvin_bot_motions.pt
+$P $M/sim/motion/render_tracking.py export <Newton rollout> $W/marvin_bot_motions.pt $W/v.npz \
+    --mujoco $W/mujoco.pt    # then render: MuJoCo is drawn as a translucent orange robot
+```
+
+(`pip install onnx onnxruntime` in the ProtoMotions environment first.) Tracker v5 in MuJoCo, at
+half and at full walking-check noise: every clip upright, and the averages over the 25 clips
+match training (joints 11.0° against 11.2° in Newton, hands 6.7 cm against 6.8, feet 4.5 against
+4.8); no clip's hands differ by more than 0.7 cm between the two. Peak torque stays under 75% of
+each motor's peak except the two-hand wave's left shoulder yaw, which reaches its 36 N·m, and the
+hottest joint in any clip runs at 56% of its continuous rating (the jog's knee).
+
+The tracker reads the torso's position in the world (how far the reference is ahead of it). In
+simulation that is exact; on the robot it has to come from odometry (legged odometry or the
+camera's visual odometry), so a version without it, or trained with odometry drift (ProtoMotions
+has a synthetic odometry-corruption option), is needed before hardware.
 
 `add_head_motion.py` sets the neck from the human's head: ProtoMotions' retargeter (built for a
 robot without a neck) has no head keypoint, so before it every reference looked straight ahead.
