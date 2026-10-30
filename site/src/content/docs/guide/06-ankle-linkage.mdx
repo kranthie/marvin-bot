@@ -1,0 +1,210 @@
+---
+title: "The parallel-linkage ankle"
+description: "Marvin Bot's ankles have no motor at the ankle."
+sidebar:
+  label: "06 · The parallel-linkage ankle"
+  order: 7
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/06-ankle-linkage/widget-1.html?raw';
+import widget2 from '../../../guide/06-ankle-linkage/widget-2.html?raw';
+import script from '../../../guide/06-ankle-linkage/script.js?raw';
+import '../../../guide/06-ankle-linkage/style.css';
+
+<div class="guide-meta">
+
+**Stage 2 · Mechanics** · \~30 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [04 Actuators](../04-actuators/), [05 Leg loads and stairs](../05-leg-loads-stairs/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Marvin Bot's ankles have no motor at the ankle. Two motors sit up on the shin and push the foot through cranks and rods: together they tilt it forwards and back (pitch) and side to side (roll). This page shows why, how the two motors share the work, and where such a linkage runs out of strength.
+
+:::note[You will learn]
+- Why moving the ankle motors up the shin makes a leg easier to swing.
+- How a two-crank, two-rod linkage turns two motor angles into ankle pitch and roll, and what its Jacobian says about torque and speed.
+- Why pitch torque is roughly the sum of the two motors' torques and roll torque roughly their difference, and what that means when the robot needs both.
+- What the transmission angle and singularities are, and how simulators cope with closed loops (and what Marvin Bot's simulation simplifies).
+:::
+
+## The idea in one picture
+
+Try swinging a hammer holding the head, then holding the end of the handle: the same mass is much harder to swing when it is far from your hand. A leg is a pendulum the robot must swing forward at every step, and the hip is the hand. The torque the hip needs to swing it grows with the leg's <a class="g" href="../glossary/#moment-of-inertia">moment of inertia</a> about the hip, Σ m·d², where d is each part's distance from the hip. Because the distance is squared, a kilogram at the ankle counts four times as much as a kilogram halfway down the leg. This is why legged robots move mass towards the body: the MIT Cheetah puts its knee motor at the hip and drives the knee through a linkage.<sup class="cite">[\[6\]](#s6)</sup> Weight low on the leg (<a class="g" href="../glossary/#distal-mass">distal mass</a>) also adds to the impact at every foot strike.
+
+For Marvin Bot's two 0.90 kg ankle RS03 motors: placed at the ankle (0.64 m below the hip) they would add 2 × 0.90 × 0.64² = 0.74 kg·m² to the leg's inertia about the hip. Mounted on the shin 80 and 180 mm above the ankle, they add 0.90 × (0.56² + 0.46²) = 0.47 kg·m², 36% less, and the foot and ankle stay slim.
+
+The price: neither motor drives a joint by itself. A <a class="g" href="../glossary/#serial-mechanism">serial</a> ankle (the kind page 01 described, one joint carried by the next) stacks a pitch motor and a roll motor, each driving one axis. A <a class="g" href="../glossary/#parallel-mechanism">parallel</a> ankle connects both motors to the foot through separate paths, so both motors share every load and their angles map onto pitch and roll through geometry. Picture two people lifting the back corners of a table: lift together and it tilts forwards (pitch); one up, one down and it tilts sideways (roll). That mapping is what this page is about.
+
+## Playground: the two-crank, two-rod ankle
+
+<b>Start here:</b> press **Marvin Bot today**, then drag **Ankle pitch** and **Ankle roll** and watch the two cranks (the short arms on the motors) in the picture. Leave the geometry sliders for later.
+
+<div class="hint">
+
+How to read the pictures: the top drawing shows the left ankle from the side and from behind; blue is the lower motor (a) with its rod, orange the upper motor (b). In the lower pair of charts, the left map colours every pitch-and-roll pose by its worst "transmission" (how squarely the rods push: green good, orange fair, red poor; the white ring is the current pose), and the right chart shows which combinations of pitch and roll torque the two motors can make together at the current pose (green), against what the simulator assumes (violet box) and the demand you set (red dot).
+
+</div>
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. With *Marvin Bot today*, drag pitch from −40° to +40° with roll at 0. Both cranks turn the same way, by about the same amount: pitch is the "common mode". Now drag roll: the cranks turn in opposite directions, the "difference mode".
+2. Press *Worst transmission* (toes down 40°, rolled 20°). Motor a's transmission drops to about 0.53: its rod is pulling at 32° to the crank instead of square to it, so only about half its torque reaches the rod. The map on the left shows where this happens.
+3. Press *Narrow rods*. Roll torque falls with the rods' sideways lever (25 mm instead of 40), while pitch barely changes. Wider rods mean a wider foot attachment, which is why the earlier side-by-side layout widened the foot to 110 mm.
+4. Look at the torque map (right). The real region is a tilted diamond: the corners (full pitch and full roll together) need both motors at their limit. The simulator's violet box allows full pitch *and* full roll at once, and is bigger than the real region at the worst pose. Raise both demands and watch which limit you hit first.
+5. Press <i>High motor behind (calf)</i> and look at the transmission map: with the cranks and rods unchanged, a corner of the range drops to about 0.2, far below the 0.5 rule. The repo's search re-optimised cranks and rods for this layout under the rule and reached only 23 / 20 N·m, against 32 / 25 with the motor forward like a kneecap.
+6. Press *Rods close to the axis*: with the rods only 35 mm behind the ankle, the pitch lever shrinks (ratio 0.61) and continuous pitch torque at the worst pose falls to about 17 N·m, below the 24 N·m a stair step needs.
+:::
+
+## From first principles
+
+### The loop: crank, rod, foot
+
+Each motor turns a <a class="g" href="../glossary/#crank">crank</a>, a short arm of radius r. A <a class="g" href="../glossary/#push-rod">push rod</a> of fixed length L joins the crank tip to a point on the foot, behind and beside the ankle's pitch and roll axes, through ball joints (spherical <a class="g" href="../glossary/#rod-end">rod ends</a>) at both ends. The ankle itself is a passive cross (a universal joint). Motor, crank, rod, foot and shin form a <a class="g" href="../glossary/#closed-kinematic-chain">closed kinematic chain</a>: a loop, unlike the open chain of a serial arm. In the mechanism literature this is an RSU leg (revolute motor, spherical joint, universal joint) and the ankle is "2-RSU + U".<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[2\]](#s2)</sup>
+
+**Inverse kinematics** (from the foot pose to the crank angles) is the easy direction: each rod has a fixed length, so for a given foot angle there is only one crank angle (in the assembled arrangement) that lets the rod reach. It can be written as one formula.
+
+<details>
+<summary>Go deeper: the formula</summary>
+
+For a foot pose (pitch q<sub>p</sub>, roll q<sub>r</sub>), rotate the rod's foot point A<sub>0</sub>: A = R<sub>y</sub>(−q<sub>p</sub>) R<sub>x</sub>(q<sub>r</sub>) A<sub>0</sub>. The crank tip sits at M + r(cos θ, 0, sin θ), with M the motor centre. The rod must keep its length:
+
+<div class="eq">
+
+|M + r(cos θ, 0, sin θ) − A|² = L² ⇒ P cos θ + Q sin θ = K
+
+</div>
+
+<div class="sym">
+
+With d = A − M: P = −2r·d<sub>x</sub>, Q = −2r·d<sub>z</sub>, K = L² − |d|² − r². Solution: θ = atan2(Q, P) ± arccos(K / √(P² + Q²)). Two answers (crank "elbow up" or "elbow down"); the linkage stays on the one it was assembled in. No answer when |K| &gt; √(P² + Q²): the rod is too short or too long to reach. This is exactly what `tools/ankle_linkage.py` solves, and the playground runs the same equations in your browser.
+
+</div>
+
+</details>
+
+The forward problem (from crank angles to foot pose) has no simple formula; it is solved numerically. That matters on the robot, because the encoders measure crank angles but the policy thinks in pitch and roll.
+
+### The Jacobian: speed and torque in one matrix
+
+The <a class="g" href="../glossary/#jacobian">Jacobian</a> J is a small table of numbers (a 2 × 2 matrix) that says how fast each crank turns per unit of ankle motion. Read it as gear ratios: one row per motor, one column for pitch and one for roll. The same table, flipped (transposed, written Jᵀ), turns motor torques into ankle torques. The dots over symbols mean "rate of change" (speed):
+
+<div class="eq">
+
+\[θ̇<sub>a</sub>, θ̇<sub>b</sub>\]ᵀ = J · \[q̇<sub>p</sub>, q̇<sub>r</sub>\]ᵀ \[τ<sub>p</sub>, τ<sub>r</sub>\]ᵀ = Jᵀ · \[τ<sub>a</sub>, τ<sub>b</sub>\]ᵀ
+
+</div>
+
+The second equation follows from the first by conservation of energy (virtual work): the power the motors put in, τ<sub>a</sub>θ̇<sub>a</sub> + τ<sub>b</sub>θ̇<sub>b</sub>, equals the power at the ankle, τ<sub>p</sub>q̇<sub>p</sub> + τ<sub>r</sub>q̇<sub>r</sub>, for every motion.<sup class="cite">[\[4\]](#s4)</sup> At Marvin Bot's neutral pose the playground (and the repo tool) finds
+
+<div class="eq">
+
+J ≈ \[\[1.02, −0.67\], \[0.96, +0.67\]\] ⇒ τ<sub>p</sub> ≈ 1.02 τ<sub>a</sub> + 0.96 τ<sub>b</sub>, τ<sub>r</sub> ≈ −0.67 τ<sub>a</sub> + 0.67 τ<sub>b</sub>
+
+</div>
+
+So **pitch torque is about the sum of the two motor torques, and roll torque about 0.67 times their difference** (angles measured about the same shin axis; the two motors face opposite ways, so in each motor's own sign convention the roles swap). The numbers have a simple reading. The rod pushes the foot 60 mm behind the pitch axis, and the crank is 60 mm long, so for pitch the lever ratio is about 60/60 = 1. For roll the rod sits 40 mm beside the axis: 40/60 ≈ 0.67. Longer cranks give more speed and less torque; rods further out give more torque and less speed.
+
+The consequence for a robot standing on one foot on a stair: it needs pitch and roll torque *at the same time*, and both come out of the same two motors. If motor a is already at its limit making pitch torque, any roll torque must come from motor b alone. The feasible set of (τ<sub>p</sub>, τ<sub>r</sub>) is a parallelogram ("diamond"), not a rectangle. The repo's capacity figures (32 N·m pitch, 25 N·m roll continuous) are each *pure* pitch or *pure* roll at the worst pose; the playground's torque map shows the combinations.
+
+### Transmission angle and singularities
+
+A crank can only push the rod along the rod. The useful part of the motor's torque is the force along the rod times the crank's lever, and that lever is largest when the rod is square to the crank. The <a class="g" href="../glossary/#transmission-angle">transmission</a> is the sine of the angle between crank and rod (1 when square, 0 when in line):
+
+<div class="eq">
+
+F<sub>rod</sub> = τ<sub>motor</sub> / (r · transmission)
+
+</div>
+
+When crank and rod line up, the transmission goes to zero: the motor can no longer move the foot in that direction, and a small foot load needs an enormous rod force. That is a <a class="g" href="../glossary/#singularity">singularity</a> of the linkage (the Jacobian loses rank: the two motors can no longer move the foot in two independent ways), and near it the mechanism also loses stiffness and controllability.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[3\]](#s3)</sup> A common rule of thumb in linkage design is to keep the transmission angle above 30° to 40°; Marvin Bot's tool requires sin ≥ 0.5 (30°) everywhere in the range. The current geometry reaches 0.53 at the corner of the range (toes down 40°, rolled 20°).
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+`description/skeleton.yaml` (`ankle_linkage`): 60 mm cranks, rods 60 mm behind, ±40 mm beside and 10 mm below the ankle axis, crank planes ±41 mm from the centre line; motor a (low) 10 mm behind and 80 mm above the ankle with its crank outside, motor b (high, "like a kneecap") 40 mm forward and 180 mm above, crank inside. `tools/ankle_linkage.py` reports: rods 91 and 194 mm long, crank swing −61° to +52°, worst transmission 0.53, ratios at neutral 0.99 pitch / 0.67 roll, worst-pose torque from two RS03 96 N·m peak / 32 rated in pitch and 74 / 25 in roll, largest rod force 1857 N for a 60 / 30 N·m demand. The playground reproduces these numbers.
+:::
+
+How it got there (`docs/decisions.md`):
+
+- <b>RS06 or RS03?</b> With RS06 motors the first linkage gave 22 / 11 N·m continuous against about 22 / 14 needed for slow stairs and standing on one foot; the ankles went back to RS03 (2026-10-26).
+- <b>Side by side to staggered.</b> Two RS03 side by side made the shin about 132 mm wide. Staggering them on the shin's centre line, one high and forward, one low and behind, gave a \~95 mm shin with the same torque, and kept the shin's lower front within 40 mm of the ankle axis, which matters on stair nosings (2026-10-26).
+- <b>Calf layout rejected.</b> With the high motor behind, the search reached only 23 / 20 N·m, because the low motor's rod becomes very short.
+- <b>Rod ends.</b> About 1.9 kN at the worst pose for a 60 / 30 N·m demand sizes the rod ends (M6 steel-ball rod ends or larger) and the push rods.
+
+Today's static stair check (`sim/mujoco/check_step_up.py`, 18 cm step, stance leg) asks 24.4 N·m pitch and 17.5 N·m roll of the ankle, both within the 32 / 25 N·m continuous available at the worst pose.
+
+### How the simulation handles the loop
+
+Closed loops are awkward for robot simulators. Most represent a robot as a tree of joints (each link has one parent), which is what <a class="g" href="../glossary/#urdf">URDF</a>, the standard robot description file, can describe and what fast "reduced-coordinate" solvers (ones that track only the joint angles) exploit. A loop must be closed by an extra constraint: MuJoCo (a physics simulator, page 14) has equality constraints (`connect`, `weld`) that pin two points together<sup class="cite">[\[7\]](#s7)</sup>; Isaac Sim (PhysX) asks you to exclude one joint of the loop from the articulation, which the solver then treats with lower priority and which "tends to accumulate the most simulation error".<sup class="cite">[\[8\]](#s8)</sup>
+
+:::note[Marvin Bot's choice: ankle pitch and roll as two direct joints]
+The URDF (`tools/build_urdf.py`) has a serial `ankle_pitch` joint and an `ankle_roll` joint and no cranks or rods. Their torque limits are the pair's combined peak torque times the linkage ratios at neutral: 2 × 60 × 0.99 = 118.8 N·m pitch and 2 × 60 × 0.67 = 80.4 N·m roll; their speed limits are the motor speed divided by the ratio (20.6 and 30.5 rad/s). The continuous ratings used by the heat checks are built the same way: 39.6 and 26.8 N·m (`sim/isaaclab/marvin_bot/robot_cfg.py`). The open humanoid Asimov 1 makes the same simplification: its simulation models ankle pitch and roll as directly actuated ideal joints and maps them to the two motors on the real robot.<sup class="cite">[\[5\]](#s5)</sup>
+:::
+
+What this simplification costs:
+
+- <b>Torque is coupled on the real robot but independent in simulation.</b> The simulator's limits form a box (pitch ±118.8 and roll ±80.4 N·m at the same time). The real limits form the diamond in the playground: full pitch leaves nothing for roll. A policy trained in the box could ask for combinations the hardware cannot make.
+- <b>The limits change with pose on the real robot.</b> At the worst pose the pair makes 96 N·m peak pitch and 74 roll, not 118.8 and 80.4. The simulator is optimistic there by about 24% in pitch and 9% in roll.
+- <b>Speed, inertia and friction are mapped at neutral only.</b> The two motors' reflected inertia and friction appear in joint space through Jᵀ(·)J, which also varies with pose. The simulation uses one armature and friction value per joint (placeholders).
+- **No rod compliance, backlash or rod-end friction** in the simulation.
+
+These are reasonable for a first policy, especially with the training rule that peaks stay under 70% of peak and with <a class="g" href="../glossary/#domain-randomisation">domain randomisation</a> (training on many slightly different simulated robots so the policy does not depend on exact values). Two things follow for the hardware phase. The robot needs a small conversion layer between the policy and the motors: inverse kinematics (pitch and roll targets to crank angles, the playground's equations), numeric forward kinematics (crank encoders to pitch and roll observations), and the joint-space gains mapped to motor space (K<sub>motor</sub> = J⁻ᵀ K<sub>joint</sub> J⁻¹, which couples the two motors). That layer is not in the repo yet (`robot/` has only the RobStride driver). And a check worth adding: replay the trained policy's ankle torques through the real Jacobian at each pose and count how often they leave the diamond.
+
+## Trade-offs and alternatives
+
+| Option | For | Against |
+|---|---|---|
+| Serial ankle (pitch motor, then roll motor at the ankle) | simple kinematics; each motor one axis; no rods | heavy foot end, higher leg inertia, wide ankle; roll motor carries little torque most of the time. Rejected 2026-10-25 ("heavier shin") |
+| Parallel 2-RSU, motors side by side | symmetric; 31 / 26 N·m with 65 mm cranks and ±55 mm rods | 132 mm wide shin, wider foot |
+| <b>Parallel 2-RSU, motors staggered (chosen)</b> | 95 mm shin, 32 / 25 N·m, slim lower front for stairs | two different rod lengths (91 and 194 mm), asymmetric behaviour, worst transmission 0.53 |
+| Staggered with the high motor behind (calf) | knee front clear | 23 / 20 N·m: rejected |
+| Linear actuators (SPU ankle: spherical joint, sliding "prismatic" actuator, universal joint) | more uniform behaviour over the range | needs ball screws; the RSU was judged better overall in an optimisation study<sup class="cite">[\[1\]](#s1)</sup> |
+| Direct-driven joints with no linkages (as in Berkeley Humanoid Lite) | simplest to build and model | motor mass at the ankle<sup class="cite">[\[9\]](#s9)</sup> |
+
+:::caution[Where sources and the repo disagree]
+- <b>Ankle demand:</b> `docs/design/stairs.md` and the 2026-10-26 decision say about 22 N·m pitch and 14 N·m roll are needed; running `check_step_up.py` on today's 1.44 m model gives 24.4 and 17.5 N·m. Still within the 32 / 25 N·m available.
+- <b>Simulation limits versus linkage capacity:</b> the URDF's 118.8 / 80.4 N·m (neutral ratios) exceed the 96 / 74 N·m the linkage gives at its worst pose. This is a deliberate simplification, documented in `tools/build_urdf.py`, not a bug, but it is optimistic.
+- <b>Sum and difference:</b> Asimov 1's documentation describes pitch as depending on the difference of its two motor angles and roll on their sum<sup class="cite">[\[5\]](#s5)</sup>; Marvin Bot's tool gives the opposite. Both are right: it depends on whether the two motor angles are measured in the same direction or each in its own motor's direction.
+:::
+
+## Decisions you can make here
+
+- Crank radius versus rod lever: a longer crank gives a faster ankle but less torque, and the crank swings through a bigger arc that must fit beside the shin.
+- How far beside the axis the rods attach: more roll torque, but a wider foot and shin that are more likely to clip a stair or the other leg.
+- Where the two motors sit on the shin: good transmission at the corners of the range against knee clearance (the calf layout freed the knee front but lost a third of the torque).
+- Motor size: RS06 motors would save 0.56 kg per ankle (lighter, easier-to-swing legs) but did not give enough torque for slow stairs and one-foot standing.
+- Whether to give the simulator the real coupled torque limit (or check the policy against it) before hardware: more work now, but fewer surprises when the policy first meets real ankles.
+
+<RawHtml html={widget2} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+<b>Where this leads.</b> This page moved 1.8 kg of motors up each shin to make the legs easier to swing. Page 07 looks at the whole robot's mass budget: where all 41 kg sit, and why every kilogram counts.
+
+## Further reading
+
+- [Cervettini et al., A Framework for Optimal Ankle Design of Humanoid Robots (2025)](https://arxiv.org/abs/2509.16469): compares RSU and SPU parallel ankles with a serial one, with closed-form inverse kinematics and the metrics to optimise.
+- [Zhou and Tsagarakis, kinematics of a humanoid parallel ankle (2018)](https://eprints.whiterose.ac.uk/144454): mobility, forward and inverse kinematics and workspace of a two-DOF parallel ankle.
+- [Asimov 1 joint design docs](https://docs.menlo.ai/asimov/1/hardware/joint-design-and-actuation): an open-source humanoid's RSU ankle and how it maps simulation joints to motors.
+- [Lynch and Park, Modern Robotics, chapters 5 and 7](https://hades.mech.northwestern.edu/images/7/7f/MR.pdf): Jacobians, statics (τ = Jᵀ F), singularities and closed chains.
+- [Isaac Sim tutorial: rig closed-loop structures](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/robot_setup_tutorials/rig_closed_loop_structures.html): how to simulate the full linkage if you need to.
+
+## Sources
+
+1. <span id="s1"></span>[G. Cervettini, R. Mauceri, A. Coppola, F. Bergonti, L. Fiorio, M. Maggiali, D. Pucci, "A Framework for Optimal Ankle Design of Humanoid Robots," IEEE-RAS Humanoids 2025 (arXiv 2509.16469)](https://arxiv.org/abs/2509.16469) <span class="used">— used for: RSU and SPU parallel ankles, closed-form inverse kinematics, Jacobian rank loss, RSU judged better overall.</span>
+2. <span id="s2"></span>[R. Kumar et al., "Kinematic analysis of a novel parallel 2SPRR+1U ankle mechanism in humanoid robot," Advances in Robot Kinematics 2018](https://robotik.dfki-bremen.de/en/research/publications/9810) <span class="used">— used for: parallel ankle kinematics, workspace and singularity analysis.</span>
+3. <span id="s3"></span>[C. Zhou, N. Tsagarakis, "On the Comprehensive Kinematics Analysis of a Humanoid Parallel Ankle Mechanism," J. Mechanisms and Robotics 10(5), 2018](https://eprints.whiterose.ac.uk/144454) <span class="used">— used for: forward kinematics needing a numeric solution; workspace and singularities of a 2-DOF parallel ankle.</span>
+4. <span id="s4"></span>[K. M. Lynch, F. C. Park, Modern Robotics, Cambridge University Press, 2017, ch. 5 and 7](https://hades.mech.northwestern.edu/images/7/7f/MR.pdf) <span class="used">— used for: velocity Jacobian, statics τ = JᵀF from virtual work, singularities, closed chains.</span>
+5. <span id="s5"></span>[Asimov 1 documentation, Joint Design and Actuation](https://docs.menlo.ai/asimov/1/hardware/joint-design-and-actuation) <span class="used">— used for: an open-source humanoid's RSU ankle; its simulation models pitch and roll as direct joints mapped to two motors.</span>
+6. <span id="s6"></span>[P. M. Wensing et al., "Proprioceptive Actuator Design in the MIT Cheetah," IEEE T-RO 33(3), 2017](https://dspace.mit.edu/handle/1721.1/119863) <span class="used">— used for: keeping leg inertia low by placing motors near the body and driving distal joints through linkages.</span>
+7. <span id="s7"></span>[MuJoCo documentation, XML reference: equality constraints](https://mujoco.readthedocs.io/en/stable/XMLreference.html#equality) <span class="used">— used for: closing kinematic loops with connect and weld constraints.</span>
+8. <span id="s8"></span>[NVIDIA Isaac Sim documentation, Tutorial 10: Rig Closed-Loop Structures](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/robot_setup_tutorials/rig_closed_loop_structures.html) <span class="used">— used for: articulations must be trees; one loop joint excluded from the articulation accumulates the most error.</span>
+9. <span id="s9"></span>[Y. Chi et al., "Demonstrating Berkeley Humanoid Lite," RSS 2025 (arXiv 2504.17249)](https://arxiv.org/abs/2504.17249) <span class="used">— used for: an open humanoid whose joints are each driven by their own actuator with no linkages.</span>
+
+<PageScript code={script} />

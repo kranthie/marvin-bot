@@ -1,0 +1,24 @@
+/* System architecture: from battery to policy: styles for this page's playground */
+#note{overflow-wrap:anywhere}
+.diagwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.diagwrap svg{min-width:720px}
+#arch .blk rect{fill:var(--panel2);stroke:var(--line);stroke-width:1.5;cursor:pointer;transition:fill .15s}
+#arch .blk text{fill:var(--text);font:12.5px var(--font);pointer-events:none}
+#arch .blk text.sub{fill:var(--muted);font-size:10.5px}
+#arch .blk:hover rect{stroke:var(--accent)}
+#arch .blk.sel rect{stroke:var(--accent2);stroke-width:2.5}
+#arch .blk.hl rect{fill:#18324a;stroke:var(--accent)}
+#arch .blk.dim{opacity:.35}
+#arch .rowlab{fill:var(--muted);font:600 10.5px var(--font);letter-spacing:.04em;text-transform:uppercase}
+#arch .rowband{fill:#11161c;stroke:none}
+#arch .arr{stroke:#5d6b7a;stroke-width:1.4;fill:none;marker-end:url(#ah)}
+#arch .arr.hl{stroke:var(--accent);stroke-width:2.2}
+.info{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:14px}
+.info h4{margin:0 0 4px;font-size:16px}
+.info dl{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;margin:6px 0 0}
+.info dt{color:var(--muted)} .info dd{margin:0}
+#tick text{font:12px var(--font);fill:var(--text)}
+#tick .small{font-size:10.5px;fill:var(--muted)}
+.seglegend{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 14px;font-size:13px;margin-top:8px}
+.seglegend span b{font-family:var(--mono);font-weight:600}
+.seglegend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}

@@ -1,0 +1,11 @@
+/* Sim-to-real and system identification: styles for this page's playground */
+code{overflow-wrap:anywhere}
+.btnrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+button.primary{border-color:var(--accent2);color:var(--accent2)}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;margin:6px 0}
+.small{font-size:13px;color:var(--muted)}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:8px 0;overflow-x:auto;max-width:86ch;font-size:14px}
+.drrow{display:grid;grid-template-columns:1fr;gap:2px;margin:10px 0 4px}
+.drrow .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.flag{font-weight:600}
+.flag.ok{color:var(--good)} .flag.bad{color:var(--bad)}

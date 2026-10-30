@@ -1,0 +1,79 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="knee">Marvin Bot knee (RS04)</button>
+<button data-preset="wrist">Wrist yaw (RS00)</button>
+<button data-preset="stiff">Too stiff</button>
+<button data-preset="soft">Too soft</button>
+<button data-preset="delay">With 10 ms delay</button>
+<button data-preset="bm">BeyondMimic rule (knee)</button>
+</div>
+<h4>Link and gravity</h4>
+<div class="ctl"><label>Link inertia about the joint <output id="o_Il"></output></label>
+<input id="Il" max="0" min="-4" step="0.01" type="range" value="-0.736"/>
+<div class="hint">Knee: shin, ankle and foot, 3.42 kg, 0.184 kg·m² (from the URDF).</div></div>
+<div class="ctl"><label>Gravity moment m·g·r <output id="o_mgr"></output></label>
+<input id="mgr" max="40" min="0" step="0.1" type="range" value="6.9"/>
+<div class="hint">Torque gravity puts on the joint with the link horizontal. Knee with the foot off the ground: 3.42 × 9.81 × 0.205 m = 6.9 N·m.</div></div>
+<h4>Motor</h4>
+<div class="ctl"><label>Rotor inertia <output id="o_Ir"></output></label>
+<input id="Ir" max="-2" min="-6" step="0.01" type="range" value="-3.432"/>
+<div class="hint">How hard the motor's own spinning rotor is to speed up, measured at the motor shaft, before the gearbox.</div></div>
+<div class="ctl"><label>Gear ratio N <output id="o_N"></output></label>
+<input id="N" max="50" min="1" step="1" type="range" value="9"/>
+<div class="hint">Motor turns per joint turn. RobStride RS04: 9. The armature grows with its square.</div></div>
+<div class="ctl"><label>Peak torque <output id="o_tmax"></output></label>
+<input id="tmax" max="150" min="1" step="1" type="range" value="120"/>
+<div class="hint">Most torque the motor can give, briefly (RS04: 120 N·m).</div></div>
+<div class="ctl"><label>No-load speed (0 = no torque-speed line) <output id="o_w0"></output></label>
+<input id="w0" max="50" min="0" step="0.1" type="range" value="20.9"/>
+<div class="hint">Top joint speed; the faster the joint turns, the less torque is left (RS04: 20.9 rad/s = 200 rpm).</div></div>
+<div class="ctl"><label>Joint friction <output id="o_fr"></output></label>
+<input id="fr" max="2" min="0" step="0.05" type="range" value="0.3"/>
+<div class="hint">Dry friction torque in the gearbox that always resists motion.</div></div>
+<h4>Gains</h4>
+<div class="modebar"><button class="on" id="m_gain">kp, kd</button><button id="m_freq">ω and ζ</button></div>
+<div id="gainbox">
+<div class="ctl"><label>kp (stiffness) <output id="o_kp"></output></label>
+<input id="kp" max="3.5" min="0" step="0.01" type="range" value="2.176"/>
+<div class="hint">The spring: torque per radian of error. Higher = snappier, less sag (log scale).</div></div>
+<div class="ctl"><label>kd (damping) <output id="o_kd"></output></label>
+<input id="kd" max="2" min="-2" step="0.01" type="range" value="0.699"/>
+<div class="hint">The shock absorber: torque per rad/s of speed. Higher = less swinging past the target (log scale).</div></div>
+</div>
+<div id="freqbox" style="display:none">
+<div class="ctl"><label>Natural frequency f <output id="o_fn"></output></label>
+<input id="fn" max="25" min="0.5" step="0.1" type="range" value="10"/></div>
+<div class="ctl"><label>Damping ratio ζ <output id="o_zeta"></output></label>
+<input id="zeta" max="3" min="0.05" step="0.05" type="range" value="2"/></div>
+<div class="ctl"><label>Inertia used for the rule</label>
+<select id="ruleI"><option value="arm">armature only (BeyondMimic)</option><option value="tot">link + armature</option></select></div>
+</div>
+<h4>Controller timing</h4>
+<div class="ctl"><label>PD update rate</label>
+<select id="rate"><option value="50">50 Hz (policy rate)</option><option value="100">100 Hz</option><option selected="" value="200">200 Hz (Isaac Lab physics step)</option><option value="500">500 Hz (leg CAN rate)</option><option value="2000">2 kHz</option><option value="10000">10 kHz (≈ continuous)</option></select></div>
+<div class="ctl"><label>Delay <output id="o_delay"></output></label>
+<input id="delay" max="40" min="0" step="1" type="range" value="0"/>
+<div class="hint">How late information arrives, e.g. over the CAN cable (<a href="../10-can-bus/">page 10</a>).</div></div>
+<div class="ctl"><label>Where the delay sits</label>
+<select id="dwhere"><option value="cmd">on the target (as the repo's DelayedDCMotor)</option><option value="loop">inside the loop (measurement to torque)</option></select></div>
+<h4>Step</h4>
+<div class="ctl"><label>From <output id="o_q0"></output></label><input id="q0" max="130" min="-90" step="1" type="range" value="0"/></div>
+<div class="ctl"><label>To <output id="o_q1"></output></label><input id="q1" max="130" min="-90" step="1" type="range" value="60"/></div>
+</div>
+<div class="preview">
+<canvas aria-label="Plots of joint angle and motor torque against time" height="760" id="cv" width="1200"></canvas>
+<div class="readouts">
+<div class="ro" id="r_arm"><div class="k">Armature I<sub>r</sub>N²</div><div class="v">–</div></div>
+<div class="ro" id="r_wn"><div class="k">Natural frequency</div><div class="v">–</div></div>
+<div class="ro" id="r_z"><div class="k">Damping ratio ζ</div><div class="v">–</div></div>
+<div class="ro" id="r_os"><div class="k">Overshoot</div><div class="v">–</div></div>
+<div class="ro" id="r_ts"><div class="k">Settling time (2%)</div><div class="v">–</div></div>
+<div class="ro" id="r_ss"><div class="k">Steady-state error</div><div class="v">–</div></div>
+<div class="ro" id="r_tp"><div class="k">Peak torque</div><div class="v">–</div></div>
+<div class="ro" id="r_st"><div class="k">Verdict</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:#4fb3ff"></i>joint angle</span><span><i style="background:#ffb454"></i>target (as the motor sees it)</span><span><i style="background:#b48cff"></i>same gains, no armature</span><span><i style="background:#4cc38a"></i>torque</span><span><i style="background:#ff6b6b"></i>torque limit</span></div>
+</div>
+</div>

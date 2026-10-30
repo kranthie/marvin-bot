@@ -7,7 +7,6 @@
 //   the repository -> a copy under public/repo-media/; to any other repository file -> GitHub;
 // - turns GitHub alert blocks (> [!WARNING]) into Starlight asides;
 // - sets the page's "Edit page" link to the source file on GitHub.
-// It also copies the pinned three.js build into the guide (public/guide/vendor/three/).
 // Generated files are listed in .gitignore files next to them and are never committed.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -133,17 +132,4 @@ function sync() {
   console.log(`synced ${written.length} pages`);
 }
 
-function vendorThree() {
-  // The guide's 3-D pages load three.js from here, so the site works offline and the version is
-  // the one pinned in package-lock.json. three.js is MIT-licensed; its licence goes with it.
-  const from = path.join(SITE, 'node_modules/three');
-  const to = path.join(SITE, 'public/guide/vendor/three');
-  fs.rmSync(to, { recursive: true, force: true });
-  fs.mkdirSync(path.join(to, 'addons/controls'), { recursive: true });
-  for (const f of ['three.module.js', 'three.core.js']) fs.copyFileSync(path.join(from, 'build', f), path.join(to, f));
-  fs.copyFileSync(path.join(from, 'examples/jsm/controls/OrbitControls.js'), path.join(to, 'addons/controls/OrbitControls.js'));
-  fs.copyFileSync(path.join(from, 'LICENSE'), path.join(to, 'LICENSE'));
-}
-
 sync();
-vendorThree();

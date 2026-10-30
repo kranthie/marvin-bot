@@ -1,0 +1,60 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today</button>
+<button data-preset="staged">Staged buying</button>
+<button data-preset="owner">I own the Orin and hands</button>
+<button data-preset="second">Two robots</button>
+<button data-preset="shock">Import shock (hypothetical)</button>
+</div>
+<h4>View</h4>
+<div class="tabs"><button class="on" id="v_group">By group</button><button id="v_phase">By build phase</button></div>
+<h4>Actuator and kit pricing</h4>
+<div class="ctl radio" id="tiermode">
+<label><input checked="" name="tier" type="radio" value="single"/> Single-unit prices (the BOM)</label>
+<label><input name="tier" type="radio" value="staged"/> Staged: one order per phase, 10+ price where an order reaches 10</label>
+<label><input name="tier" type="radio" value="bulk"/> Everything in one order now</label>
+<label><input name="tier" type="radio" value="second"/> One order for two robots (cost per robot)</label>
+<div class="hint">Seeed's 10+ tier: RS04 $242, RS03 $214, RS06 $200, RS00 $131.99, hand kit $97, debug adapter $14.</div>
+</div>
+<h4>I already own…</h4>
+<div class="ctl" id="owned">
+<label class="chk"><input data-own="compute" type="checkbox"/> Jetson AGX Orin developer kit ($3,499)</label>
+<label class="chk"><input data-own="hand-kit" type="checkbox"/> AmazingHand kits ($198)</label>
+<label class="chk"><input data-own="g:tool" type="checkbox"/> Tooling group ($710)</label>
+<label class="chk"><input data-own="psu-bench" type="checkbox"/> 48 V bench supply ($250)</label>
+<label class="chk"><input data-own="imu-backup,gamepad" type="checkbox"/> Backup USB IMU and gamepad ($95)</label>
+<div class="hint">Owned lines keep their price in the full cost (as in the workbook) but drop out of "still to spend".</div>
+</div>
+<h4>What-if (hypothetical)</h4>
+<div class="ctl"><label>Duty on parts shipped from China <output id="o_duty"></output></label>
+<input id="duty" max="100" min="0" step="5" type="range" value="0"/>
+<div class="hint">Applied to the actuator, servo and hand-kit lines only. Not a real tariff rate: check yours.</div></div>
+<div class="ctl"><label>Shipping allowance <output id="o_ship"></output></label>
+<input id="ship" max="15" min="0" step="1" type="range" value="0"/>
+<div class="hint">Percent added to what you still have to buy.</div></div>
+<div class="ctl"><label>Show amounts in</label>
+<select id="cur">
+<option value="USD">US dollars</option>
+<option value="EUR">Euros (illustrative 0.92 per $)</option>
+<option value="GBP">Pounds (illustrative 0.78 per $)</option>
+<option value="INR">Rupees (illustrative 84 per $)</option>
+<option value="AUD">Australian dollars (illustrative 1.52 per $)</option>
+</select>
+<div class="hint">Fixed illustrative rates, not live. The BOM itself is in US dollars.</div></div>
+</div>
+<div class="preview">
+<div class="chart-title" id="charttitle">Cost by group</div>
+<svg aria-label="Horizontal bar chart of BOM cost by group or by build phase" id="view" role="img" viewbox="0 0 640 380"></svg>
+<div class="readouts">
+<div class="ro" id="r_full"><div class="k">Full cost to replicate</div><div class="v">–</div></div>
+<div class="ro" id="r_spend"><div class="k">Still to spend</div><div class="v">–</div></div>
+<div class="ro" id="r_save"><div class="k">Change vs BOM total</div><div class="v">–</div></div>
+<div class="ro" id="r_act"><div class="k">Actuators share</div><div class="v">–</div></div>
+<div class="ro" id="r_first"><div class="k">Committed before the leg test</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--accent)"></i>to buy</span><span><i style="background:#3a4757"></i>owned</span><span><i style="background:var(--bad)"></i>hypothetical duty</span><span id="leg_cum" style="display:none"><i style="background:var(--accent2)"></i>cumulative</span></div>
+<p class="hint" style="font-size:13px;color:var(--muted);margin:6px 0"><b>Reading the numbers:</b> <i>Full cost to replicate</i> counts every part at today's price, even ones you own; <i>Still to spend</i> is what actually leaves your account. <i>Committed before the leg test</i> is money paid through phase 2, before the one-leg build (phase 3) has shown the design works: lower means less at risk if a test fails.</p>
+</div>
+</div>

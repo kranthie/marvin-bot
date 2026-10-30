@@ -1,0 +1,216 @@
+---
+title: "Structure and code-CAD"
+description: "A humanoid's frame has to carry landing loads several times its weight, fit between motors, be made on a desktop mill or printer, and weigh as little as possible."
+sidebar:
+  label: "08 · Structure and code-CAD"
+  order: 9
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/08-structure-cad/widget-1.html?raw';
+import widget2 from '../../../guide/08-structure-cad/widget-2.html?raw';
+import widget3 from '../../../guide/08-structure-cad/widget-3.html?raw';
+import script from '../../../guide/08-structure-cad/script.js?raw';
+import '../../../guide/08-structure-cad/style.css';
+
+<div class="guide-meta">
+
+**Stage 2 · Mechanics** · \~35 min · Before this: [05 Leg loads and stairs](../05-leg-loads-stairs/), [07 Mass budget and proportions](../07-mass-proportions/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+A humanoid's frame has to carry landing loads several times its weight, fit between motors, be made on a desktop mill or printer, and weigh as little as possible. Marvin Bot draws every part in Python code, computes each part's mass straight into the robot model, and checks every load-carrying part with a hand calculation. This page explains how, and lets you size a plate and sweep a joint yourself.
+
+:::note[You will learn]
+- What <a class="g" href="../glossary/#code-cad">code-CAD</a> is and why a robot that changes every week benefits from parts written as code.
+- When to machine aluminium and when to print plastic, and how a desktop mill limits part size.
+- How to follow a <a class="g" href="../glossary/#load-path">load path</a>, why joints need a far-side bearing, and how to check a part with σ = M·c / I and a <a class="g" href="../glossary/#safety-factor">safety factor</a>.
+- Why a pocketed plate is stronger than a drilled plate of the same mass.
+- How sweeping a joint through its range against the body finds collisions, and how a <a class="g" href="../glossary/#coupled-joint-limit">coupled joint limit</a> arises.
+:::
+
+## The idea in one picture
+
+The **structure** is the robot's skeleton: the metal and plastic parts that hold the motors in place and carry the robot's weight from the feet up to the pelvis. A humanoid needs it to be strong enough not to bend or snap when it lands or falls, yet as light as possible, because every gram of frame is a gram the motors must carry ([07 Mass budget](../07-mass-proportions/)). **Code-CAD** is how Marvin Bot draws those parts: instead of clicking shapes together in a drawing program, each part is written as a short Python program.
+
+When Marvin Bot lands from a step, the ground pushes up on the foot with up to about three times the robot's weight. That force has to travel through the foot plate, the ankle, the shin, the knee, the thigh, the hip and into the pelvis: that chain of parts is the **load path**. Wherever the force's line does not pass straight through a part, it bends it, and bending is what breaks thin plates.
+
+Try it with a plastic ruler: lying flat, it bends easily under a finger; stood on its edge, you can hardly bend it at all. A plate bent across its thickness is weak; the same plate bent across its width is strong. The trick of structural design is to arrange material so that every load bends parts the strong way, and to remove material where the stress is low. The first playground lets you see how much difference thickness, pockets and material make.
+
+## Playground 1: plate and beam strength
+
+The words in the readouts, in plain terms (the maths follows in [From first principles](#from-first-principles)):
+
+- **Bending moment M**: how hard the load tries to bend the plate at the checked point; force × lever arm, in N·m.
+- **Second moment I**: how well the plate's cross-section resists bending, in mm⁴. It depends on shape only, not material; thicker is much better.
+- **Peak stress σ**: the force per unit area inside the metal at its worst point, in MPa (newtons per square millimetre).
+- **Safety factor**: the material's <a class="g" href="../glossary/#yield-strength">yield strength</a> (the stress at which it starts to bend permanently) divided by the peak stress. Below 1 the part is permanently bent; Marvin Bot wants at least 2 (green). Amber or red means too weak.
+- **Deflection**: how far the loaded end moves, in mm. Smaller is stiffer.
+
+A plate is clamped at one end (the station where we check it) and a load acts at a lever arm *L* from that station, like the thigh plate in a sideways fall onto the knee. Choose the cross-section, material and load; the readouts give the bending stress, safety factor, tip deflection and mass.
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Start from **Marvin Bot thigh plate today**: SF about 2.2, close to the repo's 2.2-2.3. Click **Same, 8 mm stock**: SF 1.8, the repo's figure for 8 mm. One millimetre of stock is worth 25% of strength, because I grows roughly with thickness cubed.
+2. Click **Old 6 mm drilled plate**. The preset applies K<sub>t</sub> = 2.5 and shows SF about 0.5, which is what a finite-element analysis (FEA: a computer stress simulation that splits the part into thousands of tiny pieces) found. Drag K<sub>t</sub> to 1, the plain hand calculation: SF about 1.2. The stress concentration at the holes explains most of the gap. That is why the repo targets SF 2 on a hand calculation that leaves concentrations out.
+3. Switch any preset to **In plane** bending. The same plate is many times stronger the other way: designers arrange plates so the big loads bend them in plane.
+4. Click **Printed PA-CF, same shape**, then try the weak-direction (between layers) entry in the material list. Printed parts need far more thickness, which is why the leg's load path is aluminium.
+:::
+
+## From first principles
+
+### Code-CAD: parts as programs
+
+Most mechanical design is done in graphical CAD (computer-aided design) programs: you sketch and extrude with a mouse, and the model lives in a binary file. <a class="g" href="../glossary/#code-cad">Code-CAD</a> writes the same solids as a program: a plate is `box(...)`, a motor seat is `cyl(...)`, and a part is the union or difference of such shapes. Marvin Bot uses **manifold3d**, a fast, robust library for boolean operations (join, subtract, intersect) on triangle meshes (surfaces made of many small triangles), from Python.<sup class="cite">[\[1\]](#s1)</sup> Alternatives in the same spirit: build123d and CadQuery (Python on the OpenCascade kernel, with exact curved surfaces and export to STEP, the standard file format machine shops accept)<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[3\]](#s3)</sup> and OpenSCAD (its own language, also mesh-based).<sup class="cite">[\[4\]](#s4)</sup>
+
+Why code for a robot in its simulation phase:
+
+- <b>Parametric by construction.</b> The parts read their sizes from `description/robot.yaml` and `skeleton.yaml`. When the legs grew 50 mm on 2026-10-29, the thigh and shin regenerated; nobody redrew them.
+- <b>Diffable.</b> A change is a few lines in a pull request (a proposed change to the code, reviewed before it is accepted) (`thigh_t = 9.0`), reviewable like any code, not an opaque binary.
+- <b>One source of truth for mass.</b> `cad/build.py` computes each part's mass, centre of mass and inertia and writes them into `description/cad_model.yaml`; the <a class="g" href="../glossary/#urdf">URDF</a> (the robot model file the simulators read) and the mass budget take them from there ([13 The robot description](../13-description/)). The simulator therefore trains on the masses of the parts that will be machined.
+- <b>Checks run on every change.</b> Size against the mill and printer, strength, packaging and shell collisions are all scripts.
+
+The cost: no exact curved surfaces in a mesh kernel, drawings and STEP export are harder, and fine detail (fillets, fasteners) is slower to write than to click. The repo accepts this for the first passes; fasteners are a budget item until a fastener pass.
+
+```text
+# cad/leg.py, the thigh plate (simplified excerpt)
+thigh_t = 9.0                                   # stock thickness, mm
+tplate = union(
+    hull(box((60, thigh_t, 16), top), cyl(46, thigh_t, "y", knee)),   # a tapered strap
+    spider("RS04", knee, "y", -1, ...),                               # ring on the motor's bolt circle
+)
+tplate = lighten(tplate, "y", keep=[...], hole=20, pitch=24, rim=7, floor=2.0)  # pocket to a 2 mm floor
+out.append(Part("left_thigh_plate", "left_thigh_link", "al6061", tplate, "cnc"))
+```
+
+### Machined aluminium, printed plastic
+
+| Material | Yield / strength (MPa) | Density (g/cm³) | Stiffness E (GPa) | Used for in Marvin Bot |
+|---|---|---|---|---|
+| 6061-T6 aluminium | 276 typical<sup class="cite">[\[5\]](#s5)</sup> (repo design value 240) | 2.70 | 68.9 | almost every load-carrying part (103 of 184 CAD parts) |
+| 7075-T6 aluminium | 503 typical<sup class="cite">[\[6\]](#s6)</sup> (repo 480) | 2.81 | 71.7 | highly loaded flanges, ankle cranks (6 parts) |
+| PA6-CF, printed (carbon-fibre nylon) | 82 in layer, 64 across layers<sup class="cite">[\[7\]](#s7)</sup> (repo 25 across layers) | 1.17 (repo 1.10) | 5.7 / 4.7 | arm shells that carry load, head frame, chest shell, body shells |
+| PETG, printed | ≈ 47-50<sup class="cite">[\[8\]](#s8)</sup> | 1.27 | ≈ 2 | not used for structure: softens near warm motors |
+| TPU, printed | flexible | ≈ 1.15 | — | 4 mm foot soles |
+
+<div class="small">
+
+How to read the table: **yield** is the stress at which the material starts to bend permanently (higher is stronger), **density** is mass per volume (lower is lighter), and **stiffness E** is how much it resists stretching (higher bends less). "T6" names a heat treatment that hardens the aluminium. PA6-CF is nylon filled with chopped carbon fibre; PETG and TPU are common 3D-printing plastics (TPU is rubbery).
+
+</div>
+
+Aluminium is about 2.3 times as dense as PA-CF but 3 to 10 times as strong and 12 to 15 times as stiff, so for parts that carry the robot's weight it wins per gram. Printed parts win on shape (hollow shells, curves, internal cable runs) and cost, so the arms, which carry light loads, use printed structural shells between aluminium rings at each motor.
+
+Printed parts are weakest between layers, much as plywood splits along its layers: a part printed standing up and bent so the layers peel apart may hold only 25-40 MPa, which is the value `cad/strength.py` uses.
+
+<b>The workshop sets the shapes.</b> Machined parts must fit the desktop mill: about 200 × 150 mm of travel and 60 mm stock (`MILL_MM` in `cad/build.py`). Printed parts must fit a 250 mm printer. Flat parts too large for the mill (the 230 mm foot plates, the 265 mm torso side frames) go to an online laser or water-jet service. This is why the thigh grew 25 mm above the hip yaw motor rather than below it on 2026-10-29: the thigh plate still fits the mill.
+
+### Load paths and far-side bearings
+
+Each joint on a <a class="g" href="../glossary/#quasi-direct-drive">quasi-direct-drive</a> robot (see [04 Actuators](../04-actuators/)) hangs the next link on the motor's output. If the link is held on one side only, a sideways load bends the plate out of its plane and puts a moment on the motor's output bearing. Think of a shelf held by one bracket versus a shelf held at both ends.
+
+Marvin Bot's first-pass leg did exactly that, and the strength check failed five parts at landing load: the foot base plate (SF 0.3), hip yoke back plate (0.3), hip roll front plate (0.6), shin knee flange (0.8) and hip yoke side plate (1.4) (`docs/decisions.md`, 2026-10-26).
+
+The second pass added a <a class="g" href="../glossary/#far-side-bearing">far-side bearing</a> at the knee and hip roll: the link becomes a yoke held on both sides, the load splits between two plates and the bending in each falls several-fold. The worst safety factor went to 2.4.
+
+### Beam bending: σ = M·c / I
+
+Cut a plate at a station. A force *F* acting a distance *L* away makes a **bending moment** <span class="eq">M = F · L</span> (N·mm if L is in mm). The moment stretches one face and squeezes the other; the stress grows linearly from zero at the **neutral axis** (through the section's centroid) to its peak at the face furthest away, a distance *c* (the centroid is the section's balance point; for a plain rectangle, its middle):<sup class="cite">[\[9\]](#s9)</sup>
+
+<span class="eq">σ = M · c / I</span>
+
+σ is stress in MPa (N/mm²). *I* is the section's <a class="g" href="../glossary/#second-moment-of-area">second moment of area</a> (mm⁴): each bit of area times the square of its distance from the neutral axis, summed. For a solid rectangle of width *b* bent across its thickness *t*,
+
+<span class="eq">I = b · t³ / 12, c = t / 2</span>
+
+so stress falls with thickness squared: double the thickness and the stress drops to a quarter. Bend the same plate across its width and *t* and *b* swap places: a 59 × 9 mm plate is about 43 times stiffer and 6.6 times stronger in plane than out of plane.
+
+<b>Pocketing.</b> Material near the neutral axis does little, because it is multiplied by a small distance squared. Milling pockets from one face down to a thin floor removes that material but leaves full-depth ribs and rims, a section like a channel or an I-beam. Drilling holes right through removes the outer fibres too, which are the ones doing the work. The playground shows the difference: at the same mass, a pocketed plate has a much larger *I* than a thinner drilled one.
+
+<b>Safety factor.</b> <span class="eq">SF = yield strength / peak stress</span>. SF 1 means the part just starts to bend permanently. Marvin Bot targets SF 2 on yield because the hand calculation leaves out torsion and stress concentrations at holes and corners, which typically raise local stress by 2-3 times<sup class="cite">[\[10\]](#s10)</sup>, and because the load cases are estimates until falls are measured.
+
+## Playground 2: joint sweep and collisions
+
+A joint's range is set by the first angle at which something hits. This matters because the robot's controller must never command an angle that drives an arm into its own chest: the limits found here go into the robot model that the simulator and the trained controller use. This toy has the upper arm (a box) with the shoulder yaw motor (a cylinder) near its top, hanging from the shoulder roll axis beside a rounded torso and a head. Pick the shoulder pitch (arm forward) and sweep the shoulder roll inwards: the toy finds the first contact, and the chart repeats it for every pitch angle. It is a simplified version of what `python -m cad.covers --check` and `tools/check_packaging.py` do with the real meshes.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. With the arm hanging (pitch 0°), drag the roll negative. The arm touches the torso within a few degrees: this is why Marvin Bot's shoulder roll stops at 0° with the arm hanging.
+2. Set pitch to 90° and sweep roll again. The arm now swings in front of the chest and gets to about −20° before the motor meets the chest's corner. The blue curve is that limit at every pitch: a **coupled limit**, a joint's range that depends on another joint's angle. Compare it with the orange repo curve. The toy's torso is the same front and back, so it also allows negative roll with the arm swung back; the repo keeps 0° there (only the forward cases were needed and checked).
+3. Make the chest square (corner radius 10 mm): the forward allowance mostly disappears. Click **Bigger motor on the arm**: every limit tightens. Packaging is a negotiation between body shape and motor size.
+:::
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- <b>Parts:</b> `cad/leg.py`, `cad/torso.py`, `cad/arm.py`, `cad/head.py`, `cad/electrical.py`, `cad/covers.py` build 184 parts with manifold3d around the RobStride motors at their STEP-model sizes: 97 machined, 20 printed, 24 add-on shells, 12 cut by a service, 31 bought. The "mill" throughout is a desktop CNC (computer-controlled) milling machine that cuts parts from aluminium blocks. `cad/build.py` writes meshes and `description/cad_model.yaml` (mass, centre of mass, inertia, size per part) and lists any part too big for the mill or printer.
+- <b>Plates as rings and straps.</b> Instead of plates as wide as the motors, each motor is held by a ring on its stator bolt circle (the ring of bolt holes on the motor's fixed outer body) (RS04 about 86 mm, RS03 about 72 mm) joined by straps sized by the strength check (2026-10-26).
+- <b>Strength:</b> `cad/strength.py` cuts each load-carrying part at stations along its load path, takes the real CAD cross-section (holes included), and checks bending plus axial stress against yield for: landing at the ankle (3 × body weight up, 0.5 × fore-aft, 0.3 × sideways, straight leg); a hand catch (0.5 × up, 0.25 ×, 0.15 ×); a sideways fall onto the knee (1 × body weight, for the single thigh plate); and each joint's peak torque. Target SF 2.
+- **Results today** (run on the 40.3 kg model): the worst is the pelvis back plate at SF 2.0 in landing; the thigh plate's side fall 2.2; the shin under ankle peak torque 2.3; the leg's landing cases 2.3-15; printed arm shells 2.6-10.
+- **The thigh plate story** (2026-10-28): finite elements put the drilled 6 mm thigh plate at SF 0.5 in a sideways fall onto the knee. It is now 9 mm stock pocketed from the outside to a 2 mm floor: SF 2.3 at the time, +61 g a side (8 mm gave 1.8). The shin side plates went from 6 to 4 mm (SF 2.1, −0.26 kg) and the pelvis back plate from 8 to 6 mm (SF 2.1).
+- <b>Open:</b> the torso base, which a hand catch with the arm forward mostly twists. Torsion is outside `cad/strength.py`; finite elements put it at SF 0.8. It needs FEA and likely a stiffer pocketed plate before it is made.
+- <b>Shells are an add-on.</b> `cad/covers.py` grows a 1.2 mm skin 4 mm outside each link's parts, trims it where it could reach the next link, and splits it to fit the printer. Shells carry no load and stay out of the default URDF (the policies train on the bare robot); their 0.95 kg counts towards the 42 kg limit.
+- <b>Collision sweeps:</b> `python -m cad.covers --check` moves every joint through its range, every point of the coupled limit and combined poses, and fails on any shell contact. `tools/check_packaging.py` does the same for motor envelopes and collision boxes, separating packaging errors (within a limb) from ordinary self-collision (between limbs). These set the knee at 130°, hip pitch at −30° and the shoulder roll's coupled limit (2026-10-29).
+:::
+
+## Trade-offs and alternatives
+
+| Choice | Taken | Alternatives considered (repo) |
+|---|---|---|
+| Structure | machined 6061 cores on the load path, 7075 where loads are high, printed shells | all machined (heavier, more machining time); fully printed (load must still go through metal; heat near the motors softens PETG-class plastics) (2026-10-25) |
+| Joint support | far-side bearings at knee and hip roll; hip pitch as a closed box | single-sided joints, which need the RS04 output bearing's moment rating (not taken, 2026-10-28) |
+| Thigh plate | 9 mm pocketed to 2 mm floor (+61 g a side) | 8 mm (SF 1.8); a topology-optimised outline could take back about 35 g |
+| CAD | manifold3d in Python | build123d / CadQuery (exact curved surfaces, STEP export), OpenSCAD, graphical CAD |
+| Big flat parts | online laser or water-jet service; about 12 parts to online machining (\~$1,200, not yet quoted) | a larger mill; splitting parts into pinned segments |
+| Strength check | hand calculation on real CAD sections, SF 2 | full FEA for every part (done outside the repo for the thigh plate and torso base; needed before parts are made) |
+
+:::caution[Where sources and the repo disagree]
+- <b>Aluminium yield.</b> Datasheets give typical yields of 276 MPa (6061-T6) and 503 MPa (7075-T6)<sup class="cite">[\[5\]](#s5)</sup><sup class="cite">[\[6\]](#s6)</sup> and say typical values are not for design. The repo uses 240 and 480 MPa: lower, design-style values. The playground offers both.
+- <b>PA-CF.</b> The PA6-CF datasheet gives 64 MPa across layers and 1.17 g/cm³;<sup class="cite">[\[7\]](#s7)</sup> the repo assumes 25 MPa (published tests 25-40, conservative) and 1.10 g/cm³ (`cad/lib.py`). The density difference makes printed parts about 6% lighter in the repo than the datasheet suggests.
+- <b>Results drift with mass.</b> The decision log gives the thigh plate SF 2.3 and an earlier leg pass "worst SF 2.4"; running `python -m cad.strength` today (40.3 kg) gives 2.2 for the thigh plate and a worst of 2.0 (pelvis back plate, thinned to 6 mm on 2026-10-28). All still meet the target.
+:::
+
+## Decisions you can make here
+
+- **Plate thickness, pocket floor and material**, given the worst load case and the SF 2 target. Trade: the thigh plate at 9 mm instead of 8 mm lifts SF from 1.8 to about 2.2 for +61 g a side.
+- <b>Machined, printed or sent to a service.</b> Trade: printed is cheaper, lighter and freer in shape but far weaker (especially between layers); machined is strong but limited to the mill's 200 × 150 mm; a service handles bigger flat parts at extra cost and lead time.
+- <b>Where a joint needs a far-side bearing.</b> Trade: an extra bearing, plate and a little mass, in exchange for several-fold less bending in each plate and no sideways load on the motor's own bearing.
+- <b>Joint range versus body shape.</b> Trade: a rounder chest or a slimmer motor gives the arm more room; otherwise accept a coupled limit that the controller must respect.
+- **FEA or topology optimisation for the open torso base** (topology optimisation: software that removes material wherever stress is low). Trade: time and tooling now, against making a part that the hand check cannot clear (torsion, SF 0.8 in FEA).
+
+<RawHtml html={widget3} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+Next: [09 Power and battery](../09-power-battery/) starts the electrical stage, beginning with the battery, the single heaviest item in the mass budget that is not a motor or frame.
+
+## Further reading
+
+- [manifold3d on GitHub](https://github.com/elalish/manifold): the library behind Marvin Bot's CAD; its README explains why its booleans never produce broken meshes.
+- [build123d documentation](https://build123d.readthedocs.io/): the best starting point if you want exact geometry and STEP files from Python.
+- [MIT OCW 2.001 Mechanics and Materials I](https://ocw.mit.edu/courses/2-001-mechanics-materials-i-fall-2006/): free lectures on stress, bending and beams.
+- [M. F. Ashby, Materials Selection in Mechanical Design](https://doi.org/10.1016/C2009-0-25539-5): how to choose a material for strength or stiffness per kilogram.
+- [Pilkey et al., Peterson's Stress Concentration Factors](https://doi.org/10.1002/9781119532552): the reference for K<sub>t</sub> at holes, notches and fillets.
+
+## Sources
+
+1. <span id="s1"></span>[E. Lalish et al., Manifold: geometry library for topological robustness](https://github.com/elalish/manifold) <span class="used">— used for: what manifold3d is (mesh booleans, Python bindings)</span>
+2. <span id="s2"></span>[build123d documentation](https://build123d.readthedocs.io/) <span class="used">— used for: Python B-rep CAD on OpenCascade as an alternative</span>
+3. <span id="s3"></span>[CadQuery documentation](https://cadquery.readthedocs.io/) <span class="used">— used for: Python CAD alternative with STEP export</span>
+4. <span id="s4"></span>[OpenSCAD](https://openscad.org/) <span class="used">— used for: script-based CAD alternative</span>
+5. <span id="s5"></span>[Aerospace Metals, Aluminum 6061-T6 / T651 datasheet (ASM / Aluminum Association data)](https://www.aerospacemetals.com/wp-content/uploads/2023/06/Aluminum-6061-T6-6061-T651.pdf) <span class="used">— used for: 6061-T6 yield 276 MPa, density 2.70, E 68.9 GPa</span>
+6. <span id="s6"></span>[Quickparts, Aluminum 7075 datasheet (ASM data)](https://quickparts.com/wp-content/uploads/2024/05/Aluminum-7075.pdf) <span class="used">— used for: 7075-T6 yield 503 MPa, density 2.81, E 71.7 GPa</span>
+7. <span id="s7"></span>[Polymaker, PolyMide PA6-CF technical data sheet V4.1](https://cdn.shopify.com/s/files/1/0151/1735/files/PolyMide__PA6-CF_TDS_EN_V4.1.pdf) <span class="used">— used for: printed PA6-CF tensile strength (XY 82, Z 64 MPa conditioned), modulus, density 1.17</span>
+8. <span id="s8"></span>[Prusa Polymers, Prusament PETG technical data sheet](https://cdn.shopify.com/s/files/1/1745/6181/files/PETG_TechSheet_ENG.pdf) <span class="used">— used for: PETG printed yield 47-50 MPa, density 1.27</span>
+9. <span id="s9"></span>[MIT OpenCourseWare, 2.001 Mechanics and Materials I](https://ocw.mit.edu/courses/2-001-mechanics-materials-i-fall-2006/) <span class="used">— used for: beam bending σ = M c / I, second moment of area, cantilever deflection</span>
+10. <span id="s10"></span>[W. D. Pilkey, D. F. Pilkey, Z. Bi, Peterson's Stress Concentration Factors, 4th ed., Wiley 2020](https://doi.org/10.1002/9781119532552) <span class="used">— used for: typical stress concentration factors of 2-3 at holes and notches</span>
+11. <span id="s11"></span>[M. F. Ashby, Materials Selection in Mechanical Design, 4th ed., 2011](https://doi.org/10.1016/C2009-0-25539-5) <span class="used">— used for: strength and stiffness per mass comparison</span>
+
+<PageScript code={script} />

@@ -1,0 +1,32 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="marvin">Marvin Bot today (flat v8)</button>
+<button data-preset="v6">Before v7 (waddle era)</button>
+<button data-preset="noposture">No posture terms (rough v6)</button>
+<button data-preset="noswing">No swing-foot term (v5)</button>
+<button data-preset="lazy">Over-penalised</button>
+</div>
+<h4>Term weights <span class="small" style="text-transform:none;letter-spacing:0">(multiplier × default)</span></h4>
+<div class="scroll" id="wsliders"></div>
+</div>
+<div class="preview">
+<svg aria-label="Bar chart of expected episode return for each candidate gait, the highest highlighted as the optimiser's preferred gait." id="bars" role="img" viewbox="0 0 640 330"></svg>
+<div class="readouts">
+<div class="ro" id="r_win"><div class="k">Optimiser prefers</div><div class="v">–</div></div>
+<div class="ro" id="r_margin"><div class="k">Lead over runner-up</div><div class="v">–</div></div>
+<div class="ro" id="r_up"><div class="k">Upright walk, reward/s</div><div class="v">–</div></div>
+<div class="ro" id="r_sel"><div class="k">Selected gait, reward/s</div><div class="v">–</div></div>
+</div>
+<div class="gaitbtns" id="gaitbtns"></div>
+<div class="grid2" style="margin-top:6px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+<div>
+<svg aria-label="Front and side stick figure of the selected gait." id="glyph" role="img" viewbox="0 0 300 200"></svg>
+<div class="tablewrap"><table id="feat"></table></div>
+</div>
+<div class="tablewrap"><table id="contrib"></table></div>
+</div>
+<div class="legend"><span><i style="background:var(--good)"></i>earns reward</span><span><i style="background:var(--bad)"></i>penalty</span><span><i style="background:var(--accent2)"></i>preferred gait</span><span>Return = reward/s × time alive + fall penalty; 20 s episodes</span></div>
+</div>
+</div>

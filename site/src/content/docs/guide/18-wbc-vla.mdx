@@ -1,0 +1,199 @@
+---
+title: "Whole-body control and VLA models"
+description: "Walking, balancing, reaching and grasping all use the same 27 joints at the same time."
+sidebar:
+  label: "18 · Whole-body control and VLA models"
+  order: 19
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/18-wbc-vla/widget-1.html?raw';
+import widget2 from '../../../guide/18-wbc-vla/widget-2.html?raw';
+import widget3 from '../../../guide/18-wbc-vla/widget-3.html?raw';
+import script from '../../../guide/18-wbc-vla/script.js?raw';
+import '../../../guide/18-wbc-vla/style.css';
+
+<div class="guide-meta">
+
+**Stage 5 · Learning** · \~30 min · Before this: [16 Reinforcement learning for walking](../16-rl-walking/), [17 Motion tracking](../17-motion-tracking/) · Also useful: [03 System architecture](../03-architecture/), [11 Sensors and compute](../11-sensors-compute/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Walking, balancing, reaching and grasping all use the same 27 joints at the same time. This page is about how to split that job: between a fast balance controller and a slow "brain" that sees and understands language, and between learned and classical controllers. It ends with the timing problem every vision-language-action model has on a robot: its answers arrive late.
+
+:::note[You will learn]
+- What whole-body control means: one controller juggling balance, hands and head at once, and how it was done before machine learning.
+- Three ways to split a humanoid's control: legs and arms handled separately, one general "copy this pose" controller, or one big network for everything.
+- What a vision-language-action (VLA) model is: a network that looks through the camera, reads an instruction and plans the next second or two of arm motion. Marvin Bot plans to use NVIDIA's GR00T N1.7.
+- Why a VLA that takes 150 ms per answer can still drive a robot whose controller runs every 20 ms.
+:::
+
+## The idea in one picture
+
+A humanoid has one body but many goals at once: keep the centre of mass over the feet ([page 2](../02-balance/)), put the hand on the cup, look at the cup, do not hit the table. <a class="g" href="../glossary/#whole-body-control">Whole-body control</a> (WBC) is any controller that decides all joint commands together so these goals are met at the same time, in order of importance. The question for a robot builder is not whether to do it, but how to split it into pieces that can each be built, trained and tested.
+
+You do this yourself without thinking. When you reach for a mug, reflexes in your legs and trunk keep you upright, while the slower, thinking part of your brain decides which mug and where your hand should go. If you are distracted for half a second, you do not fall over: the reflexes carry on. Robots are built the same way.
+
+The pieces run at very different speeds. A balance controller must react within tens of milliseconds, or the robot falls. A model that looks at a camera image and reads "put the red cup in the bin" may take a tenth of a second or more to think. So nearly every modern design is layered: a slow, smart layer on top sends goals to a fast, robust layer below. The playground lets you compare the three common layer splits.
+
+Three abbreviations come up all the time on this page:
+
+- **RL**, <a class="g" href="../glossary/#reinforcement-learning">reinforcement learning</a>: training a controller by trial and error in simulation, as for Marvin Bot's walking ([page 16](../16-rl-walking/)).
+- **IK**, <a class="g" href="../glossary/#inverse-kinematics">inverse kinematics</a>: working out the joint angles that put the hand where you want it, with ordinary geometry and no learning ([page 1](../01-dof-kinematics/)).
+- **VLA**, <a class="g" href="../glossary/#vla">vision-language-action model</a>: a large neural network that takes camera images and a typed instruction and outputs short sequences of robot motion.
+
+## Playground A: how to split the control
+
+<b>How to use it:</b> click one of the three architectures, then pick a task. The diagram shows which boxes make up the controller, what data each needs and how often each runs; the bars below it rate the choice for that task (a longer bar is better, out of 5) and the lists give its strengths and weaknesses.
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Pick **Pick an object off the floor** and switch between the three architectures. Marvin Bot's waist only turns (no waist pitch), so reaching the floor means squatting: the decoupled split needs a height command for the legs, the tracker gets it for free from a human squat.
+2. Look at the rate labels on **Single end-to-end policy**: the model itself must answer every 20 ms. Compare that with the measured GR00T N1.7 latencies in Playground B.
+3. Untick **Update rates** and tick **Data**: notice where the expensive data sits in each design (teleoperation demonstrations, motion capture, or simulation only).
+:::
+
+## From first principles
+
+### Classical whole-body control: a task-space optimisation
+
+Start with one goal: move the hand to a point. The hand position **x** depends on the joint angles **q** through forward kinematics, **x** = f(**q**). For small motions, ẋ = J(**q**) q̇, where the <a class="g" href="../glossary/#jacobian">Jacobian</a> J says how much each joint's speed moves the hand. <a class="g" href="../glossary/#inverse-kinematics">Inverse kinematics</a> (IK) runs this backwards: find q̇ that gives the wanted ẋ, for example q̇ = J⁺ ẋ, with J⁺ the pseudo-inverse.<sup class="cite">[\[1\]](#s1)</sup> A humanoid arm with 6 joints and a hand pose with 6 numbers has a unique answer; the whole body with 27 joints has many, and the spare freedom (the *null space*) can serve lower-priority goals.
+
+Sentis and Khatib built whole-body behaviours from prioritised "primitives": constraints first (joint limits, contacts, balance), then tasks (hands, head), then posture in whatever freedom is left.<sup class="cite">[\[2\]](#s2)</sup> Today this is usually written as a quadratic program (QP) solved every control cycle:
+
+<details>
+<summary>Go deeper: the whole-body optimisation written out</summary>
+
+<div class="eq">
+
+minimise over q̈, τ, f: Σᵢ wᵢ ‖Jᵢ q̈ + J̇ᵢ q̇ − ẍᵢ\*‖² subject to M q̈ + h = Sᵀτ + J꜀ᵀ f, f in friction cones, τ and q within limits
+
+</div>
+
+Here ẍᵢ\* is the wanted acceleration of task *i* (hand, centre of mass, torso), M the mass matrix, h gravity and Coriolis terms, τ joint torques, f contact forces at the feet and J꜀ their Jacobian. It is exact, explainable and needs no training, but it needs an accurate model and contact plan, and tuning many weights by hand. Learned controllers swap that model for millions of simulated trials ([page 16](../16-rl-walking/)).
+
+</details>
+
+In plain words: every few milliseconds the controller asks "which joint accelerations best satisfy all my goals, weighted by importance, without breaking physics, slipping the feet or exceeding any motor's torque?", and solves that as a <a class="g" href="../glossary/#quadratic-program">quadratic program</a>, a type of optimisation computers solve very fast. It needs no training and is easy to explain, but it needs an accurate model of the robot and a plan of when each foot touches the ground, and many weights tuned by hand. Learned controllers replace that model with millions of simulated trials ([page 16](../16-rl-walking/)), which is the route Marvin Bot takes.
+
+### Three ways to split a learned humanoid controller
+
+- <b>Decoupled.</b> An RL policy owns the legs and balance, trained in simulation with the arms moved randomly so it learns to cope with them. The arms follow an IK solver (or a teleoperation device mapped joint to joint). NVIDIA's GR00T-WholeBodyControl ships this as "decoupled WBC", used with GR00T N1.5 and N1.6;<sup class="cite">[\[3\]](#s3)</sup> HOMIE drives the legs by RL from a pedal and the arms from an isomorphic exoskeleton, training the leg policy with an upper-body pose curriculum and a height command so it can squat.<sup class="cite">[\[4\]](#s4)</sup>
+- <b>General motion tracker.</b> One policy follows any whole-body target pose, from a VR teleoperator or from a higher-level model: the motion tracking of [page 17](../17-motion-tracking/), but trained on so much motion that it can follow motions it has never seen. H2O and OmniH2O,<sup class="cite">[\[5\]](#s5)</sup> TWIST (one network trained with RL plus behaviour cloning on retargeted motion capture)<sup class="cite">[\[6\]](#s6)</sup> and SONIC (42M parameters, about 700 hours of motion capture, 21,000 GPU hours, 50 Hz, with a token interface a VLA can drive)<sup class="cite">[\[7\]](#s7)</sup> are examples.
+- <b>Single end-to-end policy.</b> Pixels and words in, joint targets out. Attractive, but the model must then answer within one control period and learn balance from demonstrations, which teleoperation rarely contains enough of. In practice VLAs sit on top of one of the other two.
+
+### Vision-language-action models
+
+A <a class="g" href="../glossary/#vla">VLA</a> is a neural network that takes camera images, a text instruction ("put the red cup in the bin") and the robot's state (its joint angles), and outputs actions: where the hands should move over the next second or so. It is built on the same kind of model as an AI chatbot that can look at pictures, with an extra part bolted on that outputs motion instead of words.
+
+GR00T N1 introduced NVIDIA's two-part design: a vision-language model, or VLM ("System 2", the slow thinker; in N1 the Eagle-2 VLM at 10 Hz on an L40, a data-centre graphics card) whose features condition a <a class="g" href="../glossary/#diffusion-model">diffusion</a> transformer ("System 1", the fast actor) that turns noise into a sequence of 16 actions with 4 denoising steps, 63.9 ms per chunk on an L40.<sup class="cite">[\[8\]](#s8)</sup> The action head is trained with <a class="g" href="../glossary/#flow-matching">flow matching</a>: it learns a velocity field that carries random noise to a real action sequence in a few steps.
+
+**GR00T N1.7** is the current release (early access April 2026, now generally available) and the one Marvin Bot plans to use. What changed, and what it means:<sup class="cite">[\[9\]](#s9)</sup><sup class="cite">[\[10\]](#s10)</sup>
+
+- <b>Size:</b> 3 billion parameters (the adjustable numbers inside the network). The System 2 part is NVIDIA's Cosmos-Reason2-2B (built on the Qwen3-VL design), replacing Eagle.
+- <b>Action part:</b> a flow-matching DiT (diffusion transformer) that outputs 40 actions per call (N1: 16).
+- <b>Robot interface:</b> state and action vectors widened from 29 to 132 numbers, so bigger robots fit; actions are given as *relative end-effector* moves ("move the hand 2 cm left"), not as joint angles.
+- <b>Training data:</b> pre-trained on 20,854 hours of first-person video of people using their hands.
+- <b>Licence and hardware:</b> the first GR00T release under a commercial licence; the repository lists Jetson Orin (tested with JetPack 7.2) and Jetson AGX Thor for running it on a robot.
+
+The output is an <a class="g" href="../glossary/#action-chunk">action chunk</a>: a short trajectory of future actions, not a single command. Chunking (popularised by ACT)<sup class="cite">[\[11\]](#s11)</sup> makes motions smoother and lets a slow model keep a robot busy: while one chunk plays, the next is being computed. The catch is that every chunk was planned from an observation that is already old when it arrives. Real-time chunking (Black et al.) fixes the jump between chunks by freezing the actions that will run before the new chunk arrives and in-painting the rest.<sup class="cite">[\[12\]](#s12)</sup>
+
+### Where the data comes from
+
+VLAs learn by imitation, so they need demonstrations: a person <a class="g" href="../glossary/#teleoperation">teleoperates</a> the robot (VR headset with hand tracking, an exoskeleton, or a motion tracker) while cameras and joint states are recorded. Demonstrations are slow to collect, so they are multiplied: Isaac Lab Mimic (NVIDIA's GR00T-Mimic workflow) splits a few demonstrations into object-centred subtasks and replays them in new object positions in simulation, keeping only the successful ones;<sup class="cite">[\[13\]](#s13)</sup> GR00T N1 reports 780,000 simulated trajectories (about 6,500 hours of demonstration) generated in 11 hours this way (with DexMimicGen), plus 827 hours of video from video models fine-tuned on 88 hours of teleoperation.<sup class="cite">[\[8\]](#s8)</sup> Cosmos, NVIDIA's world foundation models, can restyle simulated video (Cosmos Transfer) so a policy trained on it sees photoreal variety.<sup class="cite">[\[14\]](#s14)</sup>
+
+## Playground B: action chunks and latency
+
+This playground simulates three seconds of a VLA driving the arms. Each time the model is asked for an answer (an *inference call*):
+
+1. it takes a camera image (an <a class="g" href="../glossary/#observation">observation</a>);
+2. it thinks for *L* ms, plus a network round trip if it runs on a separate computer;
+3. it returns a chunk of *H* actions, meant to be played 1/*f* apart (for *f* = 20 Hz, one every 50 ms);
+4. the robot plays *E* of them (the <a class="g" href="../glossary/#execution-horizon">execution horizon</a>) and then switches to the newest chunk.
+
+Underneath, the 50 Hz controller (walking policy or IK) keeps running whatever happens above it. Inside a chunk the robot acts *open loop*, meaning it is not looking: the last action of a chunk was planned from an image E/f plus the delay old, which the "time since image" lane shows. Numbers marked <span class="est">estimate</span> are not measurements on Marvin Bot: the desktop preset's 50 ms model time sits between NVIDIA's L40 figures (35 ms TensorRT, 67 ms torch.compile), and its Wi-Fi round trip of 15 ms with up to 40 ms of jitter is an <span class="est">estimate</span> for a busy home network.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. Press **Orin, wait for each chunk**: every 0.8 s of motion is followed by a 150 ms freeze while the next chunk is computed. Now switch to **Infer while executing**: the freezes vanish, because the next call starts while the current chunk is still playing.
+2. Press **No chunking**: one action per call. Even on a desktop GPU, a model that takes 50 ms cannot feed a 20 Hz action stream without gaps.
+3. With **Orin + TensorRT**, untick <b>Skip actions…</b>: the robot now plays each chunk from its first action, so everything it does is 150–200 ms behind the plan (the model time, the jitter and the wait for the next action tick). Tick it again and the timing is right, but the actions are still based on an old image: fine for slow manipulation, not for catching a ball.
+4. Lower E from 16 to 4 with **Orin + TensorRT**: the robot looks again four times as often (shorter open-loop stretches), but each call must now finish within 200 ms or the arms hold.
+5. Raise the jitter to 150 ms with the desktop preset. Occasional late chunks appear as red holds unless E leaves enough margin: lower E and watch.
+:::
+
+Why does a hold not make the robot fall? Because the VLA never commands balance. In the decoupled design it sends arm targets and a walking command; the 50 Hz walking policy keeps reading the IMU and joint encoders and keeps the robot upright whether or not a new chunk has arrived, and the motor drivers close their own position loops on the CAN commands (500 Hz to the legs, at least 250 Hz to the arms; [page 10](../10-can-bus/)). A late chunk freezes the hands, not the legs.
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- **Compute stack** (`docs/decisions.md`, 2026-10-25): a Jetson AGX Orin 64 GB developer kit, JetPack 7.2, Isaac ROS 4.6 and ROS 2 Jazzy; a real-time control process (CAN I/O, 50 Hz policy, safety) outside ROS. "Manipulation: GR00T N1.7, served from a desktop GPU first and moved to the Orin with TensorRT later. Whole-body control starts with the RL lower body plus IK arms; a motion-tracking controller (retargeting with GMR, BeyondMimic-style training) comes later. NVIDIA's SONIC checkpoints are for another robot and need far more compute to retrain, so it is deferred."
+- **Requirement R22** (`docs/requirements.md`, "should"): fine-tune a VLA (GR00T N1.7) from teleoperation data. README: carry and manipulate light objects (1–2 kg goal; the v1 hands manage about 0.5 kg).
+- **Phases** (`docs/plan.md`): phase 5 adds the whole-body controller and fall recovery; phase 6 adds teleoperation, data collection and GR00T N1.7 fine-tuning.
+- **Roadmap** (`docs/roadmap.md`): a general motion tracker for whole-body teleoperation (SONIC, TWIST, HOMIE), "which is how GR00T demonstrations get recorded"; walk, squat and reach with any arm pose (HOMIE), since "the waist only turns, so reaching low means squatting"; manipulation rehearsal in Isaac Sim with teleoperated demonstrations, GR00T-Mimic, Cosmos Transfer and N1.7 fine-tuning. Open item 10: GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
+- **Today**: none of this is built. What exists is in simulation only: the flat-ground walking policy (flat v8, retrained on the 1.44 m body and passing the MuJoCo cross-check), the stair policy (rough v9, trained on the 1.29 m body; 14 of 15 stair runs on the new model) and the 25-clip motion tracker ([page 17](../17-motion-tracking/), results provisional while tracker v4 trains).
+:::
+
+Why this order makes sense: the decoupled split reuses the walking policy that already exists, and the VLA's job (arm and hand targets) matches what demonstrations of table-top tasks contain. Serving the model from a desktop GPU first avoids optimising for the Orin before anyone knows whether the fine-tuned model works; the measured numbers in Playground B (Orin TensorRT about 149 ms against about 35 ms on an L40-class GPU) show why moving it on board is a later, separate step. A general tracker is the bigger prize, since it gives whole-body teleoperation and squat-and-reach without new rewards, but SONIC-scale training is out of reach of one desktop GPU, and Marvin Bot's own tracker has seen only 25 clips.
+
+## Trade-offs and alternatives
+
+| Choice | Marvin Bot | Alternative | Trade-off |
+|---|---|---|---|
+| Control split | Decoupled first, general tracker later | General tracker first (SONIC adapted); end-to-end | Decoupled works with what exists; the tracker needs far more motion data (the roadmap names the gated BONES-SEED set) and compute. |
+| Where the VLA runs | Desktop GPU over the network first, then Orin + TensorRT | On the Orin from the start; a Jetson AGX Thor (noted in the decision log for a second robot) | Desktop: fast, but adds Wi-Fi delay and jitter and needs the network. Orin: no network, but about 4× slower per call than a server-class GPU. Thor's TensorRT figure is 76.8 ms (35.6 ms with NVFP4). |
+| Arms | IK from VLA end-effector targets | Joint-space VLA outputs; exoskeleton teleop (HOMIE) | GR00T N1.7 uses relative end-effector actions, which suit IK; Isaac Lab Mimic also needs task-space actions. |
+| Classical WBC (QP) | Not used | Task-space QP with priorities | Explainable and training-free, but needs an accurate dynamic model and contact schedule; learned policies already exist for walking and stairs. |
+
+:::caution[Where sources and the repo disagree]
+- <b>GR00T N1.7's action head size.</b> The Isaac-GR00T README says the DiT went from 32 to 16 layers in N1.7; NVIDIA's Hugging Face announcement (April 2026, early access) describes a 32-layer DiT, and the repository's own deployment benchmark was run on a checkpoint it describes as having 32 DiT blocks (`nvidia/GR00T-N1.7-LIBERO`, `libero_10`).<sup class="cite">[\[9\]](#s9)</sup> The released checkpoints may differ; the playground does not depend on either number.
+- <b>"GR00T-Mimic".</b> The roadmap uses NVIDIA's marketing name; the tool in Isaac Lab is documented as Isaac Lab Mimic, and the GR00T N1 paper's simulated trajectories came from DexMimicGen.
+- <b>Orin numbers.</b> The Isaac-GR00T benchmark row is "Jetson Orin (MAXN)" without saying AGX Orin 64 GB, and was measured with two 256 × 256 cameras on a manipulation benchmark, without the 50 Hz controller running alongside: exactly what roadmap open item 10 says must still be measured.
+- <b>Retargeter for the later tracker.</b> The 2026-10-25 decision says GMR; the motion pipeline built since uses PyRoki ([page 17](../17-motion-tracking/)).
+:::
+
+## Decisions you can make here
+
+- Which control split to build first, and what interface the VLA talks through (end-effector targets and a walking command, or whole-body poses). Decoupled works now with the walking policy that exists; a general tracker gives squat-and-reach and whole-body teleoperation, but needs far more motion data and training compute.
+- Where to run the VLA, and how much latency and jitter the task can take. A desktop GPU answers about 4× faster but needs Wi-Fi and adds jitter; the Orin needs no network but takes about 150 ms per call.
+- Chunk length and execution horizon: long chunks hide latency but react late; short ones react quickly but need a fast model.
+- Which teleoperation device to record demonstrations with, since it fixes what the VLA can learn (arms only, or the whole body).
+
+<RawHtml html={widget3} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+## Further reading
+
+- [Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T): the model card, fine-tuning guide and the deployment benchmark the latency presets come from.
+- [GR00T-WholeBodyControl](https://github.com/NVlabs/GR00T-WholeBodyControl): decoupled WBC and SONIC, with code.
+- [GR00T N1 paper](https://arxiv.org/abs/2503.14734): the clearest description of the System 1 / System 2 design and the data pyramid.
+- [Real-Time Execution of Action Chunking Flow Policies](https://arxiv.org/abs/2506.07339): what goes wrong at chunk boundaries and how to fix it.
+- [HOMIE](https://arxiv.org/abs/2502.13013) and [TWIST](https://arxiv.org/abs/2505.02833): two different answers to "how do I teleoperate a whole humanoid?".
+- [Modern Robotics](https://hades.mech.northwestern.edu/index.php/Modern_Robotics), chapters 5–6: Jacobians and inverse kinematics from scratch.
+
+## Sources
+
+1. <span id="s1"></span>[K. M. Lynch, F. C. Park, Modern Robotics: Mechanics, Planning, and Control, Cambridge University Press, 2017](https://hades.mech.northwestern.edu/index.php/Modern_Robotics) <span class="used">— used for: Jacobian, pseudo-inverse and inverse kinematics.</span>
+2. <span id="s2"></span>[L. Sentis, O. Khatib, "Synthesis of Whole-Body Behaviors through Hierarchical Control of Behavioral Primitives", International Journal of Humanoid Robotics 2(4), 2005](https://doi.org/10.1142/S0219843605000594) <span class="used">— used for: prioritised whole-body control (constraints, tasks, posture).</span>
+3. <span id="s3"></span>[NVIDIA, GR00T-WholeBodyControl repository](https://github.com/NVlabs/GR00T-WholeBodyControl) <span class="used">— used for: decoupled WBC (RL lower body, IK upper body) used with GR00T N1.5/N1.6; SONIC checkpoints at 50 Hz, 80–200 ms reference look-ahead; licences.</span>
+4. <span id="s4"></span>[Q. Ben et al., "HOMIE: Humanoid Loco-Manipulation with Isomorphic Exoskeleton Cockpit", arXiv:2502.13013, 2025](https://arxiv.org/abs/2502.13013) <span class="used">— used for: RL legs with pedal, exoskeleton arms, upper-body pose curriculum and height command.</span>
+5. <span id="s5"></span>[T. He, Z. Luo et al., "OmniH2O: Universal and Dexterous Human-to-Humanoid Whole-Body Teleoperation and Learning", arXiv:2406.08858, 2024](https://arxiv.org/abs/2406.08858) <span class="used">— used for: whole-body teleoperation by a learned tracker with sparse inputs.</span>
+6. <span id="s6"></span>[Y. Ze et al., "TWIST: Teleoperated Whole-Body Imitation System", arXiv:2505.02833, 2025](https://arxiv.org/abs/2505.02833) <span class="used">— used for: a single whole-body controller trained with RL plus behaviour cloning on retargeted motion capture.</span>
+7. <span id="s7"></span>[Z. Luo, Y. Yuan, T. Wang, C. Li et al., "SONIC: Supersizing Motion Tracking for Natural Humanoid Whole-Body Control", arXiv:2511.07820, 2025](https://arxiv.org/abs/2511.07820) <span class="used">— used for: scale of a general tracker (42M parameters, 100M+ frames / \~700 h, 21k GPU hours), VR teleop and VLA interface.</span>
+8. <span id="s8"></span>[NVIDIA, "GR00T N1: An Open Foundation Model for Generalist Humanoid Robots", arXiv:2503.14734, 2025](https://arxiv.org/abs/2503.14734) <span class="used">— used for: System 1/System 2, Eagle-2 at 10 Hz, 16-action chunks, 4 denoising steps, 63.9 ms on L40, data pyramid, DexMimicGen and neural trajectories.</span>
+9. <span id="s9"></span>[NVIDIA, Isaac-GR00T repository (GR00T N1.7) and its deployment benchmark](https://github.com/NVIDIA/Isaac-GR00T) <span class="used">— used for: N1.7 backbone, flow-matching DiT, horizon 40, 132-D state/action, relative EEF actions, Jetson Orin/Thor support; latency table in `scripts/deployment/README.md` (median full policy call, batch 1, horizon 40, 4 denoising steps, two 256 × 256 cameras; H100 22.9, L40 35.0, Orin 149.0 TensorRT; Orin 357.9 eager; Thor 76.8 / 35.6 ms; LIBERO checkpoint with 32 DiT blocks).</span>
+10. <span id="s10"></span>[NVIDIA, "Isaac GR00T N1.7: Open Reasoning VLA Model for Humanoid Robots", Hugging Face blog, 17 April 2026](https://huggingface.co/blog/nvidia/gr00t-n1-7) <span class="used">— used for: 3B parameters, Cosmos-Reason2-2B System 2, 20,854 h of egocentric video, commercial licence.</span>
+11. <span id="s11"></span>[T. Z. Zhao, V. Kumar, S. Levine, C. Finn, "Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware" (ACT), arXiv:2304.13705, 2023](https://arxiv.org/abs/2304.13705) <span class="used">— used for: action chunking.</span>
+12. <span id="s12"></span>[K. Black, M. Y. Galliker, S. Levine, "Real-Time Execution of Action Chunking Flow Policies", arXiv:2506.07339, 2025](https://arxiv.org/abs/2506.07339) <span class="used">— used for: inference delay with chunks; freezing committed actions and in-painting.</span>
+13. <span id="s13"></span>[Isaac Lab documentation, "Teleoperation and Imitation Learning with Isaac Lab Mimic"](https://isaac-sim.github.io/IsaacLab/main/source/overview/imitation-learning/teleop_imitation.html) <span class="used">— used for: generating demonstrations from a few teleoperated ones; task-space action requirement.</span>
+14. <span id="s14"></span>[NVIDIA Cosmos (world foundation models)](https://github.com/nvidia-cosmos) <span class="used">— used for: Cosmos Transfer as a source of photoreal synthetic training video.</span>
+
+<PageScript code={script} />

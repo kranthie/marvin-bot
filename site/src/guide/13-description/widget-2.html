@@ -1,0 +1,36 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="stance">Marvin Bot today (stance)</button>
+<button data-preset="clap">Clap</button>
+<button data-preset="reach">Reach to the middle</button>
+<button data-preset="hang">Hanging arm, roll −10° (illegal)</button>
+<button data-preset="over">Arm high, roll −15° (illegal)</button>
+</div>
+<h4>Pose (degrees, robot.yaml convention)</h4>
+<div class="ctl"><label>Shoulder pitch <output id="o_pitch"></output></label>
+<input id="pitch" max="180" min="-60" step="1" type="range" value="0"/>
+<div class="hint">+ = arm forward and up (flexion). Range −60 to 180.</div></div>
+<div class="ctl"><label>Shoulder roll <output id="o_roll"></output></label>
+<input id="roll" max="120" min="-25" step="1" type="range" value="8"/>
+<div class="hint">+ = arm out to the side (abduction). Range −20 to 120, below 0 only with the arm forward.</div></div>
+<h4>View</h4>
+<div class="ctl"><label><span><input checked="" id="zoom" type="checkbox"/> Zoom on the coupled band (roll −25 to 40°)</span></label></div>
+<div class="ctl"><label><span><input checked="" id="showsim" type="checkbox"/> Show what a plain −20° limit allows</span></label></div>
+<button id="clamp">Apply the controller's clamp</button>
+<div class="hint" style="font-size:12px;color:var(--muted);margin-top:6px">The clamp raises the roll to the coupled bound, which is what the robot's controller has to do with any commanded pose.</div>
+</div>
+<div class="preview">
+<svg aria-label="Plot of shoulder roll against shoulder pitch with the allowed region, and a front view of the robot's arms in the selected pose" id="cl" role="img" viewbox="0 0 640 520"></svg>
+<div class="readouts">
+<div class="ro" id="r_lb"><div class="k">Lowest roll allowed here</div><div class="v">–</div></div>
+<div class="ro" id="r_st"><div class="k">This pose</div><div class="v">–</div></div>
+<div class="ro" id="r_gap"><div class="k">Gap between the hands*</div><div class="v">–</div></div>
+<div class="ro" id="r_reach"><div class="k">Hand forward / height</div><div class="v">–</div></div>
+</div>
+<p style="font-size:13px;color:var(--muted);margin:6px 0 0">How to read this picture: the top chart is a map of every possible shoulder pose (pitch across, roll up). The dot is your pose. Green is safe; red is the trap: a simulator with a single −20° limit would allow it, but the real arm would hit the chest. The stick figures below show the same pose from the front and the side.</p>
+<div class="legend"><span><i style="background:#1f4d3a"></i>allowed on the robot</span><span><i style="background:#5a2330"></i>allowed by a plain −20° limit, illegal on the robot</span><span><i style="background:#2a3340"></i>outside the joint ranges</span><span><i style="background:var(--accent2)"></i>the coupled bound</span></div>
+<p style="font-size:12px;color:var(--muted);margin:6px 0 0">*Both arms in the same (mirrored) pose, elbows straight, arm 0.569 m from shoulder axis to fingertips (upper arm 0.200 + forearm 0.188 + hand 0.181), shoulder pitch axes 0.158 m from the midline (<code>skeleton.yaml</code>). Negative gap: the hands would overlap. Front view drawn as seen facing the robot.</p>
+</div>
+</div>

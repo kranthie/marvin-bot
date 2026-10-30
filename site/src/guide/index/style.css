@@ -1,0 +1,32 @@
+/* The guide map: start boxes, key facts, the clickable robot and pipeline, the learning path */
+.guide-widget{--s1:#4fb3ff;--s2:#ffb454;--s3:#ff6b6b;--s4:#b48cff;--s5:#4cc38a;--s6:#e3d26f}
+.guide-widget .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:16px 0}
+.guide-widget .fact{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.guide-widget .fact .k{font-size:12px;color:var(--muted)} .guide-widget .fact .v{font:600 15px/1.3 var(--mono)}
+.guide-widget .mapwrap{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:16px;align-items:start}
+@media (max-width:860px){.guide-widget .mapwrap{grid-template-columns:1fr}}
+.guide-widget .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.guide-widget .hot{cursor:pointer}
+.guide-widget .hot:hover .shape, .guide-widget .hot:focus .shape, .guide-widget .hot.sel .shape{stroke:#fff;stroke-width:2.5}
+.guide-widget .hot:focus{outline:none}
+.guide-widget #info{min-height:120px}
+.guide-widget #info h3{margin:.2em 0}
+.guide-widget #info .links a{display:inline-block;margin:4px 8px 0 0;font-size:14px}
+.guide-widget .stages{display:grid;gap:14px}
+.guide-widget .stage{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:var(--radius);padding:12px 14px}
+.guide-widget .stage h3{margin:0 0 4px;font-size:1.05rem} .guide-widget .stage .why{color:var(--muted);font-size:14px;margin:0 0 10px}
+.guide-widget .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.guide-widget .cardlink{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;text-decoration:none;color:var(--text)}
+.guide-widget .cardlink:hover{border-color:var(--c)}
+.guide-widget .cardlink .n{font:600 12px var(--mono);color:var(--c)}
+.guide-widget .cardlink .t{font-weight:600;display:block;margin:2px 0}
+.guide-widget .cardlink .d{font-size:13px;color:var(--muted);line-height:1.45}
+.guide-widget .cardlink .pg{font-size:12px;color:var(--muted);margin-top:6px;display:block}
+.guide-widget .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:8px 0}
+.guide-widget .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.guide-widget .start{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:18px 0;align-items:stretch}
+.guide-widget .sbox{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;font-size:15px}
+.guide-widget .sn{flex:0 0 26px;height:26px;border-radius:50%;background:var(--accent);color:#0f1216;font-weight:700;display:grid;place-items:center;font-size:14px}
+.guide-widget .go{grid-column:1/-1;justify-self:start;background:var(--accent);color:#0f1216;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px}
+.guide-widget .go:hover{filter:brightness(1.1)}
+.guide-widget svg{width:100%;height:auto;display:block}

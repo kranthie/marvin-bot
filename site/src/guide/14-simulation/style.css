@@ -1,0 +1,7 @@
+/* Simulation: MuJoCo, Isaac Lab, Newton and PhysX: styles for this page's playground */
+p code,li code{overflow-wrap:anywhere}
+.preview .ro .v{font-size:15px}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin:4px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ctl .sub{font-size:12px;color:var(--muted);margin:2px 0 0}
+.mA{color:#4fb3ff}.mB{color:#ffb454}

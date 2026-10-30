@@ -37,7 +37,7 @@ python -m cad.build                          # part meshes and masses (git-ignor
 MUJOCO_GL=egl python tools/render_robot.py   # the MuJoCo render shown on the overview page
 ```
 
-Or open the [3-D model](/marvin-bot/guide/playgrounds/00-3d-model.html) in your browser: it is generated
+Or open the [3-D model](/marvin-bot/guide/00-3d-model/) in your browser: it is generated
 from the same files, and you can peel back the shells, follow the assembly order and play simple skills.
 
 ## 3. Find your way around

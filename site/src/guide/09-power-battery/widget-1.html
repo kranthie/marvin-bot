@@ -1,0 +1,47 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today: 13S3P</button>
+<button data-preset="s2p">13S2P (lighter)</button>
+<button data-preset="full42">13S3P charged to 4.2 V</button>
+<button data-preset="stairs">Stairs-heavy day</button>
+<button data-preset="maxn">Orin at MAXN, demo walking</button>
+</div>
+<h4>Pack</h4>
+<div class="ctl"><label>Cells in series (S) <output id="o_S"></output></label><input id="S" max="14" min="10" step="1" type="range" value="13"/><div class="hint">13S stays below the actuators' 60 V even when full (54.6 V).</div></div>
+<div class="ctl"><label>Cells in parallel (P) <output id="o_P"></output></label><input id="P" max="5" min="1" step="1" type="range" value="3"/><div class="hint">More in parallel = more energy and more current, but more mass.</div></div>
+<div class="ctl"><label>Cell capacity <output id="o_Q"></output></label><input id="Q" max="6" min="2.5" step="0.1" type="range" value="4.5"/><div class="hint">Molicel P45B: 4.5 Ah, 3.6 V, 45 A continuous, about 70 g.<sup class="cite"><a href="#s1">[1]</a></sup></div></div>
+<div class="ctl"><label>Cell nominal voltage <output id="o_Vc"></output></label><input id="Vc" max="3.8" min="3.2" step="0.05" type="range" value="3.6"/></div>
+<div class="ctl"><label>Daily charge voltage <output id="o_Vch"></output></label>
+<select id="Vch"><option value="4.1">4.1 V/cell (repo's daily rule)</option><option value="4.2">4.2 V/cell (full)</option></select>
+<div class="hint">4.1 V stores about 86% of the 4.2 V energy but roughly doubles cycle life (interpolated from Battery University).<sup class="cite"><a href="#s2">[2]</a></sup></div></div>
+<div class="ctl"><label>Stop at state of charge <output id="o_stop"></output></label><input id="stop" max="40" min="0" step="1" type="range" value="15"/><div class="hint"><code>docs/safety.md</code>: sit down and power off actuators at ~15%.</div></div>
+<h4>Day's mix (time share)</h4>
+<div class="ctl"><label>Standing <output id="o_mStand"></output></label><input id="mStand" max="100" min="0" step="5" type="range" value="30"/></div>
+<div class="ctl"><label>Walking (0.5 m/s) <output id="o_mWalk"></output></label><input id="mWalk" max="100" min="0" step="5" type="range" value="60"/></div>
+<div class="ctl"><label>Stairs <output id="o_mStair"></output></label><input id="mStair" max="100" min="0" step="5" type="range" value="10"/><div class="hint">Shares are normalised to 100%.</div></div>
+<h4>Load assumptions <span class="est">(estimates)</span></h4>
+<div class="ctl"><label>Leg torque RMS, walking <output id="fW_o"></output></label><input id="fW" max="90" min="10" step="5" type="range" value="45"/><div class="hint">% of continuous (rated) torque, all 12 leg motors. RMS (root mean square) is a kind of average that weights big torques more, which is what sets heating.</div></div>
+<div class="ctl"><label>Leg torque RMS, stairs <output id="fS_o"></output></label><input id="fS" max="110" min="30" step="5" type="range" value="75"/><div class="hint">Repo: a stair policy trained on the earlier 1.29 m body kept knees at 73-75% of rated RMS; no figure yet for the 1.44 m body.</div></div>
+<div class="ctl"><label>Orin power mode <output id="o_orin"></output></label>
+<select id="orin"><option value="15">15 W</option><option selected="" value="30">30 W (default)</option><option value="50">50 W</option><option value="60">MAXN (~60 W, no fixed budget)</option></select>
+<div class="hint">NVIDIA's AGX Orin 64 GB modes.<sup class="cite"><a href="#s4">[4]</a></sup></div></div>
+<div class="ctl"><label>Peak: torque as % of peak rating <output id="o_pk"></output></label><input id="pk" max="100" min="30" step="5" type="range" value="70"/><div class="hint">Stance leg (3 RS04 + 3 RS03) pushing at once, at 4 rad/s. Repo rule: peaks ≤ 70%.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Pack drawing, power per mode as stacked bars, and runtime against the one-hour requirement" id="rt" role="img" viewbox="0 0 640 400"></svg>
+<div class="readouts">
+<div class="ro" id="r_E"><div class="k">Pack energy (nominal)</div><div class="v">–</div></div>
+<div class="ro" id="r_U"><div class="k">Usable energy</div><div class="v">–</div></div>
+<div class="ro" id="r_P"><div class="k">Average power</div><div class="v">–</div></div>
+<div class="ro" id="r_T"><div class="k">Runtime (need ≥ 1 h)</div><div class="v">–</div></div>
+<div class="ro" id="r_M"><div class="k">Pack mass</div><div class="v">–</div></div>
+<div class="ro" id="r_I"><div class="k">Peak current / cell limit</div><div class="v">–</div></div>
+<div class="ro" id="r_Vr"><div class="k">Voltage full / daily / stop</div><div class="v">–</div></div>
+<div class="ro" id="r_C"><div class="k">Peak C-rate</div><div class="v">–</div></div>
+</div>
+<p class="small"><b>How to read this picture:</b> top, the pack drawn as cells (columns in series, rows in parallel); middle, one stacked bar per activity showing where its power goes, by colour; bottom, the runtime bar against the 1 h requirement line. A DC-DC converter changes the 48 V battery voltage down to what the electronics need.</p>
+<div class="legend"><span><i style="background:#4fb3ff"></i>computer (Orin + DC-DC)</span><span><i style="background:#9aa7b4"></i>other electronics</span><span><i style="background:#ff6b6b"></i>motor copper loss (heat)</span><span><i style="background:#4cc38a"></i>mechanical work</span><span><i style="background:#56606c"></i>wiring, converter, driver losses (10%)</span></div>
+</div>
+</div>

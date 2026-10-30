@@ -1,0 +1,38 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today</button>
+<button data-preset="evenings">Evenings only</button>
+<button data-preset="fulltime">Full-time</button>
+<button data-preset="pess">Pessimistic</button>
+<button data-preset="shipping">Long shipping</button>
+</div>
+<h4>Pace</h4>
+<div class="ctl"><label>Hours per week <output id="o_hours"></output></label>
+<input id="hours" max="40" min="3" step="1" type="range" value="10"/>
+<div class="hint">The plan's times are "part-time" and give no hours. This page assumes part-time means about 10 h a week; that number is this guide's assumption, not the repo's.</div></div>
+<div class="ctl"><label>Estimate</label>
+<select id="est"><option value="0">Optimistic (low end of each range)</option><option selected="" value="0.5">Middle of each range</option><option value="1">Pessimistic (high end)</option></select></div>
+<div class="ctl"><label>Parts lead time per hardware phase <output id="o_lead"></output></label>
+<input id="lead" max="8" min="0" step="1" type="range" value="0"/>
+<div class="hint">Waiting for an order to arrive (phases 2-5). Waiting does not shrink when you work more hours.</div></div>
+<div class="ctl"><label class="chk"><input checked="" id="show6" type="checkbox"/> Show phase 6 (ongoing; drawn as a 12-week window)</label></div>
+<h4>Phase</h4>
+<div class="ctl"><select id="sel"></select>
+<div class="hint">Or click a bar in the timeline.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Gantt-style timeline of the seven build phases with today's date marked" id="gantt" role="img" viewbox="0 0 700 330"></svg>
+<div class="readouts">
+<div class="ro" id="r_p2"><div class="k">Actuator bench starts</div><div class="v">–</div></div>
+<div class="ro" id="r_walk"><div class="k">Lower body walks (end of 4)</div><div class="v">–</div></div>
+<div class="ro" id="r_full"><div class="k">Whole robot (end of 5)</div><div class="v">–</div></div>
+<div class="ro" id="r_wk"><div class="k">Phases 1-5, weeks</div><div class="v">–</div></div>
+<div class="ro" id="r_spent"><div class="k">Spent by end of selected phase</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--good)"></i>done</span><span><i style="background:var(--warn)"></i>in progress</span><span><i style="background:var(--accent)"></i>not started</span><span><i style="background:#3a4757"></i>lead time</span><span><i style="background:var(--bad)"></i>today, 2026-10-29</span></div>
+<p class="hint" style="font-size:13px;color:var(--muted);margin:6px 0"><b>How to read this picture:</b> calendar dates run left to right, with today as the red line; one row per phase, coloured by status. A bar's length is how long the phase takes at your hours per week; the grey stretch before a hardware phase is waiting for parts to arrive. Click a bar to see that phase's work, pass check and spend below.</p>
+<div class="detail" id="detail"></div>
+</div>
+</div>

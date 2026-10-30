@@ -1,0 +1,19 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-hp="zero">Standing</button>
+<button data-hp="step">Step and turn</button>
+<button data-hp="sit">Sitting (90° pitch)</button>
+<button data-hp="splay">Wide stance</button>
+</div>
+<h4>Hip angles</h4>
+<div class="ctl"><label>Roll <output id="o_hr"></output></label><input id="hr" max="45" min="-30" step="1" type="range" value="0"/><div class="hint">+ = leg away from the midline (left leg shown).</div></div>
+<div class="ctl"><label>Pitch <output id="o_hpch"></output></label><input id="hpch" max="120" min="-30" step="1" type="range" value="0"/><div class="hint">+ = thigh forward.</div></div>
+<div class="ctl"><label>Yaw <output id="o_hy"></output></label><input id="hy" max="90" min="-90" step="1" type="range" value="0"/><div class="hint">+ = toes turn in.</div></div>
+</div>
+<div class="preview">
+<div class="three" id="three"></div>
+<div class="legend"><span><i style="background:#ff6b6b"></i>roll axis</span><span><i style="background:#4cc38a"></i>pitch axis</span><span><i style="background:#4fb3ff"></i>yaw axis</span><span><i style="background:var(--accent2)"></i>toe direction</span></div>
+</div>
+</div>

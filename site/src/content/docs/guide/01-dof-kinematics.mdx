@@ -1,0 +1,188 @@
+---
+title: "Degrees of freedom and kinematic chains"
+description: "A humanoid is a tree of hinges."
+sidebar:
+  label: "01 · Degrees of freedom and kinematic chains"
+  order: 2
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/01-dof-kinematics/widget-1.html?raw';
+import widget2 from '../../../guide/01-dof-kinematics/widget-2.html?raw';
+import widget3 from '../../../guide/01-dof-kinematics/widget-3.html?raw';
+import widget4 from '../../../guide/01-dof-kinematics/widget-4.html?raw';
+import script from '../../../guide/01-dof-kinematics/script.js?raw';
+import '../../../guide/01-dof-kinematics/style.css';
+
+<div class="guide-meta">
+
+**Stage 1 · Foundations** · \~30 min · Before this: nothing (start here, or see the [map](../)) · Maths: angles, sine and cosine · numbers from the repository as of 2026-10-29
+
+</div>
+
+A humanoid is a tree of hinges. Before you can reason about balance, torque or learning, you need to know what each hinge can do, how hinges add up along a leg, and why Marvin Bot has exactly 27 of them in the order it does.
+
+:::note[You will learn]
+- What a <a class="g" href="../glossary/#degree-of-freedom">degree of freedom</a> is, and how revolute joints chain into a leg.
+- How to compute where a foot ends up from the joint angles (<a class="g" href="../glossary/#forward-kinematics">forward kinematics</a>), first in 2-D, then in 3-D.
+- Why each leg needs six joints, what joint ranges cost and buy, and why Marvin Bot's hip goes roll, then pitch, then yaw.
+:::
+
+## The idea in one picture
+
+Hold your arm out and bend only the elbow: your hand moves along an arc. One number, the elbow angle, says where it is. That number is one <b>degree of freedom (DOF)</b>: one independent quantity you need to describe a configuration.<sup class="cite">[\[1\]](#s1)</sup> Each of Marvin Bot's motors turns one hinge, a <a class="g" href="../glossary/#revolute-joint">revolute joint</a>, so each motor adds one DOF.
+
+Three words for turning come up on every page of this guide. Use your own head: nodding "yes" is **pitch** (about a side-to-side axis), shaking "no" is **yaw** (about a vertical axis), and tipping an ear towards a shoulder is **roll** (about a front-to-back axis). A hip pitch joint swings the thigh forwards and back; a hip roll joint swings it out to the side; a hip yaw joint turns the leg about its own length, so the toes point in or out.
+
+A leg is hinges in series: pelvis, hip, thigh, knee, shin, ankle, foot. That is a <a class="g" href="../glossary/#kinematic-chain">serial kinematic chain</a>: each link is carried by the one before it, so turning the hip moves everything below it. The playground below is a side view of Marvin Bot's leg with its real lengths and its real joint limits.
+
+<b>Why this comes first.</b> Every later page leans on it: balance (page 02) needs to know where the feet and body are, motor sizing (page 04) needs to know which joint carries which load, and the learned controller (page 16) outputs one target angle per joint, 27 of them.
+
+## Playground A: a planar leg
+
+<b>Start here:</b> press **Marvin Bot today**, then drag the three sliders one at a time and watch which parts of the leg move. Side view (the <a class="g" href="../glossary/#sagittal-plane">sagittal plane</a>, the vertical front-to-back plane you see when looking at someone from the side): x forward, z up, the hip pitch axis at the origin. Thigh 0.325 m, shin 0.315 m, ankle axis 0.060 m above the sole, foot 0.24 m long with the ankle 0.09 m from the heel (`description/robot.yaml`, `description/skeleton.yaml`).
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Press **Marvin Bot today**. The readout should say the hip is 0.694 m above the sole, the pelvis height in `robot.yaml`. Check it by hand: 0.325·cos 6° + 0.315·cos 9° + 0.060 = 0.694 m.
+2. Tick **Keep the foot flat** and push the hip to 60°. Where does the ankle run out of range? The grey part of the cloud is every place the ankle could reach but the foot could not lie flat there.
+3. Untick **Keep the foot flat**, set the knee to 0° and sweep the hip. The ankle draws a circle of radius 0.64 m: one DOF, one curve. Now free the knee: two DOF fill an area. The third joint (ankle) adds no new position, only the foot's angle.
+:::
+
+## From first principles
+
+### Degrees of freedom
+
+A rigid body floating in space has 6 DOF: three to say where it is (x, y, z) and three to say which way it faces (roll, pitch, yaw). A revolute joint removes 5 of the 6 relative freedoms between two links and leaves 1, the rotation about its axis. So a chain of n revolute joints from a fixed base has n DOF.<sup class="cite">[\[1\]](#s1)</sup> Counting joints this way is the simplest case of a general counting rule (Grübler's formula); it only becomes subtle for closed loops, such as Marvin Bot's ankle, where two motors and two push rods together still give the foot 2 DOF (see [06 The parallel-linkage ankle](../06-ankle-linkage/)).
+
+A walking robot is not bolted down. Its pelvis is a <a class="g" href="../glossary/#floating-base">floating base</a> with 6 DOF of its own that no motor drives directly: the robot moves its pelvis only by pushing on the ground. That is why legged robots are called <a class="g" href="../glossary/#underactuation">underactuated</a>: there are more DOF (27 + 6 = 33 for Marvin Bot's body) than motors (27).<sup class="cite">[\[2\]](#s2)</sup>
+
+### Forward kinematics in 2-D
+
+Forward kinematics answers: given the joint angles, where is the foot? The equations below are just the playground's picture written as sums of sines and cosines; you can skip them and come back. In the side view, measure each link's angle from straight down, positive when its lower end swings forward. With hip pitch q<sub>h</sub>, knee q<sub>k</sub> (bend positive) and ankle q<sub>a</sub> (toes up positive):
+
+<div class="eq">
+
+φ<sub>thigh</sub> = q<sub>h</sub> φ<sub>shin</sub> = q<sub>h</sub> − q<sub>k</sub> φ<sub>foot</sub> = q<sub>h</sub> − q<sub>k</sub> + q<sub>a</sub><br /> knee = hip + L<sub>1</sub>·(sin φ<sub>thigh</sub>, −cos φ<sub>thigh</sub>)<br /> ankle = knee + L<sub>2</sub>·(sin φ<sub>shin</sub>, −cos φ<sub>shin</sub>)<br /> sole point = ankle + R(φ<sub>foot</sub>)·(0, −h<sub>a</sub>)
+
+</div>
+
+φ (phi) is each link's tilt from vertical, so (sin φ, −cos φ) is a step of length 1 along that link: forward by sin φ, down by cos φ. L<sub>1</sub> = 0.325 m (thigh), L<sub>2</sub> = 0.315 m (shin), h<sub>a</sub> = 0.060 m (ankle axis to sole), R(φ) turns a point by φ in the plane, and φ<sub>foot</sub> is the foot's pitch (toe up positive). Angles add along the chain because each joint turns everything after it. The foot is flat when φ<sub>foot</sub> = 0, so with an upright pelvis a flat foot needs q<sub>a</sub> = q<sub>k</sub> − q<sub>h</sub>. At the stance (6°, 15°, 9°) that holds exactly: 15 − 6 = 9.
+
+### Forward kinematics in 3-D
+
+In 3-D the idea is the same, done one joint at a time from the pelvis down: turn by the first joint's angle, step along to the next joint, turn by its angle, step again, and so on to the sole. Order matters, because turns about different axes do not commute: try it with a book. Tip it forwards 90° then turn it 90° to the left, and compare with doing the two turns the other way round; it ends up facing a different way. The same is true of a leg: rolling then pitching leaves the foot somewhere different from pitching then rolling.
+
+<details>
+<summary>Go deeper: the matrix form</summary>
+
+Each joint's turn is written as a 3 × 3 rotation matrix (or a 4 × 4 transform that also carries the offset to the next joint). The foot's pose is the product of all the transforms from the pelvis down: T<sub>foot</sub> = T<sub>1</sub>(q<sub>1</sub>) T<sub>2</sub>(q<sub>2</sub>) … T<sub>6</sub>(q<sub>6</sub>) T<sub>sole</sub>, where q<sub>1</sub> … q<sub>6</sub> are the six joint angles. Matrix products, like turns, depend on order. Robotics texts write the same product either with Denavit–Hartenberg parameters<sup class="cite">[\[4\]](#s4)</sup> or as a product of matrix exponentials; Modern Robotics uses the latter.<sup class="cite">[\[1\]](#s1)</sup>
+
+</details>
+
+Marvin Bot's description lists each joint's axis and offset (`description/skeleton.yaml`), and a generator script turns them into a <a class="g" href="../glossary/#urdf">URDF</a> (Unified Robot Description Format) file, the standard file simulators read, which holds exactly this chain (page 13).
+
+### Why six joints per leg
+
+A foot on the ground has a full 3-D pose: 3 positions and 3 angles. To place a foot anywhere within reach, at any heading and tilt, the leg needs at least 6 independent DOF between pelvis and sole. Marvin Bot uses 3 at the hip (roll, pitch, yaw), 1 at the knee and 2 at the ankle (pitch, roll). With fewer, some foot poses become impossible: drop the hip yaw and the robot can only turn by scuffing; drop the ankle roll and the foot cannot sit flat on a sideways slope. <a class="g" href="../glossary/#inverse-kinematics">Inverse kinematics</a> (from a desired foot pose back to joint angles) has a finite set of answers when there are exactly 6 joints, and none outside the <a class="g" href="../glossary/#workspace">workspace</a> or the joint ranges.
+
+### Joint ranges
+
+A real joint stops where parts collide or a cable runs out. Ranges are design decisions: Marvin Bot's knee stops at 130° because the upper ankle motor then meets the thigh shell, hip extension stops at −30° because the thigh yoke meets the hip roll motor, and the ankle got 40° of dorsiflexion (toes up) because a stair check (a calculation of the robot standing still on a step) could not climb 17 cm with 35° (`docs/decisions.md`, 2026-10-26). In the playground, the grey part of the cloud is the price of the ankle's ±40°: places the ankle reaches but where the foot cannot lie flat.
+
+### Singularities and the order of the hip joints
+
+Three hip joints whose axes meet near one point act like a ball joint built from three hinges: a gimbal (like the rings that hold a ship's compass level). When two of the three axes line up, the gimbal loses a direction it can turn in. That is a <a class="g" href="../glossary/#singularity">singularity</a> (gimbal lock): one motor's rotation duplicates another's, and small turns in the lost direction need huge joint speeds.<sup class="cite">[\[1\]](#s1)</sup> Which pose is singular depends on the order of the axes:
+
+- **Roll, pitch, yaw** (Marvin Bot): singular at hip pitch ±90°, when the yaw axis along the thigh points forward, parallel to the roll axis. Reached when sitting or on a very high step.
+- **Pitch, roll, yaw**: singular at hip roll ±90°, far outside any useful range.
+- **Yaw, roll, pitch**: singular at hip roll ±90°, also far outside the range.
+
+The singularity analysis above is ours, derived from the axis order; the repo chose the order for mechanical reasons (next section). Playground C shows it.
+
+## Playground B: Marvin Bot's 27 joints
+
+The tree lists every joint from the pelvis outwards: each joint is carried by the one above it. Click a joint to see its axis, range, <a class="g" href="../glossary/#actuator">actuator</a> (motor) and bus (the shared data cable its motor talks over; page 10). Shift-click (or use the lock button) to lock a joint, as if it were welded solid, and watch the DOF count, and whether each foot can still be placed at any position and any angle within reach ("posed in 6-D": 3 positions plus 3 angles).
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+Click **hip\_yaw** under the left leg, then **Lock / unlock selected**: the count drops to 26 and the left foot can no longer be posed in all 6 directions. Lock both wrist yaws: the legs still pose fine, but each hand loses a way to turn. Press **Fixed-base arm view** to see how a bolted-down robot would be counted.
+:::
+
+## Playground C: the same three angles, three hip orders
+
+Three hips side by side, each given the same roll, pitch and yaw angles, but stacked in a different order from the pelvis. The thick line is the straight leg (hip to sole), the short orange line is the toe direction, and the coloured lines are the three joint axes (red roll, green pitch, blue yaw) where they sit in this pose. "Axis spread" says how well the three axes still point in three different directions: 1 when they are all at right angles to each other (good), 0 when two have lined up (gimbal lock, bad). For the mathematically minded it is |det\[a<sub>1</sub> a<sub>2</sub> a<sub>3</sub>\]|, the volume of the box the three unit axes span.
+
+<div class="hint">
+
+How to read this picture: each panel is a 3-D sketch seen from the front-left, pelvis at the top, the grey square is the floor. Compare where the orange toe line points in the three panels.
+
+</div>
+
+<RawHtml html={widget3} />
+
+:::note[Try this]
+Press **Sitting**: the roll-first hip's axis spread falls to 0 (red and blue axes parallel), the others stay at 1. Then add 20° of yaw and compare where each toe points: same numbers, different feet, because rotations do not commute.
+:::
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- 27 powered joints (`description/robot.yaml`): 6 per leg, waist yaw, neck yaw and pitch, 6 per arm. Plus two bought 8-servo four-finger hands (AmazingHand kits), counted separately.
+- Per leg: hip pitch −30…120°, hip roll −30…45°, hip yaw ±90°, knee 0…130°, ankle pitch ±40°, ankle roll ±20°. The ankle's two joints are driven together by two RS03 motors through push rods.<sup class="cite">[\[3\]](#s3)</sup>
+- Hip order from the pelvis: roll, then pitch, then yaw (`description/skeleton.yaml`, decision "roll-first hip", 2026-10-26).
+- Leg geometry: hip axis to sole 0.700 m, thigh 0.325 m, shin 0.315 m, ankle 0.060 m, foot 0.240 × 0.110 m, hips 0.200 m apart. Default stance hip 6°, knee 15°, ankle 9°: pelvis 0.694 m.
+- One shoulder limit depends on another joint: shoulder roll may go below 0° only with the arm swung forward (a piecewise-linear "coupled limit" in `robot.yaml`).
+:::
+
+<b>Why roll first.</b> The hip used to be pitch, roll, yaw. Then the hip roll motor (an RS04, 1.42 kg) rode on the leg behind the hip and swung with every step; it also stopped the knee at 125°. With roll first, both roll motors are fixed in the pelvis behind the hips, so 1.4 kg per leg stops swinging, and the knee now reaches 130° (`docs/decisions.md`, 2026-10-26). Less moving mass in a leg means less torque to swing it and a lighter-feeling leg for the <a class="g" href="../glossary/#policy">policy</a> (the learned controller that walks the robot, page 16).
+
+<b>Why not yaw first.</b> A yaw-roll-pitch stack with the yaw motor in the pelvis was ruled out because it needs about 60 mm more height above the hips, which at the time pushed past the height limit or below the leg length the stairs need (same entry).
+
+## Trade-offs and alternatives
+
+| Hip order (from pelvis) | What stays still | Singular at | Notes |
+|---|---|---|---|
+| Roll, pitch, yaw (Marvin Bot) | Both roll motors in the pelvis | Hip pitch ±90° (sitting) | 1.4 kg less swinging per leg; knee to 130°; the singularity is inside the hip pitch range, so sitting poses lose one way to turn the thigh |
+| Pitch, roll, yaw (Marvin Bot until 2026-10-26) | Pitch motors | Hip roll ±90° (unused) | Deep flexion is clean; the roll motor swings with the leg |
+| Yaw, roll, pitch | Yaw motors in the pelvis | Hip roll ±90° (unused) | Common in open humanoids; \~60 mm more stack height above the hip |
+
+Other DOF choices the repo records: a knee motor near the hip with a linkage (lower leg inertia, more parts; deferred), serial ankle pitch and roll motors (heavier shin; rejected in favour of the parallel linkage), and the arm's wrist pitch on a small servo to carry the bought hands (`docs/decisions.md`).
+
+:::caution[Where sources and the repo disagree]
+No disagreement with the sources on the kinematics. Two notes: the repo's decision text does not mention the roll-first hip's singularity at 90° hip pitch (it is a mechanical decision); and older entries in `docs/decisions.md` still describe pitch-roll-yaw and 0.65–0.69 m legs, superseded by later entries.
+:::
+
+## Decisions you can make here
+
+- Joint ranges: each extra degree of range may need a different bracket, and each lost degree may make a task (stairs, sitting, getting up) impossible. Check the green and grey regions before cutting a range.
+- Hip order: roll-first keeps mass off the leg but has a singularity at 90° hip pitch; check that tasks like sitting or climbing very high steps do not need to turn the thigh about its long axis at that pose.
+- DOF count: removing a joint saves an actuator (\~$140–255 and 0.3–1.4 kg) but removes a direction of motion; the 6-per-leg minimum is not negotiable for full foot placement.
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+<b>Where this leads.</b> You now know where the feet are for given joint angles. Page 02 asks the next question: with the feet there, where must the body's weight be so the robot does not fall over? Page 06 returns to the ankle's two-motor linkage.
+
+## Further reading
+
+- [Lynch &amp; Park, Modern Robotics](https://hades.mech.northwestern.edu/index.php/Modern_Robotics): chapters 2 (configuration space and DOF), 4 (forward kinematics) and 5 (Jacobians and singularities); free preprint and videos.
+- [Tedrake, Underactuated Robotics, "Humanoid robots"](https://underactuated.mit.edu/humanoids.html): why a floating base makes walking robots underactuated.
+- `description/skeleton.yaml` in the repo: every joint's parent, offset and axis, in a form you can read.
+
+## Sources
+
+1. <span id="s1"></span>[K. M. Lynch and F. C. Park, Modern Robotics: Mechanics, Planning, and Control, Cambridge University Press, 2017 (preprint)](https://hades.mech.northwestern.edu/images/2/25/MR-v2.pdf) <span class="used">— used for: DOF definition and Grübler's formula (ch. 2), forward kinematics as a product of transforms (ch. 4), singularities (ch. 5).</span>
+2. <span id="s2"></span>[R. Tedrake, Underactuated Robotics, MIT 6.832 course notes, chapter "Humanoid robots"](https://underactuated.mit.edu/humanoids.html) <span class="used">— used for: floating base and why legged robots are underactuated.</span>
+3. <span id="s3"></span>[RobStride, Product\_Information (actuator manuals)](https://github.com/RobStride/Product_Information) <span class="used">— used for: actuator models named in the joint tree.</span>
+4. <span id="s4"></span>[J. Denavit and R. S. Hartenberg, "A kinematic notation for lower-pair mechanisms based on matrices", J. Applied Mechanics, 1955](https://doi.org/10.1115/1.4011045) <span class="used">— used for: the classic joint-parameter convention for serial chains.</span>
+
+<PageScript code={script} />

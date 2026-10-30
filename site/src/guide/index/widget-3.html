@@ -1,0 +1,53 @@
+<div class="mapwrap">
+<div class="panel">
+<svg aria-label="Front view of Marvin Bot: click a body region" id="robot" role="img" viewbox="0 0 300 560">
+<!-- simple front-view figure; proportions follow description/robot.yaml (1 px ≈ 2.6 mm) -->
+<g class="hot" data-k="head" tabindex="0"><rect class="shape" fill="#2b3644" height="66" rx="26" stroke="#4fb3ff" width="56" x="122" y="8"></rect><rect fill="#0b0e12" height="14" rx="6" width="44" x="128" y="30"></rect><rect fill="#cfd8e3" height="6" rx="3" width="32" x="134" y="34"></rect></g>
+<g class="hot" data-k="torso" tabindex="0"><path class="shape" d="M88 92 L212 92 L204 196 L182 228 L118 228 L96 196 Z" fill="#2b3644" stroke="#ff6b6b"></path><rect fill="#1b2a3a" height="34" rx="4" width="56" x="122" y="104"></rect><text fill="#9aa7b4" font-size="10" text-anchor="middle" x="150" y="126">battery</text><rect fill="#163020" height="44" rx="4" width="48" x="126" y="146"></rect><text fill="#9aa7b4" font-size="10" text-anchor="middle" x="150" y="172">Orin</text></g>
+<g class="hot" data-k="waist" tabindex="0"><rect class="shape" fill="#334050" height="18" rx="5" stroke="#ffb454" width="52" x="124" y="228"></rect></g>
+<g class="hot" data-k="pelvis" tabindex="0"><rect class="shape" fill="#2b3644" height="34" rx="8" stroke="#ffb454" width="92" x="104" y="246"></rect><circle cx="150" cy="262" fill="#4fb3ff" r="5"></circle><text fill="#9aa7b4" font-size="9" text-anchor="middle" x="150" y="276">IMU</text></g>
+<g class="hot" data-k="arms" tabindex="0">
+<circle class="shape" cx="78" cy="104" fill="#334050" r="17" stroke="#ffb454"></circle><circle class="shape" cx="222" cy="104" fill="#334050" r="17" stroke="#ffb454"></circle>
+<rect class="shape" fill="#2b3644" height="80" rx="9" stroke="#ffb454" width="22" x="66" y="120"></rect><rect class="shape" fill="#2b3644" height="80" rx="9" stroke="#ffb454" width="22" x="212" y="120"></rect>
+<rect class="shape" fill="#2b3644" height="72" rx="8" stroke="#ffb454" width="20" x="66" y="204"></rect><rect class="shape" fill="#2b3644" height="72" rx="8" stroke="#ffb454" width="20" x="214" y="204"></rect>
+</g>
+<g class="hot" data-k="hands" tabindex="0"><path class="shape" d="M62 280 h26 v30 l-4 36 h-18 l-4 -36 z" fill="#3a4656" stroke="#4cc38a"></path><path class="shape" d="M212 280 h26 v30 l-4 36 h-18 l-4 -36 z" fill="#3a4656" stroke="#4cc38a"></path></g>
+<g class="hot" data-k="hips" tabindex="0"><circle class="shape" cx="122" cy="292" fill="#334050" r="19" stroke="#ffb454"></circle><circle class="shape" cx="178" cy="292" fill="#334050" r="19" stroke="#ffb454"></circle></g>
+<g class="hot" data-k="legs" tabindex="0">
+<rect class="shape" fill="#2b3644" height="104" rx="10" stroke="#ffb454" width="28" x="108" y="312"></rect><rect class="shape" fill="#2b3644" height="104" rx="10" stroke="#ffb454" width="28" x="164" y="312"></rect>
+<circle class="shape" cx="122" cy="420" fill="#334050" r="17" stroke="#ffb454"></circle><circle class="shape" cx="178" cy="420" fill="#334050" r="17" stroke="#ffb454"></circle>
+<rect class="shape" fill="#2b3644" height="92" rx="9" stroke="#ffb454" width="24" x="110" y="436"></rect><rect class="shape" fill="#2b3644" height="92" rx="9" stroke="#ffb454" width="24" x="166" y="436"></rect>
+</g>
+<g class="hot" data-k="ankles" tabindex="0"><circle class="shape" cx="122" cy="460" fill="#3a4656" r="11" stroke="#ffb454"></circle><circle class="shape" cx="178" cy="460" fill="#3a4656" r="11" stroke="#ffb454"></circle><circle class="shape" cx="122" cy="506" fill="#3a4656" r="11" stroke="#ffb454"></circle><circle class="shape" cx="178" cy="506" fill="#3a4656" r="11" stroke="#ffb454"></circle></g>
+<g class="hot" data-k="feet" tabindex="0"><rect class="shape" fill="#334050" height="18" rx="7" stroke="#4fb3ff" width="44" x="100" y="530"></rect><rect class="shape" fill="#334050" height="18" rx="7" stroke="#4fb3ff" width="44" x="156" y="530"></rect></g>
+<line stroke="#2a3340" x1="20" x2="280" y1="554" y2="554"></line>
+</svg>
+</div>
+<div class="panel">
+<svg aria-label="Pipeline from the robot description to the real robot: click a box" id="pipe" role="img" viewbox="0 0 700 430">
+<defs><marker id="ar" markerheight="7" markerwidth="7" orient="auto" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0 0 L10 5 L0 10 z" fill="#9aa7b4"></path></marker></defs>
+<g fill="#e6edf3" font-size="13" text-anchor="middle">
+<text fill="#9aa7b4" font-size="12" x="350" y="18">DESIGN → MODEL → SIMULATE &amp; LEARN → BUILD &amp; RUN</text>
+<g class="hot" data-k="yaml" tabindex="0"><rect class="shape" fill="#211d33" height="56" rx="8" stroke="#b48cff" width="150" x="20" y="40"></rect><text x="95" y="64">robot.yaml</text><text fill="#9aa7b4" font-size="11" x="95" y="82">single source of truth</text></g>
+<g class="hot" data-k="cad" tabindex="0"><rect class="shape" fill="#2a2314" height="56" rx="8" stroke="#ffb454" width="150" x="20" y="130"></rect><text x="95" y="154">code-CAD</text><text fill="#9aa7b4" font-size="11" x="95" y="172">parts, masses, checks</text></g>
+<g class="hot" data-k="bom" tabindex="0"><rect class="shape" fill="#2a2814" height="56" rx="8" stroke="#e3d26f" width="150" x="20" y="220"></rect><text x="95" y="244">BOM</text><text fill="#9aa7b4" font-size="11" x="95" y="262">bom.xlsx · ≈$17.5k</text></g>
+<g class="hot" data-k="urdf" tabindex="0"><rect class="shape" fill="#211d33" height="56" rx="8" stroke="#b48cff" width="150" x="220" y="85"></rect><text x="295" y="109">URDF · MJCF · USD</text><text fill="#9aa7b4" font-size="11" x="295" y="127">generated models</text></g>
+<g class="hot" data-k="isaac" tabindex="0"><rect class="shape" fill="#14262a" height="56" rx="8" stroke="#4cc38a" width="130" x="420" y="40"></rect><text x="485" y="64">Isaac Lab</text><text fill="#9aa7b4" font-size="11" x="485" y="82">PPO walking, stairs</text></g>
+<g class="hot" data-k="motion" tabindex="0"><rect class="shape" fill="#14262a" height="56" rx="8" stroke="#4cc38a" width="130" x="420" y="130"></rect><text x="485" y="154">Motion tracking</text><text fill="#9aa7b4" font-size="11" x="485" y="172">human motion → skills</text></g>
+<g class="hot" data-k="mujoco" tabindex="0"><rect class="shape" fill="#211d33" height="56" rx="8" stroke="#b48cff" width="105" x="580" y="85"></rect><text x="632" y="109">MuJoCo</text><text fill="#9aa7b4" font-size="11" x="632" y="127">cross-check</text></g>
+<g class="hot" data-k="vla" tabindex="0"><rect class="shape" fill="#14262a" height="56" rx="8" stroke="#4cc38a" width="130" x="420" y="220"></rect><text x="485" y="244">GR00T VLA</text><text fill="#9aa7b4" font-size="11" x="485" y="262">manipulation (planned)</text></g>
+<g class="hot" data-k="model3d" tabindex="0"><rect class="shape" fill="#1c232c" height="56" rx="8" stroke="#e6edf3" width="150" x="220" y="190"></rect><text x="295" y="214">3-D model</text><text fill="#9aa7b4" font-size="11" x="295" y="232">layers · assembly · skills</text></g>
+<g class="hot" data-k="bench" tabindex="0"><rect class="shape" fill="#2a2814" height="56" rx="8" stroke="#e3d26f" width="150" x="220" y="320"></rect><text x="295" y="344">Bench &amp; sys-ID</text><text fill="#9aa7b4" font-size="11" x="295" y="362">phase 2: measure motors</text></g>
+<g class="hot" data-k="robot" tabindex="0"><rect class="shape" fill="#2a1a1a" height="56" rx="8" stroke="#ff6b6b" width="265" x="420" y="320"></rect><text x="552" y="344">The real robot</text><text fill="#9aa7b4" font-size="11" x="552" y="362">Orin · CAN · battery · e-stop (phases 3–6)</text></g>
+</g>
+<g fill="none" marker-end="url(#ar)" stroke="#9aa7b4" stroke-width="1.5">
+<path d="M95 96 V128"></path><path d="M295 141 V188"></path><path d="M95 186 V218"></path><path d="M170 68 H195 V100 H218"></path><path d="M170 158 H195 V126 H218"></path>
+<path d="M370 105 H395 V68 H418"></path><path d="M370 121 H395 V158 H418"></path><path d="M550 68 H565 V100 H578"></path><path d="M550 158 H565 V126 H578"></path>
+<path d="M632 141 V318"></path><path d="M485 276 V318"></path><path d="M370 348 H418"></path><path d="M95 276 V348 H218"></path>
+<path d="M295 320 V302 H405 V176 H418" stroke-dasharray="4 4"></path>
+</g>
+<text fill="#9aa7b4" font-size="11" text-anchor="middle" x="300" y="294">measured models feed back</text>
+</svg>
+<div aria-live="polite" class="panel" id="info" style="margin-top:12px"><h3>Pick a part</h3><p style="color:var(--muted);margin:0">Click a body region or a pipeline box to see what it is and where to learn about it.</p></div>
+</div>
+</div>

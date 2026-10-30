@@ -1,0 +1,28 @@
+<div class="pg">
+<div class="controls">
+<h4>Highlight a path</h4>
+<div class="presets" id="paths">
+<button class="on" data-path="tick">One control tick</button>
+<button data-path="vision">Camera to VLA</button>
+<button data-path="power">Power</button>
+<button data-path="train">Training to robot</button>
+<button data-path="none">None</button>
+</div>
+<div class="ctl"><div class="hint" id="pathhint"></div></div>
+<h4>Rates in the stack</h4>
+<div class="tablewrap"><table>
+<tr><th>Loop</th><th class="num">Rate</th><th class="num">Period</th></tr>
+<tr><td>VLA (GR00T N1.7)</td><td class="num">~1–4 Hz</td><td class="num">250 ms+</td></tr>
+<tr><td>Policy</td><td class="num">50 Hz</td><td class="num">20 ms</td></tr>
+<tr><td>Leg CAN commands</td><td class="num">500 Hz</td><td class="num">2 ms</td></tr>
+<tr><td>Arm CAN commands</td><td class="num">250 Hz</td><td class="num">4 ms</td></tr>
+<tr><td>IMU</td><td class="num">≥500 Hz</td><td class="num">≤2 ms</td></tr>
+<tr><td>Driver PD, current</td><td class="num">kHz</td><td class="num">&lt;1 ms</td></tr>
+</table></div>
+<div class="hint" style="font-size:12px;color:var(--muted)">From <code>docs/requirements.md</code> R42–R43 and <code>description/robot.yaml</code>. The driver loop rate is not in the RobStride manuals; it is a bench-test item.</div>
+</div>
+<div class="preview">
+<div class="diagwrap"><svg aria-label="Layered architecture diagram of Marvin Bot, from training desktop at the top to the mechanical frame at the bottom" id="arch" role="img" viewbox="0 0 900 650"></svg></div>
+<div class="info" id="info"></div>
+</div>
+</div>

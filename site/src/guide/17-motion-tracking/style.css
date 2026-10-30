@@ -1,0 +1,21 @@
+/* Motion tracking: Kimodo, retargeting and BeyondMimic: styles for this page's playground */
+.pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:14px 0}
+.pipe .st{flex:1 1 150px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px}
+.pipe .st b{display:block;color:var(--accent)}
+.pipe .ar{align-self:center;color:var(--muted)}
+.seg{display:flex;gap:0;margin:4px 0 8px}
+.seg button{border-radius:0;flex:1}
+.seg button:first-child{border-radius:6px 0 0 6px}.seg button:last-child{border-radius:0 6px 6px 0}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:6px 0}
+.chk input{margin-top:4px}
+.viol{font:13px/1.5 var(--mono);color:var(--bad);margin-top:8px;min-height:1.5em}
+.viol.okv{color:var(--good)}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin:4px 0;max-width:100%;overflow-x:auto}
+@media (max-width:620px){.pipe .ar{display:none}}
+.termtbl input[type=range]{width:100%;accent-color:var(--accent)}
+.termtbl td{vertical-align:middle}
+th.sort{cursor:pointer;user-select:none} th.sort:hover{color:var(--text)}
+.bar{height:10px;border-radius:3px;background:var(--accent);display:inline-block;vertical-align:middle}
+.bar.h{background:var(--violet)}
+.transport{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
+.transport input{flex:1;accent-color:var(--accent)}

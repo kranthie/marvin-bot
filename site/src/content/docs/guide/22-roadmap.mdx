@@ -1,0 +1,188 @@
+---
+title: "Build phases and roadmap"
+description: "Marvin Bot is built in seven phases, from an empty repository to a robot that climbs real stairs using its camera."
+sidebar:
+  label: "22 · Build phases and roadmap"
+  order: 23
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/22-roadmap/widget-1.html?raw';
+import widget2 from '../../../guide/22-roadmap/widget-2.html?raw';
+import widget3 from '../../../guide/22-roadmap/widget-3.html?raw';
+import widget4 from '../../../guide/22-roadmap/widget-4.html?raw';
+import script from '../../../guide/22-roadmap/script.js?raw';
+import '../../../guide/22-roadmap/style.css';
+
+<div class="guide-meta">
+
+**Stage 6 · Toward hardware** · \~25 min · Before this: [21 Bill of materials and costs](../21-bom-costs/) · [20 Sim-to-real](../20-sim-to-real/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Marvin Bot is built in seven phases, from an empty repository to a robot that climbs real stairs using its camera. Each phase ends with a pass check that decides whether to go on, and parts are bought only when the next phase needs them, so a wrong assumption costs one phase, not the whole budget. This page shows the phases on a timeline, what each one costs and proves, and which risks it puts to rest.
+
+:::note[You will learn]
+- The four principles behind the plan: simulation first, test the riskiest part with the smallest build, buy in stages, measure and then update the model.
+- The seven phases (0-6): their work, <a class="g" href="../glossary/#pass-check">pass checks</a>, indicative times and spend.
+- Where the project stands today (phase 1, in progress) and the 13 open items to verify before ordering parts.
+- How each phase retires specific risks, and which pages of this guide to study before each one.
+:::
+
+## The idea in one picture
+
+Building a humanoid is a chain of bets: that the actuators really deliver their datasheet torque, that a policy trained in simulation walks on the real robot, that the knee does not overheat on stairs. Any one of them can be wrong. The cheapest way to find out is to test each bet with the smallest, cheapest build that can expose it, before spending money that depends on it. It is like test-driving one car before buying a fleet.
+
+Software engineers call this a <a class="g" href="../glossary/#risk-driven-development">risk-driven</a> process: each round tackles the biggest remaining risk first, and the project's plan is shaped by its risks rather than by a fixed document sequence.<sup class="cite">[\[1\]](#s1)</sup> NASA's <a class="g" href="../glossary/#technology-readiness-level">technology readiness levels</a> express the same idea for hardware: a component moves from analysis, to a lab test of a part, to a test of a subsystem, to the whole system in its real environment.<sup class="cite">[\[2\]](#s2)</sup> Marvin Bot's phases follow that ladder:
+
+1. **Foundations** (done): the repository, requirements, decision log and a first design (joints, sizes, mass budget, BOM).
+2. **Robot in simulation** (now): walking, stairs and skills trained and checked in simulators. No parts bought.
+3. **Actuator bench**: buy one large and one medium motor and measure them ([page 20](../20-sim-to-real/)).
+4. **One leg**: build a single leg and test it under walking-like loads.
+5. **Lower body**: both legs and the pelvis, standing and walking, first held up by a <a class="g" href="../glossary/#gantry">gantry</a> (a safety harness frame).
+6. **Torso, arms and head**: waist, arms, hands, neck and camera, making the whole robot; it must carry objects and get up after a fall.
+7. **Perception and intelligence**: climbing real stairs using the depth camera, teleoperation and fine-tuning the VLA ([page 18](../18-wbc-vla/)).
+
+This is the last page of the guide; it pulls together the costs of [page 21](../21-bom-costs/) and the measurements of [page 20](../20-sim-to-real/).
+
+## Playground: the phase timeline
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Press **Marvin Bot today** and click phase 2. It costs about $4,750 in parts at single prices, but $3,499 of that is the Orin; without it the actuator bench is about $1,250. That is the "smallest build" that can test the most expensive assumption in the robot.
+2. Press **Full-time**. Phases 1-5 shrink to a quarter, but then drag the lead time to 4 weeks: hardware phases are now limited by shipping, not by your hours. Order the next phase's parts while the current one is being tested (once its risky question has been answered).
+3. Scroll to the risk register and click **Phase 2**: seven of the thirteen open items are settled, at least in part, on one bench. That is why the bench comes before the leg.
+:::
+
+## From first principles
+
+### 1. Simulation before hardware
+
+A physics simulator lets you test a walking controller thousands of times an hour with no broken parts. With GPU simulation, thousands of simulated robots train in parallel, so a walking policy can be learned in minutes to hours rather than weeks.<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[9\]](#s9)</sup> Marvin Bot's rule (`docs/plan.md`): the robot must stand, walk and climb stairs in simulation, with torques inside the actuators' ratings, before more than two test actuators are bought. Phase 1 costs nothing in parts, apart from a training computer that the BOM leaves out.
+
+### 2. Test the riskiest part with the smallest build
+
+The order is one actuator, one leg, the lower body, the full robot. Each step adds only what the previous step has made safe to add. If the RS04 turns out to hold only 30 N·m continuously in a thigh-sized mount instead of 40, you learn that on a $255 bench unit, not after buying seven of them and machining two legs around them.
+
+### 3. Buy in stages
+
+Spend is committed one phase at a time. The cost of this caution is small: staged buying keeps $121 of the $132 that a single up-front actuator order would save (see [21 Bill of materials and costs](../21-bom-costs/)). The gain is that a failed pass check costs one phase's parts.
+
+### 4. Measure, then update the model
+
+Every hardware phase measures the real thing (torque, speed, heat, latency, mass) and feeds it back into `description/` and the simulation. This is how legged-robot research closes the <a class="g" href="../glossary/#sim-to-real-gap">sim-to-real gap</a>: identify the actuator from bench measurements, put that model into simulation, retrain.<sup class="cite">[\[4\]](#s4)</sup><sup class="cite">[\[5\]](#s5)</sup> See [20 Sim-to-real and system identification](../20-sim-to-real/).
+
+### Durations and the hours slider
+
+The plan gives each phase a range in weeks, part-time. If a phase needs a fixed amount of work, its duration in weeks is roughly
+
+<div class="mono">
+
+weeks = plan weeks × (assumed 10 h/week ÷ your h/week) + lead time
+
+</div>
+
+The first term scales with effort; the lead time (waiting for parts, machining services, prints) does not. Real projects are not perfectly linear: some work, such as a 7.5-hour training run or a thermal soak test, takes calendar time however many hours you have. Treat the slider as a planning aid, not a forecast.
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+`docs/plan.md` defines the phases, pass checks and indicative times; `docs/roadmap.md` tracks status and lists the open items; `docs/decisions.md` records why. Phase 0 is done; phase 1, robot in simulation, has been in progress since 2026-10-25. Spend per phase below is this guide's mapping of the 60 BOM lines to phases (single prices; total $17,531), explained on [page 21](../21-bom-costs/#spend-per-build-phase).
+:::
+
+<RawHtml html={widget2} />
+
+### Phase 1 today
+
+Of the 30 checklist items in the roadmap's phase 1 section, 26 are ticked. Highlights and what is open:
+
+- URDF generated from the description; MuJoCo standing check (worst holding torque 40% of rated); static step-up check.
+- Ankle linkage geometry and push-rod loads; Isaac Lab package on Newton and PhysX; MuJoCo cross-checks.
+- Flat policy v8, retrained on the 1.44 m model, passes the MuJoCo cross-check (0.53 m/s for 0.5 commanded, fast walk 0.95 for 1.0 m/s, hottest joint a knee at 68% of rated). Stair policies (rough v5-v9, trained on the earlier 1.29 m body) climb 5-20 cm stairs up and down; on that body rough v5 kept the knees at 73-75% of rated (RMS).
+- Code-CAD of legs, pelvis, torso, arms and head; strength check (worst <a class="g" href="../glossary/#safety-factor">safety factor</a> 2.4 after the second pass); covers and harness; battery cradle and electronics bay.
+- Stair robustness: rough v9 (still the stair policy) falls in 1 of 15 runs on 15-20 cm stairs on the 1.44 m model (2 of 15 on the old body); a retrained rough v10 did worse (6 of 15) and is not used.
+- Motion tracking: one tracker follows all 25 Kimodo clips upright on the 1.44 m model; five weak clips were regenerated and all 25 now pass the skill checks. A new tracker (v4) is still training, so tracking results are provisional; next a jog with a flight phase, a closer two-hand wave and a MuJoCo replay.
+- Leg CAD fasteners, bearing seats and hip-yaw far-side support; fasteners, clips and connector footprints in the CAD.
+- Retrain the walking and stair policies on the 1.44 m body with hands (listed under the roadmap's hands section): flat v8 is done and passing; the stair policy is still rough v9 until a retrain beats it.
+
+Phase 2 preparation has also started: a RobStride CAN driver written from the official manuals, with unit-tested frame encoding (`robot/drivers/robstride.py`), and bench scripts for scan, latency, step response and thermal tests (`bench/`, untested on hardware).
+
+## Risk register: open items to verify before ordering
+
+The roadmap lists 13 items to verify before ordering. Each is a <a class="g" href="../glossary/#risk-register">risk register</a> entry: something that, if wrong, changes a design or a purchase. The phase column is when each is settled; where the repo does not say, it is this guide's inference (marked \*). Click a phase above, or a row, to link the two views.
+
+<RawHtml html={widget3} />
+
+:::note[Example: how the knee-heating risk retires]
+In the static 18 cm step check on the 1.44 m model the stance knee holds 47 N·m, 118% of the RS04's continuous rating (item 11). Phase 1 shrank the risk: a trained stair policy (on the old 1.29 m model) loads the knees at 73-75% of rated RMS, because a dynamic gait loads each knee for only part of each step (`docs/design/stairs.md`). The stair policy in use (rough v9) was trained on the 1.29 m body, and no knee RMS on the 1.44 m body is published yet, so this still has to be re-measured. Phase 2's bench thermal test then measures the RS04's real continuous rating in a thigh-sized mount; if it is 30-35 N·m instead of 40, stair RMS rises to roughly 85-100%. Phase 3 confirms it on one leg under gait-like loads ("nothing overheats"). Only if those fail does the parked 1.5:1 knee stage come back.
+:::
+
+## Skills beyond walking
+
+The roadmap lists skills that can be trained in simulation now and retrained once phase 2 has fitted the actuator models:
+
+| Skill | Status | Method or reference | Lands in phase |
+|---|---|---|---|
+| Get up from a fall, face up and face down | <span class="pill todo">open</span> | HoST: RL for standing up from varied postures<sup class="cite">[\[6\]](#s6)</sup> | 5 (pass check) |
+| Expressive clips: gestures, squats, a kick, a dance | <span class="pill done">done in sim</span> | Kimodo + retargeting + motion tracking ([17](../17-motion-tracking/)) | 5 |
+| General motion tracker for whole-body teleoperation | <span class="pill todo">open</span> | Needs far more clips; how GR00T demonstrations get recorded ([18](../18-wbc-vla/)) | 6 |
+| Walk, squat and reach with any arm pose | <span class="pill todo">open</span> | HOMIE<sup class="cite">[\[7\]](#s7)</sup>; the waist only turns, so reaching low means squatting | 5 |
+| Stairs from depth images | <span class="pill todo">open</span> | Student policy on simulated depth, distilled from rough v9<sup class="cite">[\[8\]](#s8)</sup> | 6 (pass check) |
+| Carry a box; sit on and stand up from a chair | <span class="pill todo">open</span> | PhysHSI<sup class="cite">[\[10\]](#s10)</sup> | 5-6 |
+| Walk to and kick a ball | <span class="pill todo">open</span> | Camera detection noise and latency modelled | 6 |
+| Manipulation rehearsal in Isaac Sim, GR00T N1.7 fine-tuning | <span class="pill todo">open</span> | Teleoperated demos, GR00T-Mimic, Cosmos Transfer<sup class="cite">[\[11\]](#s11)</sup> | 6 |
+
+Out of scope for this robot: parkour and tall jumps (past the 70%-of-peak torque rule) and floor work such as crawling, until the shells are in the collision model.
+
+## Trade-offs and alternatives
+
+- <b>Build everything at once.</b> Faster on paper and slightly cheaper (quantity tiers), but every wrong assumption is paid for in full and debugging a 27-joint robot with all parts new is hard: you cannot tell a bad motor from a bad controller. Rejected (`docs/decisions.md`, 2026-10-25: "built in stages, simulation first").
+- <b>Start from a bought robot or a kit.</b> Faster to a walking robot but the project's goal is an open design anyone can build and change.
+- <b>Skip the single-leg phase.</b> Saves 4-6 weeks, but the ankle linkage's range, the leg's tracking and its heating would all be tested for the first time on a 40 kg robot on a gantry.
+- <b>More simulation before hardware.</b> Simulation cannot settle the open items that are about the real parts (bearing type, regen, CAN timing on the Orin, real continuous rating); after a point only the bench answers.
+
+:::caution[Where sources and the repo disagree]
+- <b>Inside the repo:</b> `docs/plan.md` lists the Orin and IMU as phase 4 work, but phase 2's pass check is "CAN at the planned rates works on the Orin", and roadmap items 4 and 13 need it on the bench. This page's spend puts the Orin in phase 2. The project already owns one, so in practice it does not matter.
+- <b>Pace:</b> the plan gives phase 1 three to five weeks part-time; the roadmap already shows 26 of 30 phase 1 items ticked four days after it started (2026-10-25 to 2026-10-29). The indicative times are a planning baseline, not a measured rate.
+- <b>Walking requirement vs phase 1's current model:</b> the stair heat figures (73-75% knee RMS) come from a policy trained on the 1.29 m body; the static check on the 1.44 m body is worse (118% vs 112%). Flat walking has been re-checked on the current model (flat v8 passes); the stair heat figure has not.
+:::
+
+## Decisions you can make here
+
+- How many hours a week you can give, and so when each phase's parts need ordering.
+- Whether to order the next phase's parts while the current phase is still testing (saves lead time, adds risk).
+- Which open items to work on first: those that block phase 2's order (1, 2, 3, 4, 13).
+- Which pages of this guide to study before the next phase.
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+## Further reading
+
+- [Boehm, "A spiral model of software development and enhancement"](https://faculty.washington.edu/hazeline/misc/reserve/boehm_spiralmodel.pdf): the classic argument for letting risk, not a document checklist, decide what to do next.
+- [NASA technology readiness levels](https://esto.nasa.gov/trl): a vocabulary for "how proven is this part?" that maps well onto bench, leg and lower-body tests.
+- [Hwangbo et al., Learning agile and dynamic motor skills for legged robots](https://arxiv.org/abs/1901.08652): measure the actuator, model it, train in simulation, deploy; the loop phases 2-4 follow.
+- [Isaac Lab documentation](https://isaac-sim.github.io/IsaacLab/): the simulator stack phase 1 runs on.
+
+## Sources
+
+1. <span id="s1"></span>[B. W. Boehm, "A spiral model of software development and enhancement", IEEE Computer 21(5), 1988](https://faculty.washington.edu/hazeline/misc/reserve/boehm_spiralmodel.pdf) <span class="used">— used for: risk-driven development, resolving the largest risk first.</span>
+2. <span id="s2"></span>[NASA Earth Science Technology Office, Technology Readiness Levels](https://esto.nasa.gov/trl) <span class="used">— used for: the ladder from component to subsystem to system tests.</span>
+3. <span id="s3"></span>[N. Rudin et al., "Learning to walk in minutes using massively parallel deep reinforcement learning", CoRL 2021](https://arxiv.org/abs/2109.11978) <span class="used">— used for: GPU-parallel simulation makes simulation-first training cheap.</span>
+4. <span id="s4"></span>[J. Tan et al., "Sim-to-real: learning agile locomotion for quadruped robots", RSS 2018](https://arxiv.org/abs/1804.10332) <span class="used">— used for: identifying actuators and improving the simulator to close the sim-to-real gap.</span>
+5. <span id="s5"></span>[J. Hwangbo et al., "Learning agile and dynamic motor skills for legged robots", Science Robotics 2019](https://arxiv.org/abs/1901.08652) <span class="used">— used for: an actuator model learned from measured data, used in simulation for training.</span>
+6. <span id="s6"></span>[T. Huang et al., "Learning humanoid standing-up control across diverse postures" (HoST), 2025](https://arxiv.org/abs/2502.08378) <span class="used">— used for: getting up from a fall as a trainable skill.</span>
+7. <span id="s7"></span>[Q. Ben et al., "HOMIE: humanoid loco-manipulation with isomorphic exoskeleton cockpit", 2025](https://arxiv.org/abs/2502.13013) <span class="used">— used for: walking and squatting while the arms move freely.</span>
+8. <span id="s8"></span>[S. Zhu et al., "Hiking in the Wild: a scalable perceptive parkour framework for humanoids", 2026](https://arxiv.org/abs/2601.07718) <span class="used">— used for: depth-image locomotion policies (the method behind "stairs from depth images").</span>
+9. <span id="s9"></span>[NVIDIA, Isaac Lab documentation](https://isaac-sim.github.io/IsaacLab/) <span class="used">— used for: the GPU simulation and RL framework of phase 1.</span>
+10. <span id="s10"></span>[H. Wang, W. Zhang, R. Yu et al., PhysHSI: Towards a Real-World Generalizable and Natural Humanoid-Scene Interaction System, arXiv 2510.11072, 2025](https://arxiv.org/abs/2510.11072) <span class="used">— used for: humanoid-scene interaction skills (carrying, sitting), as cited in the roadmap.</span>
+11. <span id="s11"></span>[NVIDIA, Isaac GR00T](https://developer.nvidia.com/isaac/gr00t) <span class="used">— used for: GR00T models and synthetic-data tools for manipulation (phase 6).</span>
+
+<PageScript code={script} />

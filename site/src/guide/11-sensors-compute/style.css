@@ -1,0 +1,11 @@
+/* Sensors and compute: styles for this page's playground */
+.plot text{font:11px var(--font);fill:var(--muted)}
+.plot .ttl{fill:var(--text);font-size:12px}
+.bar{height:22px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;position:relative;overflow:hidden;margin:3px 0 10px}
+.bar > span{position:absolute;top:0;bottom:0}
+.bar .cap{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text)}
+.barlab{display:flex;justify-content:space-between;font-size:13px}
+.barlab b{font-family:var(--mono)}
+.wl{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;font-size:14px}
+.wl input[type=checkbox]{accent-color:var(--accent)}
+.est{font-size:11px;color:var(--warn);border:1px solid #6b4f22;border-radius:4px;padding:0 4px;margin-left:4px}

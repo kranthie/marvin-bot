@@ -1,0 +1,44 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-sp="today">Marvin Bot today (335L)</button>
+<button data-sp="low">335L at 848 × 480</button>
+<button data-sp="g335">Gemini 335 (50 mm)</button>
+<button data-sp="wide">150 mm baseline (hypothetical)</button>
+<button data-sp="poor">Poor matching (dark, low texture)</button>
+</div>
+<h4>Camera</h4>
+<div class="ctl"><label>Baseline B <output id="o_B"></output></label>
+<input id="B" max="200" min="20" step="1" type="range" value="95"/>
+<div class="hint">Distance between the two infrared (IR) cameras, like the gap between your eyes. Wider = better depth far away. Datasheet: 95 mm for the 335L.</div></div>
+<div class="ctl"><label>Depth image width <output id="o_W"></output></label>
+<select id="W"><option value="1280">1280 px (1280 × 800)</option><option value="848">848 px (848 × 480)</option><option value="640">640 px (640 × 400)</option><option value="424">424 px (424 × 266)</option></select>
+<div class="hint">Fewer pixels across the same field of view means a shorter focal length in pixels.</div></div>
+<div class="ctl"><label>Horizontal depth field of view (FOV) <output id="o_F"></output></label>
+<input id="F" max="110" min="40" step="1" type="range" value="90"/>
+<div class="hint">Wider view, shorter focal length, larger error.</div></div>
+<div class="ctl"><label><span>Disparity precision σ<sub>d</sub></span> <output id="o_sd"></output></label>
+<input id="sd" max="1" min="0.05" step="0.01" type="range" value="0.24"/>
+<div class="hint">How finely the camera can line up the same point in its two images, in pixels (smaller = better). 0.24 px reproduces the datasheet's ≤0.8% at 2 m and ≤1.6% at 4 m.</div></div>
+<div class="ctl"><label>Disparity search range <output id="o_D"></output></label>
+<select id="D"><option value="64">64 px</option><option selected="" value="128">128 px</option><option value="256">256 px</option></select>
+<div class="hint">The largest disparity the matcher looks for; sets the minimum distance.</div></div>
+<h4>Use case</h4>
+<div class="ctl"><label>Tolerance on a stair edge <output id="o_tol"></output></label>
+<input id="tol" max="5" min="0.2" step="0.1" type="range" value="1"/>
+<div class="hint">Depth error you can accept (cm). The terrain map has 10 cm cells.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Depth error versus distance for the chosen stereo camera, with the stair range shaded" class="plot" id="sview" role="img" viewbox="0 0 640 360"></svg>
+<div class="readouts">
+<div class="ro" id="s_f"><div class="k">Focal length f</div><div class="v">–</div></div>
+<div class="ro" id="s_1"><div class="k">σz at 1 m</div><div class="v">–</div></div>
+<div class="ro" id="s_2"><div class="k">σz at 2 m (% of z)</div><div class="v">–</div></div>
+<div class="ro" id="s_4"><div class="k">σz at 4 m (% of z)</div><div class="v">–</div></div>
+<div class="ro" id="s_r"><div class="k">Range within tolerance</div><div class="v">–</div></div>
+<div class="ro" id="s_m"><div class="k">Minimum distance</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--accent)"></i>σz, chosen camera</span><span><i style="background:#5d6b7a"></i>one whole pixel of disparity (quantisation step)</span><span><i style="background:var(--accent2)"></i>stair look-ahead 0.5–2 m</span><span><i style="background:var(--good)"></i>datasheet points (335L)</span></div>
+</div>
+</div>

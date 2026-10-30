@@ -48,8 +48,9 @@ Code style: ruff (line length 100, `ruff format`); every script starts with a do
 what it does and how to run it.
 
 Documentation: edit the Markdown in the repository; the website in `site/` copies it in when it is
-built, so there is nothing to change there. The interactive guide (`site/public/guide/`) is plain
-HTML: cite a source for every number you change, and see `site/README.md` for how to preview the site.
+built, so there is nothing to change there. The interactive guide is Markdown in
+`site/src/content/docs/guide/`, with each playground's controls and script beside it in `site/src/guide/`:
+cite a source for every number you change, and see `site/README.md` for how to preview the site.
 
 After editing `description/*.yaml` or `cad/`, regenerate in this order:
 

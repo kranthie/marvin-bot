@@ -1,0 +1,48 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="desk">Marvin Bot plan: desktop GPU over Wi-Fi</button>
+<button data-preset="orin" title="TensorRT: NVIDIA's tool that compiles a network to run fast on its chips">Orin + TensorRT</button>
+<button data-preset="eager" title="PyTorch eager: the model run as written, without optimisation">Orin, PyTorch eager</button>
+<button data-preset="sync">Orin, wait for each chunk</button>
+<button data-preset="nochunk">No chunking</button>
+</div>
+<h4>Inference</h4>
+<div class="ctl"><label>Model latency L <output id="o_lat"></output></label>
+<input id="lat" max="400" min="10" step="1" type="range" value="50"/>
+<div class="hint">How long the model thinks per call. Measured GR00T N1.7: 35 ms on an L40 data-centre GPU, 149 ms on the Jetson Orin with <a class="g" href="../glossary/#tensorrt">TensorRT</a> (NVIDIA's speed-up compiler), 358 ms on the Orin unoptimised ("PyTorch eager").</div></div>
+<div class="ctl"><label>Network round trip <output id="o_rtt"></output></label>
+<input id="rtt" max="100" min="0" step="1" type="range" value="15"/>
+<div class="hint">Time to send the image to another computer and get the answer back over Wi-Fi; 0 when the model runs on the robot.</div></div>
+<div class="ctl"><label>Jitter (extra delay, up to) <output id="o_jit"></output></label>
+<input id="jit" max="150" min="0" step="1" type="range" value="40"/>
+<div class="hint">Random extra delay per call: Wi-Fi retries, GPU contention.</div></div>
+<h4>Chunks</h4>
+<div class="ctl"><label>Chunk length H <output id="o_H"></output></label>
+<input id="H" max="64" min="1" step="1" type="range" value="40"/>
+<div class="hint">GR00T N1.7: 40 actions (N1: 16).</div></div>
+<div class="ctl"><label>Action rate f <output id="o_fa"></output></label>
+<input id="fa" max="50" min="5" step="1" type="range" value="20"/>
+<div class="hint">How many actions per second the chunk holds (20 Hz = one every 50 ms); set by how fast the demonstrations were recorded.</div></div>
+<div class="ctl"><label>Execution horizon E <output id="o_E"></output></label>
+<input id="E" max="64" min="1" step="1" type="range" value="16"/>
+<div class="hint">Actions played from each chunk before switching (at most H).</div></div>
+<h4>Scheduling</h4>
+<div class="seg"><button class="on" id="m_async">Infer while executing</button><button id="m_sync">Wait for each chunk</button></div>
+<label class="chk"><input checked="" id="skip" type="checkbox"/><span>Skip actions whose time has already passed when a chunk arrives</span></label>
+</div>
+<div class="preview">
+<svg aria-label="Timeline of inference calls, executed chunks, action age and the 50 Hz controller" id="tl" role="img" viewbox="0 0 760 330"></svg>
+<div class="readouts">
+<div class="ro" id="r_hold"><div class="k">Arms holding (no fresh action)</div><div class="v">–</div></div>
+<div class="ro" id="r_age"><div class="k">Time since image, mean / max</div><div class="v">–</div></div>
+<div class="ro" id="r_lag"><div class="k">Plan delay if not skipping</div><div class="v">–</div></div>
+<div class="ro" id="r_calls"><div class="k">Inference calls</div><div class="v">–</div></div>
+<div class="ro" id="r_keep"><div class="k">Keeps up?</div><div class="v">–</div></div>
+<div class="ro" id="r_ctl"><div class="k">50 Hz controller ticks per new action</div><div class="v">–</div></div>
+</div>
+<p class="hint" style="font-size:13px;color:var(--muted);margin:6px 0"><b>How to read this picture:</b> time runs left to right over three seconds. <i>Inference</i>: one bar per call, on two alternating rows so overlapping calls stay visible (blue = thinking, violet = network, amber = random extra delay; the white tick is when the image was taken). <i>Executing</i>: what the arms do, green while a chunk plays (two shades tell successive chunks apart), red while they hold still waiting. <i>Action age</i>: one dot per action, showing how old the image behind it was. <i>50 Hz control</i>: the walking controller's ticks, which never stop. Less red and lower dots are better.</p>
+<div class="legend"><span><i style="background:var(--accent)"></i>model compute</span><span><i style="background:var(--violet)"></i>network</span><span><i style="background:var(--warn)"></i>jitter</span><span><i style="background:var(--good)"></i>executing a chunk</span><span><i style="background:var(--bad)"></i>holding the last action</span></div>
+</div>
+</div>

@@ -1,0 +1,206 @@
+---
+title: "The robot description: one source of truth"
+description: "Every simulator, every training run and every check needs the same robot: the same joints, limits, masses and motors."
+sidebar:
+  label: "13 · The robot description: one source of truth"
+  order: 14
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/13-description/widget-1.html?raw';
+import widget2 from '../../../guide/13-description/widget-2.html?raw';
+import widget3 from '../../../guide/13-description/widget-3.html?raw';
+import widget4 from '../../../guide/13-description/widget-4.html?raw';
+import script from '../../../guide/13-description/script.js?raw';
+import '../../../guide/13-description/style.css';
+
+<div class="guide-meta">
+
+**Stage 4 · Model and simulation** · \~30 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [04 Actuators](../04-actuators/), [07 Mass budget](../07-mass-proportions/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Every simulator, every training run and every check needs the same robot: the same joints, limits, masses and motors. Marvin Bot writes that robot down once, in a handful of YAML files, and generates everything else from them, so the models cannot quietly drift apart.
+
+Think of it like a recipe kept in one master cookbook. If three cooks each copied the recipe by hand and one of them changed "200 g sugar" to "250 g", you would get three slightly different cakes and never know why. Before anything can be simulated or trained, the software needs a written-down robot. This page is about keeping that one written-down robot correct, and why that matters before a single motor turns.
+
+:::note[Three words you will meet a lot]
+- **YAML**: a plain-text file of names and values, like `knee: [0, 130]`, that a person can read and edit in any text editor.
+- **XML**: another plain-text format, where every item is wrapped in labelled tags such as `<joint name="knee"> … </joint>`. URDF and MJCF (below) are both XML.
+- **Simulator** (or <a class="g" href="../glossary/#physics-engine">physics engine</a>): a program that computes how the robot would move, step by step, under gravity, motor torques and contacts with the floor. [Page 14](../14-simulation/) covers them.
+:::
+
+:::note[You will learn]
+- What a robot description is, and what URDF, MJCF and USD each hold: links, joints, inertia, collision and visual shapes, limits.
+- Why Marvin Bot keeps one source of truth (`description/*.yaml`) and generates the URDF, the MuJoCo model and the Isaac Lab USD from it, with automatic checks (CI, continuous integration: tests that run on every change) that fail when anything is out of date.
+- How the joint sign convention and the left-right mirror rule work, and why a sign error is one of the easiest bugs to make.
+- Why the shoulder's coupled limit cannot be written into URDF or MJCF, and who has to enforce it instead.
+:::
+
+## The idea in one picture
+
+A <a class="g" href="../glossary/#robot-description">robot description</a> is a file that tells software what the robot is made of: rigid bodies called <a class="g" href="../glossary/#link">links</a>, connected by <a class="g" href="../glossary/#joint">joints</a>, each link with a mass, a centre of mass and an <a class="g" href="../glossary/#inertia-tensor">inertia tensor</a>, plus shapes for drawing (visual) and for touching things (collision). (An inertia tensor is just a small table of numbers saying how hard the link is to spin about each direction; more below.) Different tools want different file formats. ROS (Robot Operating System, a widely used open-source robot software toolkit) and most robotics tools read <a class="g" href="../glossary/#urdf">URDF</a>; MuJoCo reads <a class="g" href="../glossary/#mjcf">MJCF</a>; Isaac Sim and Isaac Lab load <a class="g" href="../glossary/#usd">USD</a>.
+
+If you write these by hand you get three robots that are almost, but not quite, the same. A knee limit changed in one file and not the others is enough to make a <a class="g" href="../glossary/#policy">policy</a> (the trained neural-network controller of [page 16](../16-rl-walking/)) trained in one simulator fail in another. Marvin Bot avoids this by treating all of them as build products: files that a program writes from the YAML, never edited by hand.
+
+<div class="hint">
+
+How to read this picture: the five boxes on the left are the hand-edited source files; each arrow is a program (named in `code`) that turns one file into the next. Only the YAML files are ever edited by a person.
+
+</div>
+
+<RawHtml html={widget1} />
+
+Two explorers below make the important details concrete: the shoulder's <a class="g" href="../glossary/#coupled-joint-limit">coupled joint limit</a>, which no simulator file format can express, and a one-joint version of the generator, where you can break things and see which check would catch you.
+
+## Playground A: the coupled shoulder limit
+
+Marvin Bot's shoulder roll may go below 0° (bringing the hands to the midline, for clapping or holding a box) only while the arm is swung forward; with the arm hanging, negative roll would push the upper arm into the torso. `description/robot.yaml` writes the lowest allowed roll as a piecewise-linear function of shoulder pitch (a graph made of straight-line pieces joined at corners). Drag the dot, or use the sliders.
+
+In plain words: **shoulder pitch** swings the arm forwards and up (0° = hanging, 90° = pointing straight ahead); **shoulder roll** lifts the arm out sideways (positive) or brings it in across the chest (negative). Start with the *Clap* preset.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+- Press *Clap*. At 90° pitch and −20° roll the fingertips cross the midline: the hands can meet. Now drag the pitch back towards 0° while keeping −20°: the dot enters the red band, where the simulator's plain limit still says "fine" but the real arm would be inside the chest shell.
+- Press *Hanging arm*, then *Apply the controller's clamp*. The roll jumps to 0°: that is what the robot's controller must do before sending the command.
+- Find the widest negative region (pitch 90-135°). Why does the bound return to 0° by 150°? (Past 135° the upper arm meets the head.)
+:::
+
+## From first principles
+
+### Links, joints and the kinematic tree
+
+A humanoid is a tree of rigid links. The root is the pelvis; each joint connects a parent link to a child link at a fixed offset (the joint's *origin*) and lets the child rotate about one *axis*. Knowing every joint angle and walking down the tree, multiplying the transforms, gives every link's position: this is <a class="g" href="../glossary/#forward-kinematics">forward kinematics</a>.<sup class="cite">[\[9\]](#s9)</sup> Marvin Bot has 27 powered joints: 6 per leg, 6 per arm, waist yaw, neck yaw and neck pitch.
+
+### Inertia: what the dynamics need
+
+To simulate motion, not just draw it, each link needs three things: its mass *m* (kg), the position of its centre of mass, and its 3 × 3 inertia tensor *I* (kg·m²), which says how hard it is to spin the link about each axis. For a solid box of mass *m* and sides *a*, *b*, *c*, the inertia about the axis along *a* is *m*(<i>b</i>² + <i>c</i>²)/12. When several parts share a link, their inertias are added after shifting each to the common centre of mass with the parallel-axis theorem (*I* + <i>m d</i>², *d* the shift). `tools/build_urdf.py` does exactly this, in its `combine()` function, for the CAD parts, the estimated boxes and the motor housings on each link.
+
+### Collision and visual geometry
+
+A link can carry two kinds of shape. <a class="g" href="../glossary/#visual-geometry">Visual geometry</a> is only drawn; it can be a detailed mesh. <a class="g" href="../glossary/#collision-geometry">Collision geometry</a> is what the physics engine tests for contact, every step, for every robot. It should be simple (boxes, capsules, convex hulls) because contact detection is a large share of simulation cost and detailed meshes make contacts noisy. Marvin Bot's collision model is 21 boxes (13 in `skeleton.yaml`, the left-side ones mirrored): feet, shins, thighs, pelvis, torso, head, arms and hands; its visuals are the CAD meshes.
+
+### URDF: the common denominator
+
+URDF (Unified Robot Description Format) is the XML format of ROS.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[2\]](#s2)</sup> A `<link>` holds `<inertial>` (origin, mass, the six independent inertia values `ixx ixy ixz iyy iyz izz`), any number of `<visual>` and `<collision>` elements. A `<joint>` names its type (`revolute` for a hinge with limits), its parent and child links, an `<origin>`, an `<axis>` and a `<limit>` with `lower` and `upper` in radians, `effort` (maximum torque, N·m) and `velocity` (maximum speed, rad/s); for a revolute joint the limit element is required.<sup class="cite">[\[1\]](#s1)</sup> URDF has no place for motor gains, rotor inertia, contact softness or a limit that depends on another joint.
+
+### MJCF: MuJoCo's own format
+
+MJCF is MuJoCo's XML format.<sup class="cite">[\[3\]](#s3)</sup> Bodies nest inside each other (the tree is the XML nesting), a hinge `<joint>` lives inside the child body, and actuators are separate elements: `<motor>` applies a commanded torque, `<position>` is a built-in <a class="g" href="../glossary/#pd-control">PD</a> servo (a spring-and-damper pull towards a target angle, see [page 15](../15-pd-control/)) with gains `kp` and `kv`. MJCF adds what URDF lacks:
+
+- `armature`: extra inertia added to a joint, used for the spinning motor rotor that the gearbox makes feel heavier ([page 15](../15-pd-control/));
+- `frictionloss`: dry joint friction, and `actuatorfrcrange`: the most torque a motor may apply;
+- `contype`/`conaffinity`: per-shape on/off switches that decide which shapes may collide;
+- `solref`, `solimp`: how soft or hard contacts feel.
+
+MuJoCo also loads URDF directly; angles in MJCF are degrees by default unless `<compiler angle="radian"/>` is given, while URDF is always radians.<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[4\]](#s4)</sup> MuJoCo has no joint velocity limit: speed has to be limited in the motor model.
+
+### USD: Isaac Sim's scene format
+
+<a class="g" href="../glossary/#usd">USD</a> (Universal Scene Description, from Pixar, now OpenUSD) is a general 3-D scene format; NVIDIA's physics schemas add rigid bodies, joints and articulations to it.<sup class="cite">[\[6\]](#s6)</sup> Isaac Lab ships a URDF converter that runs Isaac Sim's URDF importer and writes USD.<sup class="cite">[\[7\]](#s7)</sup> Since Isaac Lab 3.0 most workflows run without Isaac Sim, but the importer still needs it.<sup class="cite">[\[8\]](#s8)</sup>
+
+### The sign convention
+
+"Knee 15°" means nothing until you say which way is positive. `robot.yaml` uses anatomical names on the left side: pitch + = flexion (thigh or arm forward, knee bent, toes up), roll + = abduction (limb away from the midline), yaw + = towards the midline (toes or hand turning in). The physical axis is then chosen in `skeleton.yaml` so that the right-hand rule gives that direction. (Right-hand rule: point your right thumb along the axis; your curled fingers show which way a positive angle turns.) The knee's axis is +y (rotating the shin about +y swings the foot backwards), the hip pitch's is −y (the thigh swings forward), a left roll axis is +x and a left yaw axis is −z.
+
+### The mirror rule
+
+The right side is generated from the left by negating every *y* coordinate. For an axis that is a little subtler: a mirror flips the handedness of rotations, so pitch axes (along y) stay as they are, while roll (x) and yaw (z) axes are negated (`mirror_axis()` in `build_urdf.py`). The result: "left knee 30°" and "right knee 30°" both bend the knee, and "hip roll +10°" moves either leg outward.
+
+Why care? Training doubles its data by mirroring: every left-leg step it sees can also be used as a right-leg step. Because the axes are mirrored, training can mirror a pose very simply: swap the left and right joint values unchanged, and negate only the centre-line yaw joints, waist yaw and neck yaw, which have no partner (`FLIP_SIGN` in `sim/isaaclab/marvin_bot/tasks/symmetry.py`). A limb axis mirrored wrongly breaks that rule silently: nothing crashes, but training is quietly fed mirrored poses that are wrong.
+
+`sim/mujoco/check_symmetry.py` checks this with 20 random poses: it mirrors each pose by the rule, computes every link position with MuJoCo, and requires each link to land on its partner's mirror image within 1 µm.
+
+### The coupled limit, and why simulators ignore it
+
+Every format above stores a joint's range as two numbers, independent of the other joints. Shoulder roll's real limit depends on shoulder pitch, so the formats cannot hold it. What each piece of software does:
+
+- **Simulators** (MuJoCo, Isaac Lab on Newton or PhysX) use −20° as a plain lower limit and rely on the collision boxes: an arm pushed into the chest meets the torso box and stops.
+- **The CAD check** (`cad.covers --check`) tests every point of the bound and the midpoints between them for part clearance.
+- **The controller** on the robot must clamp commands to the bound before they reach the motors, because collision boxes are only approximate and the real shell is not a box.
+
+The lowest roll at pitch *p* is linear between the points (20°, 0°), (45°, −10°), (75°, −10°), (90°, −20°), (135°, −20°), (150°, 0°) and 0° outside them. For example at *p* = 60°: −10°; at *p* = 30°: 0 + (30 − 20)/(45 − 20) × (−10) = −4°.
+
+## Playground B: one joint from YAML to URDF and MJCF
+
+Pick a joint, then edit its entries in the mini description on the left. The panel on the right regenerates the URDF joint (as `tools/build_urdf.py` writes it, both sides) and the MuJoCo version, and lists the checks the repo's tools would run on it. The highlighted fields are editable.
+
+What the less obvious fields mean: *model* is which motor drives the joint ([page 04](../04-actuators/)); *bus* is which communication cable it hangs on ([page 10](../10-can-bus/)); *axis* is the direction the joint turns about; *kp, kd* are the stiffness and damping of the joint's controller, *armature* the motor's spinning inertia and *friction* its dry friction (all on [page 15](../15-pd-control/)). Start with *A broken one*: the **Checks** list goes red, and each line tells you which repo tool would catch the mistake. Green = passes, amber = suspicious, red = the build would fail.
+
+<RawHtml html={widget3} />
+
+:::note[Try this]
+- On the knee, type 150 into *effort override*. The generator would never write that (it takes the RS04's 120 N·m peak), so `build_urdf.py --check` fails in CI, and the simulator would let the knee push 25% harder than the motor can.
+- On the hip roll or wrist yaw, switch *right side* to "copy the left axis". Watch the right joint's axis stay the same as the left one: a right hip roll of +10° would now swing the leg inwards, and `check_symmetry.py` fails.
+- Give the wrist yaw an STS3250 on its arm bus: the servo speaks a serial protocol, not CAN, and `check_description.py` refuses it.
+- Press *A broken one* and fix every failing check.
+:::
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- <b>Five source files.</b> `description/robot.yaml` (joints, ranges, stance, coupled limits, motors, CAN buses), `actuators.yaml` (RobStride and Feetech data from the manuals), `mass_budget.yaml` (everything except the motors), `skeleton.yaml` (frames, axes, estimate boxes, collision boxes, ankle linkage ratios) and `cad_model.yaml` (generated by `cad/build.py`: each CAD part's mass, centre of mass and inertia).
+- <b>One generator.</b> `tools/build_urdf.py` expands every `{side}` entry into left and right, mirrors the skeleton, combines each link's parts into one inertial, sets each joint's `effort` to the motor's peak torque and `velocity` to its no-load speed (RS04: 120 N·m, 200 rpm = 20.94 rad/s), and gives the two ankle joints the pair's combined torque times the linkage ratios (pitch 0.99, roll 0.67). It also checks that the skeleton's offsets add up to the lengths in `robot.yaml` (thigh 0.325 m, shin 0.315 m, upper arm 0.200 m, forearm 0.188 m, shoulder height 1.165 m) and that every mass budget item is placed within half a gram. A second URDF, `marvin_bot_covers.urdf`, adds the clip-on shells.
+- <b>MuJoCo.</b> There is no hand-written MJCF. The MuJoCo checks load the URDF with `mujoco.MjSpec` and add, in code, a floor, a free base, the motors and the armature and friction from `sim/mujoco/joint_specs.py`, which reads `robot_cfg.py`'s GAINS table. For motion tracking, `sim/motion/setup_protomotions.py` writes an MJCF file the same way.
+- <b>Isaac Lab.</b> `sim/isaaclab/convert_urdf.py` runs Isaac Lab's `UrdfConverter` (merging fixed joints, free base, drive gains 0, because Isaac Lab's explicit DC motor models compute the torques). `check_robot.py` compares the result on Newton and on PhysX: joint order, ranges, effort and velocity limits match; link positions agree with MuJoCo to 0.25 mm (Newton) and 0.17 mm (PhysX) over 8 random poses (`sim/isaaclab/README.md`, 2026-10-26).
+- <b>CI.</b> `tools/check_all.sh` runs, among others, `check_description.py` (ranges increasing, one motor per joint or a linkage pair, model and bus exist, CAN load ≤ 60%, mass under the 42 kg limit, BOM motor counts), `build_urdf.py --check` (the committed URDFs equal a fresh build), `check_standing.py`, `check_step_up.py --heights 0.18` and `check_symmetry.py`.
+- <b>Today's numbers.</b> 27 body DOF, 40.35 kg bare and 41.30 kg with shells (`check_description.py`).
+:::
+
+## Trade-offs and alternatives
+
+| Approach | For | Against |
+|---|---|---|
+| Hand-written URDF (common in open-source robots) | No tooling; every ROS tool reads it | Masses, limits and motors copied by hand; nothing stops the URDF disagreeing with the CAD or the BOM |
+| URDF exported from a CAD package | Inertia straight from the CAD | Needs the CAD tool; motor data and limits are added by hand afterwards; regenerating loses hand edits |
+| Hand-written MJCF as master | MJCF holds more (armature, contact, actuators) | Isaac Lab and ROS want URDF or USD; converting MJCF the other way loses information |
+| <b>YAML source + generated URDF (Marvin Bot)</b> | One place to change; generator checks lengths and masses; CI fails if anything is stale; BOM and CAN load are checked against the same file | A custom generator to maintain; simulator-specific details (gains, armature, contact) live in code next to each simulator |
+| Xacro macros (ROS) | Standard, mirrors left/right with parameters | Still a URDF dialect; no link to the motor data, BOM or checks |
+
+The coupled limit is a smaller trade-off of the same kind. Writing it as a plain −30° limit was tried and rejected: at −30° the shoulder yaw motor meets the chest shell at every forward angle (`docs/decisions.md`). Enforcing the bound in the simulator itself (for example with a custom constraint) is possible in MuJoCo but would have to be repeated for each backend; the repo instead relies on the collision boxes in simulation and leaves the exact clamp to the controller.
+
+:::caution[Where sources and the repo disagree]
+- The comment in `description/robot.yaml` says "the controller and the retargeter enforce" the coupled limit. `docs/decisions.md` (the newer, more detailed record) says "simulation and the retargeter take −20° as a plain limit and rely on the arms colliding with the body; the controller must enforce the coupled limit". The retargeter code (`sim/motion/retarget_marvin_bot.py`) turns on arm-body self-collision but does not contain the bound, and the robot controller is not written yet. This page follows `docs/decisions.md`.
+- The description writes a MuJoCo model only in memory (and as a file inside the ProtoMotions checkout); "the MJCF" on this page means that generated model, not a file in the repo.
+:::
+
+## Decisions you can make here
+
+- Where a new constraint lives: in the description (and so in every model) or in one simulator's code. Rule of thumb: geometry, mass and limits in `description/`; gains, contact and solver settings beside each simulator. The trade: putting it in the description means every model gets it automatically, but the generator has to learn a new field; putting it in one simulator is quicker but the others will not know about it.
+- Whether a joint needs a coupled limit, and who enforces it on hardware (the controller's command clamp) and in training (collisions, or a penalty). The trade: a plain limit of 0° (no roll inwards at all) is simple and safe everywhere but takes away the clapping and box-holding poses; the coupled limit keeps them but someone must write and test the clamp.
+- Whether a new joint's sign follows the anatomical convention, and whether it belongs in `FLIP_SIGN`. Breaking the convention costs nothing today but makes every future mirror, retarget and log harder to read.
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+:::note[Where this leads]
+The URDF built here is what every simulator on [page 14](../14-simulation/) loads. The gains and armature that live beside it are explained on [page 15](../15-pd-control/), and the joint limits and mirror rule are used directly when a walking policy is trained on [page 16](../16-rl-walking/).
+:::
+
+## Further reading
+
+- [ROS wiki: URDF XML specification](https://wiki.ros.org/urdf/XML): short pages per element; read *joint* and *link* before editing any URDF.
+- [MuJoCo documentation: Modeling](https://mujoco.readthedocs.io/en/stable/modeling.html): how MJCF is organised, defaults classes, and how MuJoCo reads URDF.
+- [Isaac Lab: importing a new asset](https://isaac-sim.github.io/IsaacLab/main/source/how-to/import_new_asset.html): the URDF and MJCF converters and their options.
+- [Lynch and Park, Modern Robotics](https://hades.mech.northwestern.edu/index.php/Modern_Robotics), chapters 4 and 8: forward kinematics and rigid-body inertia, with free videos.
+
+## Sources
+
+1. <span id="s1"></span>[ROS wiki, urdf/XML/joint](https://wiki.ros.org/urdf/XML/joint) <span class="used">— used for: joint types, origin, axis, limit attributes (lower, upper, effort, velocity) and units.</span>
+2. <span id="s2"></span>[ROS wiki, urdf/XML/link](https://wiki.ros.org/urdf/XML/link) <span class="used">— used for: inertial, visual and collision elements.</span>
+3. <span id="s3"></span>[MuJoCo documentation, XML Reference](https://mujoco.readthedocs.io/en/stable/XMLreference.html) <span class="used">— used for: joint armature, frictionloss, actuatorfrcrange, geom contype/conaffinity, position and motor actuators, compiler angle.</span>
+4. <span id="s4"></span>[MuJoCo documentation, Modeling](https://mujoco.readthedocs.io/en/stable/modeling.html) <span class="used">— used for: MuJoCo loading URDF and the URDF extensions.</span>
+5. <span id="s5"></span>[RobStride, Product\_Information](https://github.com/RobStride/Product_Information) <span class="used">— used for: peak torque and no-load speed behind the effort and velocity limits (via `description/actuators.yaml`).</span>
+6. <span id="s6"></span>[OpenUSD, Introduction to USD](https://openusd.org/release/intro.html) <span class="used">— used for: what USD is.</span>
+7. <span id="s7"></span>[Isaac Lab documentation, Importing a New Asset](https://isaac-sim.github.io/IsaacLab/main/source/how-to/import_new_asset.html) <span class="used">— used for: the URDF converter.</span>
+8. <span id="s8"></span>[Isaac Lab v3.0.0 release notes (2026-10-20)](https://github.com/isaac-sim/IsaacLab/releases/tag/v3.0.0) <span class="used">— used for: Isaac Sim optional in Isaac Lab 3.0, physics backends.</span>
+9. <span id="s9"></span>[K. M. Lynch and F. C. Park, Modern Robotics, Cambridge University Press 2017](https://hades.mech.northwestern.edu/index.php/Modern_Robotics) <span class="used">— used for: forward kinematics, rigid-body inertia and the parallel-axis theorem.</span>
+
+<PageScript code={script} />

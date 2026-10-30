@@ -1,0 +1,28 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-rp="hold">Static hold at 47 N·m</button>
+<button data-rp="policy">Marvin Bot today: stair policy-like</button>
+<button data-rp="flat">Flat fast walk-like (68%)</button>
+<button data-rp="slow">Slow climb, long stance</button>
+</div>
+<h4>Profile</h4>
+<div class="ctl"><label>Stance share of the cycle <output id="o_duty"></output></label><input id="duty" max="1" min="0.2" step="0.01" type="range" value="0.6"/></div>
+<div class="ctl"><label>Stance peak torque <output id="o_tp"></output></label><input id="tp" max="120" min="0" step="0.5" type="range" value="54"/></div>
+<div class="ctl"><label>Stance base torque <output id="o_tb"></output></label><input id="tb" max="80" min="0" step="0.5" type="range" value="0"/><div class="hint">Torque at the start and end of stance; the profile rises from it to the peak and back as a half-sine.</div></div>
+<div class="ctl"><label>Swing torque <output id="o_tsw"></output></label><input id="tsw" max="20" min="0" step="0.5" type="range" value="5"/></div>
+<div class="ctl"><label>Cycle time <output id="o_tc"></output></label><input id="tc" max="3" min="0.6" step="0.05" type="range" value="1.2"/><div class="hint">Changes the time axis only: RMS depends on the shape, not the duration, as long as the cycle is short against the motor's thermal time constant.</div></div>
+<div class="ctl"><div class="hint">Uses the knee stage and continuous rating set in Playground A.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Knee torque over one step cycle with RMS, continuous rating and 70 percent of peak lines" id="rmsview" role="img" viewbox="0 0 600 300"></svg>
+<div class="readouts">
+<div class="ro" id="r_rms"><div class="k">RMS torque</div><div class="v">–</div></div>
+<div class="ro" id="r_rmsp"><div class="k">RMS / continuous</div><div class="v">–</div></div>
+<div class="ro" id="r_heat"><div class="k">Heat vs at rating</div><div class="v">–</div></div>
+<div class="ro" id="r_pk"><div class="k">Peak / peak rating</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--accent)"></i>torque τ(t)</span><span><i style="background:var(--accent2)"></i>RMS</span><span><i style="background:#e6edf3"></i>continuous rating</span><span><i style="background:var(--violet)"></i>70% of peak</span></div>
+</div>
+</div>

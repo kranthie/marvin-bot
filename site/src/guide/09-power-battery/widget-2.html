@@ -1,0 +1,41 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-rpreset="normal">Marvin Bot today: leg stop, pack absorbs</button>
+<button data-rpreset="hard">Hard stop, four limbs</button>
+<button data-rpreset="blocked">Full pack, BMS blocks charging</button>
+<button data-rpreset="bench">Bench supply, no clamp</button>
+<button data-rpreset="benchc">Bench supply + 57 V clamp</button>
+</div>
+<h4>Source</h4>
+<div class="ctl"><label>What the bus is connected to <output id="o_src"></output></label>
+<select id="src"><option value="0">Battery that accepts charge</option><option value="1">Battery blocked (BMS full / contactor open)</option><option value="2">Bench supply (cannot sink current)</option></select></div>
+<div class="ctl"><label>State of charge <output id="o_soc"></output></label><input id="soc" max="100" min="0" step="1" type="range" value="86"/><div class="hint">86% ≈ just charged to 4.1 V/cell. Ignored for a bench supply.</div></div>
+<div class="ctl"><label>Bench supply voltage <output id="o_vb"></output></label><input id="vb" max="58" min="40" step="0.5" type="range" value="48"/></div>
+<h4>Braking event</h4>
+<div class="ctl"><label>Limb inertia J <output id="o_J"></output></label><input id="J" max="2" min="0.05" step="0.05" type="range" value="0.8"/><div class="hint">≈ 0.8 kg·m² for a whole leg about the hip (8 kg, centre of mass 0.25 m out); an arm ≈ 0.25. Estimate.</div></div>
+<div class="ctl"><label>Joint speed before braking <output id="o_w"></output></label><input id="w" max="20" min="1" step="0.5" type="range" value="6"/><div class="hint">RS04 no-load speed at 48 V: 200 rpm = 21 rad/s.</div></div>
+<div class="ctl"><label>Limbs braking at once <output id="o_n"></output></label><input id="n" max="4" min="1" step="1" type="range" value="1"/></div>
+<div class="ctl"><label>Braking time <output id="o_tb"></output></label><input id="tb" max="500" min="10" step="5" type="range" value="150"/><div class="hint">Cannot be shorter than J·ω / 120 N·m: one RS04's peak torque per limb.</div></div>
+<div class="ctl"><label>Share reaching the bus η <output id="o_eta"></output></label><input id="eta" max="0.95" min="0.3" step="0.05" type="range" value="0.7"/><div class="hint">The rest heats windings and gears.</div></div>
+<h4>Bus</h4>
+<div class="ctl"><label>Bus capacitance <output id="o_C"></output></label><input id="C" max="20" min="0.5" step="0.5" type="range" value="5"/><div class="hint">All drivers' and converters' input capacitors together. Estimate; not published.</div></div>
+<div class="ctl"><label>Pack resistance incl. wiring <output id="o_R"></output></label><input id="R" max="200" min="20" step="5" type="range" value="75"/><div class="hint">13 × 13.8 mΩ / 3 + ~15 mΩ wiring ≈ 75 mΩ.</div></div>
+<div class="ctl"><label style="justify-content:flex-start;gap:8px"><input id="clamp" type="checkbox"/> Regen clamp fitted</label></div>
+<div class="ctl"><label>Clamp voltage <output id="o_Vcl"></output></label><input id="Vcl" max="60" min="55" step="0.5" type="range" value="57"/><div class="hint">Repo: about 56-58 V (brake chopper or TVS).</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Bus voltage over the braking event against the full-pack, clamp and 60 V lines" id="rg" role="img" viewbox="0 0 640 330"></svg>
+<div class="readouts">
+<div class="ro" id="g_V0"><div class="k">Bus before braking</div><div class="v">–</div></div>
+<div class="ro" id="g_E"><div class="k">Energy to bus ηE</div><div class="v">–</div></div>
+<div class="ro" id="g_P"><div class="k">Peak regen power / current</div><div class="v">–</div></div>
+<div class="ro" id="g_Vp"><div class="k">Peak bus voltage</div><div class="v">–</div></div>
+<div class="ro" id="g_M"><div class="k">Margin to 60 V</div><div class="v">–</div></div>
+<div class="ro" id="g_D"><div class="k">Energy into clamp</div><div class="v">–</div></div>
+</div>
+<p class="small"><b>How to read this picture:</b> time runs left to right through the braking event; the blue line is the bus voltage. Keep it below the red 60 V line (green readout = safe margin, amber = under 3 V of margin, red = over the limit).</p>
+<div class="legend"><span><i style="background:var(--accent)"></i>bus voltage</span><span><i style="background:var(--bad)"></i>60 V actuator limit</span><span><i style="background:var(--warn)"></i>clamp</span><span><i style="background:#9aa7b4"></i>54.6 V full pack</span></div>
+</div>
+</div>

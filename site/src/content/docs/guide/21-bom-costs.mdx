@@ -1,0 +1,198 @@
+---
+title: "Bill of materials and costs"
+description: "Marvin Bot costs about $17,500 in parts to build from nothing at October 2026 prices."
+sidebar:
+  label: "21 · Bill of materials and costs"
+  order: 22
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/21-bom-costs/widget-1.html?raw';
+import widget2 from '../../../guide/21-bom-costs/widget-2.html?raw';
+import widget3 from '../../../guide/21-bom-costs/widget-3.html?raw';
+import widget4 from '../../../guide/21-bom-costs/widget-4.html?raw';
+import widget5 from '../../../guide/21-bom-costs/widget-5.html?raw';
+import script from '../../../guide/21-bom-costs/script.js?raw';
+import '../../../guide/21-bom-costs/style.css';
+
+<div class="guide-meta">
+
+**Stage 6 · Toward hardware** · \~30 min · Before this: [04 Actuators](../04-actuators/) · [11 Sensors and compute](../11-sensors-compute/) · [09 Power and battery](../09-power-battery/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Marvin Bot costs about $17,500 in parts to build from nothing at October 2026 prices. This page takes that number apart: which 60 lines make it up, which few lines dominate it, what it leaves out, and how buying one phase at a time changes when the money leaves your account and how much is at risk if a test fails.
+
+:::note[You will learn]
+- What a <a class="g" href="../glossary/#bill-of-materials">bill of materials</a> (BOM) is, how bought and made parts differ, and why every price carries a date and a basis.
+- Why two groups, actuators ($6,201) and compute and sensors ($4,723), are 62% of the total, and what is deliberately not counted.
+- How <a class="g" href="../glossary/#quantity-tier">quantity tiers</a> and staged buying trade a small saving against money committed before a test has passed.
+- How to compare actuators by price per N·m, and which alternatives the project looked at.
+:::
+
+## The idea in one picture
+
+A <a class="g" href="../glossary/#bill-of-materials">bill of materials</a> is the complete shopping and making list for a product: every item, how many, what each costs and where the price came from. Engineering organisations treat it as a product-oriented tree that every cost estimate hangs from: if a part is not on the list, it is not in the budget.<sup class="cite">[\[1\]](#s1)</sup> For a one-off robot the BOM answers three practical questions: <i>what will this cost me?</i>, <i>what do I buy first?</i> and <i>which few lines matter?</i>
+
+Marvin Bot's BOM lives in one spreadsheet, `bom/bom.xlsx`, with one sheet per group and a Summary sheet. Its total, $17,531.03 for 60 lines, is the <a class="g" href="../glossary/#cost-to-replicate">full cost to replicate</a>: what someone starting from an empty bench would pay for parts. The bars below are that total split by group; the playground lets you change the assumptions.
+
+Two ideas from elsewhere in the guide help here. The robot is built in seven **phases** ([page 22](../22-roadmap/)): 0 foundations and 1 simulation (both free in parts), 2 a bench test of two motors, 3 one leg, 4 the lower body, 5 torso, arms and head, 6 perception. And each **actuator** (a motor with its gearbox and electronics, [page 4](../04-actuators/)) is named by its RobStride model, from the large RS04 down to the small RS00.
+
+## Playground: BOM cost explorer
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Press **Marvin Bot today**: the full cost reads $17,531. Switch to **By build phase**. Phases 0 and 1 cost nothing in parts: simulation is free once you have a training computer (which the BOM does not count).
+2. Choose **Everything in one order now**. Only the RS03 reaches ten units (11 + 1 spare), so the saving is 12 × $11 = $132. Now look at "Committed before the leg test": it rises by about $2,300, because the whole RS03 order (\~$2,600) is paid before the actuator bench has said whether the RS03 is any good. Then try **Staged**: the 11 RS03 for phase 3 still reach the tier, and you keep $121 of the $132.
+3. Tick the Orin. "Still to spend" drops by a fifth. That is why the repo once quoted "about $12k": it counted owned parts at $0 (`docs/decisions.md`, 2026-10-29).
+4. Drag the duty to 25%. Only about $6,400 of lines ship from China, so what you spend rises by about $1,600, not by a quarter.
+:::
+
+### All 60 lines
+
+Every line of the workbook, with its quantity, spares, unit price, line total (quantity plus spares, times unit price) and the price basis exactly as recorded. The phase column is this guide's mapping of each line to the build phase that first needs it (see [below](#spend-per-build-phase)). Click a heading to sort.
+
+<RawHtml html={widget2} />
+
+## From first principles
+
+### Bought parts and made parts
+
+A robot's parts come in two kinds. <a class="g" href="../glossary/#bought-part">Bought parts</a> arrive finished: actuators, the computer, the camera, battery cells, bearings, connectors. Their cost is a price on a listing. <a class="g" href="../glossary/#made-part">Made parts</a> are designed in the project and produced from raw material: Marvin Bot's code-CAD generates 97 CNC-machined aluminium parts (about 6.4 kg of finished 6061 and 7075), 20 printed structural parts and 24 printed body-shell pieces, plus 12 plates too large for a desktop mill that go to an online machining service (the `Made parts (CAD)` sheet, generated by `python -m cad.export`). Made parts appear in the costed BOM only as their inputs: aluminium stock, filament, end mills, and the three "online machining" lines. Their real extra cost is machine time and your time, which the BOM does not price.
+
+That split explains why the structure is cheap ($2,582, 15%) even though it is most of the part count, and why the bought groups dominate.
+
+### Line totals, spares and the sum
+
+Each line is priced as
+
+<div class="mono">
+
+line total = (quantity used + spares) × unit price
+
+</div>
+
+and the BOM total is the sum of the 60 line totals. Spares exist only where a failure would stop the project for weeks: one RS04, one RS03 and one RS06, the three actuator models with long lead times and several joints each. For example the RS03 line is (11 + 1) × $225 = $2,700. The arithmetic is trivial; the judgement is in the quantities (do you need a spare?) and the unit prices (where did this number come from, and when?).
+
+### Price basis and dating
+
+A price without a date and a source is a guess dressed up as a fact. Every line in the workbook has a <a class="g" href="../glossary/#price-basis">price basis</a> column that says what the number is: a dated listing ("Seeed 2026-10-29: $225 each, $214 at 10+"), an "estimate" with nothing behind it yet, or a listing marked "unverified". Prices move: the Jetson AGX Orin developer kit's list price went from $1,999 to $3,499 in July 2026, a 75% rise, reported from NVIDIA's developer FAQ.<sup class="cite">[\[2\]](#s2)</sup> In this BOM 37 of 60 lines are still estimates, mostly power parts, wiring, safety gear and online machining; the playground's table can filter them. They total about $4,500 (26%), so most of the headline number rests on dated listings.
+
+### What drives the total
+
+Sort the table by line total and the shape is obvious: the top five lines (the Orin, the RS03s, the RS04s, the RS06s and the primary IMU) are 56% of the money. Two groups carry the budget:
+
+- <b>Actuators, $6,201 (35%).</b> 26 RobStride actuators plus 3 spares and 4 Feetech servos. RobStride's own datasheets give the torque figures;<sup class="cite">[\[5\]](#s5)</sup> Seeed Studio lists every model at RobStride's list price with about 5% off at ten or more of one model.<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[4\]](#s4)</sup>
+- <b>Compute and sensors, $4,723 (27%).</b> The Jetson AGX Orin 64 GB developer kit alone is $3,499,<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[9\]](#s9)</sup> the Orbbec Gemini 335L depth camera $359 list,<sup class="cite">[\[10\]](#s10)</sup> and the primary IMU an estimated $730.
+
+Everything else (structure $2,582, power $1,633, electronics $808, tooling $710, safety $470, hands $224, fasteners $180) adds up to $6,607. Cutting 20% of the fasteners saves $36; finding a cheaper computer could save thousands. Cost work starts at the top of the sorted list.
+
+### What is not counted
+
+The total is parts for one robot, delivered free, with no tax. The Summary sheet and `bom/README.md` list what is left out:
+
+- <b>A training GPU.</b> Isaac Lab training and GR00T fine-tuning want a desktop RTX card with 24-32 GB; the repo notes an RTX 5090 at $1,999 list but about $4,000 or more street price in late 2026. A rented cloud GPU also works.
+- **The desktop CNC mill and 3D printer** (requirement R60 assumes you have them).
+- <b>Shipping, import duties and tariffs.</b> Most actuators and the hand kits ship from China. Duty depends on your country, the goods' tariff classification and the year;<sup class="cite">[\[13\]](#s13)</sup> the RobotShop price of the camera, $413 against the $359 list, shows the kind of difference it makes (the Sourcing sheet notes it "includes US tariffs").
+- <b>Your time,</b> failed parts, and anything you break on the bench.
+
+### Quantity tiers and staged buying
+
+A <a class="g" href="../glossary/#quantity-tier">quantity tier</a> is a lower unit price for ordering at least a set number of one item. At Seeed the RS03 is $225 singly and $214 at ten or more.<sup class="cite">[\[3\]](#s3)</sup> The robot needs 12 RS03 (with the spare), so ordering them all at once saves 12 × ($225 − $214) = $132. But it commits about $2,600 before the phase 2 actuator bench test has confirmed the RS03's torque, heating and CAN behaviour. The decision log weighs exactly this (`docs/decisions.md`, 2026-10-26) and chooses: buy one RS04 and one RS03 singly for the bench, then order the remaining 11 RS03 together after the bench passes, which still reaches the 10+ tier. You keep $121 of the $132 and risk $225 instead of $2,700. The RS04 (7) and RS06 (5) never reach ten for one robot, so their tier only matters for a second robot.
+
+The general rule: a discount for committing early is worth taking only if it is larger than the expected loss from committing to the wrong part. A 5% discount against even a 10% chance of needing a different actuator is not worth it.
+
+## Playground: cost per N·m
+
+Torque is what an actuator is for, so dividing price by torque gives a fair first comparison between sizes and brands. There are two torques to divide by: <a class="g" href="../glossary/#peak-torque">peak torque</a> (short bursts) and <a class="g" href="../glossary/#rated-torque">continuous (rated) torque</a> (what it holds without overheating). For a walking robot the rated figure is usually the binding one (see [04 Actuators](../04-actuators/) and [05 Leg loads and stairs](../05-leg-loads-stairs/)).
+
+<RawHtml html={widget3} />
+
+:::note[Try this]
+Switch to rated torque. The RS04 stays cheapest per N·m, and the small RS00 and the Feetech servo get much worse: small actuators carry a fixed cost (housing, encoder, driver board) that does not shrink with torque. That is why Marvin Bot uses the big RS04 for the three most loaded leg joints and only uses small units where the torque is genuinely small. Then tick the alternatives: on these listings the Damiao is slightly cheaper per N·m than the RS04, and CubeMars several times dearer.
+:::
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- `bom/bom.xlsx` is the single source of truth: Summary, one sheet per group, Sourcing (where each part is sold, with tiers, availability and the date checked) and two generated CAD sheets. Each line has a Status column (owned, ordered or empty for "to buy"); owned lines keep their price so the total stays the full cost to replicate.
+- `tools/bom/book.py` tidies the workbook and rebuilds the Summary formulas; `--check` runs in CI (the automatic checks run on every change to the repository); `tools/bom/summary.py` prints the totals ($17,531.03, 60 lines).
+- Groups: actuators $6,200.98; compute and sensors $4,723; structure and materials $2,582; power $1,633.05; electronics and wiring $808; tooling $710; safety $470; hands $224; fasteners $180.
+- Requirement R61 (`docs/requirements.md`): about $14k excluding the onboard computer, about $17.5k with it. $17,531 − $3,499 = $14,032.
+- One line per item with a spares column, not one line per purchase phase; `docs/plan.md` says what each phase needs (`docs/decisions.md`, 2026-10-29).
+:::
+
+### Spend per build phase
+
+The workbook has no phase column, so the phase view in the playground is this guide's mapping, built from the work column of `docs/plan.md` and the decision log. Where the plan names parts, the mapping follows it; elsewhere it is an inference, marked below. At single prices:
+
+<RawHtml html={widget4} />
+
+- <b>Inference:</b> the Orin, NVMe drive and on-board CAN transceivers are put in phase 2 because phase 2's pass check is "CAN at the planned rates works on the Orin", although the plan's work column lists the Orin under phase 4. If you already own one (the repo's builder did), this does not matter.
+- <b>Inference:</b> the wired e-stop and hand tools are put in phase 2 because `docs/safety.md` applies its rules "from the first actuator bench test onward".
+- <b>Inference:</b> lump-sum lines that serve several phases (harness, CAN cable, fasteners, 6061 stock, leg machining, carbon-fibre nylon) are split between them in rough proportions; the split is illustrative.
+- From the decision log: two bench actuators bought singly in phase 2; the other 11 RS03 in one order in phase 3; the remaining RS04 as the legs need them.
+
+## Trade-offs and alternatives
+
+| Option | Cost effect | Why not (yet) |
+|---|---|---|
+| CubeMars actuators | 2-3× the price per N·m (decision log); on October 2026 reseller listings the AK80-64 is \~$890-1,240 for 120 N·m peak<sup class="cite">[\[7\]](#s7)</sup> | Price; the RobStride range covers every joint. |
+| Damiao DM-J10010L (120 / 40 N·m) | About the same as the RS04 (\~$230 at a reseller<sup class="cite">[\[8\]](#s8)</sup>) | Fewer verified specifications; kept as the second source for the 120 N·m class (it also speaks <a class="g" href="../glossary/#mit-mode">MIT mode</a>, the same CAN command format, so the driver would carry over). |
+| Self-built cycloidal actuators | Cheaper parts, much more labour | More work, lower torque; the project's risk is learning and integration, not actuator design. |
+| Orin module on a carrier board | Module $2,999 since July 2026<sup class="cite">[\[2\]](#s2)</sup> plus a carrier board; about −1.0 kg | Little saving at today's prices; the developer kit was already owned. Kept as a mass reduction (<code>docs/decisions.md</code>). A <a class="g" href="../glossary/#carrier-board">carrier board</a> is the third-party board that gives a bare module its connectors.<sup class="cite">[\[6\]](#s6)</sup> |
+| Jetson Thor T4000 for a second robot | Module $2,999 since July 2026 (was $1,999)<sup class="cite">[\[2\]](#s2)</sup>; NVIDIA quotes up to 1,200 sparse FP4 TFLOPS (trillion low-precision arithmetic operations per second, a measure of AI compute), 64 GB, 40-70 W<sup class="cite">[\[6\]](#s6)</sup> | Same module price as the Orin 64 GB; a newer platform for a second robot, not worth re-porting the first one. |
+| 13S2P battery instead of 13S3P (13 cells in series, 2 rather than 3 in parallel; [page 9](../09-power-battery/)) | −13 cells (−$129) and −1.1 kg | Runtime would sit at the 1 h requirement with no margin (<code>docs/decisions.md</code>). |
+| Count owned parts at $0 | The old "about $12k" | Understates the cost for anyone else; replaced on 2026-10-29. |
+| Order all actuators at once for the tier | −$132 | Commits \~$2,600 before the bench test; staged buying keeps most of the saving. |
+
+:::caution[Where sources and the repo disagree]
+- <b>CubeMars price per N·m.</b> The decision log says CubeMars is "2-3× the price per N·m". The one model checked here, the AK80-64 at $890-1,240 on October 2026 reseller listings for 120 N·m peak, is $7.4-10.3 per N·m against the RS04's $2.13: 3.5-4.9×. The log may have compared other models or other prices; either way the conclusion (RobStride is cheaper) holds.
+- <b>Damiao.</b> The log lists Damiao as an alternative with "fewer verified specs". On current reseller listings the DM-J10010L-2EC (\~$230) is slightly cheaper than the RS04 ($255) for the same 120 / 40 N·m. The repo's reason for not choosing it is the specifications and software support, not price.
+- <b>Orin dev kit version.</b> CNX Software's report gives the developer-kit price change ($1,999 to $3,499) without naming the memory size;<sup class="cite">[\[2\]](#s2)</sup> the repo and SparkFun's listing<sup class="cite">[\[9\]](#s9)</sup> apply it to the 64 GB kit, the only AGX Orin developer kit sold.
+- <b>Inside the repo:</b> `docs/plan.md` lists the Orin as phase 4 work, but phase 2's pass check needs it; this guide's phase view puts it in phase 2.
+:::
+
+## Decisions you can make here
+
+- Which parts you already own, and so what you actually have to spend (mark them owned in your copy of `bom/bom.xlsx`).
+- Whether to take a quantity tier now or after the bench test.
+- Whether a second robot is planned (it puts the RS04 and RS06 into the 10+ tier too).
+- How much to allow for shipping and duty in your country, before ordering (roadmap open item 1 asks for a direct RobStride quote and current tariffs).
+- Which estimate lines to get real quotes for first: sort the table by line total with "Estimates only".
+
+<RawHtml html={widget5} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+## Further reading
+
+- [NASA Work Breakdown Structure Handbook](https://www.nasa.gov/wp-content/uploads/2023/08/nasa-work-breakdown-structure-handbook.pdf): how large projects organise every deliverable into a tree that cost estimates hang from; the same idea at a much larger scale.
+- [RobStride Product\_Information](https://github.com/RobStride/Product_Information): the actuator manuals and datasheets behind the torque figures in the cost-per-N·m chart.
+- [CNX Software on the July 2026 Jetson price rise](https://www.cnx-software.com/2026/07/22/nvidia-increases-the-price-of-jetson-modules-and-devkits-by-up-to-101/): a reminder that the biggest single line can move by 75% overnight.
+- [AmazingHand](https://github.com/pollen-robotics/AmazingHand): the open-source hand, with its own parts list if you would rather build than buy the kit.
+- [22 Build phases and roadmap](../22-roadmap/): when each phase's spend falls due and what it must prove first.
+
+## Sources
+
+1. <span id="s1"></span>[NASA, Work Breakdown Structure (WBS) Handbook](https://www.nasa.gov/wp-content/uploads/2023/08/nasa-work-breakdown-structure-handbook.pdf) <span class="used">— used for: a cost estimate hangs from a product-oriented breakdown of every deliverable.</span>
+2. <span id="s2"></span>[CNX Software, "NVIDIA increases the price of Jetson modules and devkits by up to 101%", 22 July 2026](https://www.cnx-software.com/2026/07/22/nvidia-increases-the-price-of-jetson-modules-and-devkits-by-up-to-101/) <span class="used">— used for: AGX Orin developer kit $1,999 → $3,499; AGX Orin 64 GB module $1,599 → $2,999; T4000 module $1,999 → $2,999.</span>
+3. <span id="s3"></span>[Seeed Studio, RobStride 03 actuator listing](https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html) <span class="used">— used for: $225 each, $214 at 10+, 60 N·m peak, 880 g (checked October 2026).</span>
+4. <span id="s4"></span>[Seeed Studio, RobStride 04 actuator listing](https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html) <span class="used">— used for: $255 each, $242 at 10+ (as recorded in the BOM's price basis).</span>
+5. <span id="s5"></span>[RobStride, Product\_Information repository](https://github.com/RobStride/Product_Information) <span class="used">— used for: peak and rated torque of the RS00, RS03, RS04 and RS06.</span>
+6. <span id="s6"></span>[NVIDIA Technical Blog, "Accelerate AI inference for edge and robotics with NVIDIA Jetson T4000 and JetPack 7.1"](https://developer.nvidia.com/blog/accelerate-ai-inference-for-edge-and-robotics-with-nvidia-jetson-t4000-and-nvidia-jetpack-7-1/) <span class="used">— used for: T4000 compute, memory and power figures; Jetson modules are used on carrier boards.</span>
+7. <span id="s7"></span>[RobotShop, CubeMars AK80-64 listing](https://robotshop.com/products/cubemars-cubemars-ak80-64kv80-bldc-motor-robot-w-integrated-encoder-driver) <span class="used">— used for: 120 N·m peak, 48 N·m rated, \~$1,238 (other resellers from \~$890), October 2026.</span>
+8. <span id="s8"></span>[AIFit Lab, Damiao DM-J10010L-2EC listing](https://aifitlab.com/products/damiao-dm-j10010l-2ec-servo-motor) <span class="used">— used for: 120 N·m peak, 40 N·m nominal, \~$230, October 2026.</span>
+9. <span id="s9"></span>[SparkFun, NVIDIA Jetson AGX Orin 64GB Developer Kit (DEV-22099)](https://www.sparkfun.com/nvidia-jetson-agx-orin-64gb-developer-kit.html) <span class="used">— used for: $3,499 listing for the 64 GB kit.</span>
+10. <span id="s10"></span>[Orbbec store, Gemini 335L](https://store.orbbec.com/products/gemini-335l) <span class="used">— used for: the camera's $359 list price.</span>
+11. <span id="s11"></span>[18650 Battery Store, Molicel P45B](https://www.18650batterystore.com/products/molicel-p45b) <span class="used">— used for: cell price around $9.95-9.99, and the advice to buy from an authorised dealer.</span>
+12. <span id="s12"></span>[Pollen Robotics, AmazingHand repository](https://github.com/pollen-robotics/AmazingHand) <span class="used">— used for: the open hand design (CC-BY-4.0) and its build-from-parts option.</span>
+13. <span id="s13"></span>[US International Trade Commission, Harmonized Tariff Schedule](https://hts.usitc.gov/) <span class="used">— used for: duty depends on the goods' classification and country; the slider is hypothetical, not a rate from here.</span>
+
+<PageScript code={script} />

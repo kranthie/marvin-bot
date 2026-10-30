@@ -1,0 +1,47 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-ip="today">Marvin Bot today (R42 target)</button>
+<button data-ip="bmi">BMI088 on a microcontroller</button>
+<button data-ip="usb">Low-cost USB AHRS</button>
+<button data-ip="ind">Industrial AHRS</button>
+<button data-ip="trust">Trusting the accelerometer</button>
+</div>
+<h4>Sensor</h4>
+<div class="ctl"><label>Gyro noise density <output id="o_gn"></output></label>
+<input id="gn" max="0.1" min="0.002" step="0.001" type="range" value="0.014"/>
+<div class="hint">Random jitter in the rotation-rate reading (°/s/√Hz; lower is quieter). BMI088 datasheet: 0.014.</div></div>
+<div class="ctl"><label>Gyro bias <output id="o_gb"></output></label>
+<input id="gb" max="1" min="0" step="0.01" type="range" value="0.2"/>
+<div class="hint">A steady false rotation the gyro reports when still, in °/s left after start-up calibration. BMI088 zero offset is up to ±1 °/s before calibration.</div></div>
+<div class="ctl"><label>Accelerometer noise density <output id="o_an"></output></label>
+<input id="an" max="500" min="20" step="5" type="range" value="175"/>
+<div class="hint">Random jitter in the acceleration reading, in µg/√Hz (millionths of one g, the acceleration of gravity). BMI088: 175 (product page).</div></div>
+<div class="ctl"><label>Sample rate <output id="o_fs"></output></label>
+<input id="fs" max="2000" min="100" step="50" type="range" value="500"/>
+<div class="hint">R42: at least 500 Hz.</div></div>
+<div class="ctl"><label>Delay to the policy <output id="o_dl"></output></label>
+<input id="dl" max="25" min="0" step="0.5" type="range" value="3"/>
+<div class="hint">Filtering, transport and buffering. Training randomises 0–20 ms.</div></div>
+<h4>Motion and filter</h4>
+<div class="ctl"><label>Walking bumps (body acceleration) <output id="o_bump"></output></label>
+<input id="bump" max="5" min="0" step="0.1" type="range" value="0.5"/>
+<div class="hint">m/s² peak of forward-back acceleration from footsteps, which the accelerometer cannot tell from tilt.</div></div>
+<div class="ctl"><label>Filter time constant τ <output id="o_tau"></output></label>
+<input id="tau" max="3" min="0.01" step="0.01" type="range" value="0.5"/>
+<div class="hint">How long the filter trusts the gyro before the accelerometer pulls it back.</div></div>
+<button id="reseed">New noise sample</button>
+</div>
+<div class="preview">
+<svg aria-label="Simulated pelvis tilt: true, accelerometer-only, gyro-only and filtered estimates over four seconds" class="plot" id="iview" role="img" viewbox="0 0 640 360"></svg>
+<div class="readouts">
+<div class="ro" id="i_f"><div class="k">Tilt error the policy sees (RMS)</div><div class="v">–</div></div>
+<div class="ro" id="i_d"><div class="k">…of which from delay</div><div class="v">–</div></div>
+<div class="ro" id="i_a"><div class="k">Accelerometer-only (RMS)</div><div class="v">–</div></div>
+<div class="ro" id="i_g"><div class="k">Gyro-only drift after 4 s</div><div class="v">–</div></div>
+<div class="ro" id="i_w"><div class="k">Angular-velocity error (RMS)</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:#e6edf3"></i>true tilt</span><span><i style="background:#5d6b7a"></i>accelerometer only</span><span><i style="background:var(--violet)"></i>gyro only</span><span><i style="background:var(--accent)"></i>filter, as the policy sees it (delayed)</span></div>
+</div>
+</div>

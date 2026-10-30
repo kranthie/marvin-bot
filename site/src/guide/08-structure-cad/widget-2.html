@@ -1,0 +1,35 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-cpreset="today">Marvin Bot-like</button>
+<button data-cpreset="narrow">Slim chest</button>
+<button data-cpreset="out">Shoulder further out</button>
+<button data-cpreset="motor">Bigger motor on the arm</button>
+</div>
+<h4>Pose</h4>
+<div class="ctl"><label>Shoulder pitch (arm forward) <output id="o_phi"></output></label><input id="phi" max="180" min="-60" step="1" type="range" value="0"/></div>
+<div class="ctl"><label>Shoulder roll <output id="o_th"></output></label><input id="th" max="45" min="-30" step="0.5" type="range" value="8"/>
+<div class="hint">+ = arm away from the body; − = towards the midline.</div></div>
+<h4>Geometry</h4>
+<div class="ctl"><label>Roll axis outboard of torso side <output id="o_a"></output></label><input id="a" max="90" min="30" step="1" type="range" value="55"/></div>
+<div class="ctl"><label>Chest corner radius <output id="o_Rc"></output></label><input id="Rc" max="90" min="10" step="1" type="range" value="90"/>
+<div class="hint">A rounder chest leaves room for the arm to come forward and in.</div></div>
+<div class="ctl"><label>Motor radius on the arm <output id="o_mR"></output></label><input id="mR" max="60" min="25" step="0.5" type="range" value="42.5"/>
+<div class="hint">RS06 at shoulder yaw: Ø85 mm.</div></div>
+<div class="ctl"><label>Clearance gap <output id="o_gap"></output></label><input id="gap" max="15" min="0" step="1" type="range" value="4"/>
+<div class="hint">The body shells sit 4 mm off the parts (<code>cad/covers.py</code>).</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Front and top views of the arm beside the torso, with contacts marked in red" id="sweep" role="img" viewbox="0 0 640 320"></svg>
+<svg aria-label="Chart of the lowest shoulder roll before contact against shoulder pitch, with the repo's coupled limit" id="curve" role="img" style="margin-top:8px" viewbox="0 0 640 230"></svg>
+<div class="readouts">
+<div class="ro" id="r_hit"><div class="k">This pose</div><div class="v">–</div></div>
+<div class="ro" id="r_first"><div class="k">First contact, sweeping roll inward</div><div class="v">–</div></div>
+<div class="ro" id="r_hang"><div class="k">Limit, arm hanging (repo 0°)</div><div class="v">–</div></div>
+<div class="ro" id="r_fwd"><div class="k">Limit, arm forward 90° (repo −20°)</div><div class="v">–</div></div>
+</div>
+<p class="small"><b>How to read this picture:</b> the top panel shows the arm and torso from the front and from above, with anything touching marked red. The chart below has shoulder pitch (how far the arm is raised forward) along the bottom and the lowest shoulder roll reached before contact up the side; below the curve the arm would hit the body.</p>
+<div class="legend"><span><i style="background:var(--accent)"></i>toy: lowest roll before contact</span><span><i style="background:var(--accent2)"></i>repo coupled limit (<code>robot.yaml</code>)</span><span><i style="background:var(--bad)"></i>contact</span></div>
+</div>
+</div>

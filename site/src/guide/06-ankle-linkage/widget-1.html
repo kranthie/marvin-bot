@@ -1,0 +1,66 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets" id="presets">
+<button data-preset="today">Marvin Bot today</button>
+<button data-preset="worst">Worst transmission (toes down, rolled)</button>
+<button data-preset="narrow">Narrow rods (±25 mm)</button>
+<button data-preset="short">Rods close to the axis (35 mm)</button>
+<button data-preset="calf">High motor behind (calf)</button>
+<button data-preset="rs06">RS06 motors</button>
+</div>
+<h4>Ankle pose</h4>
+<div class="ctl"><label for="pitch">Ankle pitch <output id="o_pitch"></output></label>
+<input id="pitch" max="40" min="-40" step="1" type="range" value="0"/>
+<div class="hint">+ = toes up (dorsiflexion). Range ±40°.</div></div>
+<div class="ctl"><label for="roll">Ankle roll <output id="o_roll"></output></label>
+<input id="roll" max="20" min="-20" step="1" type="range" value="0"/>
+<div class="hint">Range ±20°. Left ankle; + rolls the sole's outer edge down.</div></div>
+<h4>Geometry</h4>
+<div class="ctl"><label for="r">Crank radius <output id="o_r"></output></label>
+<input id="r" max="80" min="35" step="1" type="range" value="60"/>
+<div class="hint">Length of the arm on each motor. Longer: more ankle speed, less ankle torque.</div></div>
+<div class="ctl"><label for="back">Rod ends behind the ankle axis <output id="o_back"></output></label>
+<input id="back" max="90" min="30" step="1" type="range" value="60"/>
+<div class="hint">Where the rods grip the foot, measured back from the ankle. Further back: more pitch torque, less pitch speed.</div></div>
+<div class="ctl"><label for="side">Rod ends beside the axis <output id="o_side"></output></label>
+<input id="side" max="60" min="20" step="1" type="range" value="40"/>
+<div class="hint">How far apart sideways the rods grip. Wider: more roll torque, but a wider foot and shin.</div></div>
+<div class="ctl"><label for="bx">Upper motor, forward of the shin axis <output id="o_bx"></output></label>
+<input id="bx" max="60" min="-60" step="5" type="range" value="40"/>
+<div class="hint">Lower motor fixed 10 mm behind, 80 mm up; upper motor 180 mm up.</div></div>
+<h4>Motors and load</h4>
+<div class="ctl"><label for="model">Motor pair</label>
+<select id="model"><option value="RS03">2 × RS03 (60 / 20 N·m)</option><option value="RS06">2 × RS06 (36 / 11 N·m)</option><option value="RS04">2 × RS04 (120 / 40 N·m)</option></select></div>
+<div class="ctl"><label for="dp">Pitch torque demand <output id="o_dp"></output></label>
+<input id="dp" max="120" min="0" step="1" type="range" value="60"/>
+<div class="hint">How much forwards-and-back turning force the ankle must make (a stair step needs about 24 N·m).</div></div>
+<div class="ctl"><label for="dr">Roll torque demand <output id="o_dr"></output></label>
+<input id="dr" max="80" min="0" step="1" type="range" value="30"/>
+<div class="hint">For rod forces and the torque map. 60 / 30 N·m is the repo's rod-sizing case.</div></div>
+</div>
+<div class="preview">
+<p class="pgtitle">Side view (left) and rear view (right) of the left ankle</p>
+<svg aria-label="Side and rear views of the ankle linkage with motors, cranks, rods and foot" id="view" role="img" viewbox="0 0 640 360"></svg>
+<div class="statusline" id="status">–</div>
+<div class="readouts">
+<div class="ro" id="r1"><div class="k">Crank angles a / b</div><div class="v">–</div></div>
+<div class="ro" id="r2"><div class="k">Transmission a / b (1 best, below 0.5 poor)</div><div class="v">–</div></div>
+<div class="ro" id="r3"><div class="k">Pitch torque, rated / peak</div><div class="v">–</div></div>
+<div class="ro" id="r4"><div class="k">Roll torque, rated / peak</div><div class="v">–</div></div>
+<div class="ro" id="r5"><div class="k">Rod forces for the demand</div><div class="v">–</div></div>
+<div class="ro" id="r6"><div class="k">Jacobian dθ/dq (rows a, b; explained below)</div><div class="v mat">–</div></div>
+</div>
+<p class="pgtitle" style="margin-top:12px">Whole range: worst transmission at each pose (left) and the torque the pair can make at this pose (right)</p>
+<svg aria-label="Map of transmission over the pitch and roll range, and the feasible joint torque region" id="maps" role="img" viewbox="0 0 640 280"></svg>
+<div class="readouts">
+<div class="ro" id="w1"><div class="k">Worst pose: pitch rated / peak</div><div class="v">–</div></div>
+<div class="ro" id="w2"><div class="k">Worst pose: roll rated / peak</div><div class="v">–</div></div>
+<div class="ro" id="w3"><div class="k">Worst transmission (≥ 0.5)</div><div class="v">–</div></div>
+<div class="ro" id="w4"><div class="k">Largest rod force</div><div class="v">–</div></div>
+<div class="ro" id="w5"><div class="k">Ratios at neutral (pitch / roll)</div><div class="v">–</div></div>
+<div class="ro" id="w6"><div class="k">Rod lengths; crank swing</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--accent)"></i>motor a (low) and its rod</span><span><i style="background:var(--accent2)"></i>motor b (high) and its rod</span><span><i style="background:var(--good)"></i>real torque region (peak)</span><span><i style="background:#2e6b4f"></i>real (rated)</span><span><i style="background:var(--violet)"></i>simulator's box (peak)</span><span><i style="background:var(--bad)"></i>demand</span></div>
+</div>
+</div>

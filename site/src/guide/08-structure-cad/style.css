@@ -1,0 +1,8 @@
+/* Structure and code-CAD: styles for this page's playground */
+.pg + .pg{margin-top:28px}
+svg text{font-family:var(--font)}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin:4px 0}
+.small{font-size:13px;color:var(--muted)}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1 1 auto}
+pre.cad{font-size:12.5px}

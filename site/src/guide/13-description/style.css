@@ -1,0 +1,19 @@
+/* The robot description: one source of truth: styles for this page's playground */
+p code,li code{overflow-wrap:anywhere}
+.pg svg{touch-action:none}
+.yaml{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;font:13px/1.9 var(--mono);color:#cfe3f5;overflow-x:auto}
+.yaml .c{color:#6f7f8f}
+.yaml input,.yaml select{font:13px var(--mono);background:var(--panel2);color:var(--accent2);border:1px solid var(--line);border-radius:4px;padding:1px 3px}
+.yaml input[type=number]{width:62px}
+.yaml input[type=text]{width:120px}
+.out{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-content:start;min-width:0}
+.out pre{margin:0;max-height:320px}
+.tag{color:#7fc4ff}.attr{color:#ffb454}.val{color:#a5e3a0}
+.checks{list-style:none;padding:0;margin:8px 0;font-size:14px}
+.checks li{padding:5px 8px;border-left:3px solid var(--good);background:var(--panel2);margin:4px 0;border-radius:0 6px 6px 0;max-width:none}
+.checks li.fail{border-color:var(--bad)} .checks li.warn{border-color:var(--warn)}
+.checks li b{font-family:var(--mono);font-size:12px;margin-right:6px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;margin:12px 0}
+.pipe span.box{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.pipe span.arr{color:var(--muted)}

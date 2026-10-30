@@ -1,0 +1,314 @@
+---
+title: "Actuators: quasi-direct drive, torque, speed and heat"
+description: "Every joint of a humanoid is only as strong, fast and gentle as the actuator behind it."
+sidebar:
+  label: "04 · Actuators: quasi-direct drive, torque, speed and heat"
+  order: 5
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/04-actuators/widget-1.html?raw';
+import widget2 from '../../../guide/04-actuators/widget-2.html?raw';
+import widget3 from '../../../guide/04-actuators/widget-3.html?raw';
+import widget4 from '../../../guide/04-actuators/widget-4.html?raw';
+import script from '../../../guide/04-actuators/script.js?raw';
+import '../../../guide/04-actuators/style.css';
+
+<div class="guide-meta">
+
+**Stage 2 · Mechanics** · \~40 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [03 System architecture](../03-architecture/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Every joint of a humanoid is only as strong, fast and gentle as the actuator behind it. This page explains what an electric actuator can and cannot do (how much torque, at what speed, for how long before it overheats), and why Marvin Bot uses four sizes of low-ratio RobStride actuators.
+
+:::note[You will learn]
+- How current becomes torque and speed becomes voltage in a brushless motor (torque constant and back-EMF), and why that gives a torque-speed envelope.
+- What a gearbox trades: torque up by N, speed down by N, reflected inertia up by N², and what "quasi-direct drive" means.
+- Why rated (continuous) torque is a heat limit, not a strength limit, and how the heat sink and the duty cycle change it.
+- Why each RobStride model sits at each of Marvin Bot's joints, and where the knee runs out of margin on stairs.
+:::
+
+## The idea in one picture
+
+Actuators are the robot's muscles: every joint from page 01 has one, and every balancing move from page 02 has to come out of them. You already know their three limits from your own arm. You can lift a heavy shopping bag for a moment, but not for an hour; you can swing an empty arm fast, but not a loaded one; and if you hold the bag out for long, the muscle gets tired and hot. A motor is the same, except that "tired" means "the copper inside is getting too hot".
+
+Two units first. **Torque** is turning force, measured in newton-metres (N·m): holding a 1 kg bag 10 cm from a joint takes about 1 N·m, and Marvin Bot's knee holds about 47 N·m on a high stair step. Joint **speed** is in radians per second (rad/s; 1 rad/s is about 9.5 revolutions per minute, rpm).
+
+An *actuator* here means a brushless electric motor (one with no rubbing contacts inside, so it lasts and runs cool), a small gearbox and a motor driver (the electronics that feed it) in one housing. The motor turns electric **current into torque**; the gearbox multiplies that torque and divides the speed; the driver decides, a few thousand times a second, how much current to push. Three limits shape everything it can do:
+
+- **Current limit** (the flat top of the envelope): the driver and the magnets allow only so much current, so only so much <a class="g" href="../glossary/#peak-torque">peak torque</a>.
+- **Voltage limit** (the falling edge): a spinning motor generates a voltage against its supply, the <a class="g" href="../glossary/#back-emf">back-EMF</a>. Near the top speed there is no voltage left to push current, so torque falls to zero at the no-load speed.
+- **Heat limit** (the dashed line): current heats the copper windings. The torque the motor can hold forever without overheating is the <a class="g" href="../glossary/#rated-torque">continuous (rated) torque</a>, typically a third of the peak.
+
+So there are two different "how strong?" numbers: the **peak** torque (for a moment) and the **rated** torque (for ever). Most design questions on this page come down to which of the two a task needs. The first playground draws these limits for Marvin Bot's actuators and lets you ask "can this joint do that?". The second follows the winding temperature through a stair climb. The third shows why each model sits where it does.
+
+## Playground 1: torque-speed explorer
+
+<b>Start here:</b> press **Marvin Bot today**, then try the other presets. The two "What the joint needs" sliders place a dot: the torque and speed a task asks of the joint.
+
+<div class="hint">
+
+How to read this picture: speed runs left to right, torque bottom to top. The outer (blue) line is the most the actuator can give for a moment; the green area is what it can give for ever without overheating. A dot inside green is fine; inside the outer line but above green is fine only briefly (a heat problem); outside the outer line is impossible. The orange band shows the speed range the motor's command format allows (explained under "Driver modes" below).
+
+</div>
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Press *Marvin Bot today*. The point (47 N·m, nearly still) is far inside the peak envelope but above the green continuous region: a heat problem, not a strength problem. Now press *Parked 1.5:1 knee stage*: the same point drops inside the continuous region, but the top speed falls from about 21 to 14 rad/s.
+2. Drag the gear ratio to 50. Torque looks wonderful, but watch *Felt at the sole*: the motor's spinning rotor now feels like about 7 kg bolted to the foot on impact, against about 0.2 kg at 9:1.
+3. Press *Knee swing while walking* and drag the voltage from 54 down to 36 V. The top of the envelope does not move; only the speed edge does.
+4. Switch on the simulator's motor model (violet). Compare it with the manual's curve: the straight line is much more pessimistic at mid speeds. That is a deliberate safety margin in Marvin Bot's training, and one of the things the bench test should calibrate.
+:::
+
+## From first principles
+
+### Current makes torque: the torque constant
+
+Inside a brushless motor, permanent magnets on the rotor (the part that spins) sit next to copper coils on the stator (the fixed part). Current in a coil in a magnetic field feels a force; arranged around a circle, that force is a torque. The driver keeps the current always pointing the most useful way (this is called field-oriented control, FOC), so torque is simply proportional to current:
+
+<div class="eq">
+
+τ = K<sub>t</sub> · I
+
+</div>
+
+<div class="sym">
+
+τ: torque (N·m). I: phase current (A rms). K<sub>t</sub>: <a class="g" href="../glossary/#torque-constant">torque constant</a> (N·m/A). RobStride quotes K<sub>t</sub> at the output of the gearbox: 2.1 N·m/A for the RS04, 2.36 for the RS03, 1.09 for the RS06 and 1.48 for the RS00.<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[4\]](#s4)</sup><sup class="cite">[\[5\]](#s5)</sup>
+
+</div>
+
+Check it against the RS04 manual: rated current 27 A peak = 27/√2 = 19.1 A rms, times 2.1 N·m/A = 40 N·m, exactly the rated torque. At the peak current (90 A peak = 63.6 A rms) the same sum gives 134 N·m, but the manual's peak is 120 N·m: at high current the iron saturates and K<sub>t</sub> drops by about 10%.<sup class="cite">[\[2\]](#s2)</sup> The playground's current readout uses this measured curve.
+
+### Speed makes voltage: back-EMF
+
+The same magnets passing the same coils generate a voltage proportional to speed, the back-EMF. The supply must overcome it to push current in, so a motor on a fixed voltage has a top speed where the back-EMF eats the whole supply: the <a class="g" href="../glossary/#no-load-speed">no-load speed</a>.
+
+<div class="eq">
+
+ω<sub>0</sub> ≈ V<sub>bus</sub> / (√2 · k<sub>e</sub>) (motor speed, then ÷ N at the output)
+
+</div>
+
+<div class="sym">
+
+ω<sub>0</sub>: no-load speed. V<sub>bus</sub>: battery voltage (V). k<sub>e</sub>: back-EMF constant, line-to-line, in V rms per 1000 rpm of the rotor. √2 turns rms into the peak a 48 V bus can match.
+
+</div>
+
+The RS03 manual gives 17 V rms per 1000 rpm.<sup class="cite">[\[3\]](#s3)</sup> At 48 V: 48/(1.414 × 17) = 2.0 thousand rpm at the rotor, ÷ 9 = 222 rpm at the output. The manual measures 195-200 rpm; the gap is resistance and losses. Two consequences matter for a robot: **speed scales with battery voltage** (a full 54.6 V pack is about 14% faster than 48 V, a nearly empty 42 V pack about 12% slower), and **torque falls as speed approaches the top**.
+
+<details>
+<summary>Go deeper: how the two constants are linked, and field weakening</summary>
+
+The two constants are the same physics seen from two sides: for an ideal three-phase motor K<sub>t</sub> = √3 · k<sub>e</sub> (in SI units), which for the RS03 predicts 2.53 N·m/A against the quoted 2.36, consistent with a gearbox around 93% efficient.
+
+Some drivers can push past the top speed with <a class="g" href="../glossary/#field-weakening">field weakening</a>: an extra current component that partly cancels the magnets' field, lowering the back-EMF at the cost of more heat and less torque.<sup class="cite">[\[13\]](#s13)</sup> RobStride drivers have a field-weakening current parameter (I\_FW\_MAX), set to 0 (off) by default.<sup class="cite">[\[2\]](#s2)</sup> Marvin Bot does not use it, and the envelope here assumes it is off.
+
+</details>
+
+### The torque-speed envelope and power
+
+Put the two limits together and you get the envelope in the playground: a flat top at the peak torque, then a falling edge down to the no-load speed. The manuals publish this "T-N curve" at 48 V; the playground uses those curves, digitised by hand from the manuals' plots.<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[3\]](#s3)</sup> Mechanical power is torque times speed, P = τ · ω (watts, with ω in rad/s). The RS04's curve passes about 78 N·m at 150 rpm (15.7 rad/s): 1.2 kW of short-burst output from a 1.42 kg actuator.
+
+A physics simulator needs a simpler rule. Isaac Lab's `DCMotor` model clips torque to a straight line from the "saturation" torque at standstill to zero at the maximum speed.<sup class="cite">[\[11\]](#s11)</sup> Marvin Bot sets the saturation torque equal to the peak torque (`sim/isaaclab/marvin_bot/robot_cfg.py`), which is the violet triangle in the playground: at 95 rpm the RS04 manual shows the full 120 N·m, while the straight line allows 63 N·m. Training against a weaker motor is safe in one direction (the policy never asks for torque that does not exist) but can make it slower and more cautious than the hardware needs to be.
+
+### The gearbox: torque × N, speed ÷ N, inertia × N²
+
+A gearbox with ratio N (for example 9:1: the motor turns 9 times for each turn of the joint) multiplies torque by N and divides speed by N, like the low gears on a bicycle. Power stays the same, minus friction. So why not use a large ratio and a tiny motor? Because of three side effects:
+
+- <b><a class="g" href="../glossary/#reflected-inertia">Reflected inertia</a> grows with N².</b> The rotor spins N times faster than the joint, so to accelerate the joint you must accelerate the rotor N times as much, and the rotor's kinetic energy is N² times larger. Seen from the joint, the rotor's inertia J<sub>rotor</sub> looks like J<sub>refl</sub> = N² · J<sub>rotor</sub>.<sup class="cite">[\[10\]](#s10)</sup> In a foot strike, this inertia must be stopped instantly, so it acts like extra mass at the foot, and the impact force grows with it.<sup class="cite">[\[6\]](#s6)</sup>
+- <b><a class="g" href="../glossary/#backdrivability">Backdrivability</a> falls.</b> Gear friction scales roughly with N, and at high ratios you cannot turn the output by hand. A backdrivable actuator lets the leg "give" on impact, and lets the driver estimate the joint torque from the motor current alone, without a torque sensor.<sup class="cite">[\[6\]](#s6)</sup>
+- <b>Impact tolerance falls.</b> A gear tooth must stop the rotor's reflected inertia in an impact; high-ratio gears are where humanoid legs break.
+
+The playground reports reflected inertia from the armature values Marvin Bot's simulation uses (0.03 kg·m² for an RS04 joint, 0.02 for RS03, 0.01 for RS06, 0.005 for RS00, placeholders until the bench test) and divides it by the square of the knee-to-sole distance (0.315 m shin + 0.06 m ankle) to show the "mass" a foot strike feels.
+
+### Quasi-direct drive
+
+"Quasi" means "almost": almost no gearbox. The MIT Cheetah group showed that a large-diameter motor (lots of torque per amp, because torque grows with the rotor's radius) with a single low-ratio planetary stage (a compact gearbox with small "planet" gears running round a central "sun" gear), about 6:1 to 10:1, keeps the benefits of direct drive (low reflected inertia, backdrivability, current-based force control) while getting enough torque. They called it <a class="g" href="../glossary/#proprioceptive-actuation">proprioceptive actuation</a>: the actuator senses force from its own current.<sup class="cite">[\[6\]](#s6)</sup><sup class="cite">[\[7\]](#s7)</sup> The Mini Cheetah made it cheap and modular.<sup class="cite">[\[8\]](#s8)</sup> This is now called <a class="g" href="../glossary/#quasi-direct-drive">quasi-direct drive (QDD)</a>, and RobStride's actuators are of this kind: 9:1 or 10:1 planetary gearboxes with a FOC driver on the back.
+
+### Other gearboxes
+
+| Type | Typical ratio | Good at | Costs |
+|---|---|---|---|
+| *Planetary* (QDD) | 4:1-10:1 per stage | backdrivable, efficient, low reflected inertia, cheap | some backlash; one stage limits the ratio |
+| <a class="g" href="../glossary/#harmonic-drive">Harmonic (strain-wave)</a> | 30:1-160:1 | no backlash, compact, precise | hard to backdrive, high reflected inertia, flexspline sensitive to shock loads<sup class="cite">[\[10\]](#s10)</sup> |
+| <a class="g" href="../glossary/#cycloidal-drive">Cycloidal</a> | 10:1-100:1 | load shared over many lobes, shock tolerant, compact | more parts; friction rises with ratio. Berkeley Humanoid Lite uses 3D-printed cycloidal gearboxes because they tolerate printed-plastic tolerances better than planetary gears<sup class="cite">[\[9\]](#s9)</sup> |
+| Linkage or belt stage | 1.2:1-3:1 | moves the motor and adds a little ratio | parts, some compliance; the parked 1.5:1 knee option is this kind |
+
+### Heat: copper loss, thermal resistance and time constants
+
+Current through the windings' resistance R makes heat, the <a class="g" href="../glossary/#copper-loss">copper loss</a> (Joule heating):
+
+<div class="eq">
+
+P<sub>cu</sub> = 3 · I² · R<sub>phase</sub> ∝ τ²
+
+</div>
+
+R is the winding's electrical resistance per phase (ohms) and the 3 counts the motor's three phases (its three sets of coils); ∝ means "is proportional to". Torque is proportional to current, so **heat goes with torque squared**: 118% of rated torque makes 1.39 times the rated heat; 3 times rated (the peak) makes 9 times. Copper's resistance also rises 0.39% per kelvin (a temperature step of 1 K is the same as 1 °C)<sup class="cite">[\[14\]](#s14)</sup>, so a hot winding (145 °C) makes about 47% more heat for the same current than a cold one.
+
+Think of a kettle on a low flame: it warms quickly at first, then levels off where the heat put in equals the heat lost to the room. A motor does the same, in two stages: the thin copper windings heat up within seconds, the heavy metal housing over many minutes. The heat flows out through a chain of *thermal resistances* (kelvin per watt: how many degrees warmer a part runs for each watt it must get rid of): winding to housing, then housing to the heat sink and the air. Each body also stores heat (a thermal capacitance). The simplest useful model has two nodes, a small fast winding and a large slow housing, the same structure motor makers publish as "winding" and "motor" <a class="g" href="../glossary/#thermal-time-constant">thermal time constants</a>:<sup class="cite">[\[12\]](#s12)</sup>
+
+<details>
+<summary>Go deeper: the two-node heat equations</summary>
+
+<div class="eq">
+
+C<sub>w</sub> dT<sub>w</sub>/dt = P − (T<sub>w</sub> − T<sub>h</sub>)/R<sub>wh</sub> C<sub>h</sub> dT<sub>h</sub>/dt = (T<sub>w</sub> − T<sub>h</sub>)/R<sub>wh</sub> − (T<sub>h</sub> − T<sub>amb</sub>)/R<sub>ha</sub>
+
+</div>
+
+<div class="sym">
+
+T<sub>w</sub>, T<sub>h</sub>, T<sub>amb</sub>: winding, housing and ambient temperature (°C). C: heat capacity (J/K). R: thermal resistance (K/W). The time constants are τ<sub>w</sub> = R<sub>wh</sub>C<sub>w</sub> (seconds) and τ<sub>h</sub> = R<sub>ha</sub>C<sub>h</sub> (minutes). dT/dt means "how fast the temperature changes": heat in minus heat out, divided by the heat capacity.
+
+</div>
+
+</details>
+
+In steady state the winding sits P × (R<sub>wh</sub> + R<sub>ha</sub>) above ambient. The **rated torque is defined by that steady state**: the torque whose heat brings the winding to its limit. RobStride's manuals give a 145 °C winding limit (the protection threshold; the insulation itself survives 180 °C) at 25 °C ambient, a 120 K rise.<sup class="cite">[\[2\]](#s2)</sup> That is why the rated torque depends on the heat sink: the manual's RS04 makes 40 N·m bolted to a 345 × 345 mm aluminium plate but 35 N·m on a 220 × 200 mm plate. A bigger R<sub>ha</sub> needs less heat for the same 120 K, and torque goes with the square root of heat: 35/40 = 0.875, so the smaller plate has about 1.31 times the thermal resistance.
+
+Two more effects the playground includes. Above rated, the time to the limit depends on how far above: the manual's RS04 table (rotating at 50 rpm) gives 108 s at 60 N·m and 15 s at 100 N·m. **Holding still is worse than moving**: in a stall, the current stops rotating between the three phases and one phase carries the peak continuously, so it makes √2 times the average heat. The manual's stall-rated torque is 28.5 N·m for the RS04, close to 40/√2 = 28.3.<sup class="cite">[\[2\]](#s2)</sup>
+
+### Driver modes: MIT mode
+
+RobStride's default "operation control" mode is the <a class="g" href="../glossary/#mit-mode">MIT mode</a>, named after the drivers of MIT's Mini Cheetah robot: every command carries a target position p, a target velocity v, stiffness k<sub>p</sub>, damping k<sub>d</sub> and a feed-forward torque τ<sub>ff</sub>, and the driver computes, at its own fast rate,
+
+<div class="eq">
+
+τ<sub>ref</sub> = k<sub>p</sub>(p<sub>set</sub> − p) + k<sub>d</sub>(v<sub>set</sub> − v) + τ<sub>ff</sub>
+
+</div>
+
+and turns τ<sub>ref</sub> into current.<sup class="cite">[\[2\]](#s2)</sup> With k<sub>p</sub> = k<sub>d</sub> = 0 it is a pure torque motor; with k<sub>p</sub> = 0 and v<sub>set</sub> = 0 it is a damper; with k<sub>p</sub> &gt; 0 it is a spring around the target, which is what a walking policy uses (page [15](../15-pd-control/)). Each value is packed into 16 bits over a fixed range per model; for the RS04 the velocity range is ±15 rad/s and for the RS03 ±20 rad/s (`robot/drivers/robstride.py`, from the manuals), drawn in orange in the playground. Other modes (position, velocity, current) exist but MIT mode is the one that suits a learned policy.
+
+## Playground 2: winding temperature over a duty cycle
+
+A <a class="g" href="../glossary/#duty-cycle">duty cycle</a> is the pattern of work and rest a joint goes through, such as "push hard for 40% of each step, then ease off". <b>Start here:</b> press **Static 18 cm step hold** and then **Marvin Bot today**, and compare where the red line ends up.
+
+<div class="hint">
+
+How to read this picture: time runs left to right (minutes), temperature bottom to top. The red line is the copper winding, the blue line the housing, and the amber dashed line the 145 °C point where the driver protects itself and cuts torque. A red line that levels off below amber is fine; one that crosses it means the joint would stop mid-task. RMS (root mean square) torque, in the readouts, is the average that matters for heat, because it weights big torques more.
+
+</div>
+
+<RawHtml html={widget2} />
+
+:::note[Model and assumptions]
+Two-node model above. Its constants are fitted so that (a) the rated torque gives exactly a 120 K steady rise at 25 °C ambient, including copper's resistance rise, and (b) the times to the limit match the manuals' overload tables (RS04 rotating at 50 rpm; RS03 at 100 rpm) within about ±40%. Fitted: RS04 R<sub>wh</sub> = 10% of the total, τ<sub>w</sub> = 2 s, τ<sub>h</sub> = 250 s; RS03 20%, 20 s, 1000 s. RS06 and RS00 reuse the RS03 constants (their tables were not fitted: an assumption). Current follows the manual's two points (rated and peak current), so saturation is included. The heat-path slider scales the housing-to-ambient resistance. The model starts cold, has no airflow from motion, and the stall factor is a simple √2; the manuals' stall times are shorter than this model predicts, so treat stalls as optimistic.
+:::
+
+:::note[Try this]
+1. Press *Static 18 cm step hold*: 47 N·m held continuously, 118% of rated. The winding reaches 145 °C after about 6 minutes. Press *Same, thigh-sized heat sink* (87%, a 35 N·m rating): the limit comes about a minute sooner, and the steady state it is heading for is far higher.
+2. Press *Marvin Bot today*: an illustrative stair profile whose knee load averages about 74% of rated (RMS), the figure measured for the stair policy rough v5 on the earlier 1.29 m model. It warms up and levels off well below the limit: the duty cycle, not the peak, sets the temperature.
+3. Press *Knee while walking*: an illustrative profile set to 68% of rated (RMS), the hottest joint (a knee) in the flat policy v8's 1.0 m/s fast walk on the 1.44 m model (`sim/isaaclab/README.md`).
+4. Tick *Holding still* on the static hold. The same torque without rotation heats one phase √2 times faster.
+5. Set the RS04, constant profile, 120 N·m (peak). The model gives a few seconds: peak torque is for jumps, pushes and catching a fall, never for standing.
+:::
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+Four RobStride quasi-direct-drive models plus Feetech servos, specifications in `description/actuators.yaml` (from RobStride's manuals<sup class="cite">[\[1\]](#s1)</sup>) and placement in `description/robot.yaml`: RS04 at hip pitch, hip roll and knee (6), RS03 at hip yaw, both ankle motors, the waist and shoulder pitch and roll (11 + 1 spare), RS06 at shoulder yaw and elbow (4), RS00 at wrist yaw (2), STS3250 servos at the neck and wrist pitch (4). All on 48 V, MIT mode over CAN at 500 Hz (legs) and 250 Hz (arms). The rule is: peak torques at most 70% of peak rating; continuous (RMS) torque within rating (`docs/design/stairs.md`).
+:::
+
+### Playground 3: why each model sits at each joint
+
+Bars show the repo's worst static demand for each joint as a percentage of the actuator's continuous rating (filled) and peak (outline marker). Leg demands come from the static 18 cm step check (`sim/mujoco/check_step_up.py`, stance leg, current 1.44 m model); arm demands are hand calculations (arm straight out, 0.5 kg in the hand). Change the robot's mass, the heat path or the knee stage and see which joints cross 100%.
+
+<RawHtml html={widget3} />
+
+| Model | Peak N·m | Rated N·m | No-load rpm | Mass kg | Price | kg per 10 N·m peak | $ per N·m peak | $ per N·m rated | Joints |
+|---|---|---|---|---|---|---|---|---|---|
+| RS04 | 120 | 40 | 200 | 1.42 | $255 | 0.12 | 2.13 | 6.4 | hip pitch, hip roll, knee |
+| RS03 | 60 | 20 | 195 | 0.90 | $225 | 0.15 | 3.75 | 11.3 | hip yaw, ankle ×2, waist, shoulder pitch and roll |
+| RS06 | 36 | 11 | 480 | 0.621 | $210 | 0.17 | 5.83 | 19.1 | shoulder yaw, elbow |
+| RS00 | 14 | 5 | 315 | 0.31 | $139 | 0.22 | 9.93 | 27.8 | wrist yaw |
+
+<div class="small">
+
+Prices: Seeed Studio, October 2026 (`bom/bom.xlsx`). Torque and mass: `description/actuators.yaml`. Bigger actuators are cheaper and lighter per N·m, which is one reason the design uses the RS04 wherever the joint is heavily loaded, and why it stops at four sizes.
+
+</div>
+
+Reading the chart, the joint-by-joint story:
+
+- <b>Knee (RS04):</b> the hardest working joint. In the static 18 cm step it holds 47 N·m: 39% of peak (fine) but 118% of continuous rating. The trained stair policy rough v5 loaded it only part of each step, 73-75% of rated RMS (measured on the earlier 1.29 m model; the current stair policy, rough v9, has no published knee RMS on the 1.44 m body). The real rating in a thigh-sized mount may be 30-35 N·m rather than 40, which would push the stair RMS to 85-100% (`docs/design/stairs.md`). The phase 2 bench test (`bench/actuator/bench_robstride.py thermal --torque 47`) measures it.
+- <b>Hip roll (RS04):</b> 42 N·m on one leg, 105% of rated; about 60% RMS on stairs in simulation (rough v5, 1.29 m model).
+- <b>Hip pitch (RS04):</b> lightly loaded in a static step (at most 12 N·m, in the swing-over-the-edge pose) but takes large dynamic peaks in walking and when standing up; the RS04 also keeps one model for the three big hip and knee joints.
+- <b>Hip yaw (RS03):</b> 17.7 N·m in the static step, 89% of the RS03's 20 N·m. It swings with the leg, so a lighter, smaller motor here also reduces leg inertia.
+- <b>Ankles (2 × RS03 through a linkage):</b> 24 N·m pitch and 17.5 N·m roll needed against 32 and 25 N·m continuous available at the worst pose (`tools/ankle_linkage.py`; page [06](../06-ankle-linkage/)). RS06 ankles were tried in v0.2 and rejected: 22 / 11 N·m continuous was not enough for slow stairs and one-foot standing (`docs/decisions.md`, 2026-10-26).
+- <b>Shoulders (RS03 pitch and roll, RS06 yaw) and elbow (RS06):</b> holding the arm straight out takes about 6.7 N·m at the shoulder and 1.8 N·m at the elbow (9.4 and 3.4 N·m with 0.5 kg in the hand, from the URDF link masses). The margin is for push-ups and getting up after a fall, not for holding.
+- <b>Waist yaw (RS03):</b> not loaded by gravity; sized for the reaction of swinging arms and turning the torso. No static check in the repo.
+- <b>Wrist yaw (RS00) and wrist pitch / neck (STS3250 servos):</b> light loads; the wrist pitch servo is at 75% of its rating with 0.5 kg at the fingertips (`docs/requirements.md` R20).
+
+The simulator sees these actuators as peak torque and no-load speed per joint (`tools/build_urdf.py`), a straight-line DC-motor model, an armature (reflected inertia) placeholder per joint, and a 0-10 ms command delay. A heat penalty in training discourages holding more than about 0.9 times rated on average over one second (`sim/isaaclab/README.md`).
+
+## Trade-offs and alternatives
+
+| Option | For | Against | Status |
+|---|---|---|---|
+| RobStride RS04 / RS03 / RS06 / RS00 (QDD) | most torque per dollar of the QDD actuators compared; public manuals and STEP models; Python, Rust and ROS 2 drivers | ratings depend on the heat sink; some figures differ between README and manual | chosen (<code>docs/decisions.md</code>, 2026-10-25) |
+| Other QDD brands (CubeMars, Damiao, Encos, MyActuator) | second sources; the Damiao DM-J10010L matches the RS04 class | 2-3× the price per N·m or fewer verified specs | DM-J10010L kept as second source |
+| Self-built cycloidal actuators | cheap, open (as in Berkeley Humanoid Lite<sup class="cite">[\[9\]](#s9)</sup>) | more work, lower torque, wear | rejected |
+| Parked 1.5:1 knee stage (belt or linkage after the RS04) | 60 N·m continuous, 180 peak | \~14 rad/s top speed, \~0.2 kg, some backlash, thigh redesign | parked until the bench test; also needed if legs grow longer (127% of rated at +90 mm legs) |
+| Better heat path (thigh plate as heat sink, paste, small fan) | +10-20% continuous, cheap | to be measured | first option to try |
+| RS06 instead of RS03 at shoulder pitch and roll | saves \~1.1 kg | shoulder peak 60 → 36 N·m, less margin for push-ups | listed as a mass saving |
+
+:::caution[Where sources and the repo disagree]
+- <b>RS03 no-load speed and mass:</b> RobStride's specification README says 195 rpm and 900 g; the RS03 manual (CAN 2.0, revision 261013) says 200 rpm and 880 g. `actuators.yaml` uses the README's 195 rpm and 0.90 kg and records both.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[3\]](#s3)</sup>
+- <b>RS03 rated torque:</b> README 21 N·m, manual 20 N·m (215 × 220 mm plate); the repo uses 20.
+- <b>Voltage range:</b> the README gives 15-60 V for the RS03, RS04 and RS06; the RS03 and RS04 manuals say 24-60 V. The repo uses 24-60 V for those two (15-60 V for the RS06, matching its manual).
+- <b>RS06 test plate:</b> the RS06 manual says 130 × 160 mm in its service conditions and 130 × 155 mm in its overload test.
+- <b>Torque-speed model:</b> the manuals' T-N curves keep near-peak torque up to about half the no-load speed; the simulation's straight-line DC-motor model (saturation torque = peak) is much more conservative at mid speeds. Not an error, but a modelling choice to revisit with bench data.
+- <b>Ankle demand:</b> `docs/design/stairs.md` says the ankle needs "\~22 and \~14 N·m" (pitch, roll); running `check_step_up.py` on today's 1.44 m model gives 24.4 and 17.5 N·m, still within the 32 / 25 N·m available.
+:::
+
+## Decisions you can make here
+
+- Whether the knee needs the 1.5:1 stage: compare the stair RMS (Playground 2) against the rating you expect in the real thigh mount. Trade: 50% more continuous knee torque, but a third less top speed, about +0.2 kg per leg and a thigh redesign.
+- How much heat path to design in: every percent of rating gained by a better plate or a small fan is torque for little money, at the cost of some mass and design time.
+- Whether to give the simulator the manual's torque-speed (T-N) curve instead of the straight line: faster, less cautious policies, but more risk of asking for torque the real motor lacks if the curve is optimistic.
+- Gear ratio for a new joint: torque goes up by N, but the foot-strike "mass" goes up by N² and the joint stops giving way when bumped.
+- Battery voltage window: letting the battery run lower gives more runtime per charge but costs top speed (not torque) near the end.
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+<b>Where this leads.</b> This page treated each motor on its own. Page 05 works out where the leg loads come from (the robot's weight times lever arms) and why stairs are the hardest case, and page 06 shows how two of these motors share the ankle's work.
+
+## Further reading
+
+- [Wensing et al., Proprioceptive actuator design in the MIT Cheetah (2017)](https://dspace.mit.edu/handle/1721.1/119863): the clearest explanation of why low gear ratios suit legged robots, with the impact and bandwidth analysis.
+- [Lynch and Park, Modern Robotics, section 8.9](https://hades.mech.northwestern.edu/images/7/7f/MR.pdf): motors, gearing, torque-speed curves and reflected inertia in textbook form.
+- [RobStride Product\_Information](https://github.com/RobStride/Product_Information): the manuals with T-N curves, overload tables and the CAN protocol, worth reading before the bench test.
+- [Chi et al., Berkeley Humanoid Lite (2025)](https://arxiv.org/abs/2504.17249): an open humanoid with self-built cycloidal actuators, including their backlash and wear testing.
+- [Isaac Lab actuator models](https://isaac-sim.github.io/IsaacLab/main/source/concepts/actuators.html): what the simulator does with your torque and speed numbers.
+
+## Sources
+
+1. <span id="s1"></span>[RobStride, Product\_Information repository, specification README](https://github.com/RobStride/Product_Information) <span class="used">— used for: peak, rated, no-load speed, ratio, mass and voltage per model; README-versus-manual differences.</span>
+2. <span id="s2"></span>[RobStride, RS04 User Manual (CAN 2.0, rev. 260713)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS04) <span class="used">— used for: K<sub>t</sub> 2.1 N·m/A, rated/peak currents, back-EMF, T-N curve, 345 / 220 mm plate ratings, 145 °C limit, overload and stall tables, operation-control (MIT) formula, field-weakening parameter.</span>
+3. <span id="s3"></span>[RobStride, RS03 User Manual (CAN 2.0, rev. 261013)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS03) <span class="used">— used for: RS03 K<sub>t</sub>, 17 V/krpm back-EMF, 200 rpm and 880 g, T-N curve, 215 × 220 mm plate, overload table.</span>
+4. <span id="s4"></span>[RobStride, RS06 User Manual (CAN 2.0, rev. 260713)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS06) <span class="used">— used for: RS06 K<sub>t</sub>, currents, back-EMF, T-N curve, test plate.</span>
+5. <span id="s5"></span>[RobStride, RS00 User Manual (CAN 2.0, rev. 260713)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS00) <span class="used">— used for: RS00 K<sub>t</sub>, currents, back-EMF, T-N curve.</span>
+6. <span id="s6"></span>[P. M. Wensing, A. Wang, S. Seok, D. Otten, J. Lang, S. Kim, "Proprioceptive Actuator Design in the MIT Cheetah: Impact Mitigation and High-Bandwidth Physical Interaction for Dynamic Legged Robots," IEEE T-RO 33(3), 2017](https://dspace.mit.edu/handle/1721.1/119863) <span class="used">— used for: proprioceptive actuation, reflected inertia and impact mitigation, backdrivability.</span>
+7. <span id="s7"></span>[S. Seok et al., "Design Principles for Energy-Efficient Legged Locomotion and Implementation on the MIT Cheetah Robot," IEEE/ASME T-Mech, 2015](https://doi.org/10.1109/TMECH.2014.2339013) <span class="used">— used for: large-gap motors with a single low-ratio stage.</span>
+8. <span id="s8"></span>[B. Katz, J. Di Carlo, S. Kim, "Mini Cheetah: A Platform for Pushing the Limits of Dynamic Quadruped Control," ICRA 2019](https://doi.org/10.1109/ICRA.2019.8793865) <span class="used">— used for: low-cost modular QDD actuators and the MIT-mode driver lineage.</span>
+9. <span id="s9"></span>[Y. Chi et al., "Demonstrating Berkeley Humanoid Lite: An Open-source, Accessible, and Customizable 3D-printed Humanoid Robot," RSS 2025 (arXiv 2504.17249)](https://arxiv.org/abs/2504.17249) <span class="used">— used for: cycloidal gearboxes chosen for printed parts; directly driven joints.</span>
+10. <span id="s10"></span>[K. M. Lynch, F. C. Park, Modern Robotics, Cambridge University Press, 2017, §8.9](https://hades.mech.northwestern.edu/images/7/7f/MR.pdf) <span class="used">— used for: gearing, reflected (apparent) inertia N²·J, harmonic drives.</span>
+11. <span id="s11"></span>[Isaac Lab documentation, Actuators](https://isaac-sim.github.io/IsaacLab/main/source/concepts/actuators.html) <span class="used">— used for: the DC-motor torque-speed clipping model.</span>
+12. <span id="s12"></span>[maxon, catalogue motor data page (thermal data block)](https://www.maxongroup.com/medias/sys_master/root/9399155752990/Cataloge-Page-EN-173.pdf) <span class="used">— used for: the convention of two thermal resistances and two time constants (winding, motor).</span>
+13. <span id="s13"></span>[Texas Instruments, TIDUF56 design guide (field weakening and MTPA)](https://www.ti.com/document-viewer/lit/html/TIDUF56/GUID-8DA8E6AB-DFB2-40D3-89BE-4CE6D0397309) <span class="used">— used for: field weakening extends operation above base speed.</span>
+14. <span id="s14"></span>[NBS Handbook 100, Copper Wire Tables (1966)](https://nvlpubs.nist.gov/nistpubs/Legacy/hb/nbshandbook100.pdf) <span class="used">— used for: copper's temperature coefficient of resistance, 0.00393 per K at 20 °C.</span>
+
+<PageScript code={script} />

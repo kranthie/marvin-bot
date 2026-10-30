@@ -1,0 +1,49 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-p2="today">Marvin Bot today: R14 push, one step</button>
+<button data-p2="ankle">R14 push, ankle only</button>
+<button data-p2="max">Largest push without a step</button>
+<button data-p2="train">Training push (0.5 m/s)</button>
+<button data-p2="side">R14 push sideways</button>
+</div>
+<h4>Robot</h4>
+<div class="ctl"><label>Mass <output id="o_mass"></output></label>
+<input id="mass" max="55" min="25" step="0.05" type="range" value="41.3"/>
+<div class="hint">41.30 kg with shells; 40.35 kg bare.</div></div>
+<div class="ctl"><label>CoM height z <output id="o_z"></output></label>
+<input id="z" max="1.00" min="0.40" step="0.01" type="range" value="0.71"/>
+<div class="hint">0.706 m in the stance, from the URDF (see below).</div></div>
+<h4>Push</h4>
+<div class="ctl"><label>Impulse J <output id="o_J"></output></label>
+<input id="J" max="60" min="0" step="0.5" type="range" value="30"/>
+<div class="hint">R14: recover from 30 N·s while standing.</div></div>
+<div class="ctl"><label>Direction</label>
+<div class="seg" id="dir"><button class="on" data-d="fwd">Forward</button><button data-d="back">Backward</button><button data-d="side">Sideways</button></div>
+<div class="hint" id="dirhint"></div></div>
+<h4>Response</h4>
+<div class="ctl"><label>Strategy</label>
+<div class="seg" id="strat"><button data-s="ankle">Ankle only</button><button class="on" data-s="step">Ankle + one step</button></div></div>
+<div class="ctl"><label>Step lands after <output id="o_ts"></output></label>
+<input id="ts" max="0.70" min="0.10" step="0.01" type="range" value="0.30"/>
+<div class="hint">Time from the push to the swing foot touching down.</div></div>
+<div class="ctl"><label>Longest step allowed <output id="o_smax"></output></label>
+<input id="smax" max="0.70" min="0.15" step="0.01" type="range" value="0.40"/>
+<div class="hint">An assumption, not a repo number: foot-centre travel the leg can manage.</div></div>
+<div style="margin-top:8px"><button id="play">▶ Replay</button></div>
+</div>
+<div class="preview">
+<svg aria-label="Side view of an inverted pendulum after a push, with the capture point and the foot, and a time plot of CoM and capture point" id="lipm" role="img" viewbox="0 0 600 430"></svg>
+<div class="readouts">
+<div class="ro" id="r_dv"><div class="k">CoM velocity after push</div><div class="v">–</div></div>
+<div class="ro" id="r_w"><div class="k">ω = √(g/z) · time constant</div><div class="v">–</div></div>
+<div class="ro" id="r_cp"><div class="k">Capture point ahead of CoM</div><div class="v">–</div></div>
+<div class="ro" id="r_edge"><div class="k">Sole edge ahead of CoM</div><div class="v">–</div></div>
+<div class="ro" id="r_jmax"><div class="k">Largest push, no step</div><div class="v">–</div></div>
+<div class="ro" id="r_step"><div class="k">Step needed at touchdown</div><div class="v">–</div></div>
+</div>
+<div class="verdict" id="verdictB"></div>
+<div class="legend"><span><i style="background:var(--accent)"></i>CoM x(t)</span><span><i style="background:var(--accent2)"></i>capture point ξ(t)</span><span><i style="background:var(--violet)"></i>CoP p(t)</span><span><i style="background:#ffb45455;border:1px solid var(--accent2)"></i>sole</span></div>
+</div>
+</div>

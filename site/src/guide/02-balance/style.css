@@ -1,0 +1,6 @@
+/* Balance: centre of mass, support polygon, ZMP and capture point: styles for this page's playground */
+.eq{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:14px/1.7 var(--mono);overflow-x:auto;max-width:86ch}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1 1 auto}
+#topview{touch-action:none;cursor:crosshair}
+.verdict{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-size:14px}

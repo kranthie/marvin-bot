@@ -1,0 +1,24 @@
+<div class="pg">
+<div class="controls">
+<h4>Architecture</h4>
+<button class="archbtn on" data-arch="dec"><span class="tag">Marvin Bot first</span>Decoupled<small>RL legs + IK arms, VLA sends arm targets and walking commands</small></button>
+<button class="archbtn" data-arch="trk"><span class="tag">Marvin Bot later</span>General motion tracker<small>One policy follows any whole-body pose from teleop or a VLA</small></button>
+<button class="archbtn" data-arch="e2e">Single end-to-end policy<small>Camera and language in, joint targets out at 50 Hz</small></button>
+<h4>Task</h4>
+<div class="ctl"><select aria-label="Task" id="task">
+<option value="table">Pick a cup from a table, standing</option>
+<option value="carry">Carry a box while walking</option>
+<option value="floor">Pick an object off the floor</option>
+<option value="wave">Wave while walking</option>
+</select></div>
+<h4>Show</h4>
+<label class="chk"><input checked="" id="showData" type="checkbox"/><span>Data each module needs</span></label>
+<label class="chk"><input checked="" id="showRates" type="checkbox"/><span>Update rates</span></label>
+</div>
+<div class="preview">
+<svg aria-label="Block diagram of the chosen control architecture with rates and data" id="arch" role="img" viewbox="0 0 760 380"></svg>
+<div class="ratings" id="ratings"></div>
+<div class="pc"><div><b style="color:var(--good)">Strengths</b><ul id="pros"></ul></div><div><b style="color:var(--bad)">Weaknesses</b><ul id="cons"></ul></div></div>
+<div class="verdict" id="verdict"></div>
+</div>
+</div>

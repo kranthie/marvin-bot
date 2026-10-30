@@ -1,0 +1,34 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-lpreset="today">Marvin Bot today</button>
+<button data-lpreset="kneeup">Knee motor at the hip</button>
+<button data-lpreset="anklesup">Ankle motors high</button>
+<button data-lpreset="both">Both moved up</button>
+</div>
+<h4>Controls</h4>
+<div class="ctl"><label>Knee motor distance from hip <output id="o_rKnee"></output></label>
+<input id="rKnee" max="0.325" min="0.06" step="0.005" type="range" value="0.325"/>
+<div class="hint">0.325 m = at the knee (today). Less = moved up the thigh, with a 0.2 kg linkage added.</div></div>
+<div class="ctl"><label>Low ankle motor distance from hip <output id="o_rAnk"></output></label>
+<input id="rAnk" max="0.60" min="0.38" step="0.005" type="range" value="0.575"/>
+<div class="hint">Today one ankle RS03 sits high under the knee and one low behind the ankle.</div></div>
+<div class="ctl"><label>Foot mass <output id="o_mFoot"></output></label>
+<input id="mFoot" max="1.0" min="0.3" step="0.01" type="range" value="0.554"/>
+<div class="hint">Foot plate, ribs and TPU sole: 1.108 kg for two feet (<code>mass_budget.yaml</code>).</div></div>
+<div class="ctl"><label>Swing acceleration α <output id="o_alpha"></output></label>
+<input id="alpha" max="80" min="5" step="1" type="range" value="30"/>
+<div class="hint">How hard the hip swings the leg forward, in radians per second squared (1 rad ≈ 57°); a brisk step is tens of rad/s².</div></div>
+</div>
+<div class="preview">
+<svg aria-label="A straight leg hanging from the hip with its masses drawn as circles sized by mass and a bar chart of each mass's share of the leg's inertia" id="legv" role="img" viewbox="0 0 640 300"></svg>
+<div class="readouts">
+<div class="ro" id="r_I"><div class="k">Leg inertia about hip</div><div class="v">–</div></div>
+<div class="ro" id="r_tau"><div class="k">Hip torque for α</div><div class="v">–</div></div>
+<div class="ro" id="r_below"><div class="k">Share below the knee</div><div class="v">–</div></div>
+<div class="ro" id="r_legm"><div class="k">Swinging mass</div><div class="v">–</div></div>
+</div>
+<p class="small">Point-mass estimate of one straight leg below the hip pitch axis (masses from <code>mass_budget.yaml</code> and <code>actuators.yaml</code>, split along the leg by hand). Gravity is ignored here: it adds <i>m·g·r</i><sub>CoM</sub>·sin(angle) on top.</p>
+</div>
+</div>

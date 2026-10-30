@@ -1,0 +1,58 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="hip">Marvin Bot today: hip bus</button>
+<button data-preset="rarm">Right arm + waist</button>
+<button data-preset="six">All six leg motors, one bus</button>
+<button data-preset="fd">CAN FD, 5 Mbit/s data</button>
+<button data-preset="larm">Left arm (5 motors, 250 Hz)</button>
+</div>
+<h4>Physical layer</h4>
+<div class="ctl"><label>Protocol <output id="o_fdmode"></output></label>
+<select id="fdmode"><option value="0">Classic CAN 2.0B</option><option value="1">CAN FD (bit-rate switch)</option></select>
+<div class="hint">RobStride's motors use classic CAN; FD is shown as an alternative for other motors.</div></div>
+<div class="ctl"><label>Nominal bit rate <output id="o_rate"></output></label>
+<select id="rate"><option value="125000">125 kbit/s</option><option value="250000">250 kbit/s</option><option value="500000">500 kbit/s</option><option selected="" value="1000000">1 Mbit/s</option></select>
+<div class="hint">Classic CAN tops out at 1 Mbit/s; FD uses this rate for arbitration.</div></div>
+<div class="ctl" id="dratebox"><label>FD data bit rate <output id="o_drate"></output></label>
+<select id="drate"><option value="2000000">2 Mbit/s</option><option value="4000000">4 Mbit/s</option><option selected="" value="5000000">5 Mbit/s</option><option value="8000000">8 Mbit/s</option></select>
+<div class="hint">Only the data phase speeds up. The Orin's controllers support up to 15 Mbit/s with a suitable transceiver<sup class="cite"><a href="#s8">[8]</a></sup>.</div></div>
+<h4>Frame</h4>
+<div class="ctl"><label>Identifier length <output id="o_ext"></output></label>
+<select id="ext"><option value="1">29-bit (extended, CAN 2.0B)</option><option value="0">11-bit (standard)</option></select></div>
+<div class="ctl"><label>Data bytes <output id="o_dbi"></output></label>
+<input id="dbi" max="15" min="0" step="1" type="range" value="8"/>
+<div class="hint">RobStride commands and replies carry 8 bytes. FD allows 12-64 in steps.</div></div>
+<div class="ctl"><label>Bit stuffing (% of worst case) <output id="o_stuff"></output></label>
+<input id="stuff" max="100" min="0" step="1" type="range" value="100"/>
+<div class="hint">100% = the exact worst case a scheduler must plan for; real traffic is usually lower but data-dependent.</div></div>
+<h4>Traffic</h4>
+<div class="ctl"><label>Motors on this bus <output id="o_motors"></output></label>
+<input id="motors" max="12" min="1" step="1" type="range" value="3"/>
+<div class="hint">How many motors share this one pair of wires.</div></div>
+<div class="ctl"><label>Frames per motor per cycle <output id="o_fpm"></output></label>
+<input id="fpm" max="4" min="1" step="1" type="range" value="2"/>
+<div class="hint">RobStride: one command + one reply = 2.</div></div>
+<div class="ctl"><label>Control loop rate <output id="o_hz"></output></label>
+<input id="hz" max="2000" min="50" step="50" type="range" value="500"/>
+<div class="hint">Marvin Bot: legs 500 Hz, arms 250 Hz.</div></div>
+<div class="ctl"><label>Load limit you accept <output id="o_lim"></output></label>
+<input id="lim" max="90" min="30" step="5" type="range" value="60"/>
+<div class="hint">The highest share of busy time you are willing to plan for; the rest is spare room for errors and retries. The repo uses 60%.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Timeline of one control cycle with command and reply frames as coloured blocks" id="tl" role="img" viewbox="0 0 640 210"></svg>
+<svg aria-label="Anatomy of one frame: fields drawn to scale in bits" id="anat" role="img" style="margin-top:10px" viewbox="0 0 640 120"></svg>
+<div class="readouts">
+<div class="ro" id="r_bits"><div class="k">Bits per frame</div><div class="v">–</div></div>
+<div class="ro" id="r_ft"><div class="k">Time per frame</div><div class="v">–</div></div>
+<div class="ro" id="r_cyc"><div class="k">Bus time per cycle</div><div class="v">–</div></div>
+<div class="ro" id="r_load"><div class="k">Bus load</div><div class="v">–</div></div>
+<div class="ro" id="r_max"><div class="k">Max motors at your limit</div><div class="v">–</div></div>
+<div class="ro" id="r_lat"><div class="k">Last reply after</div><div class="v">–</div></div>
+</div>
+<p class="small"><b>How to read this picture:</b> the top strip is one control cycle (2,000 µs at 500 Hz) drawn left to right; each block is one frame on the wire, commands from the computer (the "host") in blue and replies in orange. Empty strip is idle bus time; the green dashed box marks your load limit. The lower strip zooms into a single frame and shows its fields to scale, with the inserted stuff bits in violet. "Last reply after" is how long into the cycle the final motor's answer arrives.</p>
+<div class="legend"><span><i style="background:var(--accent)"></i>command (host → motor)</span><span><i style="background:var(--accent2)"></i>reply (motor → host)</span><span><i style="background:#3a2a2a;border:1px solid var(--bad)"></i>past the load limit</span><span><i style="background:var(--violet)"></i>stuff bits</span></div>
+</div>
+</div>

@@ -1,0 +1,8 @@
+/* Hands: styles for this page's playground */
+#arm text,#fing text{font:11px var(--font);fill:var(--muted)}
+#arm .ttl,#fing .ttl{fill:var(--text);font-size:12px}
+.meter{display:grid;grid-template-columns:150px 1fr 120px;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+.meter .trk{height:16px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;position:relative;overflow:hidden}
+.meter .trk span{position:absolute;left:0;top:0;bottom:0}
+.meter .trk i{position:absolute;top:0;bottom:0;width:2px}
+.meter b{font-family:var(--mono);text-align:right}

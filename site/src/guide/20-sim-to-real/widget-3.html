@@ -1,0 +1,22 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-dr="today">Marvin Bot today</button>
+<button data-dr="p10">Model ±10%</button>
+<button data-dr="p30">Model ±30%</button>
+<button data-dr="wide">Very wide</button>
+</div>
+<div id="drctl"></div>
+</div>
+<div class="preview">
+<svg aria-label="Five horizontal bars showing randomised ranges for inertia, viscous friction, Coulomb friction, delay and torque constant, with model and true values marked." id="drsvg" role="img" viewbox="0 0 640 300"></svg>
+<div class="readouts">
+<div class="ro" id="r_cov"><div class="k">True values covered</div><div class="v">–</div></div>
+<div class="ro" id="r_vol"><div class="k">Range width (geo. mean)</div><div class="v">–</div></div>
+<div class="ro" id="r_wc"><div class="k">Worst corner tracking error</div><div class="v">–</div></div>
+<div class="ro" id="r_tr"><div class="k">Real tracking error</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--accent)"></i>randomised range</span><span><i style="background:#e6edf3"></i>model value</span><span><i style="background:var(--accent2)"></i>true value</span></div>
+</div>
+</div>
