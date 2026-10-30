@@ -317,7 +317,7 @@ YIELD_MPA = {
 TARGET = 2.2  # SF on yield: 2, plus the mesh's 5-9% under-read in bending
 RS03_PEAK = 60.0  # N·m, the ankle motors (they drive the ankle through the linkage)
 # printed parts that carry load between metal ones (checked with them, in their own material)
-STRUCTURAL_PRINTS = ("_upper_arm_shell", "_forearm_shell")
+STRUCTURAL_PRINTS = ("_upper_arm_shell", "_forearm_shell", "_hip_roll_strip", "neck_bracket")
 HELD = {  # joints whose interfaces hold a group, where it isn't the link's parent joint
     "pelvis": ["waist_yaw"],
     "left_foot_link": ["left_ankle_roll", "left_ankle_rod_a", "left_ankle_rod_b"],

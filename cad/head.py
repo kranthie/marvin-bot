@@ -80,14 +80,15 @@ def parts() -> list[Part]:
     # a hub on the horn carries the base plate clear of the bridge, and two cheeks hold the
     # pitch servo, which stands case-down below its shaft, by its mounting ears
     horn_top = neck_mount[2] + s_hi + horn_t - neck[2]  # neck frame
-    bridge_top = neck_mount[2] + s_hi + 10.0 - neck[2]  # cad/torso.py: a 10 mm bridge
+    bridge_top = neck_mount[2] + s_hi + 8.0 - neck[2]  # cad/torso.py: an 8 mm bridge
     base_z = bridge_top + 2.0 + 2.0  # 4 mm base, 2 mm over the bridge
     case_bot = pitch[2] - s_off - s_len / 2  # the pitch servo's case, along -z below the shaft
     ymid = (s_hi + s_lo) / 2
     sy = s_hi - s_lo  # the case's extent along the shaft
     cw = s_wid + 6  # the cradle, 3 mm round the case
-    bracket = prism(disc(16), "z", horn_top, base_z - 2.0)  # the hub
-    bracket += prism(rect(-20, 20, -37, 13), "z", base_z - 2.0, base_z + 2.0)  # the base
+    # printed PA-CF (it carries only the head), so walls thicker than in aluminium
+    bracket = prism(disc(20), "z", horn_top, base_z - 2.0)  # the hub
+    bracket += prism(rect(-20, 20, -37, 13), "z", base_z - 2.0, base_z + 4.0)  # the base
     frame = rect(-cw / 2, cw / 2, ymid - sy / 2 - 3, ymid + sy / 2 + 3)
     frame = prism(frame, "z", case_bot, base_z - 2.0)
     # an open frame, not a block
@@ -96,13 +97,13 @@ def parts() -> list[Part]:
     )
     bracket += frame
     for g in (1, -1):
-        cheek = rect(g * (s_wid / 2), g * (s_wid / 2 + 3), ymid - sy / 2, ymid + sy / 2)
+        cheek = rect(g * (s_wid / 2), g * (s_wid / 2 + 5), ymid - sy / 2, ymid + sy / 2)
         bracket += prism(cheek, "z", case_bot, case_bot + 25)
     nb_if = [contact("neck_yaw", (0, 0, horn_top), "z", 0, 8)]
     nb_if += [
         contact("neck_pitch", (g * s_wid / 2, ymid, case_bot + 12.5), "x", 0, 20) for g in (1, -1)
     ]
-    out.append(made("neck_bracket", "neck_link", "al6061", bracket, ifaces=nb_if))
+    out.append(made("neck_bracket", "neck_link", "pa_cf", bracket, "print", ifaces=nb_if))
 
     # --- head frame: side plates on the pitch servo's horn (+y) and idler (-y), a bridge with an
     # arm forward to the camera's tripod thread, and a top bar joining them

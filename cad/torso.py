@@ -78,20 +78,21 @@ def parts() -> list[Part]:
     bf = rc[0] - r_near  # back plate's front face
     bb = bf - hip_t  # and its back face
     waist_c = (j["waist_yaw"][0], 0.0, j["waist_yaw"][2])
-    w_ring, w_near = pillar_ring("RS03", waist_c, "z", 1)
-    top_t = 8.0
+    w_ring, w_near = pillar_ring("RS03", waist_c, "z", 1, base=2.0)
+    top_t = 6.0
     top_z0 = waist_c[2] - w_near - top_t  # the top plate's underside
     top_z1 = top_z0 + top_t
     rx = bb - 30.0  # the box's back: under the yokes' rear plates
-    bz0, bz1, bw = -62.0, -32.0, 5.0  # the box: below the rear bearings (r = 29 mm)
+    bz0, bz1, bw = -62.0, -32.0, 3.0  # the box: below the rear bearings (r = 29 mm)
     yb = 150.0  # its ends
-    gy, gt = 23.0, 6.0  # the gussets
-    back = rounded(
+    gy, gt = 23.0, 8.0  # the gussets
+    back = rounded(  # big fillets where the band meets the motor discs and the spine
         union2(
             *[disc(124, (s * rc[1], rc[2])) for s in (1, -1)],
             rect(-yb, yb, bz0, -20.0),
             rect(-gy - gt / 2, gy + gt / 2, bz0, top_z0),
-        )
+        ),
+        inside=16.0,
     )
     back = cut(
         back,
@@ -106,7 +107,7 @@ def parts() -> list[Part]:
         ),
     )
     out.append(
-        made("pelvis_back", "pelvis", "al6061", bplate(back, "x", bf - hip_t / 2, hip_t), "service")
+        made("pelvis_back", "pelvis", "al7075", bplate(back, "x", bf - hip_t / 2, hip_t), "service")
     )
     stub_l = 22.0  # to the roll yokes' far-side bearings
     for side, s in (("l", 1), ("r", -1)):
@@ -126,7 +127,7 @@ def parts() -> list[Part]:
             made(
                 f"pelvis_roll_mount_{side}",
                 "pelvis",
-                "al6061",
+                "al7075",
                 pillar_ring("RS04", c, "x", 1)[0],
                 ifaces=[stator_face("left_hip_roll", "RS04", c, "x", 1)] if s == 1 else None,
             )
@@ -138,16 +139,16 @@ def parts() -> list[Part]:
         for name, z in (("floor", bz0 + bw / 2), ("roof", bz1 - bw / 2)):
             sk = rect(rx, bb, y0, y1, r=0)
             out.append(
-                made(f"pelvis_box_{name}_{side}", "pelvis", "al6061", bplate(sk, "z", z, bw))
+                made(f"pelvis_box_{name}_{side}", "pelvis", "al7075", bplate(sk, "z", z, bw))
             )
         wall = rect(y0, y1, bz0 + bw, bz1 - bw, r=0)
         out.append(
-            made(f"pelvis_box_back_{side}", "pelvis", "al6061", bplate(wall, "x", rx + 2.5, bw))
+            made(f"pelvis_box_back_{side}", "pelvis", "al7075", bplate(wall, "x", rx + bw / 2, bw))
         )
         for name, y in (("end", s * (yb - 2.0)), ("mid", s * gy)):
             sk = rect(rx + bw, bb, bz0 + bw, bz1 - bw, r=0)
             out.append(
-                made(f"pelvis_box_{name}_{side}", "pelvis", "al6061", bplate(sk, "y", y, 4.0))
+                made(f"pelvis_box_{name}_{side}", "pelvis", "al7075", bplate(sk, "y", y, 4.0))
             )
     # the gussets: behind the back plate (over the box) and in front of it, clear of the thighs
     # in front (|x| < 40 mm below z = 40 mm)
@@ -158,17 +159,19 @@ def parts() -> list[Part]:
             rect(bf, waist_c[0] + 50, bz0, top_z0, r=0) - rect(-40.0, 200.0, bz0 - 1, 40.0, r=0)
         )
         for name, sk in (("rear", rear_g), ("front", front_g)):
-            sk = cut(sk, lighten(sk, keep=[rect(-200, 200, kz - 4, kz + 9)], hole=16, pitch=22))
+            # solid along the top box's floor, and under the top plate where the waist loads come in
+            keep = [rect(-200, 200, kz - 4, kz + 9), rect(-60, 90, top_z0 - 16, top_z0)]
+            sk = cut(sk, lighten(sk, keep=keep, pitch=22))
             out.append(
                 made(
-                    f"pelvis_gusset_{name}_{side}", "pelvis", "al6061", bplate(sk, "y", s * gy, gt)
+                    f"pelvis_gusset_{name}_{side}", "pelvis", "al7075", bplate(sk, "y", s * gy, gt)
                 )
             )
     out.append(
         made(
             "pelvis_keel_floor",
             "pelvis",
-            "al6061",
+            "al7075",
             bplate(rect(bf, -40.0, -gy + gt / 2, gy - gt / 2), "z", kz + 2.5, 5.0),
         )
     )
@@ -176,13 +179,19 @@ def parts() -> list[Part]:
     top = cut(
         top,
         stator_holes("RS03", waist_c, "z"),
-        lighten(top, keep=[ring_band("RS03", waist_c, "z")], pitch=24, rim=6),
+        lighten(
+            top,
+            keep=[ring_band("RS03", waist_c, "z")]
+            + [rect(-70, 90, s * gy - 12, s * gy + 12) for s in (1, -1)],  # over the gussets
+            pitch=24,
+            rim=6,
+        ),
     )
     out.append(
         made(
             "pelvis_top",
             "pelvis",
-            "al6061",
+            "al7075",
             bplate(top, "z", (top_z0 + top_z1) / 2, top_t),
         )
     )
@@ -190,7 +199,7 @@ def parts() -> list[Part]:
         made(
             "pelvis_waist_mount",
             "pelvis",
-            "al6061",
+            "al7075",
             w_ring,
             ifaces=[stator_face("waist_yaw", "RS03", waist_c, "z", 1)],
         )
@@ -210,7 +219,7 @@ def parts() -> list[Part]:
     comp = next(b for b in _skel["bodies"] if b["budget"] == "compute")
     y_bot = comp["size"][1] * 1000 / 2 + 6 + t / 2  # the frame narrows to the computer at the base
     bat_floor = (bat["xyz"][2] - bat["size"][2] / 2) * 1000  # the battery's shelf
-    tp = 8.0  # the shoulder plates
+    tp = 6.0  # the shoulder plates (7075)
     up_y = sh[1] - spec("RS03")["rear"] - tp / 2  # on the motors' body rear faces (caps inboard)
     # the frame runs from behind the battery to just ahead of the computer standing on edge
     fx0, fx1 = -95.0, 55.0
@@ -228,14 +237,19 @@ def parts() -> list[Part]:
     )
     base = rect(fx0, fx1, -y_bot + t / 2, y_bot - t / 2)  # between the side frames
     base = cut(base, lighten(base, keep=[disc(100)], pitch=28, rim=8))
-    out.append(made("torso_base", "torso_link", "al6061", bplate(base, "z", base_z + 1, 8.0)))
+    out.append(made("torso_base", "torso_link", "al7075", bplate(base, "z", base_z, t)))
     # the battery shelf, clear of the computer plate in front
     sx0, sx1 = fx0 + 5, (bat["xyz"][0] + bat["size"][0] / 2) * 1000 + 2
-    shelf = rect(sx0, sx1, -y_low + t / 2, y_low - t / 2)  # between the side frames
+    ut = 5.0  # the lower side frames
+    shelf = rect(sx0, sx1, -y_low + ut / 2, y_low - ut / 2)  # between the side frames
     shelf = cut(shelf, lighten(shelf, hole=18, pitch=24, rim=7))
     out.append(
         made(
-            "torso_battery_shelf", "torso_link", "al6061", bplate(shelf, "z", bat_floor - 2.0, 4.0)
+            "torso_battery_shelf",
+            "torso_link",
+            "pa_cf",
+            bplate(shelf, "z", bat_floor - 2.5, 5.0),
+            "print",
         )
     )
     (bx, bz), (fx, fz) = tops
@@ -257,7 +271,7 @@ def parts() -> list[Part]:
                 f"torso_upright_{side}",
                 "torso_link",
                 "al6061",
-                bplate(low, "y", s * y_low, t),
+                bplate(low, "y", s * y_low, ut),
                 "service",
             )
         )
@@ -268,7 +282,7 @@ def parts() -> list[Part]:
         # the foot and the lower frame are joined by two struts across the lean
         for k, x in enumerate((fx0 + 20, fx1 - 20)):
             strut = rect(x - 12, x + 12, base_z + t / 2, base_z + t / 2 + 12)
-            y0, y1 = sorted((s * (y_bot + t / 2), s * (y_low - t / 2)))
+            y0, y1 = sorted((s * (y_bot + t / 2), s * (y_low - ut / 2)))
             out.append(
                 made(
                     f"torso_strut_{side}{k}",
@@ -278,7 +292,7 @@ def parts() -> list[Part]:
                 )
             )
         ring = (sh[0], sh[2])
-        up = rounded(union2(disc(116, ring), slot(40, ring, (bx, bz)), slot(40, ring, (fx, fz))))
+        up = rounded(union2(disc(112, ring), slot(34, ring, (bx, bz)), slot(34, ring, (fx, fz))))
         up = cut(
             up,
             disc(spec("RS03")["cap_d"] + 2, ring),
@@ -290,14 +304,14 @@ def parts() -> list[Part]:
             made(
                 f"torso_shoulder_plate_{side}",
                 "torso_link",
-                "al6061",
+                "al7075",
                 bplate(up, "y", s * up_y, tp),
                 ifaces=sp_if,
             )
         )
         for k, (x, z) in enumerate(tops):
-            y0, y1 = sorted((s * (up_y + tp / 2), s * (y_low - t / 2)))
-            sp = cut(rect(x - 13, x + 13, z - 13, z + 13), disc(8.5, (x, z)))
+            y0, y1 = sorted((s * (up_y + tp / 2), s * (y_low - ut / 2)))
+            sp = cut(rect(x - 11, x + 11, z - 11, z + 11), disc(8.5, (x, z)))
             out.append(
                 made(f"torso_spacer_{side}{k}", "torso_link", "al6061", bprism(sp, "y", y0, y1))
             )
@@ -305,14 +319,14 @@ def parts() -> list[Part]:
     # is an H: two cross bars in front of and behind the shoulder motors' caps, joined by the
     # servo plate between them
     neck = mounts["neck_yaw"]
-    bt = 10.0
+    bt = 8.0  # 7075
     bridge_z = neck[2] + 5.8 + bt / 2  # on top of the servo (its spline up through the bridge)
     yb_ = up_y - tp / 2
     bridge = rounded(
-        union2(rect(38.0, 62.0, -yb_, yb_), rect(-62.0, -38.0, -yb_, yb_), rect(-56, 56, -35, 35))
+        union2(rect(40.0, 56.0, -yb_, yb_), rect(-56.0, -40.0, -yb_, yb_), rect(-56, 56, -35, 35))
     )
     bridge = cut(bridge, disc(26))
-    out.append(made("torso_bridge", "torso_link", "al6061", bplate(bridge, "z", bridge_z, bt)))
+    out.append(made("torso_bridge", "torso_link", "al7075", bplate(bridge, "z", bridge_z, bt)))
     # the computer stands on edge, fan forward, its I/O ports toward the sides (cable room to
     # the frames) and its buttons up; it bolts by the feet on its underside to a plate behind
     # it, standing on the base plate

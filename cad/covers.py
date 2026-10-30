@@ -193,7 +193,7 @@ def parts() -> list[Part]:
     # the shell covers the inner part of the shoulder pitch motors: broad shoulders over a
     # narrower chest and waist; the motors' outer ends pass through the side walls
     tor = on("torso_link")
-    sh_y = j["left_shoulder_pitch"][1] - 8  # inside the shoulder pitch output flange
+    sh_y = j["left_shoulder_pitch"][1] - 12  # inside the shoulder pitch output flange
     sh = j["left_shoulder_pitch"]
     neck_z = j["neck_yaw"][2]
     body = (

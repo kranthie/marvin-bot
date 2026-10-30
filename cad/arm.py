@@ -41,7 +41,6 @@ from .mounts import (
     output_plate,
     pillar_ring,
     ring_band,
-    ring_od,
     spec,
     stator_face,
     stator_holes,
@@ -106,7 +105,7 @@ def parts() -> list[Part]:
         made(
             "left_shoulder_flange",
             L,
-            "al6061",
+            "al7075",
             flange,
             ifaces=[output_face("left_shoulder_pitch", "RS03", (0, y0 - t03 / 2, 0), "y", 1)],
         )
@@ -117,12 +116,12 @@ def parts() -> list[Part]:
         stator_holes("RS03", roll, "x"),
         lighten(back, keep=[ring_band("RS03", roll, "x")], pitch=20, rim=6),
     )
-    out.append(made("left_shoulder_back", L, "al6061", bplate(back, "x", back_x, tb)))
+    out.append(made("left_shoulder_back", L, "al7075", bplate(back, "x", back_x, tb)))
     out.append(
         made(
             "left_shoulder_roll_mount",
             L,
-            "al6061",
+            "al7075",
             r_ring,
             ifaces=[stator_face("left_shoulder_roll", "RS03", roll, "x", 1)],
         )
@@ -135,10 +134,10 @@ def parts() -> list[Part]:
     L = "left_shoulder_roll_link"
     face = t03 / 2
     yaw = j["left_shoulder_yaw"]
-    y_ring, y_near = pillar_ring("RS06", yaw, "z", -1, clear=0.0)
+    y_ring, y_near = pillar_ring("RS06", yaw, "z", -1, clear=0.0, od=90.0)
     tt = 6.0
     top_z0 = yaw[2] + y_near  # the top plate's underside
-    fb = 10.0  # the front plate
+    fb = 8.0  # the front plate (7075)
     front = rounded(union2(disc(72), rect(-28, 28, top_z0, 0)))
     front = cut(front, lighten(front, keep=[disc(56)], hole=14, pitch=20, rim=7))
     front, _ = output_plate("RS03", front, (0, 0, 0), "x", 1, fb)
@@ -146,18 +145,18 @@ def parts() -> list[Part]:
         made(
             "left_shoulder_roll_front",
             L,
-            "al6061",
+            "al7075",
             front,
             ifaces=[output_face("left_shoulder_roll", "RS03", (0, 0, 0), "x", 1)],
         )
     )
-    top = rounded(hull(disc(ring_od("RS06") + 4, (yaw[0], yaw[1])), rect(0, face, -28, 28)))
+    top = rounded(hull(disc(90.0, (yaw[0], yaw[1])), rect(0, face, -28, 28)))
     top = cut(
         top,
         stator_holes("RS06", yaw, "z"),
         lighten(top, keep=[ring_band("RS06", yaw, "z")], pitch=20, rim=6),
     )
-    out.append(made("left_shoulder_roll_top", L, "al6061", bplate(top, "z", top_z0 + tt / 2, tt)))
+    out.append(made("left_shoulder_roll_top", L, "al7075", bplate(top, "z", top_z0 + tt / 2, tt)))
     out.append(
         made(
             "left_shoulder_yaw_mount",
@@ -184,7 +183,8 @@ def parts() -> list[Part]:
             ifaces=[output_face("left_shoulder_yaw", "RS06", (0, 0, 0), "z", -1)],
         )
     )
-    stator_y = el[1] - spec("RS06")["rear"] - t / 2  # on the elbow motor's body rear face
+    et = 4.0  # the elbow ring
+    stator_y = el[1] - spec("RS06")["rear"] - et / 2  # on the elbow motor's body rear face
     ring_el = cut(
         disc(d06 + 11, xz(el)),
         disc(spec("RS06")["cap_d"] + 2, xz(el)),
@@ -195,7 +195,7 @@ def parts() -> list[Part]:
             "left_upper_arm_elbow_ring",
             L,
             "al6061",
-            bplate(ring_el, "y", stator_y, t),
+            bplate(ring_el, "y", stator_y, et),
             ifaces=[stator_face("left_elbow", "RS06", el, "y", 1)],
         )
     )
@@ -221,7 +221,8 @@ def parts() -> list[Part]:
     # wrist RS00 is centred on the wrist joint below, axis z, output down
     wr = j["left_wrist_yaw"]
     out_y = t06 / 2
-    flange_f, _ = output_plate("RS06", disc(72), (0, 0, 0), "y", 1, t)
+    ft = 5.0  # the forearm flange; the shell starts on its outer face
+    flange_f, _ = output_plate("RS06", disc(72), (0, 0, 0), "y", 1, ft)
     out.append(
         made(
             "left_forearm_flange",
@@ -233,12 +234,12 @@ def parts() -> list[Part]:
     )
     cup_top = wr[2] + t00 / 2
     o = mhull(
-        cyl(68, 6, "y", (0, out_y + t + 3, -6)),
+        cyl(68, 6, "y", (0, out_y + ft + 3, -6)),
         cyl(d00 + 2 * WALL, t00 * 0.6, "z", (0, 0, cup_top - t00 * 0.3)),
         cyl(d00 + 2 * WALL + 4, 4, "z", (0, 0, cup_top + 20)),
     )
     i = mhull(
-        cyl(68 - 2 * WALL, 6 - 2 * WALL, "y", (0, out_y + t + 3, -6)),
+        cyl(68 - 2 * WALL, 6 - 2 * WALL, "y", (0, out_y + ft + 3, -6)),
         cyl(d00 + 0.6, t00 * 0.6 + 2, "z", (0, 0, cup_top - t00 * 0.3 - WALL)),
         cyl(d00 + 4, 4, "z", (0, 0, cup_top + 20)),
     )

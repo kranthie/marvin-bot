@@ -195,11 +195,10 @@ def output_plate(model: str, outline, centre, axis: str, sign: int, t: float):
 
 
 def ring_band(model: str, centre, axis: str):
-    """The band of a plate under a motor's pillar ring (the stator bolts), to keep solid when
-    the plate is pocketed; the plate inside it, over the driver cap, can be pocketed too."""
+    """Where a plate under a motor's pillar ring must stay solid when it is pocketed: a pad
+    round each stator bolt (the pillar ring's own base spreads the load between them)."""
     from . import b3d  # noqa: PLC0415
 
-    s = spec(model)
-    c = _uvc(axis, centre)
-    r_in = (s["cap_d"] + 2) / 2 if s["cap_d"] else s["body_d"] / 2 - 10
-    return b3d.cut(b3d.disc(ring_od(model) + 2, c), b3d.disc(2 * r_in, c))
+    h = spec(model)["holes"]["stator"]
+    pts = b3d.circle_pts(h["n"], h["pcd"], _uvc(axis, centre))
+    return b3d.circles(CLEAR[h["thread"]] + 6, pts)
