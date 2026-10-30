@@ -75,7 +75,8 @@ function drawArch(){
   // ratings
   $('ratings').innerHTML=RNAMES.map(([k,n])=>`<span>${n}</span><span class="rb"><i style="width:${a.r[k]*20}%"></i></span><span class="mono">${a.r[k]}/5</span>`).join('');
   $('pros').innerHTML=a.pros.map(x=>`<li>${x}</li>`).join('');$('cons').innerHTML=a.cons.map(x=>`<li>${x}</li>`).join('');
-  $('verdict').innerHTML=`<b>${$('task').selectedOptions[0].textContent}:</b> ${VERDICT[A.task][A.arch]}`;
+  const v=$('verdict'),b=document.createElement('b');b.textContent=$('task').selectedOptions[0].textContent+':';
+  v.replaceChildren(b,' '+VERDICT[A.task][A.arch]);
   document.querySelectorAll('[data-arch]').forEach(b=>b.classList.toggle('on',b.dataset.arch===A.arch));
 }
 function wrap(text,x,y,w,size,col,svg,maxLines){const words=text.split(' ');let line='',n=0;const cw=size*0.55;

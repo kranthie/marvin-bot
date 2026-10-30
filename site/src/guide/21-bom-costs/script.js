@@ -75,7 +75,7 @@ function drawBars(svg, rows, opts){
     if(r.duty>0){ svg.appendChild(svgEl('rect',{x,y,width:sx(r.duty),height:h,fill:'#ff6b6b'})); x+=sx(r.duty); }
     if(r.own>0){ svg.appendChild(svgEl('rect',{x,y,width:sx(r.own),height:h,rx:3,fill:'#3a4757'})); x+=sx(r.own); }
     const tot=r.buy+r.own+r.duty;
-    svg.appendChild(svgEl('text',{x:x+6,y:y+h/2+4,fill:'#e6edf3','font-size':12,'font-family':'ui-monospace,monospace'}, tot>0?fmt(tot,0):'$0 (simulation)'.replace('$',CUR[state.cur][0])));
+    svg.appendChild(svgEl('text',{x:x+6,y:y+h/2+4,fill:'#e6edf3','font-size':12,'font-family':'ui-monospace,monospace'}, tot>0?fmt(tot,0):CUR[state.cur][0]+'0 (simulation)'));
   });
   return {nice};
 }

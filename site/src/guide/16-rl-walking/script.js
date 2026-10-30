@@ -55,7 +55,7 @@ const PRESETS = {
  lazy: {dof_torques_l2:8, action_rate_l2:7},
 };
 const weight = n => { const t = TERMS.find(t => t[0]===n); return t[1]*MULTS[state.w[n]]; };
-function fmtW(x){ if(x===0) return '0'; const a=Math.abs(x); return a<0.01 ? x.toExponential(1).replace('e','e') : (+x.toPrecision(3)).toString(); }
+function fmtW(x){ if(x===0) return '0'; const a=Math.abs(x); return a<0.01 ? x.toExponential(1) : (+x.toPrecision(3)).toString(); }
 function score(f){
   const parts = [];
   let r = 0;
