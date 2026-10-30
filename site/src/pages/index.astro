@@ -1,0 +1,147 @@
+---
+// The home page: the robot in 3-D, full screen, with the way into the docs and the guide.
+// The model data comes from site/scripts/build_model.py (public/guide/model/marvin_model.js).
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const repo = 'https://github.com/kranthie/marvin-bot';
+const u = (p: string) => `${base}${p}`;
+const builtOn = [
+  ['Isaac Lab', 'https://github.com/isaac-sim/IsaacLab', 'walking and stair training'],
+  ['MuJoCo', 'https://github.com/google-deepmind/mujoco', 'the simulation cross-check'],
+  ['ProtoMotions', 'https://github.com/NVlabs/ProtoMotions', 'motion tracking'],
+  ['PyRoki', 'https://github.com/chungmin99/pyroki', 'retargeting'],
+  ['Kimodo', 'https://github.com/nv-tlabs/kimodo', 'generated human motion'],
+  ['manifold3d', 'https://github.com/elalish/manifold', 'the code-CAD'],
+  ['AmazingHand', 'https://github.com/pollen-robotics/AmazingHand', 'the hands (CC-BY-4.0)'],
+  ['Starlight', 'https://github.com/withastro/starlight', 'this site'],
+];
+const phases = [
+  ['0', 'Foundations', 'done'],
+  ['1', 'Robot in simulation', 'now'],
+  ['2', 'Actuator bench', ''],
+  ['3', 'One leg', ''],
+  ['4', 'Lower body', ''],
+  ['5', 'Torso, arms, head', ''],
+  ['6', 'Perception', ''],
+];
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marvin Bot · an open humanoid you can build</title>
+<meta name="description" content="Marvin Bot is an open-source 1.44 m, 27-joint humanoid robot, designed in code and trained in simulation before it is built. Documentation, design decisions and an interactive guide.">
+<link rel="icon" href={u('favicon.svg')} type="image/svg+xml">
+<meta property="og:title" content="Marvin Bot · an open humanoid you can build">
+<meta property="og:description" content="An open-source 1.44 m humanoid, designed in code and trained in simulation.">
+<script is:inline src={u('guide/model/marvin_model.js')}></script>
+</head>
+<body>
+<nav class="top" aria-label="Main">
+  <a class="brand" href={base}><img src={u('favicon.svg')} alt="" width="22" height="22"> Marvin Bot</a>
+  <span class="sp"></span>
+  <a href={u('overview/')}>Docs</a><a href={u('guide/')}>Guide</a><a href={u('simulation/isaac-lab/')}>Simulation</a><a href={u('build/bom/')}>Build</a><a href={repo}>GitHub</a>
+</nav>
+
+<header class="hero">
+  <div id="viewer" class="viewer" aria-label="Interactive 3-D model of Marvin Bot: drag to turn it"></div>
+  <div class="copy">
+    <span class="pill">Phase 1 · simulation only</span>
+    <h1>An open humanoid<br>you can build.</h1>
+    <p>1.44 m, 41 kg, 27 joints. Every part is generated from code, every decision is written down, and it learns to walk in simulation before a single motor is bought.</p>
+    <div class="cta">
+      <a class="p" href={u('getting-started/')}>Get started</a>
+      <a href={u('guide/')}>Learn how it works</a>
+      <a href={repo}>GitHub</a>
+    </div>
+  </div>
+  <div class="looks" id="looks" role="group" aria-label="How to show the model">
+    <button data-l="shells" class="on">Finished</button><button data-l="bare">Bare frame</button><button data-l="motors">X-ray motors</button><button data-l="electronics">X-ray electronics</button>
+  </div>
+  <a class="explore" href={u('guide/playgrounds/00-3d-model.html')}>Explore every part, the assembly order and the skills in 3-D →</a>
+  <dl class="stats">
+    <div><dt>height</dt><dd>1.44 m</dd></div><div><dt>with shells</dt><dd>41 kg</dd></div><div><dt>powered joints</dt><dd>27</dd></div>
+    <div><dt>motors + servos</dt><dd>23 + 4</dd></div><div><dt>48 V battery</dt><dd>630 Wh</dd></div><div><dt>to replicate</dt><dd>≈ $17.5k</dd></div>
+  </dl>
+</header>
+
+<main>
+  <section>
+    <h2>Built in the open, one stage at a time</h2>
+    <p class="lead">Simulation first, then one actuator on the bench, one leg, the lower body and the whole robot. Each stage ends with a test that decides whether to move on, and parts are bought only when the next stage needs them.</p>
+    <ol class="phases">{phases.map(([n, t, s]) => <li class={s}><b>{n}</b><span>{t}</span>{s === 'now' && <em>in progress</em>}</li>)}</ol>
+  </section>
+  <section class="cards">
+    <a class="card" href={u('overview/')}><h3>Design</h3><p>Code-CAD, one description file for every joint and motor, and a decision log with the reasons and the alternatives considered.</p><span>Read the docs →</span></a>
+    <a class="card" href={u('simulation/isaac-lab/')}><h3>Simulation</h3><p>Walking and stair policies trained in Isaac Lab and cross-checked in MuJoCo; 25 skills tracked from generated human motion.</p><span>See the results →</span></a>
+    <a class="card" href={u('guide/')}><h3>Learn</h3><p>23 interactive playgrounds for newcomers: balance, actuators, batteries, CAN buses, reinforcement learning, sim-to-real and more.</p><span>Open the guide →</span></a>
+  </section>
+  <section>
+    <h2>Built on open source</h2>
+    <p class="lead">Marvin Bot stands on open work by others. Every source, with its licence and what was used from it, is in the <a href={u('project/acknowledgments/')}>acknowledgments</a>.</p>
+    <ul class="built">{builtOn.map(([n, href, w]) => <li><a href={href}>{n}</a><span>{w}</span></li>)}</ul>
+  </section>
+</main>
+<footer>
+  <p>Marvin Bot is open source: software and documentation under Apache-2.0, hardware designs under CERN-OHL-S-2.0 (<a href={u('project/licences/')}>licences</a>). It has only run in simulation; read the <a href={u('build/safety/')}>safety notes</a> before building or powering any part of it.</p>
+</footer>
+
+<script>
+  import { mountMarvin } from '../scripts/marvin-viewer.js';
+  const v = mountMarvin(document.getElementById('viewer')!, { look: 'shells', animate: 'idle', target: 0.74, dist: 3.3, camera: 'iso', zoom: false, offsetX: 0.2 });
+  document.querySelectorAll<HTMLButtonElement>('#looks button').forEach((b) =>
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#looks button').forEach((x) => x.classList.toggle('on', x === b));
+      v?.setLook(b.dataset.l!);
+    }),
+  );
+</script>
+
+<style is:global>
+  :root { --bg:#07090c; --text:#eef3f8; --muted:#93a1b0; --accent:#ffb454; --line:#1f2731; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif; }
+  a { color:inherit; }
+  nav.top { position:fixed; top:0; left:0; right:0; z-index:5; display:flex; align-items:center; gap:22px; padding:14px 28px; font-size:14px; background:linear-gradient(#07090cdd,#07090c00); }
+  nav.top .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; text-decoration:none; color:var(--text); }
+  nav.top .sp { flex:1; } nav.top a { text-decoration:none; color:var(--muted); } nav.top a:hover { color:var(--text); }
+  .hero { position:relative; height:100vh; min-height:640px; }
+  .viewer { position:absolute; inset:0; }
+  .vmsg { position:absolute; right:6vw; top:30vh; max-width:360px; color:var(--muted); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .copy { position:absolute; left:6vw; top:21vh; max-width:540px; z-index:2; pointer-events:none; }
+  .copy * { pointer-events:auto; }
+  .pill { display:inline-block; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); border:1px solid #5a4220; border-radius:99px; padding:3px 12px; }
+  h1 { font-size:clamp(40px,6vw,76px); line-height:1.02; margin:.25em 0 .2em; font-weight:800; letter-spacing:-.02em; }
+  .copy p { color:var(--muted); font-size:18px; max-width:450px; }
+  .cta { display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
+  .cta a { text-decoration:none; padding:11px 18px; border-radius:10px; border:1px solid var(--line); font-weight:600; background:#0d1117aa; }
+  .cta a.p { background:var(--accent); color:#120d05; border-color:var(--accent); }
+  .looks { position:absolute; bottom:118px; left:50%; transform:translateX(-50%); display:flex; gap:4px; z-index:2; background:#0d1117cc; border:1px solid var(--line); border-radius:99px; padding:5px; }
+  .looks button { font:inherit; font-size:13px; background:none; border:0; color:var(--muted); padding:6px 14px; border-radius:99px; cursor:pointer; white-space:nowrap; }
+  .looks button.on { background:#1b2330; color:var(--text); }
+  .explore { position:absolute; bottom:86px; left:50%; transform:translateX(-50%); z-index:2; font-size:13px; color:var(--accent); text-decoration:none; white-space:nowrap; }
+  .stats { position:absolute; bottom:0; left:0; right:0; display:grid; grid-template-columns:repeat(6,1fr); margin:0; border-top:1px solid var(--line); background:#07090ce6; z-index:2; }
+  .stats div { padding:12px 18px; border-right:1px solid var(--line); display:flex; flex-direction:column-reverse; }
+  .stats dd { margin:0; font-size:22px; font-weight:700; } .stats dt { font-size:12px; color:var(--muted); }
+  main { max-width:1120px; margin:0 auto; padding:24px 24px 40px; }
+  section { padding:48px 0 8px; }
+  h2 { font-size:32px; margin:0 0 8px; } .lead { color:var(--muted); max-width:680px; } .lead a { color:var(--accent); }
+  .phases { list-style:none; padding:0; margin:24px 0 0; display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .phases li { border-top:4px solid var(--line); padding-top:8px; font-size:14px; color:var(--muted); display:flex; flex-direction:column; }
+  .phases li b { color:var(--text); } .phases li.done { border-color:#4cc38a; } .phases li.now { border-color:var(--accent); color:var(--text); } .phases em { color:var(--accent); font-style:normal; font-size:12px; }
+  .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .card { border:1px solid var(--line); border-radius:14px; padding:22px; background:linear-gradient(#0d1117,#0a0d11); text-decoration:none; display:flex; flex-direction:column; }
+  .card:hover { border-color:#5a4220; } .card h3 { margin:.1em 0; } .card p { color:var(--muted); font-size:15px; flex:1; } .card span { color:var(--accent); font-size:14px; }
+  .built { list-style:none; padding:0; display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:20px; }
+  .built li { border:1px solid var(--line); border-radius:10px; padding:10px 14px; display:flex; flex-direction:column; }
+  .built a { font-weight:600; text-decoration:none; } .built a:hover { color:var(--accent); } .built span { font-size:13px; color:var(--muted); }
+  footer { max-width:1120px; margin:0 auto; padding:24px 24px 48px; border-top:1px solid var(--line); color:var(--muted); font-size:14px; }
+  footer a { color:var(--accent); }
+  @media (max-width:860px) {
+    .stats { grid-template-columns:repeat(3,1fr); } .cards { grid-template-columns:1fr; } .built { grid-template-columns:1fr 1fr; }
+    .phases { grid-template-columns:repeat(4,1fr); } .copy { top:11vh; left:20px; right:20px; } nav.top { gap:14px; padding:12px 16px; overflow-x:auto; }
+    .viewer { inset:auto 0 150px 0; height:46vh; } .looks { bottom:150px; } .explore { bottom:126px; white-space:normal; text-align:center; width:90%; } .hero { min-height:720px; }
+  }
+</style>
+</body>
+</html>

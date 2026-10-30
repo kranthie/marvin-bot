@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PD control, gains and armature · Marvin Bot guide</title>
+<meta name="description" content="How a joint is held by a proportional-derivative loop, what stiffness, damping, natural frequency, damping ratio and armature mean, and how Marvin Bot's gains are chosen, with a step-response explorer.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+main p code,main li code{overflow-wrap:anywhere}
+.ctl .row{display:flex;gap:6px}
+.ctl .row select{flex:1}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin:4px 0}
+.modebar{display:flex;gap:6px;margin:6px 0}
+.preview .ro .v{font-size:15px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 4 · Model and simulation</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 15</p>
+<h1>PD control, gains and armature</h1>
+<p class="lede">A walking <a class="g" href="../glossary.html#policy">policy</a> (the trained neural-network controller of <a href="16-rl-walking.html">page 16</a>) does not command torques. Fifty times a second it sends each joint a target angle, and a much faster proportional-derivative (PD) loop turns the gap between target and actual angle into torque. How stiff and how damped that loop is, and how much hidden motor inertia sits behind it, decides whether a policy trained in simulation moves the same way on the robot.</p>
+<p>Why a humanoid needs this: the "brain" (the policy) is too slow and too coarse to drive each motor's current directly, the same way you decide "put my foot there" without thinking about each muscle fibre. A small, fast reflex in every joint does the last step. This page is about tuning that reflex, and about one hidden number (the motor's spinning inertia) that simulators get wrong if nobody writes it down.</p>
+<div class="meta"><span class="chip">~30 min</span><span class="chip">Before this: <a href="04-actuators.html">04 Actuators</a>, <a href="13-description.html">13 The robot description</a>, <a href="14-simulation.html">14 Simulation</a></span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>How a joint behaves like a mass on a spring and damper (shock absorber) under PD control, and what natural frequency and damping ratio predict about its step response.</li>
+<li>What armature (reflected rotor inertia, <i>I</i><sub>rotor</sub> × <i>N</i>²) is, why it can outweigh a light link, and why leaving it out of a simulation breaks sim-to-real transfer.</li>
+<li>Why the PD loop runs much faster than the policy, and what torque limits, the torque-speed line and delay do to it.</li>
+<li>How Marvin Bot's gains are set today, which numbers are placeholders, and the BeyondMimic gain rule the motion tracker borrows from.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>Picture the knee as a heavy door on a hinge, with a spring that pulls it towards a chosen angle and a shock absorber that resists speed. The spring's stiffness is the proportional gain <i>k</i><sub>p</sub>, the shock absorber is the derivative gain <i>k</i><sub>d</sub>. Move the chosen angle and the door swings towards it. Too little spring and gravity wins; too much spring and too little damping and it overshoots and rings; damping matched to stiffness and inertia and it glides in. The "door's" inertia is not only the leg: the motor's rotor, spinning nine times faster than the joint through the gearbox, adds an inertia that the joint feels as if it were 81 times larger. That hidden inertia is called <a class="g" href="../glossary.html#armature">armature</a>. (The 81 is the gear ratio squared, 9 × 9; the maths is below.)</p>
+
+<h2 id="play">Playground: a joint's step response</h2>
+<p>One joint, one link, gravity, a motor with a torque limit and a torque-speed line, and a PD loop that runs at a chosen rate, possibly with a delay. At <i>t</i> = 0.05 s the target jumps. The simulation integrates the joint with 4th-order Runge-Kutta at 0.1 ms steps and holds the torque constant between controller updates, as a digital motor driver does.</p>
+<p><b>Start here:</b> press <i>Marvin Bot knee</i>, then <i>Too stiff</i> and <i>Too soft</i>, and compare the curves. How to read the plot: the <span style="color:#4fb3ff">blue</span> line is where the joint actually is, the <span style="color:#ffb454">orange</span> line is where it was told to go; the closer and quicker blue settles on orange without swinging past it, the better. The <span style="color:#4cc38a">green</span> line (lower plot) is the motor torque, which must stay inside the <span style="color:#ff6b6b">red</span> limit. Good readouts: overshoot under about 20%, settling time a few tenths of a second, small steady-state error. Several sliders are on a log scale so they can span tiny wrists and heavy knees.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="knee">Marvin Bot knee (RS04)</button>
+      <button data-preset="wrist">Wrist yaw (RS00)</button>
+      <button data-preset="stiff">Too stiff</button>
+      <button data-preset="soft">Too soft</button>
+      <button data-preset="delay">With 10 ms delay</button>
+      <button data-preset="bm">BeyondMimic rule (knee)</button>
+    </div>
+    <h4>Link and gravity</h4>
+    <div class="ctl"><label>Link inertia about the joint <output id="o_Il"></output></label>
+      <input type="range" id="Il" min="-4" max="0" step="0.01" value="-0.736">
+      <div class="hint">Knee: shin, ankle and foot, 3.42 kg, 0.184 kg·m² (from the URDF).</div></div>
+    <div class="ctl"><label>Gravity moment m·g·r <output id="o_mgr"></output></label>
+      <input type="range" id="mgr" min="0" max="40" step="0.1" value="6.9">
+      <div class="hint">Torque gravity puts on the joint with the link horizontal. Knee with the foot off the ground: 3.42 × 9.81 × 0.205 m = 6.9 N·m.</div></div>
+    <h4>Motor</h4>
+    <div class="ctl"><label>Rotor inertia <output id="o_Ir"></output></label>
+      <input type="range" id="Ir" min="-6" max="-2" step="0.01" value="-3.432">
+      <div class="hint">How hard the motor's own spinning rotor is to speed up, measured at the motor shaft, before the gearbox.</div></div>
+    <div class="ctl"><label>Gear ratio N <output id="o_N"></output></label>
+      <input type="range" id="N" min="1" max="50" step="1" value="9">
+      <div class="hint">Motor turns per joint turn. RobStride RS04: 9. The armature grows with its square.</div></div>
+    <div class="ctl"><label>Peak torque <output id="o_tmax"></output></label>
+      <input type="range" id="tmax" min="1" max="150" step="1" value="120">
+      <div class="hint">Most torque the motor can give, briefly (RS04: 120 N·m).</div></div>
+    <div class="ctl"><label>No-load speed (0 = no torque-speed line) <output id="o_w0"></output></label>
+      <input type="range" id="w0" min="0" max="50" step="0.1" value="20.9">
+      <div class="hint">Top joint speed; the faster the joint turns, the less torque is left (RS04: 20.9 rad/s = 200 rpm).</div></div>
+    <div class="ctl"><label>Joint friction <output id="o_fr"></output></label>
+      <input type="range" id="fr" min="0" max="2" step="0.05" value="0.3">
+      <div class="hint">Dry friction torque in the gearbox that always resists motion.</div></div>
+    <h4>Gains</h4>
+    <div class="modebar"><button id="m_gain" class="on">kp, kd</button><button id="m_freq">ω and ζ</button></div>
+    <div id="gainbox">
+    <div class="ctl"><label>kp (stiffness) <output id="o_kp"></output></label>
+      <input type="range" id="kp" min="0" max="3.5" step="0.01" value="2.176">
+      <div class="hint">The spring: torque per radian of error. Higher = snappier, less sag (log scale).</div></div>
+    <div class="ctl"><label>kd (damping) <output id="o_kd"></output></label>
+      <input type="range" id="kd" min="-2" max="2" step="0.01" value="0.699">
+      <div class="hint">The shock absorber: torque per rad/s of speed. Higher = less swinging past the target (log scale).</div></div>
+    </div>
+    <div id="freqbox" style="display:none">
+    <div class="ctl"><label>Natural frequency f <output id="o_fn"></output></label>
+      <input type="range" id="fn" min="0.5" max="25" step="0.1" value="10"></div>
+    <div class="ctl"><label>Damping ratio ζ <output id="o_zeta"></output></label>
+      <input type="range" id="zeta" min="0.05" max="3" step="0.05" value="2"></div>
+    <div class="ctl"><label>Inertia used for the rule</label>
+      <select id="ruleI"><option value="arm">armature only (BeyondMimic)</option><option value="tot">link + armature</option></select></div>
+    </div>
+    <h4>Controller timing</h4>
+    <div class="ctl"><label>PD update rate</label>
+      <select id="rate"><option value="50">50 Hz (policy rate)</option><option value="100">100 Hz</option><option value="200" selected>200 Hz (Isaac Lab physics step)</option><option value="500">500 Hz (leg CAN rate)</option><option value="2000">2 kHz</option><option value="10000">10 kHz (≈ continuous)</option></select></div>
+    <div class="ctl"><label>Delay <output id="o_delay"></output></label>
+      <input type="range" id="delay" min="0" max="40" step="1" value="0">
+      <div class="hint">How late information arrives, e.g. over the CAN cable (<a href="10-can-bus.html">page 10</a>).</div></div>
+    <div class="ctl"><label>Where the delay sits</label>
+      <select id="dwhere"><option value="cmd">on the target (as the repo's DelayedDCMotor)</option><option value="loop">inside the loop (measurement to torque)</option></select></div>
+    <h4>Step</h4>
+    <div class="ctl"><label>From <output id="o_q0"></output></label><input type="range" id="q0" min="-90" max="130" step="1" value="0"></div>
+    <div class="ctl"><label>To <output id="o_q1"></output></label><input type="range" id="q1" min="-90" max="130" step="1" value="60"></div>
+  </div>
+  <div class="preview">
+    <canvas id="cv" width="1200" height="760" aria-label="Plots of joint angle and motor torque against time"></canvas>
+    <div class="readouts">
+      <div class="ro" id="r_arm"><div class="k">Armature I<sub>r</sub>N²</div><div class="v">–</div></div>
+      <div class="ro" id="r_wn"><div class="k">Natural frequency</div><div class="v">–</div></div>
+      <div class="ro" id="r_z"><div class="k">Damping ratio ζ</div><div class="v">–</div></div>
+      <div class="ro" id="r_os"><div class="k">Overshoot</div><div class="v">–</div></div>
+      <div class="ro" id="r_ts"><div class="k">Settling time (2%)</div><div class="v">–</div></div>
+      <div class="ro" id="r_ss"><div class="k">Steady-state error</div><div class="v">–</div></div>
+      <div class="ro" id="r_tp"><div class="k">Peak torque</div><div class="v">–</div></div>
+      <div class="ro" id="r_st"><div class="k">Verdict</div><div class="v">–</div></div>
+    </div>
+    <div class="legend"><span><i style="background:#4fb3ff"></i>joint angle</span><span><i style="background:#ffb454"></i>target (as the motor sees it)</span><span><i style="background:#b48cff"></i>same gains, no armature</span><span><i style="background:#4cc38a"></i>torque</span><span><i style="background:#ff6b6b"></i>torque limit</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ul>
+<li>Load <i>Marvin Bot knee</i>. ζ is about 0.44: the knee overshoots by about 18% (the linear formula predicts 21%; the torque limit and friction trim it) and rings for a few cycles. The purple trace is the same gains without armature: 14% less inertia, so it moves faster and a little more damped (ζ 0.48). Small here, but a policy trained on one knee meets a different knee on the other.</li>
+<li>Load <i>Wrist yaw</i>. The hand's own inertia about the yaw axis is 0.0007 kg·m², the armature 0.005: seven times larger. Without armature (purple) the joint is 8 times lighter: at the 200 Hz update the damping term overcorrects every step (k<sub>d</sub>T/J = 0.8 × 0.005 / 0.00067 = 6, above the limit of 2 for a sampled damper) and the joint chatters and wanders far from its target. Armature is what keeps light joints numerically stable.</li>
+<li>Load <i>Too stiff</i>, then set the PD update rate to 50 Hz: a loop that was merely jumpy becomes unstable. A stiff loop needs a fast update; that is why the PD runs in the motor driver, not in the 50 Hz policy.</li>
+<li>Load <i>With 10 ms delay</i>: the delay sits inside the loop, and the overshoot rises from about 18% to 26%. Switch it to "on the target": the response is the undelayed one, simply 10 ms late. Back inside the loop, the phase lag eats the damping: at 20 ms the overshoot is about 40%, more than double, and at 25 ms the knee never settles.</li>
+</ul></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>A joint is a rotating mass</h3>
+<p class="hint" style="color:var(--muted);font-size:14px">Notation: <i>q</i> is the joint angle; a dot on top means "rate of change", so q̇ ("q-dot") is the joint's speed and q̈ ("q-double-dot") its acceleration. An equation that links a quantity to its own rates of change, like the one below, is called a differential equation; the simulator solves it by taking small time steps (<a href="14-simulation.html">page 14</a>).</p>
+<p>Newton's second law for rotation says <i>J</i> q̈ = τ<sub>total</sub>: the angular acceleration q̈ (rad/s²) equals the net torque (N·m) divided by the inertia <i>J</i> (kg·m²). For one joint carrying one link,</p>
+<p class="eq">J q̈ = τ<sub>motor</sub> − m g r sin q − τ<sub>friction</sub></p>
+<p>where <i>m g r</i> is the gravity moment (mass × 9.81 m/s² × distance from the joint to the link's centre of mass) and <i>q</i> is measured from hanging straight down. This page holds every other joint still; in a real robot the inertia each joint feels changes with the pose of all the others.<sup class="cite"><a href="#s1">[1]</a></sup></p>
+<h3>PD control</h3>
+<p>A <a class="g" href="../glossary.html#pd-control">PD controller</a> sets the motor torque from the position error and the velocity:</p>
+<p class="eq">τ = k<sub>p</sub> (q* − q) − k<sub>d</sub> q̇</p>
+<p><i>q</i>* is the target angle, <i>k</i><sub>p</sub> (N·m/rad) the <a class="g" href="../glossary.html#stiffness">stiffness</a>, <i>k</i><sub>d</sub> (N·m·s/rad) the <a class="g" href="../glossary.html#damping">damping</a>. RobStride's MIT-style operation mode computes exactly this inside the motor driver, with an extra feed-forward torque term, from a target, a target velocity, <i>k</i><sub>p</sub> and <i>k</i><sub>d</sub> sent over CAN (<code>robot/drivers/robstride.py</code>; for the RS04 <i>k</i><sub>p</sub> may be 0-5000 and <i>k</i><sub>d</sub> 0-100).<sup class="cite"><a href="#s4">[4]</a></sup></p>
+<p>Without gravity and friction, substituting gives <i>J</i> q̈ + <i>k</i><sub>d</sub> q̇ + <i>k</i><sub>p</sub> q = <i>k</i><sub>p</sub> q*, a mass-spring-damper. Its behaviour is set by two numbers:<sup class="cite"><a href="#s2">[2]</a></sup></p>
+<p class="eq">ω<sub>n</sub> = √(k<sub>p</sub> / J) &nbsp;&nbsp; ζ = k<sub>d</sub> / (2 √(k<sub>p</sub> J))</p>
+<p>The <a class="g" href="../glossary.html#natural-frequency">natural frequency</a> ω<sub>n</sub> (rad/s; divide by 2π for Hz) says how fast the joint responds; the <a class="g" href="../glossary.html#damping-ratio">damping ratio</a> ζ says how it settles. Below ζ = 1 a step overshoots by e<sup>−πζ/√(1−ζ²)</sup> of the step size (ζ = 0.5: 16%; ζ = 0.7: 4.6%); at ζ = 1 it arrives as fast as possible without overshoot; above 1 it creeps in. With gravity the joint stops short of the target by the <a class="g" href="../glossary.html#steady-state-error">steady-state error</a> <i>m g r</i> sin <i>q</i> / <i>k</i><sub>p</sub>: a spring only pushes back when stretched. (A policy compensates by asking for a slightly higher target; an integral term would remove it but is rarely used under a learned policy.)</p>
+<h3>Armature: the inertia you cannot see</h3>
+<p>The motor's rotor turns <i>N</i> times for each turn of the joint (<i>N</i> = 9 for the RS04). Its kinetic energy is ½ <i>I</i><sub>rotor</sub> (<i>N</i> q̇)² = ½ (<i>I</i><sub>rotor</sub> <i>N</i>²) q̇², so seen from the joint the rotor behaves like an extra inertia</p>
+<p class="eq">I<sub>armature</sub> = I<sub>rotor</sub> × N²</p>
+<p>that adds to the link's: <i>J</i> = <i>I</i><sub>link</sub> + <i>I</i><sub>armature</sub>. It does not depend on the pose and it is not part of any link's mass, so a URDF cannot hold it; MuJoCo and Isaac Lab add it to the joint directly (<code>armature</code>).<sup class="cite"><a href="#s3">[3]</a></sup><sup class="cite"><a href="#s6">[6]</a></sup> BeyondMimic reports that setting armature to zero in simulation gives excessive joint accelerations, overswinging and self-collisions.<sup class="cite"><a href="#s5">[5]</a></sup> It also matters numerically: a light link on a stiff PD loop has a very high ω<sub>n</sub>, which the simulator's timestep may not resolve; armature lowers ω<sub>n</sub> and keeps the joint stable.</p>
+<h3>Torque limits and the torque-speed line</h3>
+<p>A real motor cannot deliver any torque at any speed. Isaac Lab's DC motor model (<code>DCMotor</code>) clips the PD torque to a line that falls from the peak torque at standstill to zero at the no-load speed: τ<sub>max</sub>(q̇) = τ<sub>peak</sub> (1 − q̇/ω<sub>0</sub>), and the mirror image for braking.<sup class="cite"><a href="#s6">[6]</a></sup> When the PD torque is clipped the joint stops behaving like a linear spring-damper: steps take longer and overshoot changes, which is why a large stiff step looks different from a small one.</p>
+<h3>Why a slow policy and a fast PD loop</h3>
+<p>The policy is a neural network that sees the whole robot; running it costs milliseconds, and the walking dynamics it controls (steps, sway) happen at a few hertz, so 50 Hz is plenty. The joint's own spring-mass dynamics are faster (the knee here: about 4 Hz with today's gains, the wrist 8 Hz, and much faster for a stiffer loop), and a digital controller that updates its torque every <i>T</i> seconds adds a lag of about <i>T</i>/2. As ω<sub>n</sub><i>T</i> approaches 1 the loop loses damping and at around 2 it goes unstable. So the policy outputs targets at 50 Hz, and the PD loop runs at the simulator's physics step (5 ms in Isaac Lab, 2 ms in MuJoCo) or, on the robot, inside each motor driver, fed new targets at 500 Hz on the legs and 250 Hz on the arms.<sup class="cite"><a href="#s7">[7]</a></sup></p>
+<h3>Delay</h3>
+<p>A delay of τ<sub>d</sub> seconds shifts the phase of a signal at frequency ω by ω τ<sub>d</sub> radians. Where the delay sits matters. A delay on the <i>target</i> (the policy's command arriving late over CAN) leaves the PD loop untouched and simply makes every response late: harmless for the joint, but it matters for the policy's balance loop, which is why training randomises it. A delay <i>inside</i> the loop (the torque computed from an old measurement, as if the PD ran on the main computer over CAN) eats phase margin (the loop's safety buffer against the correction arriving so late that it pushes the wrong way): for the knee at today's gains the loop crosses over near 30 rad/s, so 10 ms costs about 17° of a roughly 45° margin, and 25 ms nearly all of it.</p>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b>
+<ul>
+<li><b>Training gains</b> (<code>sim/isaaclab/marvin_bot/robot_cfg.py</code>, <code>GAINS</code>, kp N·m/rad, kd N·m·s/rad, armature kg·m², friction N·m): hip pitch, hip roll, knee, waist 150 / 5 / 0.03 / 0.3 (waist armature 0.02, friction 0.2); hip yaw 100 / 3.3 / 0.02 / 0.2; ankles 40 / 2 / 0.02 / 0.2; shoulder pitch and roll 40 / 2 / 0.02 / 0.2; shoulder yaw and elbow 30 / 1.5 / 0.01 / 0.1; wrist yaw 15 / 0.8 / 0.005 / 0.05; neck and wrist pitch 10 / 0.5 / 0.002 / 0.02. The file says these are placeholders "until the phase 2 bench test fits them", chosen to follow comparable open humanoids (kp 100-150 on 120 N·m joints, about 40 on ankles).</li>
+<li><b>Motor model:</b> <code>DelayedDCMotor</code>, Isaac Lab's <code>DCMotor</code> (PD clipped by the torque-speed line through the motor's peak torque and no-load speed from <code>actuators.yaml</code>) with the position target arriving 0-10 ms late (0-2 physics steps of 5 ms, random per episode). The policy runs at 50 Hz (4 physics steps per action). The MuJoCo cross-check (<code>sim/mujoco/check_policy.py</code>) recomputes the same PD and the same torque-speed clip every 2 ms step.</li>
+<li><b>Standing check gains</b> (<code>sim/mujoco/check_standing.py</code>) are stiffer, per motor model (RS04 400 / 8, RS03 250 / 5, ankles 250 / 6), because that check holds a pose with no balance controller: standing still needs the two ankles' combined stiffness above <i>m g h</i> (the file's comment says about 210 N·m/rad, for 36 kg at 0.6 m; for today's 40.35 kg with the CoM about 0.65 m above the ankles it is about 255 N·m/rad, still well below the 2 × 250).</li>
+<li><b>Motion tracker:</b> <code>sim/motion/setup_protomotions.py</code> softens <i>k</i><sub>p</sub> to at most 0.25 × peak torque / 0.4 rad (so BeyondMimic's action scale 0.25 τ<sub>max</sub>/<i>k</i><sub>p</sub> is at least 0.4 rad; for the knee 75 N·m/rad) and sets <i>k</i><sub>d</sub> = 2ζ<i>k</i><sub>p</sub>/ω with ζ = 2 at 10 Hz. That borrows BeyondMimic's ratio but not its rule <i>k</i><sub>p</sub> = <i>I</i><sub>arm</sub>ω², which <code>docs/decisions.md</code> lists as not yet tried.</li>
+<li><b>Hand check of the knee preset:</b> <i>J</i> = 0.184 + 0.03 = 0.214 kg·m²; ω<sub>n</sub> = √(150/0.214) = 26.5 rad/s (4.2 Hz); ζ = 5/(2√(150 × 0.214)) = 0.44; predicted overshoot 21%; sag under a horizontal shin 6.9/150 = 0.046 rad (2.6°), at 60° 6.9 sin 60°/150 = 2.3°. The playground's readouts agree (small differences come from the joint friction, the 200 Hz update and the nonlinear gravity).</li>
+</ul></div>
+<div class="callout warn"><b>What is not measured yet</b> Every armature value is a placeholder: the RS04's 0.03 kg·m² implies a rotor inertia of 0.03/81 = 3.7 × 10⁻⁴ kg·m², which has not been checked against RobStride data or a bench test. There are no measured torque-speed curves either: the straight line through peak torque and no-load speed is a simplification, real motors are limited by current and back-EMF and the curve depends on the bus voltage. The phase 2 actuator bench (<code>docs/plan.md</code>) is meant to measure both.</div>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<tr><th>Choice</th><th>For</th><th>Against</th></tr>
+<tr><td>Stiff gains (high <i>k</i><sub>p</sub>)</td><td>Tracks targets closely, small gravity sag; a policy's actions map almost directly to angles</td><td>Amplifies sensor noise, hits torque limits, needs a fast loop, little passive compliance on impact; sim-to-real gaps in inertia show up as ringing</td></tr>
+<tr><td>Soft gains</td><td>Compliant on contact, robust to model error, gentle on gears</td><td>Large tracking error that the policy must learn to compensate; the action scale has to grow</td></tr>
+<tr><td>BeyondMimic rule: <i>k</i><sub>p</sub> = <i>I</i><sub>arm</sub>ω², <i>k</i><sub>d</sub> = 2<i>I</i><sub>arm</sub>ζω, ω = 10 Hz, ζ = 2<sup class="cite"><a href="#s5">[5]</a></sup></td><td>One principled rule for every joint, tied to the motor; ζ = 2 because armature alone underestimates the inertia</td><td>Needs real rotor inertias (Marvin Bot's are placeholders); light joints get very soft</td></tr>
+<tr><td>Torque control (policy outputs torque)</td><td>No hidden PD dynamics</td><td>The policy must run fast and stabilise every joint itself; much harder to train and transfer</td></tr>
+<tr><td>Learned actuator network<sup class="cite"><a href="#s8">[8]</a></sup></td><td>Captures the real motor's dynamics, delay and friction from bench data</td><td>Needs a bench and data per motor type; a black box</td></tr>
+</table></div>
+<p>The BeyondMimic rule applied to the knee: <i>I</i><sub>arm</sub> = 0.03 kg·m², ω = 2π × 10 = 62.8 rad/s gives <i>k</i><sub>p</sub> = 118 N·m/rad and <i>k</i><sub>d</sub> = 7.5 N·m·s/rad, close to today's 150 / 5. Including the shin, the knee's true ζ is then 2 × √(0.03/0.214) = 0.75 and its true ω<sub>n</sub> 3.7 Hz, which is why the rule picks ζ = 2 rather than 1. Try the <i>BeyondMimic rule</i> preset.</p>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b>
+<ul>
+<li>BeyondMimic's paper writes ω as "10 Hz" without saying whether it converts to rad/s before using it in <i>k</i><sub>p</sub> = <i>I</i>ω²; <code>setup_protomotions.py</code> uses ω = 2π × 10 rad/s. This page follows the repo.</li>
+</ul></div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>Gain policy: keep the placeholder table, or adopt one rule (BeyondMimic's) for all joints once rotor inertias are measured. The trade: the table works today and matches other open humanoids; the rule is consistent and explainable, but is only as good as the rotor inertias you feed it, and it makes light joints such as the wrists very soft.</li>
+<li>How much delay to randomise in training (today 0-10 ms on commands, 0-20 ms on observations), based on the bench's measured CAN round trip. More randomised delay makes the policy robust to a slow bus, but it learns to move more cautiously; too little and a real delay may surprise it.</li>
+<li>What the bench must measure: rotor inertia (armature), friction, and the torque-speed curve at 48 V, per motor model. Each measurement costs bench time in phase 2 but replaces a placeholder that every trained policy currently depends on.</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<div class="callout"><b>Where this leads</b> The gains and armature on this page sit beside the description (<a href="13-description.html">page 13</a>) and run inside every simulator (<a href="14-simulation.html">page 14</a>). Next, <a href="16-rl-walking.html">page 16</a> shows how a policy learns to choose the target angles this PD loop follows, and <a href="20-sim-to-real.html">page 20</a> how bench measurements replace today's placeholders.</div>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://underactuated.mit.edu/">R. Tedrake, Underactuated Robotics (MIT 6.832)</a>: the pendulum chapters build intuition for gravity, damping and stability.</li>
+<li><a href="https://hades.mech.northwestern.edu/index.php/Modern_Robotics">Lynch and Park, Modern Robotics</a>, chapter 11 (robot control) and section 8.9 (motors, gearing and reflected inertia).</li>
+<li><a href="https://arxiv.org/abs/2508.08241">Liao et al., BeyondMimic</a>: the supplementary material's gain and armature heuristic.</li>
+<li><a href="https://isaac-sim.github.io/IsaacLab/main/source/concepts/actuators.html">Isaac Lab: Actuators</a>: ideal PD, DC motor, delayed and learned actuator models.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://hades.mech.northwestern.edu/index.php/Modern_Robotics">K. M. Lynch and F. C. Park, Modern Robotics, Cambridge University Press 2017</a> <span class="used">— used for: joint dynamics, configuration-dependent inertia, reflected rotor inertia through a gearbox.</span></li>
+  <li id="s2"><a href="https://ocw.mit.edu/courses/2-004-dynamics-and-control-ii-spring-2008/">MIT OpenCourseWare 2.004 Dynamics and Control II</a> <span class="used">— used for: second-order system, natural frequency, damping ratio, overshoot formula.</span></li>
+  <li id="s3"><a href="https://mujoco.readthedocs.io/en/stable/XMLreference.html">MuJoCo documentation, XML Reference (joint armature)</a> <span class="used">— used for: armature as rotor inertia added to a joint.</span></li>
+  <li id="s4"><a href="https://github.com/RobStride/Product_Information">RobStride, Product_Information (manuals)</a> <span class="used">— used for: operation-control (MIT) mode, peak torque, no-load speed, gear ratio.</span></li>
+  <li id="s5"><a href="https://arxiv.org/abs/2508.08241">Q. Liao, T. E. Truong, X. Huang, Y. Gao, G. Tevet, K. Sreenath, C. K. Liu, BeyondMimic: From Motion Tracking to Versatile Humanoid Control via Guided Diffusion, arXiv 2508.08241, 2025</a> <span class="used">— used for: armature = rotor inertia × gear ratio², gain rule k<sub>p</sub> = Iω², k<sub>d</sub> = 2Iζω with ω = 10 Hz, ζ = 2, action scale 0.25 τ<sub>max</sub>/k<sub>p</sub>, effects of zero armature.</span></li>
+  <li id="s6"><a href="https://isaac-sim.github.io/IsaacLab/main/source/concepts/actuators.html">Isaac Lab documentation, Actuators</a> <span class="used">— used for: DC motor model with torque-speed clipping, delayed actuators, armature.</span></li>
+  <li id="s7"><a href="https://arxiv.org/abs/2109.11978">N. Rudin, D. Hoeller, P. Reist, M. Hutter, Learning to Walk in Minutes Using Massively Parallel Deep Reinforcement Learning, CoRL 2021</a> <span class="used">— used for: policies outputting joint position targets to PD controllers at a lower rate than the physics.</span></li>
+  <li id="s8"><a href="https://arxiv.org/abs/1901.08652">J. Hwangbo et al., Learning agile and dynamic motor skills for legged robots, Science Robotics 2019</a> <span class="used">— used for: learned actuator networks as an alternative to analytic motor models.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="14-simulation.html"><span>← Previous</span>Simulation: MuJoCo, Isaac Lab, Newton and PhysX</a>
+  <a class="next" href="16-rl-walking.html"><span>Next →</span>Reinforcement learning for walking</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const D2R=Math.PI/180;
+// log sliders: Il, Ir, kp, kd stored as log10
+const LOG = {Il:1, Ir:1, kp:1, kd:1};
+const DEFAULTS = {Il:0.184, mgr:6.9, Ir:3.7e-4, N:9, tmax:120, w0:20.9, fr:0.3, kp:150, kd:5, fn:10, zeta:2, ruleI:'arm', mode:'gain', rate:200, delay:0, dwhere:'cmd', q0:0, q1:60};
+const PRESETS = {
+  knee:{...DEFAULTS},
+  wrist:{Il:0.00067, mgr:0, Ir:5e-5, N:10, tmax:14, w0:33.0, fr:0.05, kp:15, kd:0.8, mode:'gain', rate:200, delay:0, dwhere:'cmd', q0:0, q1:45},
+  stiff:{...DEFAULTS, kp:1500, kd:5},
+  soft:{...DEFAULTS, kp:15, kd:1.5},
+  delay:{...DEFAULTS, delay:10, dwhere:'loop'},
+  bm:{...DEFAULTS, mode:'freq', fn:10, zeta:2, ruleI:'arm'},
+};
+const state = {...DEFAULTS};
+function fmtv(k,v){
+  switch(k){
+    case 'Il': return v.toPrecision(3)+' kg·m²';
+    case 'Ir': return v.toExponential(2)+' kg·m²';
+    case 'mgr': return v.toFixed(1)+' N·m';
+    case 'N': return v+':1';
+    case 'tmax': return v+' N·m';
+    case 'w0': return v>0? v.toFixed(1)+' rad/s ('+(v*60/2/Math.PI).toFixed(0)+' rpm)':'off';
+    case 'fr': return v.toFixed(2)+' N·m';
+    case 'kp': return v.toPrecision(3)+' N·m/rad';
+    case 'kd': return v.toPrecision(3)+' N·m·s/rad';
+    case 'fn': return v.toFixed(1)+' Hz';
+    case 'zeta': return v.toFixed(2);
+    case 'delay': return v+' ms';
+    case 'q0': case 'q1': return v+'°';
+  } return v;
+}
+function syncUI(){
+  for(const k of ['Il','mgr','Ir','N','tmax','w0','fr','kp','kd','fn','zeta','delay','q0','q1']){
+    const el=$(k); el.value = LOG[k]? Math.log10(state[k]) : state[k]; const o=$('o_'+k); if(o) o.textContent=fmtv(k,state[k]); }
+  $('rate').value=String(state.rate); $('dwhere').value=state.dwhere; $('ruleI').value=state.ruleI;
+  $('m_gain').classList.toggle('on',state.mode==='gain'); $('m_freq').classList.toggle('on',state.mode==='freq');
+  $('gainbox').style.display=state.mode==='gain'?'':'none'; $('freqbox').style.display=state.mode==='freq'?'':'none';
+}
+for(const k of ['Il','mgr','Ir','N','tmax','w0','fr','kp','kd','fn','zeta','delay','q0','q1']){
+  $(k).addEventListener('input',()=>{ const v=parseFloat($(k).value); state[k]= LOG[k]? Math.pow(10,v) : v; if(k==='kp'||k==='kd') state.mode='gain'; render(); });
+}
+$('rate').addEventListener('change',()=>{state.rate=parseFloat($('rate').value); render();});
+$('dwhere').addEventListener('change',()=>{state.dwhere=$('dwhere').value; render();});
+$('ruleI').addEventListener('change',()=>{state.ruleI=$('ruleI').value; render();});
+$('m_gain').addEventListener('click',()=>{state.mode='gain'; render();});
+$('m_freq').addEventListener('click',()=>{state.mode='freq'; render();});
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{ Object.assign(state,DEFAULTS,PRESETS[b.dataset.preset]); render(); }));
+
+function gains(){
+  const arm=state.Ir*state.N*state.N, J=state.Il+arm;
+  if(state.mode==='freq'){ const w=2*Math.PI*state.fn, I= state.ruleI==='arm'?arm:J; state.kp=I*w*w; state.kd=2*I*state.zeta*w; }
+  return {arm,J,kp:state.kp,kd:state.kd};
+}
+// simulate. returns arrays
+function simulate(withArm){
+  const g=gains(); const J = withArm? g.J : state.Il; const kp=g.kp, kd=g.kd;
+  const dt=1e-4, T=1.2, n=Math.round(T/dt), tStep=0.05;
+  const q0=state.q0*D2R, q1=state.q1*D2R, mgr=state.mgr, fr=state.fr, tmax=state.tmax, w0=state.w0;
+  const ctrlEvery=Math.max(1,Math.round(1/(state.rate*dt)));
+  const dSteps=Math.round(state.delay*1e-3/dt);
+  const qs=new Float32Array(n+1), vs=new Float32Array(n+1), taus=new Float32Array(n+1), tgt=new Float32Array(n+1);
+  let q=q0, v=0, tau=0;
+  // start in equilibrium under gravity at q0 (pre-loaded): solve q so that kp(q0 - q) = mgr sin q
+  for(let it=0;it<50;it++){ const f=kp*(q0-q)-mgr*Math.sin(q); const df=-kp-mgr*Math.cos(q); if(Math.abs(df)<1e-12) break; q-=f/df; }
+  if(!isFinite(q)) q=q0;
+  const acc=(qq,vv)=> (tau - mgr*Math.sin(qq) - fr*Math.tanh(vv/0.02))/J;
+  let blown=false;
+  for(let i=0;i<=n;i++){
+    const t=i*dt;
+    const target = (t>=tStep)? q1 : q0;
+    const tTgtSeen = (state.dwhere==='cmd') ? ((t-state.delay*1e-3)>=tStep? q1:q0) : target;
+    tgt[i]=tTgtSeen;
+    qs[i]=q; vs[i]=v;
+    if(i%ctrlEvery===0){
+      let qm=q, vm=v;
+      if(state.dwhere==='loop' && dSteps>0){ const j=Math.max(0,i-dSteps); qm=qs[j]; vm=vs[j]; }
+      let u = kp*(tTgtSeen-qm) - kd*vm;
+      let hi=tmax, lo=-tmax;
+      if(w0>0){ hi=Math.min(Math.max(tmax*(1-v/w0),0),tmax); lo=Math.max(Math.min(tmax*(-1-v/w0),0),-tmax); }
+      tau=Math.min(hi,Math.max(lo,u));
+    }
+    taus[i]=tau;
+    if(i===n) break;
+    // RK4 with tau held
+    const k1v=acc(q,v), k1q=v;
+    const k2v=acc(q+0.5*dt*k1q, v+0.5*dt*k1v), k2q=v+0.5*dt*k1v;
+    const k3v=acc(q+0.5*dt*k2q, v+0.5*dt*k2v), k3q=v+0.5*dt*k2v;
+    const k4v=acc(q+dt*k3q, v+dt*k3v), k4q=v+dt*k3v;
+    q+=dt/6*(k1q+2*k2q+2*k3q+k4q); v+=dt/6*(k1v+2*k2v+2*k3v+k4v);
+    if(!isFinite(q)||Math.abs(q)>50){ blown=true; for(let j=i+1;j<=n;j++){qs[j]=NaN;taus[j]=NaN;tgt[j]=target;} break; }
+  }
+  return {qs,taus,tgt,dt,n,tStep,blown,kp,kd,J};
+}
+function metrics(s){
+  const {qs,dt,n,tStep}=s; const q0=state.q0*D2R, q1=state.q1*D2R, step=q1-q0;
+  if(s.blown) return {unstable:true};
+  const iS=Math.round(tStep/dt);
+  const tail=Math.round(0.15/dt);
+  let mean=0; for(let i=n-tail;i<=n;i++) mean+=qs[i]; mean/= (tail+1);
+  // oscillation check in last 0.3 s vs prior 0.3 s
+  const amp=(a,b)=>{let mx=-1e9,mn=1e9; for(let i=a;i<b;i++){mx=Math.max(mx,qs[i]);mn=Math.min(mn,qs[i]);} return mx-mn;};
+  const w=Math.round(0.3/dt); const a2=amp(n-w,n), a1=amp(n-2*w,n-w);
+  const sustained = Math.abs(step)>1e-6 && a2>0.05*Math.abs(step) && a2>0.7*a1;
+  let peak=-Infinity; for(let i=iS;i<=n;i++){ const d=(qs[i]-q0)*Math.sign(step||1); if(d>peak) peak=d; }
+  const os = Math.abs(step)>1e-6 ? Math.max(0,(peak-Math.abs(step))/Math.abs(step))*100 : 0;
+  const osFinal = Math.abs(step)>1e-6 ? Math.max(0,(peak-(mean-q0)*Math.sign(step))/Math.abs(step))*100 : 0;
+  let ts=null; const band=0.02*Math.abs(step);
+  for(let i=n;i>=iS;i--){ if(Math.abs(qs[i]-mean)>band){ ts=(i+1)*dt-tStep; break; } }
+  if(ts===null) ts=0;
+  let tp=0; for(let i=iS;i<=n;i++) tp=Math.max(tp,Math.abs(s.taus[i]));
+  return {unstable:sustained, os, osFinal, ts, ss:(q1-mean)/D2R, tp, settled: ts < 1.2-tStep-0.16};
+}
+const cv=$('cv'), ctx=cv.getContext('2d');
+function plot(sA,sB){
+  const W=cv.width,H=cv.height; ctx.fillStyle='#0c1015'; ctx.fillRect(0,0,W,H);
+  const L=90,R=W-20; const p1={t:20,b:430}, p2={t:480,b:H-50};
+  const T=1.2, X=t=>L+t/T*(R-L);
+  // ranges
+  let qmin=Infinity,qmax=-Infinity; for(const s of [sA,sB]) for(let i=0;i<=s.n;i+=10){ const v=s.qs[i]; if(isFinite(v)){qmin=Math.min(qmin,v,s.tgt[i]);qmax=Math.max(qmax,v,s.tgt[i]);} }
+  qmin/=D2R; qmax/=D2R; const pad=Math.max(5,(qmax-qmin)*0.12); qmin-=pad; qmax+=pad;
+  qmin=Math.max(qmin,-400); qmax=Math.min(qmax,400);
+  const Y1=v=>p1.b-(v-qmin)/(qmax-qmin)*(p1.b-p1.t);
+  const tl=state.tmax*1.15; const Y2=v=>(p2.t+p2.b)/2 - v/tl*(p2.b-p2.t)/2;
+  ctx.font='22px system-ui,sans-serif'; ctx.lineWidth=1;
+  // grids
+  ctx.strokeStyle='#1d2530'; ctx.fillStyle='#9aa7b4';
+  for(let t=0;t<=T+1e-9;t+=0.2){ ctx.beginPath(); ctx.moveTo(X(t),p1.t); ctx.lineTo(X(t),p1.b); ctx.moveTo(X(t),p2.t); ctx.lineTo(X(t),p2.b); ctx.stroke(); ctx.textAlign='center'; ctx.fillText(t.toFixed(1)+' s',X(t),H-18); }
+  const stepq=niceStep((qmax-qmin)/6);
+  ctx.textAlign='right';
+  for(let v=Math.ceil(qmin/stepq)*stepq; v<=qmax; v+=stepq){ ctx.beginPath(); ctx.moveTo(L,Y1(v)); ctx.lineTo(R,Y1(v)); ctx.stroke(); ctx.fillText(Math.round(v)+'°',L-8,Y1(v)+7); }
+  const stept=niceStep(tl/2.5);
+  for(let v=-Math.floor(tl/stept)*stept; v<=tl; v+=stept){ ctx.beginPath(); ctx.moveTo(L,Y2(v)); ctx.lineTo(R,Y2(v)); ctx.stroke(); ctx.fillText(Math.round(v)+'',L-8,Y2(v)+7); }
+  ctx.save(); ctx.translate(24,(p1.t+p1.b)/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center'; ctx.fillText('joint angle',0,0); ctx.restore();
+  ctx.save(); ctx.translate(24,(p2.t+p2.b)/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center'; ctx.fillText('torque N·m',0,0); ctx.restore();
+  // 2% band around target
+  const q1=state.q1, band=Math.abs(state.q1-state.q0)*0.02;
+  ctx.fillStyle='rgba(255,180,84,0.10)'; ctx.fillRect(L,Y1(q1+band),R-L,Math.max(1,Y1(q1-band)-Y1(q1+band)));
+  // torque limits
+  ctx.strokeStyle='#ff6b6b'; ctx.setLineDash([8,6]); ctx.beginPath(); ctx.moveTo(L,Y2(state.tmax)); ctx.lineTo(R,Y2(state.tmax)); ctx.moveTo(L,Y2(-state.tmax)); ctx.lineTo(R,Y2(-state.tmax)); ctx.stroke(); ctx.setLineDash([]);
+  const line=(s,arr,Yf,col,wd,scale)=>{ ctx.strokeStyle=col; ctx.lineWidth=wd; ctx.beginPath(); let pen=false; for(let i=0;i<=s.n;i+=4){ const v=arr[i]*(scale||1); if(!isFinite(v)){pen=false;continue;} const y=Math.max(-50,Math.min(H+50,Yf(v))); if(!pen){ctx.moveTo(X(i*s.dt),y);pen=true;} else ctx.lineTo(X(i*s.dt),y);} ctx.stroke(); };
+  line(sA,sA.tgt,Y1,'#ffb454',2,1/D2R);
+  line(sB,sB.qs,Y1,'#b48cff',2,1/D2R);
+  line(sA,sA.qs,Y1,'#4fb3ff',3.5,1/D2R);
+  ctx.save(); ctx.beginPath(); ctx.rect(L,p2.t-2,R-L,p2.b-p2.t+4); ctx.clip(); line(sA,sA.taus,Y2,'#4cc38a',2.5,1); ctx.restore();
+  ctx.lineWidth=1;
+}
+function niceStep(x){ const p=Math.pow(10,Math.floor(Math.log10(x))); const m=x/p; return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p; }
+function ro(id,v,cls){ const e=$(id); e.className='ro '+(cls||''); e.querySelector('.v').textContent=v; }
+let last={};
+function render(){
+  const g=gains(); syncUI();
+  const sA=simulate(true), sB=simulate(false);
+  plot(sA,sB);
+  const m=metrics(sA);
+  const wn=Math.sqrt(g.kp/g.J), z=g.kd/(2*Math.sqrt(g.kp*g.J));
+  ro('r_arm', g.arm.toPrecision(2)+' kg·m², '+(g.arm/g.J*100).toFixed(0)+'% of J','');
+  ro('r_wn', (wn/2/Math.PI).toFixed(1)+' Hz ('+wn.toFixed(0)+' rad/s)', wn/state.rate>0.5?'warn':'');
+  ro('r_z', z.toFixed(2), z<0.3?'warn':'');
+  if(m.unstable||sA.blown){
+    ro('r_os','–','bad'); ro('r_ts','never','bad'); ro('r_ss','–','bad'); ro('r_tp', sA.blown?'–':m.tp.toFixed(1)+' N·m','bad');
+    ro('r_st', sA.blown?'diverges':'keeps oscillating','bad');
+  } else {
+    ro('r_os', m.os.toFixed(1)+'%', m.os>25?'warn':'');
+    ro('r_ts', m.settled? (m.ts*1000).toFixed(0)+' ms' : '> 1 s', m.settled?'':'warn');
+    ro('r_ss', m.ss.toFixed(2)+'°', Math.abs(m.ss)>3?'warn':'');
+    ro('r_tp', m.tp.toFixed(1)+' N·m'+(m.tp>=state.tmax*0.999?' (saturated)':''), m.tp>=state.tmax*0.999?'warn':'');
+    const verdict = z<0.3?'underdamped': (m.os>25?'ringing':(Math.abs(m.ss)>3?'sags':(m.settled?'good':'slow')));
+    ro('r_st', verdict, verdict==='good'?'ok':'warn');
+  }
+  last={g,wn,z,m,blown:sA.blown};
+  updateNote();
+}
+function updateNote(){
+  const ch=[]; const g=last.g;
+  const names={Il:'link inertia',mgr:'gravity moment',Ir:'rotor inertia',N:'gear ratio',tmax:'peak torque',w0:'no-load speed',fr:'friction',kp:'kp',kd:'kd',rate:'PD update rate',delay:'delay',q0:'step start',q1:'step end'};
+  for(const k in names){ const a=state[k], b=DEFAULTS[k]; if(Math.abs(a-b)>1e-9*Math.max(1,Math.abs(b))) ch.push(`${names[k]} ${fmtv(k,a)||a}${k==='rate'?' Hz':''} (knee default ${fmtv(k,b)||b}${k==='rate'?' Hz':''})`); }
+  if(state.mode==='freq') ch.push(`gains from the rule kp = I·ω², kd = 2·I·ζ·ω with f = ${state.fn} Hz, ζ = ${state.zeta}, I = ${state.ruleI==='arm'?'armature only (BeyondMimic)':'link + armature'}`);
+  if(state.delay>0) ch.push(`delay placed ${state.dwhere==='cmd'?'on the target (as DelayedDCMotor)':'inside the PD loop'}`);
+  if(!ch.length){ $('note').textContent='Change a control above to build a note.'; return; }
+  const m=last.m;
+  const res = last.blown||m.unstable ? 'The loop is UNSTABLE (sustained or growing oscillation).' :
+    `Result: overshoot ${m.os.toFixed(1)}%, 2% settling ${m.settled?(m.ts*1000).toFixed(0)+' ms':'over 1 s'}, steady-state error ${m.ss.toFixed(2)}°, peak torque ${m.tp.toFixed(1)} N·m.`;
+  $('note').textContent = `Marvin Bot (1.44 m, 41 kg humanoid), single-joint PD step-response study. Starting from the knee as trained (RS04, kp 150, kd 5, armature 0.03 kg·m² placeholder, link 0.184 kg·m², sim/isaaclab/marvin_bot/robot_cfg.py), I changed: ${ch.join('; ')}. Resulting gains kp ${g.kp.toPrecision(3)} N·m/rad, kd ${g.kd.toPrecision(3)} N·m·s/rad; armature ${g.arm.toPrecision(3)} kg·m²; total inertia ${g.J.toPrecision(3)} kg·m²; natural frequency ${(last.wn/2/Math.PI).toFixed(1)} Hz; damping ratio ${last.z.toFixed(2)}. ${res} Caveats: one joint with the rest of the robot fixed, linear torque-speed line, armature not yet measured (phase 2 bench).`;
+}
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+render();
+</script>
+</body>
+</html>

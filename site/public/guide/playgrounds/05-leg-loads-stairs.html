@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leg loads and stairs · Marvin Bot guide</title>
+<meta name="description" content="Leg statics for a humanoid: joint torque from weight and lever arm, why bent knees cost torque, stair step-up loads, rated vs peak, RMS and the parked 1.5:1 knee stage.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+.eq{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:14px/1.7 var(--mono);overflow-x:auto;max-width:86ch}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1 1 auto}
+.bars{margin-top:10px;display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:96px 1fr 150px;gap:8px;align-items:center;font-size:13px}
+@media (max-width:560px){.bar{grid-template-columns:70px 1fr;}.bar .bv{grid-column:1/-1}}
+.track{position:relative;height:18px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px 0 0 4px}
+.track .mark{position:absolute;top:-2px;bottom:-2px;width:2px;background:#e6edf3;opacity:.75}
+.track .mark.p70{background:var(--violet)}
+.bv{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.ctl.dis{opacity:.4;pointer-events:none}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 2 · Mechanics</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 05</p>
+<h1>Leg loads and stairs</h1>
+<p class="lede">How much torque does a knee need to carry a 41 kg robot up an 18 cm stair, and why is Marvin Bot's knee motor fine for walking but warm on slow stairs? This page builds the answer from a lever and a weight, then checks it against the repo's own numbers. It matters because climbing ordinary household stairs is one of Marvin Bot's requirements, and stairs, not walking, decide how big the knee motor must be.</p>
+<div class="meta"><span class="chip">~35 min</span><span class="chip">Before this: <a href="01-dof-kinematics.html">01 Degrees of freedom</a>, <a href="02-balance.html">02 Balance</a>, <a href="04-actuators.html">04 Actuators</a></span><span class="chip">Maths: torque = force × distance</span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>How to find a joint's <a class="g" href="../glossary.html#torque">torque</a> from the body's weight and a <a class="g" href="../glossary.html#lever-arm">lever arm</a>, and what the <a class="g" href="../glossary.html#jacobian">Jacobian</a> transpose has to do with it.</li>
+<li>Why a bent knee costs torque, and why stairs load the knee more than walking.</li>
+<li>Peak versus continuous (rated) torque, the 70%-of-peak rule, <a class="g" href="../glossary.html#rms-torque">RMS torque</a> and duty cycle, and what a 1.5:1 knee stage would change.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>Stand on one leg with a slightly bent knee. Your body weight pushes down through your foot; the ground pushes back up with the same force. That upward force passes some distance behind your knee, and that distance is the lever arm. The knee's muscles must produce a torque equal to force × lever arm, or the knee folds. Bend the knee more and the knee moves forward while your weight stays over your foot: the lever arm grows, and so does the torque. That is all of leg statics (statics: the forces in something that is standing still). You can feel it: a shallow knee bend is easy to hold, a deep squat on one leg is very hard.</p>
+
+<h2 id="play">Playground A: a leg on a stair</h2>
+<p>Side view of the stance leg standing on a stair tread (the foot flat, its heel 1 cm past the edge, the pelvis upright: the same rules as the repo's step-up check). The ground force is drawn as a violet arrow; dotted lines show each joint's lever arm. <b>Start here:</b> press <b>Marvin Bot today</b>, then drag the knee slider and watch the knee bar grow as the dotted knee lever arm gets longer.</p>
+<p class="hint">How to read this: the bars under the picture compare each joint's torque with its motor's continuous (for-ever) rating. Green is comfortable, amber is warm, red means the motor would overheat if it held this pose for long. The violet tick on each bar is the project's limit for brief peaks (70% of the peak rating).</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="today">Marvin Bot today: repo's worst pose</button>
+      <button data-preset="start">Start of an 18 cm step-up</button>
+      <button data-preset="mid">Halfway up</button>
+      <button data-preset="stance">Stance on one leg</button>
+      <button data-preset="stage">Today + 1.5:1 knee stage</button>
+    </div>
+    <h4>Pose</h4>
+    <div class="ctl"><label>Mode</label>
+      <div class="seg" id="mode"><button data-m="manual" class="on">Joint angles</button><button data-m="auto">Auto: CoM over foot (IK)</button></div>
+      <div class="hint">Joint angles: you set the hip and knee. Auto: you set the stair and where the body is, and inverse kinematics (IK, working back from where the feet must be to the joint angles; page 01) finds the angles.</div></div>
+    <div class="ctl m-man"><label>Hip pitch <output id="o_qh"></output></label>
+      <input type="range" id="qh" min="-30" max="120" step="0.1" value="24.3">
+      <div class="hint">+ = thigh swung forward.</div></div>
+    <div class="ctl m-man"><label>Knee <output id="o_qk"></output></label>
+      <input type="range" id="qk" min="0" max="130" step="0.1" value="35.3">
+      <div class="hint">Ankle pitch follows (= knee − hip) to keep the foot flat under an upright pelvis.</div></div>
+    <div class="ctl m-auto"><label>Riser height <output id="o_h"></output></label>
+      <input type="range" id="h" min="0" max="0.24" step="0.005" value="0.18">
+      <div class="hint">The height of one stair step. Requirement R12 in the repo: 17–18 cm risers, 25 cm treads (the part you stand on).</div></div>
+    <div class="ctl m-auto"><label>Step-up progress <output id="o_prog"></output></label>
+      <input type="range" id="prog" min="0" max="1" step="0.01" value="1">
+      <div class="hint">0 = pelvis still at floor height, front foot just placed; 1 = standing on the stair.</div></div>
+    <div class="ctl m-auto"><label>Hip height when walking <output id="o_hb"></output></label>
+      <input type="range" id="hb" min="0.55" max="0.70" step="0.005" value="0.665">
+      <div class="hint">Hip axis above the sole in the walking crouch; 0.694 m in the straight stance.</div></div>
+    <div class="ctl m-auto"><label>CoM ahead of the stance ankle <output id="o_xc"></output></label>
+      <input type="range" id="xc" min="-0.30" max="0.13" step="0.001" value="-0.062">
+      <div class="hint">Sole runs from −0.09 m (heel) to +0.15 m (toe). The repo's worst pose has −0.062 m.</div></div>
+    <h4>Load</h4>
+    <div class="ctl"><label>Robot mass <output id="o_mass"></output></label>
+      <input type="range" id="mass" min="30" max="50" step="0.05" value="40.35">
+      <div class="hint">40.35 kg bare, 41.30 kg with shells.</div></div>
+    <div class="ctl"><label>Share of weight on this leg <output id="o_share"></output></label>
+      <input type="range" id="share" min="0.2" max="1" step="0.01" value="1">
+      <div class="hint">1 = single support. In double support the other foot carries the rest.</div></div>
+    <h4>Knee actuator</h4>
+    <div class="ctl"><label><span><input type="checkbox" id="stage"> Add the parked 1.5:1 knee stage</span></label></div>
+    <div class="ctl"><label>RS04 continuous rating in the leg <output id="o_rate"></output></label>
+      <input type="range" id="rate" min="28" max="40" step="0.5" value="40">
+      <div class="hint">40 N·m on the manual's 345 × 345 mm heat sink; maybe 30–35 N·m on the thigh plate (to be measured on the bench).</div></div>
+  </div>
+  <div class="preview">
+    <svg id="legview" viewBox="0 0 600 520" role="img" aria-label="Side view of a leg standing on a stair with the ground reaction force and the lever arms to hip, knee and ankle"></svg>
+    <div class="bars" id="bars"></div>
+    <div class="readouts">
+      <div class="ro" id="r_ang"><div class="k">Hip / knee / ankle pitch</div><div class="v">–</div></div>
+      <div class="ro" id="r_lev"><div class="k">Knee lever arm</div><div class="v">–</div></div>
+      <div class="ro" id="r_bal"><div class="k">CoM vs sole</div><div class="v">–</div></div>
+      <div class="ro" id="r_kstage"><div class="k">Knee max speed · reflected inertia</div><div class="v">–</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--good)"></i>&lt; 70% of continuous</span><span><i style="background:var(--warn)"></i>70–100% of continuous</span><span><i style="background:var(--bad)"></i>above continuous</span><span><i style="background:#e6edf3"></i>100% continuous</span><span><i style="background:var(--violet)"></i>70% of peak</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <b>Marvin Bot today</b>: knee 47 N·m, 118% of the RS04's 40 N·m continuous rating, 39% of its 120 N·m peak; ankle pitch about 24 N·m and hip pitch about 2 N·m. These match the repo's static 18 cm check (47, 24.4 and 2.3 N·m) to within a few per cent.</li>
+<li>Switch to <b>Auto</b> and slide the CoM from −0.06 m to +0.03 m (over the middle of the foot). The leg leans forward with the body, the knee lever arm shrinks and the knee torque drops by about a third. Where the CoM sits over the foot matters as much as how much the knee bends.</li>
+<li>Press <b>Start of an 18 cm step-up</b>: the front knee is bent 84°. With half the weight on it the knee needs about 34 N·m; slide the share to 1 and it needs about 69 N·m. Then press <b>Halfway up</b>: 75 N·m on one leg, 63% of peak and nearly twice the continuous rating. Fine for a moment, too hot to hold: this is why real climbers keep weight on the back leg and use momentum while the front knee is deeply bent.</li>
+<li>Drop the continuous rating to 32 N·m: the knee is at nearly 150%. Then tick the 1.5:1 stage.</li>
+</ol></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>Torque is force times lever arm</h3>
+<p>Torque τ (N·m) is the turning effect of a force F (N) about an axis: τ = F × d, where d (m) is the perpendicular distance from the axis to the force's line of action, the lever arm. A 400 N load 0.12 m from a knee axis needs 48 N·m to hold.</p>
+<p>For a leg standing still, the ground pushes up on the sole with a force equal to the weight it carries, at the centre of pressure (page <a href="02-balance.html">02</a>). If the robot stands still on one foot, that point is directly below the whole-body CoM. Every joint between the sole and the body must resist the moment of this force about its own axis, minus the weight of the leg parts below the joint:</p>
+<div class="eq">τ<sub>j</sub> = F · (x<sub>p</sub> − x<sub>j</sub>) − Σ<sub>below j</sub> m<sub>s</sub> g · (x<sub>s</sub> − x<sub>j</sub>)</div>
+<p>F = share × m × g (N), x<sub>p</sub> the CoP's forward position, x<sub>j</sub> the joint's, and m<sub>s</sub>, x<sub>s</sub> the mass and position of each leg segment below the joint (thigh, shin, foot). With the whole robot on one foot and the CoP under the CoM, this is identical to "the weight of everything above the joint times its horizontal distance", which is how <code>sim/mujoco/check_step_up.py</code> computes it (<code>stance_torques</code>).</p>
+
+<h3>The Jacobian transpose view</h3>
+<p>Plain version: a joint carries a lot of torque when the ground's push passes far from it, and almost none when the push passes right through it. At a straight knee the push passes almost through the knee axis, so the knee needs almost nothing; that is why standing straight is cheap and crouching is expensive.</p>
+<details><summary>Go deeper: the same result in robotics language</summary>
+<p>The Jacobian J maps joint speeds to the foot's velocity, and its transpose maps a force at the foot to the joint torques that balance it, τ = Jᵀ F.<sup class="cite"><a href="#s1">[1]</a><a href="#s2">[2]</a></sup> For a vertical force on a planar leg, the Jacobian's entries for each joint are just the horizontal distances from that joint to the contact point, so Jᵀ F gives F × lever arm at each joint. The intuition carries to 3-D: a joint whose axis lies close to the force's line of action carries little torque (the hip pitch here, about 2 N·m), one far from it carries a lot (the knee).</p></details>
+
+<h3>Why a bent knee costs torque</h3>
+<p>With the foot flat and the CoM held over the foot, bending the knee by angle q<sub>k</sub> pushes the knee forward of the force line by roughly L·sin(q<sub>k</sub>/2) for equal thigh and shin lengths L. At Marvin Bot's standing stance (knee 15°) the lever arm is about 4 cm; at 35° about 10 cm (12 cm in the repo's worst pose, where the CoM also sits 6 cm behind the ankle); at 90°, about 23 cm. Human stair ascent shows the same thing: knee extensor moments are several times those of level walking.<sup class="cite"><a href="#s7">[7]</a></sup></p>
+
+<h3>Stairs</h3>
+<p>Household stairs are tall relative to a 0.70 m leg. Residential building codes in the US cap risers at 196 mm with treads of at least 254 mm;<sup class="cite"><a href="#s6">[6]</a></sup> Marvin Bot's requirement R12 is 17–18 cm risers and 25 cm treads. To climb one, the front leg must start the lift with its foot one riser higher than the back foot, so its knee is deeply bent exactly when it begins to take weight. A slow, static climb therefore spends time with the full weight on a bent knee. A dynamic climb shares the load with the back leg and uses momentum, so the peak lasts only a fraction of each step.</p>
+
+<h3>Peak, continuous and RMS</h3>
+<p>An electric motor's torque is limited by two different things. <b>Peak torque</b> is how much it can produce for a moment (current limits, magnet saturation, gear strength). <b>Continuous (rated) torque</b> is how much it can hold indefinitely without overheating, and it depends on cooling: the RS04's 40 N·m assumes a 345 × 345 mm aluminium heat sink (35 N·m on 220 × 200 mm).<sup class="cite"><a href="#s3">[3]</a></sup> Copper losses grow with current squared, and torque is proportional to current, so heat grows with torque squared. That is why heating is judged by the <b>root-mean-square</b> torque over a cycle,</p>
+<div class="eq">τ<sub>RMS</sub> = √( (1/T) ∫ τ(t)² dt )</div>
+<p>In words: square the torque at every moment, average those squares over one cycle of length T (the ∫ … dt sign just means "add up over time"), then take the square root. The result is the steady torque that would produce the same heat.<sup class="cite"><a href="#s4">[4]</a></sup><sup class="cite"><a href="#s5">[5]</a></sup> Two checks follow: RMS within the continuous rating, and the peak within a margin of the peak rating. Marvin Bot's project rule: peak torques at or below 70% of the peak rating, continuous (RMS) within the rating (<code>docs/plan.md</code> phase 1 pass check, <code>sim/mujoco/check_standing.py</code>). RMS works when the cycle is short compared with the motor's thermal time constant; a long hold above rating heats the winding even if the long-run average is fine.<sup class="cite"><a href="#s4">[4]</a></sup></p>
+
+<h3>What a gear stage does</h3>
+<p>An extra reduction of ratio N between motor and joint multiplies output torque by N (minus friction), divides speed by N, and multiplies the motor's rotor inertia as seen from the joint (the <a class="g" href="../glossary.html#reflected-inertia">reflected inertia</a>) by N².<sup class="cite"><a href="#s8">[8]</a></sup> For the parked 1.5:1 knee stage: 60 N·m continuous and 180 N·m peak, about 14 rad/s instead of 21, and 2.25 × the reflected inertia, which makes the knee less back-drivable (harder to push round from outside, so it gives less on impact) and harder for the policy to swing fast. Page <a href="04-actuators.html">04 Actuators</a> covers quasi-direct drives and why designers avoid extra stages.</p>
+
+<h2 id="rms">Playground B: duty cycle and RMS</h2>
+<p>A knee torque profile over one stair step: a hump while the leg is in stance (foot on the ground, carrying weight), a small torque while it swings through the air. Change the shape and see how RMS, not the peak, decides heating.</p>
+<p class="hint">How to read this picture: time across one step, torque upwards. The blue curve is the knee torque, the orange line its RMS, the white line the continuous rating and the violet line the brief-peak limit. Heat is fine while the orange line stays below the white one.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-rp="hold">Static hold at 47 N·m</button>
+      <button data-rp="policy">Marvin Bot today: stair policy-like</button>
+      <button data-rp="flat">Flat fast walk-like (68%)</button>
+      <button data-rp="slow">Slow climb, long stance</button>
+    </div>
+    <h4>Profile</h4>
+    <div class="ctl"><label>Stance share of the cycle <output id="o_duty"></output></label><input type="range" id="duty" min="0.2" max="1" step="0.01" value="0.6"></div>
+    <div class="ctl"><label>Stance peak torque <output id="o_tp"></output></label><input type="range" id="tp" min="0" max="120" step="0.5" value="54"></div>
+    <div class="ctl"><label>Stance base torque <output id="o_tb"></output></label><input type="range" id="tb" min="0" max="80" step="0.5" value="0"><div class="hint">Torque at the start and end of stance; the profile rises from it to the peak and back as a half-sine.</div></div>
+    <div class="ctl"><label>Swing torque <output id="o_tsw"></output></label><input type="range" id="tsw" min="0" max="20" step="0.5" value="5"></div>
+    <div class="ctl"><label>Cycle time <output id="o_tc"></output></label><input type="range" id="tc" min="0.6" max="3" step="0.05" value="1.2"><div class="hint">Changes the time axis only: RMS depends on the shape, not the duration, as long as the cycle is short against the motor's thermal time constant.</div></div>
+    <div class="ctl"><div class="hint">Uses the knee stage and continuous rating set in Playground A.</div></div>
+  </div>
+  <div class="preview">
+    <svg id="rmsview" viewBox="0 0 600 300" role="img" aria-label="Knee torque over one step cycle with RMS, continuous rating and 70 percent of peak lines"></svg>
+    <div class="readouts">
+      <div class="ro" id="r_rms"><div class="k">RMS torque</div><div class="v">–</div></div>
+      <div class="ro" id="r_rmsp"><div class="k">RMS / continuous</div><div class="v">–</div></div>
+      <div class="ro" id="r_heat"><div class="k">Heat vs at rating</div><div class="v">–</div></div>
+      <div class="ro" id="r_pk"><div class="k">Peak / peak rating</div><div class="v">–</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>torque τ(t)</span><span><i style="background:var(--accent2)"></i>RMS</span><span><i style="background:#e6edf3"></i>continuous rating</span><span><i style="background:var(--violet)"></i>70% of peak</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b> Press <b>Static hold</b> (118%), then <b>stair policy-like</b>: the peak is higher (54 N·m) but the RMS is about 74% of rated, the range the repo measured for its stair policy. The profile shape here is illustrative, chosen to match that measured RMS; the repo does not publish the time trace. Then press <b>Slow climb</b> and see how a long, loaded stance pushes the RMS back over the rating.</div>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b>
+<ul>
+<li><b>Static step-up check</b> (<code>sim/mujoco/check_step_up.py</code>): three poses of a slow step, pelvis upright, feet flat, CoM at least 2 cm inside the supporting foot; stance torques from the weight of everything above each joint. On the 1.44 m model, 10–20 cm stairs are all possible; the worst stance knee is <b>47 N·m = 39% of peak, 118% of continuous</b>, hip roll 42 N·m = 105% (<code>docs/design/stairs.md</code>; <code>docs/decisions.md</code>, 2026-10-29).</li>
+<li>We ran the check read-only: the worst pose is pose 3 (standing on the stair, rear toe over the edge) with the stance knee at 35°, hip pitch 24°, ankle pitch 11°, the CoM 0.122 m behind the knee and 0.062 m behind the ankle. It is the same for every riser from 10 to 20 cm, because that pose is set by the walking crouch and the reach of the rear foot, not by the riser.</li>
+<li><b>Trained stair policies</b> (policies are named by the ground they were trained on, "flat" or "rough", plus a version number; MuJoCo cross-check, <code>sim/mujoco/check_policy.py</code>): rough v5 on the earlier 1.29 m model measured the knees at <b>73–75% of continuous (RMS)</b> on 10–20 cm stairs, hip roll ~60%. The stair policy in use today, rough v9 (also trained on the 1.29 m body), passes 14 of 15 stair runs (15, 18 and 20 cm, five noise seeds) on the 1.44 m model; a retrained rough v10 did worse (6 of 15) and is not used. The repo does not yet give v9's knee RMS on the new body (<code>sim/isaaclab/README.md</code>).</li>
+<li><b>Flat walking on the 1.44 m model</b> (flat v8, retrained): knees bent about 38–40° on average through the stride (15° standing); hottest joint a knee at 68% of continuous in the 1.0 m/s fast walk.</li>
+<li><b>Rule:</b> peak ≤ 70% of the peak rating; continuous (RMS) within the rating. Each extra kilogram adds about 1.1 N·m at the knee in the worst pose.</li>
+<li><b>Open question:</b> the RS04's real continuous rating on a thigh-sized plate. If it is 30–35 N·m, stair RMS would be about 85–100% (<code>docs/design/stairs.md</code>). A phase 2 bench test (<code>bench/actuator/bench_robstride.py thermal</code>) will measure it.</li>
+<li><b>Parked option:</b> a 1.5:1 belt or linkage stage at the knee: 60 N·m continuous, 180 N·m peak, ~14 rad/s, ~0.2 kg, some backlash, thigh redesign. Added only if the measured stair RMS exceeds the measured rating by more than better cooling can cover.</li>
+</ul></div>
+
+<h3>Where this 2-D model differs from the repo's check</h3>
+<ul>
+<li><b>Sagittal plane only.</b> It cannot see hip roll (105% of rated in the repo's check), which comes from holding the body sideways over one foot. Hip roll is the second-hottest joint on slow stairs.</li>
+<li><b>Leg segment masses</b> are lumped from the URDF (shin 2.78 kg, foot 0.64 kg, thigh 2.0 kg, hip pitch link 1.51 kg) at fixed fractions of each link; the rest of the body is a point at the CoM. The repo uses every body's real mass and position.</li>
+<li><b>Pose.</b> The repo searches pelvis positions for one that balances and places both feet; the hip roll (−6.6°) and yaw (18°) it finds tilt the leg slightly out of the plane. Here you set the pose.</li>
+<li><b>The lift itself.</b> The repo reports stance torques only in its two single-support poses (before and after the lift). Its middle pose, weight moving onto the stair, is double support and has no torque readout. If the front leg took all the weight halfway up, this model gives about 75 N·m at the knee: within the 70%-of-peak rule, but well above continuous, so the lift must be quick or shared with the rear leg.</li>
+<li><b>Double support.</b> The repo reports torques only on one foot. The share slider here assumes this foot's CoP stays under the CoM where possible, which is a simplification.</li>
+</ul>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<tr><th>Option for the knee</th><th>Effect</th><th>Cost</th></tr>
+<tr><td>Keep the RS04 (today)</td><td>118% static; 73–75% RMS in a trained policy on the 1.29 m model</td><td>Depends on the bench-measured rating</td></tr>
+<tr><td>Better heat path (thigh plate as heat sink, paste, small fan)</td><td>+10–20% continuous (to be confirmed)</td><td>Cheap, no redesign</td></tr>
+<tr><td>Heat penalty in training</td><td>Lower knee RMS on stairs</td><td>Free; may slow the climb</td></tr>
+<tr><td>1.5:1 knee stage</td><td>60 / 180 N·m, ~14 rad/s, 2.25 × reflected inertia</td><td>~0.2 kg, backlash, thigh redesign</td></tr>
+<tr><td>Larger actuator from another vendor</td><td>Maybe 55 N·m continuous or more</td><td>Second protocol, cost, mass</td></tr>
+<tr><td>Shorter or less bent legs</td><td>Shorter lever arms</td><td>Stairs need ≥0.65 m hip height (R3); a straighter walk needs retraining</td></tr>
+<tr><td>Less mass</td><td>~1.1 N·m per kg at the knee</td><td>Shoulder RS03 → RS06 saves ~1.1 kg but halves shoulder peak</td></tr>
+</table></div>
+<p>The repo's decision (<code>docs/decisions.md</code>, 2026-10-26, kept on 2026-10-29): keep the RS04 knee with no stage, and settle it from the trained stair policy's knee RMS (done on the 1.29 m model: 73–75%; to be repeated on the 1.44 m body), the bench thermal test, and the final mass. Making the legs 90 mm longer instead of 50 mm was rejected partly because the knee would reach 127% of rated and need the stage.</p>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b> No source disagreement; two repo notes. (1) The 73–75% stair RMS was measured on the 1.29 m model (rough v5); the 1.44 m body's static figure rose from 109% to 118%, and the stair policy now used (rough v9, 14 of 15 runs passed on the 1.44 m model) has no published knee RMS on the new body, so the stair RMS on today's robot is not yet known. <code>docs/design/stairs.md</code> still quotes the rough v5 figure and the flat v3 walk. (2) The rated torque is quoted on the manual's large heat sink; the repo itself flags that the real figure in the leg may be 30–35 N·m.</div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>Whether the knee needs the 1.5:1 stage: measure the stair policy's knee RMS on the 1.44 m body (not yet reported for rough v9) and compare it with the bench-measured continuous rating.</li>
+<li>Walking height and stance: flat v8 walks with its knees bent ~38–40° on average, not the 15° stance; a straighter gait shortens lever arms at the cost of push robustness (page <a href="02-balance.html">02</a>) and stair reach.</li>
+<li>Mass: every kilogram saved is about 1.1 N·m less at the knee on stairs; the price is usually a smaller part somewhere else (for example lighter shoulder motors, which save about 1.1 kg but halve the shoulder's peak torque).</li>
+<li>Cooling before gearing: a better heat path is cheap and changes nothing else, so try it before the 1.5:1 stage, which costs speed, mass and a thigh redesign.</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<p><b>Where this leads.</b> The knee carries one motor; the ankle needs two working through push rods. Page 06 shows how that linkage shares the ankle's pitch and roll torque between them.</p>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><code>docs/design/stairs.md</code> in the repo: the full stair story, issues, options and how the knee question will be settled.</li>
+<li><a href="https://hades.mech.northwestern.edu/images/2/25/MR-v2.pdf">Lynch &amp; Park, Modern Robotics, section 5.2 "Statics of open chains"</a>: τ = Jᵀ F derived from power conservation.</li>
+<li><a href="https://www.designworldonline.com/how-to-calculate-continuous-and-peak-torque-values-for-servo-applications/">Design World, continuous and peak torque for servo applications</a>: a worked RMS sizing example.</li>
+<li><a href="https://doi.org/10.1109/TRO.2016.2640183">Wensing et al., proprioceptive actuator design (2017)</a>: why legged robots keep gear ratios low.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://hades.mech.northwestern.edu/images/2/25/MR-v2.pdf">K. M. Lynch and F. C. Park, Modern Robotics, Cambridge University Press, 2017 (preprint), §5.2</a> <span class="used">— used for: statics of open chains, τ = Jᵀ F.</span></li>
+  <li id="s2"><a href="https://hades.mech.northwestern.edu/images/d/d5/MRslides-ch05b.pdf">Lynch and Park, Modern Robotics lecture slides, chapter 5 (statics)</a> <span class="used">— used for: interpretation of the Jacobian transpose for joint torques.</span></li>
+  <li id="s3"><a href="https://github.com/RobStride/Product_Information">RobStride, Product_Information (RS04 / RS03 manuals)</a> <span class="used">— used for: peak and rated torque, no-load speed, rating's heat-sink condition.</span></li>
+  <li id="s4"><a href="https://kollmorgen.com/sites/default/files/public_downloads/Brushless_Servo_Motor_Sizing_en-US.pdf">Kollmorgen, Brushless servo motor sizing (application note)</a> <span class="used">— used for: RMS torque against continuous rating, limits when peaks are long against the thermal time constant.</span></li>
+  <li id="s5"><a href="https://www.designworldonline.com/how-to-calculate-continuous-and-peak-torque-values-for-servo-applications/">Design World, "How to calculate continuous and peak torque values for servo applications"</a> <span class="used">— used for: RMS as the steady torque with the same heating; peak and RMS as separate checks.</span></li>
+  <li id="s6"><a href="https://www.law.cornell.edu/regulations/south-carolina/R-8-1210">International Residential Code R311.7.5.1 as adopted (Cornell LII copy)</a> <span class="used">— used for: maximum riser height 196 mm (and the 254 mm minimum tread in R311.7.5.2).</span></li>
+  <li id="s7"><a href="https://doi.org/10.1016/S0966-6362(01)00141-4">R. Riener, M. Rabuffetti and C. Frigo, "Stair ascent and descent at different inclinations", Gait &amp; Posture, 2002</a> <span class="used">— used for: human knee moments on stairs much larger than in level walking.</span></li>
+  <li id="s8"><a href="https://doi.org/10.1109/TRO.2016.2640183">P. M. Wensing, A. Wang, S. Seok, D. Otten, J. Lang and S. Kim, "Proprioceptive actuator design in the MIT Cheetah", IEEE T-RO, 2017</a> <span class="used">— used for: reflected inertia scaling with the square of the gear ratio; low-ratio actuators for legs.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="04-actuators.html"><span>← Previous</span>Actuators: quasi-direct drive, torque, speed and heat</a>
+  <a class="next" href="06-ankle-linkage.html"><span>Next →</span>The parallel-linkage ankle</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const D2R=Math.PI/180, G=9.81, L1=0.325, L2=0.315, HA=0.06, TOE=0.15, HEEL=0.09, DXC=0.011;
+// lumped leg masses from the URDF (kg) and their position along the link (fraction from the upper joint)
+const M_PL=1.51, F_PL=0.52, M_TH=2.0, F_TH=0.95, M_SH=2.78, F_SH=0.54, M_FT=0.64;
+const RS04={rated:40,peak:120,rpm:200,inertia:0.03};
+const ANK={rated:32,peak:96}; // two RS03 through the linkage at its worst pose (tools/ankle_linkage.py; page 06). Neutral pose: 39.6 / 118.8.
+const DEF={mode:'manual',qh:24.3,qk:35.3,h:0.18,prog:1,hb:0.665,xc:-0.062,mass:40.35,share:1,stage:false,rate:40, duty:0.6,tp:54,tb:0,tsw:5,tc:1.2};
+const S={...DEF};
+const PRE={today:{mode:'manual',qh:24.3,qk:35.3,h:0.18,mass:40.35,share:1,stage:false,rate:40},
+  start:{mode:'auto',h:0.18,prog:0,hb:0.665,xc:-0.20,share:0.5,mass:40.35,stage:false,rate:40},
+  mid:{mode:'auto',h:0.18,prog:0.5,hb:0.665,xc:-0.03,share:1,mass:40.35,stage:false,rate:40},
+  stance:{mode:'manual',qh:6,qk:15,h:0.18,share:1,mass:40.35,stage:false,rate:40},
+  stage:{mode:'manual',qh:24.3,qk:35.3,h:0.18,mass:40.35,share:1,stage:true,rate:40}};
+const RPRE={hold:{duty:1,tp:47,tb:47,tsw:0},policy:{duty:0.6,tp:54,tb:0,tsw:5},flat:{duty:0.6,tp:49,tb:0,tsw:5},slow:{duty:0.8,tp:60,tb:30,tsw:5}};
+function knee(){ const N=S.stage?1.5:1; return {rated:S.rate*N, peak:RS04.peak*N, w:RS04.rpm*2*Math.PI/60/N, I:RS04.inertia*N*N}; }
+function solve(){
+  let qh,qk,hip,kn,reach=true;
+  const A=[0,HA];
+  if(S.mode==='manual'){ qh=S.qh; qk=S.qk; const ps=(qh-qk)*D2R;
+    kn=[-L2*Math.sin(ps), HA+L2*Math.cos(ps)]; hip=[kn[0]-L1*Math.sin(qh*D2R), kn[1]+L1*Math.cos(qh*D2R)];
+  } else {
+    const hz=S.hb-S.h*(1-S.prog); hip=[S.xc-DXC, hz];
+    let dx=hip[0], dz=hip[1]-HA, d=Math.hypot(dx,dz);
+    if(d>L1+L2-1e-4){ reach=false; const k=(L1+L2-1e-4)/d; dx*=k; dz*=k; d=L1+L2-1e-4; hip=[dx,dz+HA]; }
+    if(d<Math.abs(L1-L2)+0.02){ d=Math.abs(L1-L2)+0.02; }
+    const beta=Math.atan2(dx,dz), alpha=Math.acos(Math.max(-1,Math.min(1,(L2*L2+d*d-L1*L1)/(2*L2*d))));
+    qk=180-Math.acos(Math.max(-1,Math.min(1,(L1*L1+L2*L2-d*d)/(2*L1*L2))))/D2R;
+    const sh=beta+alpha; kn=[L2*Math.sin(sh), HA+L2*Math.cos(sh)];
+    qh=qk-sh/D2R;
+  }
+  const qa=qk-qh;
+  const xcom = S.mode==='manual' ? hip[0]+DXC : S.xc;
+  const xp=Math.max(-HEEL,Math.min(TOE,xcom));
+  const F=S.share*S.mass*G;
+  // segment positions (x)
+  const lerp=(a,b,f)=>a+(b-a)*f;
+  const xPL=lerp(hip[0],kn[0],F_PL), xTH=lerp(hip[0],kn[0],F_TH), xSH=lerp(kn[0],0,F_SH), xFT=0;
+  const tq=(xj,segs)=>F*(xp-xj)-segs.reduce((s,[m,x])=>s+m*G*(x-xj),0);
+  const tH=tq(hip[0],[[M_PL,xPL],[M_TH,xTH],[M_SH,xSH],[M_FT,xFT]]);
+  const tK=tq(kn[0],[[M_SH,xSH],[M_FT,xFT]]);
+  const tA=tq(0,[]);
+  return {qh,qk,qa,hip,kn,A,xcom,xp,F,tH,tK,tA,reach};
+}
+const SC=500, OX=330, OY=420; const X=x=>OX+x*SC, Y=z=>OY-z*SC;
+function renderLeg(r){
+  const h=S.h; let s='';
+  const edge=-HEEL-0.01;
+  // floor and stair
+  s+=`<rect x="0" y="${Y(-h)}" width="600" height="${Math.max(0,520-Y(-h))}" fill="#151b22"/>`;
+  s+=`<rect x="${X(edge)}" y="${Y(0)}" width="${600-X(edge)}" height="${Y(-h)-Y(0)}" fill="#202933" stroke="#3a4552"/>`;
+  s+=`<line x1="0" y1="${Y(-h)}" x2="${X(edge)}" y2="${Y(-h)}" stroke="#3a4552" stroke-width="2"/>`;
+  if(h>0) s+=`<text x="${X(edge)-6}" y="${(Y(0)+Y(-h))/2+4}" fill="#9aa7b4" font-size="11" text-anchor="end">riser ${(h*100).toFixed(1)} cm</text>`;
+  // rear leg (illustrative): on the floor if it reaches, otherwise swinging with its toe 3 cm over the edge
+  { const floorA=[edge-0.04-TOE, -h+HA], swingA=[edge-TOE, 0.03+HA];
+    let ra=floorA, lab='rear foot on the floor';
+    if(Math.hypot(floorA[0]-r.hip[0],floorA[1]-r.hip[1])>=L1+L2-0.002){ ra=swingA; lab='rear foot swinging over the edge'; }
+    const dx=ra[0]-r.hip[0], dz=ra[1]-r.hip[1]; let d=Math.hypot(dx,dz); const ok=d<L1+L2-0.002;
+    let kp, ae;
+    if(ok){ const a=Math.acos((L1*L1+d*d-L2*L2)/(2*L1*d)); const base=Math.atan2(dx,-dz); const th=base+a; kp=[r.hip[0]+L1*Math.sin(th), r.hip[1]-L1*Math.cos(th)]; ae=ra; }
+    else { kp=[r.hip[0]+dx/d*L1, r.hip[1]+dz/d*L1]; ae=[r.hip[0]+dx/d*(L1+L2), r.hip[1]+dz/d*(L1+L2)]; lab='rear foot lifted'; }
+    s+=`<polyline points="${[r.hip,kp,ae].map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" stroke="#3f4a57" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+    s+=`<line x1="${X(ae[0])}" y1="${Y(ae[1])}" x2="${X(ae[0])}" y2="${Y(ae[1]-HA)}" stroke="#3f4a57" stroke-width="4"/>`;
+    s+=`<line x1="${X(ae[0]-HEEL)}" y1="${Y(ae[1]-HA)}" x2="${X(ae[0]+TOE)}" y2="${Y(ae[1]-HA)}" stroke="#3f4a57" stroke-width="6" stroke-linecap="round"/>`;
+    s+=`<text x="${X(ae[0])}" y="${Y(ae[1]-HA)+16}" fill="#6b7785" font-size="10" text-anchor="middle">${lab}</text>`; }
+  // stance foot
+  s+=`<rect x="${X(-HEEL)}" y="${Y(0.012)}" width="${0.24*SC}" height="${0.012*SC}" fill="#ffb45455" stroke="#ffb454"/>`;
+  s+=`<polygon points="${X(0)},${Y(HA)} ${X(-HEEL)},${Y(0.012)} ${X(TOE)},${Y(0.012)}" fill="#ffb45422" stroke="#ffb454"/>`;
+  // force line
+  const top=Math.max(r.hip[1]+0.15,0.75);
+  s+=`<line x1="${X(r.xp)}" y1="${Y(0)}" x2="${X(r.xp)}" y2="${Y(top)}" stroke="#b48cff" stroke-dasharray="6 4" opacity=".7"/>`;
+  s+=`<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#b48cff"/></marker></defs>`;
+  s+=`<line x1="${X(r.xp)}" y1="${Y(-0.09)}" x2="${X(r.xp)}" y2="${Y(-0.01)}" stroke="#b48cff" stroke-width="4" marker-end="url(#ah)"/>`;
+  s+=`<text x="${X(r.xp)+6}" y="${Y(-0.07)}" fill="#b48cff" font-size="11">${r.F.toFixed(0)} N</text>`;
+  // lever arms
+  for(const [p,c] of [[r.hip,'#4fb3ff'],[r.kn,'#ffb454'],[r.A,'#4cc38a']]) s+=`<line x1="${X(p[0])}" y1="${Y(p[1])}" x2="${X(r.xp)}" y2="${Y(p[1])}" stroke="${c}" stroke-dasharray="2 3" stroke-width="2"/>`;
+  // leg
+  s+=`<polyline points="${[r.hip,r.kn,r.A].map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" stroke="#cbd5df" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`;
+  // body
+  s+=`<rect x="${X(r.hip[0]-0.07)}" y="${Y(r.hip[1]+0.10)}" width="${0.14*SC}" height="${0.14*SC}" rx="10" fill="#232c37" stroke="#3a4552"/>`;
+  s+=`<rect x="${X(r.hip[0]+DXC-0.08)}" y="${Y(r.hip[1]+0.52)}" width="${0.16*SC}" height="${0.40*SC}" rx="12" fill="#1b232c" stroke="#3a4552" opacity=".8"/>`;
+  s+=`<circle cx="${X(r.xcom)}" cy="${Y(r.hip[1]+0.018)}" r="9" fill="#4fb3ff" stroke="#0c1015" stroke-width="2"/><text x="${X(r.xcom)+12}" y="${Y(r.hip[1]+0.018)-8}" fill="#4fb3ff" font-size="11">CoM</text>`;
+  for(const [p,n] of [[r.hip,'hip'],[r.kn,'knee'],[r.A,'ankle']]) s+=`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="6" fill="#0c1015" stroke="#e6edf3" stroke-width="2"/><text x="${X(p[0])+9}" y="${Y(p[1])+15}" fill="#e6edf3" font-size="11">${n}</text>`;
+  s+=`<text x="8" y="16" fill="#6b7785" font-size="11">side view · forward → · sole on the stair at z = 0</text>`;
+  $('legview').innerHTML=s;
+}
+function cls(p){ return p<0.7?'var(--good)':p<=1.0?'var(--warn)':'var(--bad)'; }
+function renderBars(r){
+  const K=knee();
+  const rows=[['Hip pitch',Math.abs(r.tH),S.rate,RS04.peak,'RS04'],['Knee',Math.abs(r.tK),K.rated,K.peak,S.stage?'RS04 + 1.5:1':'RS04'],['Ankle pitch',Math.abs(r.tA),ANK.rated,ANK.peak,'2 × RS03, worst pose']];
+  const MAX=2.0; // bar spans 0..200% of continuous
+  $('bars').innerHTML=rows.map(([n,t,rt,pk,a])=>{ const p=t/rt, w=Math.min(1,p/MAX)*100, p70=Math.min(100,0.7*pk/rt/MAX*100);
+    return `<div class="bar"><div><b>${n}</b><div class="bv">${a}</div></div><div class="track"><div class="fill" style="width:${w}%;background:${cls(p)}"></div><div class="mark" style="left:${50}%"></div><div class="mark p70" style="left:${p70}%"></div></div><div class="bv"><b style="color:${cls(p)}">${t.toFixed(1)} N·m</b> · ${(p*100).toFixed(0)}% cont · ${(t/pk*100).toFixed(0)}% peak</div></div>`; }).join('')
+    + `<div class="hint" style="font-size:12px;color:var(--muted)">Bar length: 0 to 200% of the continuous rating (white line = 100%). Violet line: 70% of peak.</div>`;
+}
+function setRO(id,txt,c){ const e=$(id); e.querySelector('.v').innerHTML=txt; e.className='ro '+(c||''); }
+function render(){
+  document.querySelectorAll('.m-man').forEach(e=>e.style.display=S.mode==='manual'?'':'none');
+  document.querySelectorAll('.m-auto').forEach(e=>e.style.display=S.mode==='auto'?'':'none');
+  if(S.mode==='manual') $('h').closest('.ctl').style.display='';
+  const r=solve(); window._last=r;
+  renderLeg(r); renderBars(r);
+  const lim=(v,a,b)=>v<a-0.05||v>b+0.05;
+  const bad=lim(r.qh,-30,120)||lim(r.qk,0,130)||lim(r.qa,-40,40);
+  setRO('r_ang',`${r.qh.toFixed(0)}° / ${r.qk.toFixed(0)}° / ${r.qa.toFixed(0)}°`, bad?'bad':'');
+  if(bad) $('r_ang').querySelector('.k').textContent='Hip / knee / ankle: OUT OF RANGE'; else $('r_ang').querySelector('.k').textContent='Hip / knee / ankle pitch';
+  setRO('r_lev',`${(Math.abs(r.xp-r.kn[0])*100).toFixed(1)} cm`);
+  const inside=r.xcom>=-HEEL+0.02&&r.xcom<=TOE-0.02;
+  setRO('r_bal', inside?'over the sole':(S.share<1?'off this sole (shared)':'outside: tips'), inside?'ok':S.share<1?'warn':'bad');
+  const K=knee(); setRO('r_kstage',`${K.w.toFixed(1)} rad/s · ${K.I.toFixed(3)} kg·m²`);
+  renderRMS(); updateNote();
+}
+function renderRMS(){
+  const K=knee(), N=400; let s2=0, pk=0; const pts=[];
+  for(let i=0;i<N;i++){ const u=(i+0.5)/N; let t;
+    if(u<S.duty) t=S.tb+(S.tp-S.tb)*Math.sin(Math.PI*u/S.duty); else t=S.tsw;
+    s2+=t*t; pk=Math.max(pk,Math.abs(t)); pts.push([u,t]); }
+  const rms=Math.sqrt(s2/N);
+  const W=600,H=300, x0=50,x1=585,y0=20,y1=260, ymax=Math.max(130,K.peak*0.7+10,S.tp+10);
+  const X=u=>x0+u*(x1-x0), Yv=v=>y1-v/ymax*(y1-y0);
+  let s=`<rect x="${x0}" y="${y0}" width="${x1-x0}" height="${y1-y0}" fill="#0f141a" stroke="#24303c"/>`;
+  for(let v=0;v<=ymax;v+=20) s+=`<line x1="${x0}" x2="${x1}" y1="${Yv(v)}" y2="${Yv(v)}" stroke="#1d2630"/><text x="${x0-6}" y="${Yv(v)+4}" fill="#6b7785" font-size="10" text-anchor="end">${v}</text>`;
+  s+=`<rect x="${X(0)}" y="${y0}" width="${X(S.duty)-X(0)}" height="${y1-y0}" fill="#4fb3ff0d"/>`;
+  s+=`<text x="${X(S.duty/2)}" y="${y0+14}" fill="#6b7785" font-size="11" text-anchor="middle">stance</text>${S.duty<0.97?`<text x="${X((1+S.duty)/2)}" y="${y0+14}" fill="#6b7785" font-size="11" text-anchor="middle">swing</text>`:''}`;
+  s+=`<path d="M${X(0)} ${Yv(0)} ${pts.map(p=>'L'+X(p[0]).toFixed(1)+' '+Yv(p[1]).toFixed(1)).join(' ')} L${X(1)} ${Yv(0)} Z" fill="#4fb3ff22" stroke="#4fb3ff" stroke-width="2"/>`;
+  const hl=(v,c,lab,d)=>`<line x1="${x0}" x2="${x1}" y1="${Yv(v)}" y2="${Yv(v)}" stroke="${c}" stroke-width="2" ${d?'stroke-dasharray="6 4"':''}/><text x="${x1-4}" y="${Yv(v)-5}" fill="${c}" font-size="11" text-anchor="end">${lab}</text>`;
+  s+=hl(K.rated,'#e6edf3',`continuous ${K.rated.toFixed(0)} N·m`,true)+hl(0.7*K.peak,'#b48cff',`70% of peak ${(0.7*K.peak).toFixed(0)} N·m`,true)+hl(rms,'#ffb454',`RMS ${rms.toFixed(1)} N·m`,false);
+  s+=`<text x="${(x0+x1)/2}" y="${H-12}" fill="#6b7785" font-size="11" text-anchor="middle">time over one step: 0 to ${S.tc.toFixed(2)} s</text><text x="14" y="${(y0+y1)/2}" fill="#6b7785" font-size="11" transform="rotate(-90 14 ${(y0+y1)/2})" text-anchor="middle">knee torque (N·m)</text>`;
+  $('rmsview').innerHTML=s;
+  const p=rms/K.rated;
+  setRO('r_rms',`${rms.toFixed(1)} N·m`);
+  setRO('r_rmsp',`${(p*100).toFixed(0)}%`, p<0.7?'ok':p<=1?'warn':'bad');
+  setRO('r_heat',`${(p*p).toFixed(2)} ×`, p<=1?'ok':'bad');
+  setRO('r_pk',`${(pk/K.peak*100).toFixed(0)}%`, pk/K.peak<=0.7?'ok':'bad');
+  window._rms=rms;
+}
+const FMT={qh:v=>v.toFixed(1)+'°',qk:v=>v.toFixed(1)+'°',h:v=>(v*100).toFixed(1)+' cm',prog:v=>(v*100).toFixed(0)+'%',hb:v=>v.toFixed(3)+' m',xc:v=>v.toFixed(3)+' m',mass:v=>v.toFixed(2)+' kg',share:v=>(v*100).toFixed(0)+'%',rate:v=>v.toFixed(1)+' N·m',duty:v=>(v*100).toFixed(0)+'%',tp:v=>v.toFixed(1)+' N·m',tb:v=>v.toFixed(1)+' N·m',tsw:v=>v.toFixed(1)+' N·m',tc:v=>v.toFixed(2)+' s'};
+function sync(){ for(const k in FMT){ $(k).value=S[k]; $('o_'+k).textContent=FMT[k](S[k]); } $('stage').checked=S.stage; document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode)); }
+for(const k in FMT){ $(k).addEventListener('input',()=>{ S[k]=parseFloat($(k).value); $('o_'+k).textContent=FMT[k](S[k]); render(); }); }
+$('stage').addEventListener('change',e=>{S.stage=e.target.checked; render();});
+document.querySelectorAll('#mode button').forEach(b=>b.addEventListener('click',()=>{
+  if(b.dataset.m==='auto' && S.mode==='manual'){ const r=solve(); S.xc=+r.xcom.toFixed(3); S.prog=1; S.hb=+Math.min(0.70,Math.max(0.55,r.hip[1]+S.h*0)).toFixed(3); }
+  if(b.dataset.m==='manual' && S.mode==='auto'){ const r=solve(); S.qh=+r.qh.toFixed(1); S.qk=+r.qk.toFixed(1); }
+  S.mode=b.dataset.m; sync(); render(); }));
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{ Object.assign(S,PRE[b.dataset.preset]); sync(); render(); }));
+document.querySelectorAll('[data-rp]').forEach(b=>b.addEventListener('click',()=>{ Object.assign(S,RPRE[b.dataset.rp]); sync(); render(); }));
+function updateNote(){
+  const r=window._last, K=knee(), parts=[];
+  const legKeys=['mode','qh','qk','h','prog','hb','xc','mass','share','stage','rate'];
+  if(legKeys.some(k=>S[k]!==DEF[k])){
+    parts.push(`Stance-leg statics (2-D sagittal model, foot flat, pelvis upright): hip ${r.qh.toFixed(0)}°, knee ${r.qk.toFixed(0)}°, ankle ${r.qa.toFixed(0)}°${S.mode==='auto'?` (auto pose on a ${(S.h*100).toFixed(1)} cm riser at ${(S.prog*100).toFixed(0)}% of the step-up, walking hip height ${S.hb} m)`:''}; mass ${S.mass} kg with ${(S.share*100).toFixed(0)}% on this leg; CoM ${r.xcom.toFixed(3)} m from the ankle. Torques: hip pitch ${Math.abs(r.tH).toFixed(1)} N·m, knee ${Math.abs(r.tK).toFixed(1)} N·m (${(Math.abs(r.tK)/K.rated*100).toFixed(0)}% of a ${K.rated.toFixed(0)} N·m continuous rating, ${(Math.abs(r.tK)/K.peak*100).toFixed(0)}% of peak), ankle pitch ${Math.abs(r.tA).toFixed(1)} N·m.${S.stage?' Includes the parked 1.5:1 knee stage (60/180 N·m, ~14 rad/s, 2.25 × reflected inertia).':''}${S.rate!==40?` Assumes the RS04 holds only ${S.rate} N·m continuous in the leg.`:''}`);
+  }
+  const rk=['duty','tp','tb','tsw','tc'];
+  if(rk.some(k=>S[k]!==DEF[k])) parts.push(`Duty-cycle check: stance ${(S.duty*100).toFixed(0)}% of the cycle, knee torque rising from ${S.tb} to ${S.tp} N·m (half-sine), ${S.tsw} N·m in swing: RMS ${window._rms.toFixed(1)} N·m = ${(window._rms/K.rated*100).toFixed(0)}% of continuous; peak ${(S.tp/K.peak*100).toFixed(0)}% of peak (rule: ≤ 70%).`);
+  $('note').textContent = parts.length ? `Marvin Bot knee on stairs (repo: static 18 cm check 47 N·m = 118% of the RS04's 40 N·m continuous; stair policy rough v5 measured 73–75% RMS on the 1.29 m model, rough v9 passes 14/15 stair runs on the 1.44 m model; 1.5:1 stage parked).\n`+parts.join('\n')+`\nNext step: measure the knee RMS of the stair policy (rough v9, 14/15 stair runs passed on the 1.44 m model) on the new body, and compare it and the bench-measured continuous rating before ordering leg actuators.` : 'Change a control above to build a note.';
+}
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+sync(); render();
+</script>
+</body>
+</html>

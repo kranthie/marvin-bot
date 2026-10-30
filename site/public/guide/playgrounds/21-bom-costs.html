@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bill of materials and costs · Marvin Bot guide</title>
+<meta name="description" content="What Marvin Bot costs to build, line by line: the bill of materials, what drives the total, what is not counted, and how buying in stages changes when the money is spent.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+
+.chart-title{font-size:13px;color:var(--muted);margin:2px 0 6px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.ctl .chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:4px 0;justify-content:flex-start}
+.ctl .chk input{margin-top:4px;accent-color:var(--accent)}
+.radio{display:flex;flex-direction:column;gap:2px}
+.radio label{justify-content:flex-start;gap:8px}
+.radio input{accent-color:var(--accent)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.filters select,.filters input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px;font:inherit;font-size:13px}
+.filters input{min-width:180px;flex:1 1 180px}
+#bomtable th{cursor:pointer;white-space:nowrap;user-select:none}
+#bomtable th.sorted{color:var(--accent)}
+#bomtable td{font-size:13px}
+#bomtable td.basis{color:var(--muted);font-size:12px;max-width:34ch}
+#bomtable tr.owned td{opacity:.5}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:99px;border:1px solid var(--line);color:var(--muted);margin-right:3px;white-space:nowrap}
+.tag.est{border-color:#6b4f1d;color:var(--warn)}
+.tag.cn{border-color:#24527a;color:var(--accent)}
+.tablewrap.tall{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius)}
+.tablewrap.tall table{margin:0}
+.tablewrap.tall thead th{position:sticky;top:0;background:var(--panel)}
+.hypo{font-size:12px;color:var(--warn)}
+svg text{font-family:var(--font)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 6 · Toward hardware</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 21</p>
+<h1>Bill of materials and costs</h1>
+<p class="lede">Marvin Bot costs about $17,500 in parts to build from nothing at October 2026 prices. This page takes that number apart: which 60 lines make it up, which few lines dominate it, what it leaves out, and how buying one phase at a time changes when the money leaves your account and how much is at risk if a test fails.</p>
+<div class="meta"><span class="chip">~30 min</span><span class="chip">Before this: <a href="04-actuators.html">04 Actuators</a></span><span class="chip"><a href="11-sensors-compute.html">11 Sensors and compute</a></span><span class="chip"><a href="09-power-battery.html">09 Power and battery</a></span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>What a <a class="g" href="../glossary.html#bill-of-materials">bill of materials</a> (BOM) is, how bought and made parts differ, and why every price carries a date and a basis.</li>
+<li>Why two groups, actuators ($6,201) and compute and sensors ($4,723), are 62% of the total, and what is deliberately not counted.</li>
+<li>How <a class="g" href="../glossary.html#quantity-tier">quantity tiers</a> and staged buying trade a small saving against money committed before a test has passed.</li>
+<li>How to compare actuators by price per N·m, and which alternatives the project looked at.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>A <a class="g" href="../glossary.html#bill-of-materials">bill of materials</a> is the complete shopping and making list for a product: every item, how many, what each costs and where the price came from. Engineering organisations treat it as a product-oriented tree that every cost estimate hangs from: if a part is not on the list, it is not in the budget.<sup class="cite"><a href="#s1">[1]</a></sup> For a one-off robot the BOM answers three practical questions: <em>what will this cost me?</em>, <em>what do I buy first?</em> and <em>which few lines matter?</em></p>
+<p>Marvin Bot's BOM lives in one spreadsheet, <code>bom/bom.xlsx</code>, with one sheet per group and a Summary sheet. Its total, $17,531.03 for 60 lines, is the <a class="g" href="../glossary.html#cost-to-replicate">full cost to replicate</a>: what someone starting from an empty bench would pay for parts. The bars below are that total split by group; the playground lets you change the assumptions.</p>
+<p>Two ideas from elsewhere in the guide help here. The robot is built in seven <b>phases</b> (<a href="22-roadmap.html">page 22</a>): 0 foundations and 1 simulation (both free in parts), 2 a bench test of two motors, 3 one leg, 4 the lower body, 5 torso, arms and head, 6 perception. And each <b>actuator</b> (a motor with its gearbox and electronics, <a href="04-actuators.html">page 4</a>) is named by its RobStride model, from the large RS04 down to the small RS00.</p>
+
+<h2 id="play">Playground: BOM cost explorer</h2>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="today">Marvin Bot today</button>
+      <button data-preset="staged">Staged buying</button>
+      <button data-preset="owner">I own the Orin and hands</button>
+      <button data-preset="second">Two robots</button>
+      <button data-preset="shock">Import shock (hypothetical)</button>
+    </div>
+    <h4>View</h4>
+    <div class="tabs"><button id="v_group" class="on">By group</button><button id="v_phase">By build phase</button></div>
+    <h4>Actuator and kit pricing</h4>
+    <div class="ctl radio" id="tiermode">
+      <label><input type="radio" name="tier" value="single" checked> Single-unit prices (the BOM)</label>
+      <label><input type="radio" name="tier" value="staged"> Staged: one order per phase, 10+ price where an order reaches 10</label>
+      <label><input type="radio" name="tier" value="bulk"> Everything in one order now</label>
+      <label><input type="radio" name="tier" value="second"> One order for two robots (cost per robot)</label>
+      <div class="hint">Seeed's 10+ tier: RS04 $242, RS03 $214, RS06 $200, RS00 $131.99, hand kit $97, debug adapter $14.</div>
+    </div>
+    <h4>I already own…</h4>
+    <div class="ctl" id="owned">
+      <label class="chk"><input type="checkbox" data-own="compute"> Jetson AGX Orin developer kit ($3,499)</label>
+      <label class="chk"><input type="checkbox" data-own="hand-kit"> AmazingHand kits ($198)</label>
+      <label class="chk"><input type="checkbox" data-own="g:tool"> Tooling group ($710)</label>
+      <label class="chk"><input type="checkbox" data-own="psu-bench"> 48 V bench supply ($250)</label>
+      <label class="chk"><input type="checkbox" data-own="imu-backup,gamepad"> Backup USB IMU and gamepad ($95)</label>
+      <div class="hint">Owned lines keep their price in the full cost (as in the workbook) but drop out of "still to spend".</div>
+    </div>
+    <h4>What-if (hypothetical)</h4>
+    <div class="ctl"><label>Duty on parts shipped from China <output id="o_duty"></output></label>
+      <input type="range" id="duty" min="0" max="100" step="5" value="0">
+      <div class="hint">Applied to the actuator, servo and hand-kit lines only. Not a real tariff rate: check yours.</div></div>
+    <div class="ctl"><label>Shipping allowance <output id="o_ship"></output></label>
+      <input type="range" id="ship" min="0" max="15" step="1" value="0">
+      <div class="hint">Percent added to what you still have to buy.</div></div>
+    <div class="ctl"><label>Show amounts in</label>
+      <select id="cur">
+        <option value="USD">US dollars</option>
+        <option value="EUR">Euros (illustrative 0.92 per $)</option>
+        <option value="GBP">Pounds (illustrative 0.78 per $)</option>
+        <option value="INR">Rupees (illustrative 84 per $)</option>
+        <option value="AUD">Australian dollars (illustrative 1.52 per $)</option>
+      </select>
+      <div class="hint">Fixed illustrative rates, not live. The BOM itself is in US dollars.</div></div>
+  </div>
+  <div class="preview">
+    <div class="chart-title" id="charttitle">Cost by group</div>
+    <svg id="view" viewBox="0 0 640 380" role="img" aria-label="Horizontal bar chart of BOM cost by group or by build phase"></svg>
+    <div class="readouts">
+      <div class="ro" id="r_full"><div class="k">Full cost to replicate</div><div class="v">–</div></div>
+      <div class="ro" id="r_spend"><div class="k">Still to spend</div><div class="v">–</div></div>
+      <div class="ro" id="r_save"><div class="k">Change vs BOM total</div><div class="v">–</div></div>
+      <div class="ro" id="r_act"><div class="k">Actuators share</div><div class="v">–</div></div>
+      <div class="ro" id="r_first"><div class="k">Committed before the leg test</div><div class="v">–</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>to buy</span><span><i style="background:#3a4757"></i>owned</span><span><i style="background:var(--bad)"></i>hypothetical duty</span><span id="leg_cum" style="display:none"><i style="background:var(--accent2)"></i>cumulative</span></div>
+    <p class="hint" style="font-size:13px;color:var(--muted);margin:6px 0"><b>Reading the numbers:</b> <i>Full cost to replicate</i> counts every part at today's price, even ones you own; <i>Still to spend</i> is what actually leaves your account. <i>Committed before the leg test</i> is money paid through phase 2, before the one-leg build (phase 3) has shown the design works: lower means less at risk if a test fails.</p>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <b>Marvin Bot today</b>: the full cost reads $17,531. Switch to <b>By build phase</b>. Phases 0 and 1 cost nothing in parts: simulation is free once you have a training computer (which the BOM does not count).</li>
+<li>Choose <b>Everything in one order now</b>. Only the RS03 reaches ten units (11 + 1 spare), so the saving is 12 × $11 = $132. Now look at "Committed before the leg test": it rises by about $2,300, because the whole RS03 order (~$2,600) is paid before the actuator bench has said whether the RS03 is any good. Then try <b>Staged</b>: the 11 RS03 for phase 3 still reach the tier, and you keep $121 of the $132.</li>
+<li>Tick the Orin. "Still to spend" drops by a fifth. That is why the repo once quoted "about $12k": it counted owned parts at $0 (<code>docs/decisions.md</code>, 2026-10-29).</li>
+<li>Drag the duty to 25%. Only about $6,400 of lines ship from China, so what you spend rises by about $1,600, not by a quarter.</li>
+</ol></div>
+
+<h3 id="lines">All 60 lines</h3>
+<p>Every line of the workbook, with its quantity, spares, unit price, line total (quantity plus spares, times unit price) and the price basis exactly as recorded. The phase column is this guide's mapping of each line to the build phase that first needs it (see <a href="#phases">below</a>). Click a heading to sort.</p>
+<div class="filters">
+  <select id="f_group"><option value="">All groups</option></select>
+  <select id="f_phase"><option value="">All phases</option><option value="2">Phase 2</option><option value="3">Phase 3</option><option value="4">Phase 4</option><option value="5">Phase 5</option><option value="6">Phase 6</option></select>
+  <select id="f_kind"><option value="">Any price basis</option><option value="est">Estimates only</option><option value="dated">Dated listings only</option><option value="cn">Ships from China</option></select>
+  <input id="f_text" type="search" placeholder="Search items, notes…">
+  <span id="f_count" class="mono" style="color:var(--muted);font-size:13px"></span>
+</div>
+<div class="tablewrap tall"><table id="bomtable">
+<thead><tr><th data-k="g">Group</th><th data-k="item">Item</th><th data-k="qty" class="num">Qty</th><th data-k="sp" class="num">Spares</th><th data-k="unit" class="num">Unit $</th><th data-k="line" class="num">Line $</th><th data-k="eff" class="num">This scenario $</th><th data-k="p">Phase</th><th data-k="basis">Price basis</th></tr></thead>
+<tbody></tbody>
+<tfoot><tr><th colspan="5">Shown lines</th><th class="num" id="t_line"></th><th class="num" id="t_eff"></th><th colspan="2"></th></tr></tfoot>
+</table></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>Bought parts and made parts</h3>
+<p>A robot's parts come in two kinds. <a class="g" href="../glossary.html#bought-part">Bought parts</a> arrive finished: actuators, the computer, the camera, battery cells, bearings, connectors. Their cost is a price on a listing. <a class="g" href="../glossary.html#made-part">Made parts</a> are designed in the project and produced from raw material: Marvin Bot's code-CAD generates 97 CNC-machined aluminium parts (about 6.4 kg of finished 6061 and 7075), 20 printed structural parts and 24 printed body-shell pieces, plus 12 plates too large for a desktop mill that go to an online machining service (the <code>Made parts (CAD)</code> sheet, generated by <code>python -m cad.export</code>). Made parts appear in the costed BOM only as their inputs: aluminium stock, filament, end mills, and the three "online machining" lines. Their real extra cost is machine time and your time, which the BOM does not price.</p>
+<p>That split explains why the structure is cheap ($2,582, 15%) even though it is most of the part count, and why the bought groups dominate.</p>
+
+<h3>Line totals, spares and the sum</h3>
+<p>Each line is priced as</p>
+<p class="mono" style="padding-left:1em">line total = (quantity used + spares) × unit price</p>
+<p>and the BOM total is the sum of the 60 line totals. Spares exist only where a failure would stop the project for weeks: one RS04, one RS03 and one RS06, the three actuator models with long lead times and several joints each. For example the RS03 line is (11 + 1) × $225 = $2,700. The arithmetic is trivial; the judgement is in the quantities (do you need a spare?) and the unit prices (where did this number come from, and when?).</p>
+
+<h3>Price basis and dating</h3>
+<p>A price without a date and a source is a guess dressed up as a fact. Every line in the workbook has a <a class="g" href="../glossary.html#price-basis">price basis</a> column that says what the number is: a dated listing ("Seeed 2026-10-29: $225 each, $214 at 10+"), an "estimate" with nothing behind it yet, or a listing marked "unverified". Prices move: the Jetson AGX Orin developer kit's list price went from $1,999 to $3,499 in July 2026, a 75% rise, reported from NVIDIA's developer FAQ.<sup class="cite"><a href="#s2">[2]</a></sup> In this BOM 37 of 60 lines are still estimates, mostly power parts, wiring, safety gear and online machining; the playground's table can filter them. They total about $4,500 (26%), so most of the headline number rests on dated listings.</p>
+
+<h3>What drives the total</h3>
+<p>Sort the table by line total and the shape is obvious: the top five lines (the Orin, the RS03s, the RS04s, the RS06s and the primary IMU) are 56% of the money. Two groups carry the budget:</p>
+<ul>
+<li><b>Actuators, $6,201 (35%).</b> 26 RobStride actuators plus 3 spares and 4 Feetech servos. RobStride's own datasheets give the torque figures;<sup class="cite"><a href="#s5">[5]</a></sup> Seeed Studio lists every model at RobStride's list price with about 5% off at ten or more of one model.<sup class="cite"><a href="#s3">[3]</a></sup><sup class="cite"><a href="#s4">[4]</a></sup></li>
+<li><b>Compute and sensors, $4,723 (27%).</b> The Jetson AGX Orin 64 GB developer kit alone is $3,499,<sup class="cite"><a href="#s2">[2]</a></sup><sup class="cite"><a href="#s9">[9]</a></sup> the Orbbec Gemini 335L depth camera $359 list,<sup class="cite"><a href="#s10">[10]</a></sup> and the primary IMU an estimated $730.</li>
+</ul>
+<p>Everything else (structure $2,582, power $1,633, electronics $808, tooling $710, safety $470, hands $224, fasteners $180) adds up to $6,607. Cutting 20% of the fasteners saves $36; finding a cheaper computer could save thousands. Cost work starts at the top of the sorted list.</p>
+
+<h3>What is not counted</h3>
+<p>The total is parts for one robot, delivered free, with no tax. The Summary sheet and <code>bom/README.md</code> list what is left out:</p>
+<ul>
+<li><b>A training GPU.</b> Isaac Lab training and GR00T fine-tuning want a desktop RTX card with 24-32 GB; the repo notes an RTX 5090 at $1,999 list but about $4,000 or more street price in late 2026. A rented cloud GPU also works.</li>
+<li><b>The desktop CNC mill and 3D printer</b> (requirement R60 assumes you have them).</li>
+<li><b>Shipping, import duties and tariffs.</b> Most actuators and the hand kits ship from China. Duty depends on your country, the goods' tariff classification and the year;<sup class="cite"><a href="#s13">[13]</a></sup> the RobotShop price of the camera, $413 against the $359 list, shows the kind of difference it makes (the Sourcing sheet notes it "includes US tariffs").</li>
+<li><b>Your time,</b> failed parts, and anything you break on the bench.</li>
+</ul>
+
+<h3>Quantity tiers and staged buying</h3>
+<p>A <a class="g" href="../glossary.html#quantity-tier">quantity tier</a> is a lower unit price for ordering at least a set number of one item. At Seeed the RS03 is $225 singly and $214 at ten or more.<sup class="cite"><a href="#s3">[3]</a></sup> The robot needs 12 RS03 (with the spare), so ordering them all at once saves 12 × ($225 − $214) = $132. But it commits about $2,600 before the phase 2 actuator bench test has confirmed the RS03's torque, heating and CAN behaviour. The decision log weighs exactly this (<code>docs/decisions.md</code>, 2026-10-26) and chooses: buy one RS04 and one RS03 singly for the bench, then order the remaining 11 RS03 together after the bench passes, which still reaches the 10+ tier. You keep $121 of the $132 and risk $225 instead of $2,700. The RS04 (7) and RS06 (5) never reach ten for one robot, so their tier only matters for a second robot.</p>
+<p>The general rule: a discount for committing early is worth taking only if it is larger than the expected loss from committing to the wrong part. A 5% discount against even a 10% chance of needing a different actuator is not worth it.</p>
+
+<h2 id="pernm">Playground: cost per N·m</h2>
+<p>Torque is what an actuator is for, so dividing price by torque gives a fair first comparison between sizes and brands. There are two torques to divide by: <a class="g" href="../glossary.html#peak-torque">peak torque</a> (short bursts) and <a class="g" href="../glossary.html#rated-torque">continuous (rated) torque</a> (what it holds without overheating). For a walking robot the rated figure is usually the binding one (see <a href="04-actuators.html">04 Actuators</a> and <a href="05-leg-loads-stairs.html">05 Leg loads and stairs</a>).</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Divide by</h4>
+    <div class="tabs"><button id="t_peak" class="on">Peak torque</button><button id="t_rated">Rated torque</button></div>
+    <h4>Price</h4>
+    <div class="tabs"><button id="t_single" class="on">Single unit</button><button id="t_tier">10+ tier</button></div>
+    <h4>Compare with</h4>
+    <div class="ctl"><label class="chk"><input type="checkbox" id="alt"> Alternatives (reseller listings, not in the BOM)</label>
+      <div class="hint">Damiao DM-J10010L-2EC about $230 (120 / 40 N·m)<sup class="cite"><a href="#s8">[8]</a></sup>; CubeMars AK80-64 about $890-1,240 (120 / 48 N·m)<sup class="cite"><a href="#s7">[7]</a></sup>. Prices October 2026, low end used.</div></div>
+  </div>
+  <div class="preview">
+    <div class="chart-title" id="nmtitle">US dollars per N·m of peak torque</div>
+    <svg id="nmview" viewBox="0 0 640 300" role="img" aria-label="Bar chart of actuator price per newton-metre"></svg>
+    <div class="readouts">
+      <div class="ro" id="n_best"><div class="k">Cheapest per N·m (BOM models)</div><div class="v">–</div></div>
+      <div class="ro" id="n_robot"><div class="k">Robot's actuator $ per N·m installed</div><div class="v">–</div></div>
+    </div>
+  </div>
+</div>
+<p class="callout"><b>Try this</b> Switch to rated torque. The RS04 stays cheapest per N·m, and the small RS00 and the Feetech servo get much worse: small actuators carry a fixed cost (housing, encoder, driver board) that does not shrink with torque. That is why Marvin Bot uses the big RS04 for the three most loaded leg joints and only uses small units where the torque is genuinely small. Then tick the alternatives: on these listings the Damiao is slightly cheaper per N·m than the RS04, and CubeMars several times dearer.</p>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b>
+<ul>
+<li><code>bom/bom.xlsx</code> is the single source of truth: Summary, one sheet per group, Sourcing (where each part is sold, with tiers, availability and the date checked) and two generated CAD sheets. Each line has a Status column (owned, ordered or empty for "to buy"); owned lines keep their price so the total stays the full cost to replicate.</li>
+<li><code>tools/bom/book.py</code> tidies the workbook and rebuilds the Summary formulas; <code>--check</code> runs in CI (the automatic checks run on every change to the repository); <code>tools/bom/summary.py</code> prints the totals ($17,531.03, 60 lines).</li>
+<li>Groups: actuators $6,200.98; compute and sensors $4,723; structure and materials $2,582; power $1,633.05; electronics and wiring $808; tooling $710; safety $470; hands $224; fasteners $180.</li>
+<li>Requirement R61 (<code>docs/requirements.md</code>): about $14k excluding the onboard computer, about $17.5k with it. $17,531 − $3,499 = $14,032.</li>
+<li>One line per item with a spares column, not one line per purchase phase; <code>docs/plan.md</code> says what each phase needs (<code>docs/decisions.md</code>, 2026-10-29).</li>
+</ul></div>
+
+<h3 id="phases">Spend per build phase</h3>
+<p>The workbook has no phase column, so the phase view in the playground is this guide's mapping, built from the work column of <code>docs/plan.md</code> and the decision log. Where the plan names parts, the mapping follows it; elsewhere it is an inference, marked below. At single prices:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Phase</th><th class="num">Spend</th><th>What it buys (main lines)</th><th>Basis</th></tr></thead>
+<tbody id="phasetable"></tbody>
+</table></div>
+<ul>
+<li><b>Inference:</b> the Orin, NVMe drive and on-board CAN transceivers are put in phase 2 because phase 2's pass check is "CAN at the planned rates works on the Orin", although the plan's work column lists the Orin under phase 4. If you already own one (the repo's builder did), this does not matter.</li>
+<li><b>Inference:</b> the wired e-stop and hand tools are put in phase 2 because <code>docs/safety.md</code> applies its rules "from the first actuator bench test onward".</li>
+<li><b>Inference:</b> lump-sum lines that serve several phases (harness, CAN cable, fasteners, 6061 stock, leg machining, carbon-fibre nylon) are split between them in rough proportions; the split is illustrative.</li>
+<li>From the decision log: two bench actuators bought singly in phase 2; the other 11 RS03 in one order in phase 3; the remaining RS04 as the legs need them.</li>
+</ul>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Option</th><th>Cost effect</th><th>Why not (yet)</th></tr></thead>
+<tbody>
+<tr><td>CubeMars actuators</td><td>2-3× the price per N·m (decision log); on October 2026 reseller listings the AK80-64 is ~$890-1,240 for 120 N·m peak<sup class="cite"><a href="#s7">[7]</a></sup></td><td>Price; the RobStride range covers every joint.</td></tr>
+<tr><td>Damiao DM-J10010L (120 / 40 N·m)</td><td>About the same as the RS04 (~$230 at a reseller<sup class="cite"><a href="#s8">[8]</a></sup>)</td><td>Fewer verified specifications; kept as the second source for the 120 N·m class (it also speaks <a class="g" href="../glossary.html#mit-mode">MIT mode</a>, the same CAN command format, so the driver would carry over).</td></tr>
+<tr><td>Self-built cycloidal actuators</td><td>Cheaper parts, much more labour</td><td>More work, lower torque; the project's risk is learning and integration, not actuator design.</td></tr>
+<tr><td>Orin module on a carrier board</td><td>Module $2,999 since July 2026<sup class="cite"><a href="#s2">[2]</a></sup> plus a carrier board; about −1.0 kg</td><td>Little saving at today's prices; the developer kit was already owned. Kept as a mass reduction (<code>docs/decisions.md</code>). A <a class="g" href="../glossary.html#carrier-board">carrier board</a> is the third-party board that gives a bare module its connectors.<sup class="cite"><a href="#s6">[6]</a></sup></td></tr>
+<tr><td>Jetson Thor T4000 for a second robot</td><td>Module $2,999 since July 2026 (was $1,999)<sup class="cite"><a href="#s2">[2]</a></sup>; NVIDIA quotes up to 1,200 sparse FP4 TFLOPS (trillion low-precision arithmetic operations per second, a measure of AI compute), 64 GB, 40-70 W<sup class="cite"><a href="#s6">[6]</a></sup></td><td>Same module price as the Orin 64 GB; a newer platform for a second robot, not worth re-porting the first one.</td></tr>
+<tr><td>13S2P battery instead of 13S3P (13 cells in series, 2 rather than 3 in parallel; <a href="09-power-battery.html">page 9</a>)</td><td>−13 cells (−$129) and −1.1 kg</td><td>Runtime would sit at the 1 h requirement with no margin (<code>docs/decisions.md</code>).</td></tr>
+<tr><td>Count owned parts at $0</td><td>The old "about $12k"</td><td>Understates the cost for anyone else; replaced on 2026-10-29.</td></tr>
+<tr><td>Order all actuators at once for the tier</td><td>−$132</td><td>Commits ~$2,600 before the bench test; staged buying keeps most of the saving.</td></tr>
+</tbody></table></div>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b>
+<ul>
+<li><b>CubeMars price per N·m.</b> The decision log says CubeMars is "2-3× the price per N·m". The one model checked here, the AK80-64 at $890-1,240 on October 2026 reseller listings for 120 N·m peak, is $7.4-10.3 per N·m against the RS04's $2.13: 3.5-4.9×. The log may have compared other models or other prices; either way the conclusion (RobStride is cheaper) holds.</li>
+<li><b>Damiao.</b> The log lists Damiao as an alternative with "fewer verified specs". On current reseller listings the DM-J10010L-2EC (~$230) is slightly cheaper than the RS04 ($255) for the same 120 / 40 N·m. The repo's reason for not choosing it is the specifications and software support, not price.</li>
+<li><b>Orin dev kit version.</b> CNX Software's report gives the developer-kit price change ($1,999 to $3,499) without naming the memory size;<sup class="cite"><a href="#s2">[2]</a></sup> the repo and SparkFun's listing<sup class="cite"><a href="#s9">[9]</a></sup> apply it to the 64 GB kit, the only AGX Orin developer kit sold.</li>
+<li><b>Inside the repo:</b> <code>docs/plan.md</code> lists the Orin as phase 4 work, but phase 2's pass check needs it; this guide's phase view puts it in phase 2.</li>
+</ul></div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>Which parts you already own, and so what you actually have to spend (mark them owned in your copy of <code>bom/bom.xlsx</code>).</li>
+<li>Whether to take a quantity tier now or after the bench test.</li>
+<li>Whether a second robot is planned (it puts the RS04 and RS06 into the 10+ tier too).</li>
+<li>How much to allow for shipping and duty in your country, before ordering (roadmap open item 1 asks for a direct RobStride quote and current tariffs).</li>
+<li>Which estimate lines to get real quotes for first: sort the table by line total with "Estimates only".</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://www.nasa.gov/wp-content/uploads/2023/08/nasa-work-breakdown-structure-handbook.pdf">NASA Work Breakdown Structure Handbook</a>: how large projects organise every deliverable into a tree that cost estimates hang from; the same idea at a much larger scale.</li>
+<li><a href="https://github.com/RobStride/Product_Information">RobStride Product_Information</a>: the actuator manuals and datasheets behind the torque figures in the cost-per-N·m chart.</li>
+<li><a href="https://www.cnx-software.com/2026/07/22/nvidia-increases-the-price-of-jetson-modules-and-devkits-by-up-to-101/">CNX Software on the July 2026 Jetson price rise</a>: a reminder that the biggest single line can move by 75% overnight.</li>
+<li><a href="https://github.com/pollen-robotics/AmazingHand">AmazingHand</a>: the open-source hand, with its own parts list if you would rather build than buy the kit.</li>
+<li><a href="22-roadmap.html">22 Build phases and roadmap</a>: when each phase's spend falls due and what it must prove first.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://www.nasa.gov/wp-content/uploads/2023/08/nasa-work-breakdown-structure-handbook.pdf">NASA, Work Breakdown Structure (WBS) Handbook</a> <span class="used">— used for: a cost estimate hangs from a product-oriented breakdown of every deliverable.</span></li>
+  <li id="s2"><a href="https://www.cnx-software.com/2026/07/22/nvidia-increases-the-price-of-jetson-modules-and-devkits-by-up-to-101/">CNX Software, "NVIDIA increases the price of Jetson modules and devkits by up to 101%", 22 July 2026</a> <span class="used">— used for: AGX Orin developer kit $1,999 → $3,499; AGX Orin 64 GB module $1,599 → $2,999; T4000 module $1,999 → $2,999.</span></li>
+  <li id="s3"><a href="https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html">Seeed Studio, RobStride 03 actuator listing</a> <span class="used">— used for: $225 each, $214 at 10+, 60 N·m peak, 880 g (checked October 2026).</span></li>
+  <li id="s4"><a href="https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html">Seeed Studio, RobStride 04 actuator listing</a> <span class="used">— used for: $255 each, $242 at 10+ (as recorded in the BOM's price basis).</span></li>
+  <li id="s5"><a href="https://github.com/RobStride/Product_Information">RobStride, Product_Information repository</a> <span class="used">— used for: peak and rated torque of the RS00, RS03, RS04 and RS06.</span></li>
+  <li id="s6"><a href="https://developer.nvidia.com/blog/accelerate-ai-inference-for-edge-and-robotics-with-nvidia-jetson-t4000-and-nvidia-jetpack-7-1/">NVIDIA Technical Blog, "Accelerate AI inference for edge and robotics with NVIDIA Jetson T4000 and JetPack 7.1"</a> <span class="used">— used for: T4000 compute, memory and power figures; Jetson modules are used on carrier boards.</span></li>
+  <li id="s7"><a href="https://robotshop.com/products/cubemars-cubemars-ak80-64kv80-bldc-motor-robot-w-integrated-encoder-driver">RobotShop, CubeMars AK80-64 listing</a> <span class="used">— used for: 120 N·m peak, 48 N·m rated, ~$1,238 (other resellers from ~$890), October 2026.</span></li>
+  <li id="s8"><a href="https://aifitlab.com/products/damiao-dm-j10010l-2ec-servo-motor">AIFit Lab, Damiao DM-J10010L-2EC listing</a> <span class="used">— used for: 120 N·m peak, 40 N·m nominal, ~$230, October 2026.</span></li>
+  <li id="s9"><a href="https://www.sparkfun.com/nvidia-jetson-agx-orin-64gb-developer-kit.html">SparkFun, NVIDIA Jetson AGX Orin 64GB Developer Kit (DEV-22099)</a> <span class="used">— used for: $3,499 listing for the 64 GB kit.</span></li>
+  <li id="s10"><a href="https://store.orbbec.com/products/gemini-335l">Orbbec store, Gemini 335L</a> <span class="used">— used for: the camera's $359 list price.</span></li>
+  <li id="s11"><a href="https://www.18650batterystore.com/products/molicel-p45b">18650 Battery Store, Molicel P45B</a> <span class="used">— used for: cell price around $9.95-9.99, and the advice to buy from an authorised dealer.</span></li>
+  <li id="s12"><a href="https://github.com/pollen-robotics/AmazingHand">Pollen Robotics, AmazingHand repository</a> <span class="used">— used for: the open hand design (CC-BY-4.0) and its build-from-parts option.</span></li>
+  <li id="s13"><a href="https://hts.usitc.gov/">US International Trade Commission, Harmonized Tariff Schedule</a> <span class="used">— used for: duty depends on the goods' classification and country; the slider is hypothetical, not a rate from here.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="20-sim-to-real.html"><span>← Previous</span>Sim-to-real and system identification</a>
+  <a class="next" href="22-roadmap.html"><span>Next →</span>Build phases and roadmap</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+const BOM = [{"id":"sts3250","g":"act","item":"Feetech STS3250 serial-bus servo","qty":4,"sp":0,"unit":97.0,"line":388.0,"basis":"2026-10-29: $97 (AIFit Lab, ST-3250-C001, backordered); $125 elsewhere (sold out)","src":"https://aifitlab.com/products/feetech-sts3250-servo-motor","note":"neck yaw/pitch and wrist pitch; check the variant (C001 or C002) before ordering","ph":{"5":4},"cn":true,"tier":null},{"id":"rs00","g":"act","item":"RobStride RS00 14 N·m actuator","qty":2,"sp":0,"unit":138.99,"line":277.98,"basis":"Seeed 2026-10-29: $138.99 each, $131.99 at 10+, in stock (RobStride list $125)","src":"https://www.seeedstudio.com/Robostride-00-Actuator-p-6664.html","note":"wrist yaw","ph":{"5":2},"cn":true,"tier":131.99},{"id":"rs03","g":"act","item":"RobStride RS03 60 N·m actuator","qty":11,"sp":1,"unit":225.0,"line":2700.0,"basis":"Seeed 2026-10-29: $225 each, $214 at 10+, in stock (RobStride list $225)","src":"https://www.seeedstudio.com/Robostride-03-Actuator-p-6774.html","note":"hip yaw and the two ankle motors, both legs; waist yaw; shoulder pitch and roll. Buy one first for the actuator bench test; 10 or more in one order get Seeed's $214 price","ph":{"2":1,"3":11},"cn":true,"tier":214},{"id":"rs04","g":"act","item":"RobStride RS04 120 N·m actuator","qty":6,"sp":1,"unit":255.0,"line":1785.0,"basis":"Seeed 2026-10-29: $255 each, $242 at 10+, in stock (RobStride list $255)","src":"https://www.seeedstudio.com/Robostride-04-Actuator-p-6775.html","note":"hip pitch, hip roll and knee, both legs; buy one first for the actuator bench test","ph":{"2":1,"3":2,"4":4},"cn":true,"tier":242},{"id":"rs06","g":"act","item":"RobStride RS06 36 N·m actuator","qty":4,"sp":1,"unit":210.0,"line":1050.0,"basis":"Seeed 2026-10-29: $210 each, $200 at 10+, in stock (RobStride list $210)","src":"https://www.seeedstudio.com/Robostride-06-Actuator-p-6668.html","note":"shoulder yaw and elbow","ph":{"5":5},"cn":true,"tier":200},{"id":"hand-kit","g":"hands","item":"AmazingHand open-source 8-DOF four-finger hand kit, left and right (8 Feetech SCS0009 servos each, 5 V)","qty":2,"sp":0,"unit":99.0,"line":198.0,"basis":"Seeed 2026-10-29: $99 each, $97 at 10+, in stock; SKUs 100062181 (left), 100063642 (right)","src":"https://www.seeedstudio.com/Amazing-Hand-Open-Source-3D-Printable-Robotic-Hand-Kit.html","note":"the listing does not say what is in the box, so check that servos are included. 0.40 kg each as published (weigh); its design is CC-BY-4.0, see ACKNOWLEDGMENTS.md","ph":{"5":2},"cn":true,"tier":97},{"id":"dcdc-hand","g":"hands","item":"DC-DC 12 V to 5 V, 3 A, small (in the wrist)","qty":2,"sp":0,"unit":8.0,"line":16.0,"basis":"estimate","src":"","note":"one per hand: 8 SCS0009 servos at up to 0.3 A each","ph":{"5":2},"cn":false,"tier":null},{"id":"servo-adapter-hand","g":"hands","item":"Feetech serial-bus USB adapter (Waveshare Bus Servo Adapter (A) class)","qty":2,"sp":0,"unit":5.0,"line":10.0,"basis":"Waveshare 2026-10-29: $4.99 (SKU 25514)","src":"https://www.waveshare.com/bus-servo-adapter-a.htm","note":"one bus per hand: SCS0009 servos use Feetech's SCS protocol, the STS3250s its STS protocol; the hand kit's own driver board may do instead","ph":{"5":2},"cn":false,"tier":null},{"id":"compute","g":"comp","item":"Jetson AGX Orin 64 GB developer kit","qty":1,"sp":0,"unit":3499.0,"line":3499.0,"basis":"NVIDIA list price since July 2026 (was $1,999); SparkFun 2026-10-29: $3,499, backorder","src":"https://marketplace.nvidia.com/en-us/enterprise/robotics-edge/jetson-agx-orin-developer-kit/","note":"","ph":{"2":1},"cn":false,"tier":null},{"id":"imu-backup","g":"comp","item":"Low-cost USB AHRS IMU","qty":1,"sp":0,"unit":35.0,"line":35.0,"basis":"estimate","src":"","note":"backup IMU and bench use","ph":{"2":1},"cn":false,"tier":null},{"id":"nvme","g":"comp","item":"NVMe SSD, 1 TB, M.2 2280","qty":1,"sp":0,"unit":100.0,"line":100.0,"basis":"estimate","src":"","note":"the dev kit's 64 GB eMMC is too small for logs and datasets","ph":{"2":1},"cn":false,"tier":null},{"id":"camera","g":"comp","item":"Orbbec Gemini 335L depth camera","qty":1,"sp":0,"unit":359.0,"line":359.0,"basis":"Orbbec store list $359 (store page rate-limited 2026-10-29); RobotShop US $413 with tariffs","src":"https://store.orbbec.com/products/gemini-335l","note":"check the JetPack 7.2 driver before ordering","ph":{"5":1},"cn":false,"tier":null},{"id":"imu","g":"comp","item":"Primary IMU (industrial AHRS; or BMI088 on a microcontroller)","qty":1,"sp":0,"unit":730.0,"line":730.0,"basis":"distributor 2026-10","src":"","note":"decide after bench test; the existing USB AHRS IMU is the backup","ph":{"4":1},"cn":false,"tier":null},{"id":"charger","g":"power","item":"13S charger adjustable to 4.1 V per cell","qty":1,"sp":0,"unit":300.0,"line":300.0,"basis":"reseller 2026-10","src":"","note":"daily charging at 4.1 V per cell","ph":{"4":1},"cn":false,"tier":null},{"id":"bms","g":"power","item":"13S smart BMS 150 A with CAN telemetry","qty":1,"sp":0,"unit":145.0,"line":145.0,"basis":"2026-10-29: JK 8-24S 150 A $145 (18650 Battery Store, sold out); Daly 13S 150 A with CAN also sold","src":"https://www.18650batterystore.com/products/jk-b2a24s15p-bms","note":"check its CAN protocol and precharge support","ph":{"4":1},"cn":false,"tier":null},{"id":"psu-bench","g":"power","item":"48 V 20 A bench power supply","qty":1,"sp":0,"unit":250.0,"line":250.0,"basis":"estimate","src":"","note":"for bench and gantry tests","ph":{"2":1},"cn":false,"tier":null},{"id":"batt-conn","g":"power","item":"Anti-spark blind-mate battery connector (AS150 class)","qty":2,"sp":0,"unit":15.0,"line":30.0,"basis":"estimate","src":"","note":"one on the pack and one on the cradle","ph":{"4":2},"cn":false,"tier":null},{"id":"fuse","g":"power","item":"Class-T fuse 100-125 A with holder; limb branch fuses","qty":1,"sp":0,"unit":60.0,"line":60.0,"basis":"estimate","src":"","note":"","ph":{"4":1},"cn":false,"tier":null},{"id":"dcdc-servo","g":"power","item":"DC-DC 48 V to 12 V, 10 A, compact (at most 60 x 34 x 25 mm)","qty":1,"sp":0,"unit":60.0,"line":60.0,"basis":"estimate","src":"","note":"the pelvis channel under the waist motor has room for 60 x 34 x 25 mm; a chassis-mount 150 W module does not fit","ph":{"5":1},"cn":false,"tier":null},{"id":"dcdc-compute","g":"power","item":"DC-DC 75 V-input to 19-20 V; at least 120 W (computer)","qty":1,"sp":0,"unit":80.0,"line":80.0,"basis":"estimate","src":"","note":"upstream of the contactor","ph":{"4":1},"cn":false,"tier":null},{"id":"ideal-diode","g":"power","item":"Ideal-diode OR circuit (LTC4359 class) for the computer rail","qty":1,"sp":0,"unit":40.0,"line":40.0,"basis":"estimate","src":"","note":"","ph":{"4":1},"cn":false,"tier":null},{"id":"keepalive","g":"power","item":"Keep-alive battery 50-100 Wh for the computer","qty":1,"sp":0,"unit":80.0,"line":80.0,"basis":"estimate","src":"","note":"lets the computer stay up during a pack swap","ph":{"4":1},"cn":false,"tier":null},{"id":"contactor","g":"power","item":"Main contactor (48 V DC rated)","qty":1,"sp":0,"unit":60.0,"line":60.0,"basis":"estimate","src":"","note":"opened by the e-stop chain","ph":{"4":1},"cn":false,"tier":null},{"id":"cells","g":"power","item":"Molicel P45B 21700 cells","qty":39,"sp":0,"unit":9.95,"line":388.05,"basis":"2026-10-29: $9.95 (Batteries in a Flash, in stock); 18650 Battery Store $9.99 regular","src":"https://www.18650batterystore.com/products/molicel-p45b","note":"13S3P pack ~630 Wh; buy from an authorised dealer","ph":{"4":39},"cn":false,"tier":null},{"id":"pack-hw","g":"power","item":"Pack housing; nickel strip; quick-release cradle","qty":1,"sp":0,"unit":80.0,"line":80.0,"basis":"estimate","src":"","note":"","ph":{"4":1},"cn":false,"tier":null},{"id":"precharge","g":"power","item":"Precharge resistor and relay","qty":1,"sp":0,"unit":20.0,"line":20.0,"basis":"estimate","src":"","note":"","ph":{"4":1},"cn":false,"tier":null},{"id":"regen-clamp","g":"power","item":"Regen clamp (brake resistor chopper or TVS ~56-58 V)","qty":1,"sp":0,"unit":40.0,"line":40.0,"basis":"estimate","src":"","note":"needed whenever a bench supply is used","ph":{"2":1},"cn":false,"tier":null},{"id":"can-xcvr","g":"elec","item":"3.3 V CAN transceiver boards for the Orin's on-board CAN","qty":2,"sp":0,"unit":10.0,"line":20.0,"basis":"estimate","src":"","note":"arm buses","ph":{"2":2},"cn":false,"tier":null},{"id":"usb-hub","g":"elec","item":"Compact USB 3 hub, 4-port","qty":1,"sp":0,"unit":30.0,"line":30.0,"basis":"estimate","src":"","note":"the dev kit has 4 USB-A and 2 USB-C ports; the robot uses 3 CAN adapters, 3 servo adapters, the camera, the IMU and the gamepad receiver","ph":{"4":1},"cn":false,"tier":null},{"id":"servo-adapter","g":"elec","item":"Feetech serial-bus USB adapter (Waveshare Bus Servo Adapter (A) class)","qty":1,"sp":0,"unit":5.0,"line":5.0,"basis":"Waveshare 2026-10-29: $4.99 (SKU 25514)","src":"https://www.waveshare.com/bus-servo-adapter-a.htm","note":"STS3250 bus (neck and wrist pitch)","ph":{"5":1},"cn":false,"tier":null},{"id":"can-usb-dual","g":"elec","item":"Isolated USB-CAN adapter, dual channel (InnoMaker USB2CAN-X2 class; SocketCAN)","qty":2,"sp":0,"unit":130.0,"line":260.0,"basis":"unconfirmed 2026-10-29: no live US listing found; ~$126 (AED 462) at a UAE marketplace","src":"https://github.com/INNO-MAKER/usb2can","note":"one per leg (hip and shank buses), 3 kV isolation per its manual; with can-usb-batt and the Orin's two on-board ports (arm buses) this covers all 7 CAN buses in robot.yaml in the 3 adapter outlines of the electronics bay","ph":{"3":1,"4":1},"cn":false,"tier":null},{"id":"can-usb-single","g":"elec","item":"Isolated USB-CAN adapter, single channel (CANable Pro class; candleLight / gs_usb)","qty":2,"sp":0,"unit":60.0,"line":120.0,"basis":"reseller listing 2026-10-29, unverified: CANable Pro $60, Pro 1.1 (5 kV) $70","src":"https://reach.dog/shop/openlight-labs/products/canable-pro-isolated-usb-to-can-adapter","note":"one for the battery (BMS) bus, one for the actuator bench rig","ph":{"2":1,"4":1},"cn":false,"tier":null},{"id":"limb-conn","g":"elec","item":"Limb-root connectors: XT60-class power pair and latching signal pair, per limb","qty":4,"sp":0,"unit":12.0,"line":48.0,"basis":"estimate","src":"","note":"on the bulkheads beside each limb's first flange","ph":{"4":2,"5":2},"cn":false,"tier":null},{"id":"can-robstride-dbg","g":"elec","item":"RobStride USB-to-CAN debug adapter (official GUI tool)","qty":1,"sp":0,"unit":15.0,"line":15.0,"basis":"Seeed listing 2026-10, unverified: $15 each, $14 at 10+","src":"https://www.seeedstudio.com/Robostride-CAN-USB-Driver-Board-p-6708.html","note":"for RobStride's configuration GUI (IDs, firmware); check whether it works as a SocketCAN bus before using it on the robot","ph":{"2":1},"cn":false,"tier":14},{"id":"harness","g":"elec","item":"Silicone wire; connectors; strain relief; sleeving","qty":1,"sp":0,"unit":200.0,"line":200.0,"basis":"estimate","src":"","note":"","ph":{"3":0.25,"4":0.5,"5":0.25},"cn":false,"tier":null},{"id":"can-cable","g":"elec","item":"Twisted-pair CAN cable, connectors and 120 Ω terminations","qty":1,"sp":0,"unit":50.0,"line":50.0,"basis":"estimate","src":"","note":"","ph":{"2":0.25,"3":0.25,"4":0.25,"5":0.25},"cn":false,"tier":null},{"id":"gamepad","g":"elec","item":"Wireless gamepad","qty":1,"sp":0,"unit":60.0,"line":60.0,"basis":"estimate","src":"","note":"","ph":{"4":1},"cn":false,"tier":null},{"id":"alu-6061","g":"struct","item":"6061-T6 aluminium plate and bar stock","qty":1,"sp":0,"unit":300.0,"line":300.0,"basis":"estimate","src":"","note":"leg cores and brackets for both legs; about 6 kg of finished CNC 6061 across the robot (build_parts.csv)","ph":{"3":0.5,"4":0.5},"cn":false,"tier":null},{"id":"bearing-6806","g":"struct","item":"6806-2RS thin-section ball bearing (30 x 42 x 7 mm) for far-side joint support","qty":6,"sp":0,"unit":10.0,"line":60.0,"basis":"2026-10-29: $6.45 (Zoro, 61806-2RS) to CA$25.68 (VXB); budget grades ~$8","src":"https://www.zoro.com/ezo-deep-groove-30mm-bore-42mm-od-sealed-6806-2rsc0srl/i/G2080051","note":"hip roll, hip pitch and knee, both legs","ph":{"3":3,"4":3},"cn":false,"tier":null},{"id":"alu-7075","g":"struct","item":"7075-T6 bar for highly loaded flanges and ankle cranks","qty":1,"sp":0,"unit":100.0,"line":100.0,"basis":"estimate","src":"","note":"","ph":{"3":1},"cn":false,"tier":null},{"id":"materials-upper","g":"struct","item":"Aluminium and filament for torso; arms; head","qty":1,"sp":0,"unit":250.0,"line":250.0,"basis":"estimate","src":"","note":"","ph":{"5":1},"cn":false,"tier":null},{"id":"push-rods","g":"struct","item":"Ankle push rods (steel tube with threaded inserts)","qty":4,"sp":0,"unit":10.0,"line":40.0,"basis":"estimate","src":"","note":"two per ankle","ph":{"3":2,"4":2},"cn":false,"tier":null},{"id":"fil-cfnylon","g":"struct","item":"Carbon-fibre nylon filament (kg)","qty":4,"sp":0,"unit":95.0,"line":380.0,"basis":"typical first-party price 2026-10","src":"","note":"structural shells; needs a hardened nozzle and dry storage","ph":{"3":1,"4":1,"5":1,"6":1},"cn":false,"tier":null},{"id":"crossed-roller","g":"struct","item":"Crossed-roller bearing for the waist","qty":1,"sp":0,"unit":80.0,"line":80.0,"basis":"reseller range $20-80","src":"","note":"","ph":{"5":1},"cn":false,"tier":null},{"id":"rod-ends","g":"struct","item":"M6 steel-ball rod ends for ankle push rods","qty":8,"sp":0,"unit":8.0,"line":64.0,"basis":"estimate","src":"","note":"two per push rod; size from simulated linkage loads","ph":{"3":4,"4":4},"cn":false,"tier":null},{"id":"machining-pelvis","g":"struct","item":"Online machining: pelvis back (20 mm, 3D), pelvis top and two gussets (6 mm plates)","qty":1,"sp":0,"unit":400.0,"line":400.0,"basis":"estimate, not quoted (typical online CNC price)","src":"","note":"too large for a desktop mill; process \"service\" in build_parts.csv","ph":{"4":1},"cn":false,"tier":null},{"id":"machining-legs","g":"struct","item":"Online machining: shin inner and outer plates, foot bases (6 pocketed 4-5 mm 6061 plates)","qty":1,"sp":0,"unit":450.0,"line":450.0,"basis":"estimate, not quoted (typical online CNC price for pocketed plates)","src":"","note":"too large for a desktop mill; process \"service\" in build_parts.csv","ph":{"3":0.5,"4":0.5},"cn":false,"tier":null},{"id":"machining-torso","g":"struct","item":"Online machining: two torso uprights (25 mm 6061; 3D)","qty":1,"sp":0,"unit":350.0,"line":350.0,"basis":"estimate, not quoted (typical online CNC price)","src":"","note":"too large for a desktop mill; process \"service\" in build_parts.csv","ph":{"5":1},"cn":false,"tier":null},{"id":"fil-petgcf","g":"struct","item":"PETG-CF filament (kg)","qty":2,"sp":0,"unit":33.0,"line":66.0,"basis":"typical price 2026-10","src":"","note":"jigs and non-structural parts","ph":{"3":2},"cn":false,"tier":null},{"id":"fil-tpu","g":"struct","item":"TPU 95A filament (kg)","qty":1,"sp":0,"unit":42.0,"line":42.0,"basis":"typical price 2026-10","src":"","note":"soles and bumpers","ph":{"3":1},"cn":false,"tier":null},{"id":"fasteners","g":"fast","item":"Metric fasteners; heat-set inserts; dowel pins; threadlocker","qty":1,"sp":0,"unit":180.0,"line":180.0,"basis":"estimate","src":"","note":"includes the 348 actuator bolts in build_fasteners.csv (12.9 socket head, M3-M5)","ph":{"3":0.25,"4":0.4,"5":0.35},"cn":false,"tier":null},{"id":"spot-welder","g":"tool","item":"Battery spot welder and pack supplies (fish paper, insulating rings, Kapton)","qty":1,"sp":0,"unit":150.0,"line":150.0,"basis":"estimate","src":"","note":"or have the pack built by a battery shop","ph":{"4":1},"cn":false,"tier":null},{"id":"endmills","g":"tool","item":"Carbide 3-flute end mills for aluminium (1/8 and 1/4 in)","qty":8,"sp":0,"unit":20.0,"line":160.0,"basis":"reseller range $14-33","src":"","note":"","ph":{"3":8},"cn":false,"tier":null},{"id":"hand-tools","g":"tool","item":"Hand tools: torque screwdriver and hex bits, crimp tools, multimeter, digital scale (5 kg x 1 g)","qty":1,"sp":0,"unit":200.0,"line":200.0,"basis":"estimate","src":"","note":"the scale weighs parts against the mass budget; a desktop CNC mill and 3D printer are assumed and not counted","ph":{"2":1},"cn":false,"tier":null},{"id":"print-tools","g":"tool","item":"Hardened-steel nozzle and filament dryer","qty":1,"sp":0,"unit":80.0,"line":80.0,"basis":"estimate","src":"","note":"carbon-fibre nylon wears brass nozzles and must be printed dry","ph":{"3":1},"cn":false,"tier":null},{"id":"leg-jig","g":"tool","item":"Single-leg test jig (aluminium extrusion)","qty":1,"sp":0,"unit":120.0,"line":120.0,"basis":"estimate","src":"","note":"","ph":{"3":1},"cn":false,"tier":null},{"id":"padding","g":"safety","item":"Fall padding foam","qty":1,"sp":0,"unit":50.0,"line":50.0,"basis":"estimate","src":"","note":"","ph":{"4":1},"cn":false,"tier":null},{"id":"gantry","g":"safety","item":"Gantry frame; harness and hoist","qty":1,"sp":0,"unit":300.0,"line":300.0,"basis":"estimate","src":"","note":"","ph":{"4":1},"cn":false,"tier":null},{"id":"estop-wired","g":"safety","item":"Latching e-stop button and contactor driver","qty":1,"sp":0,"unit":40.0,"line":40.0,"basis":"estimate","src":"","note":"","ph":{"2":1},"cn":false,"tier":null},{"id":"estop-rf","g":"safety","item":"Wireless e-stop: handheld transmitter; receiver and watchdog relay","qty":1,"sp":0,"unit":80.0,"line":80.0,"basis":"estimate","src":"","note":"in series with the wired e-stop","ph":{"4":1},"cn":false,"tier":null}];
+const GROUPS = {act:'Actuators',comp:'Compute & sensors',struct:'Structure & materials',power:'Power',elec:'Electronics & wiring',tool:'Tooling',safety:'Safety',hands:'Hands',fast:'Fasteners'};
+const PHASES = ['0 Foundations','1 Robot in simulation','2 Actuator bench','3 One leg','4 Lower body','5 Torso, arms, head','6 Perception and intelligence'];
+const CUR = {USD:['$',1],EUR:['€',0.92],GBP:['£',0.78],INR:['₹',84],AUD:['A$',1.52]};
+const DEFAULTS = {view:'group', tier:'single', owned:[], duty:0, ship:0, cur:'USD'};
+const state = JSON.parse(JSON.stringify(DEFAULTS));
+const $ = id => document.getElementById(id);
+const BOMTOTAL = BOM.reduce((s,r)=>s+r.line,0);
+
+function fmt(usd, dec){ const [sym,k]=CUR[state.cur]; const v=usd*k;
+  const d = dec!=null?dec:(Math.abs(v)<100?2:0);
+  return (v<0?'−':'')+sym+Math.abs(v).toLocaleString('en-GB',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function isOwned(r){ return state.owned.some(o=> o===r.id || o==='g:'+r.g); }
+// price per unit for a given order size, under the current tier rule
+function unitPrice(r, orderUnits){
+  if(!r.tier) return r.unit;
+  const n = r.qty + r.sp;
+  if(state.tier==='single') return r.unit;
+  if(state.tier==='bulk') return n>=10 ? r.tier : r.unit;
+  if(state.tier==='second') return 2*n>=10 ? r.tier : r.unit;
+  if(state.tier==='staged') return (n>1 && orderUnits>=10) ? r.tier : r.unit;
+  return r.unit;
+}
+// cost of a line split by phase: {phase: usd}
+function upFront(r){ const n=r.qty+r.sp; return !!r.tier && ((state.tier==='bulk'&&n>=10)||(state.tier==='second'&&2*n>=10)); }
+function linePhases(r){
+  const out={};
+  for(const p in r.ph){ const u=r.ph[p]; out[p]=u*unitPrice(r, u); }
+  return out;
+}
+function compute(){
+  const duty = state.duty/100;
+  let full=0, spend=0, dutyTot=0, act=0, firstCommit=0;
+  const byG={}, byP={};
+  for(const g in GROUPS) byG[g]={buy:0,own:0,duty:0};
+  for(let p=0;p<7;p++) byP[p]={buy:0,own:0,duty:0};
+  BOM.forEach(r=>{
+    const lp=linePhases(r); let eff=0;
+    const own=isOwned(r);
+    for(const p in lp){ const c=lp[p]; eff+=c; const d= r.cn? c*duty:0;
+      if(own){ byP[p].own+=c; } else { byP[p].buy+=c; byP[p].duty+=d; }
+    }
+    r.eff=eff; r.own=own;
+    const d = r.cn? eff*duty:0;
+    full+=eff; if(r.g==='act') act+=eff;
+    if(own) byG[r.g].own+=eff; else { byG[r.g].buy+=eff; byG[r.g].duty+=d; spend+=eff+d; dutyTot+=d; }
+  });
+  // committed before the one-leg test: phases 0-2, plus any line ordered whole up front for its tier
+  firstCommit = BOM.filter(r=>!r.own).reduce((s,r)=>{
+    const lp=linePhases(r); let c=0; const up=upFront(r);
+    for(const p in lp){ if(+p<=2 || up) c+=lp[p]; }
+    return s + c*(r.cn?1+duty:1); },0);
+  const shipAmt = spend*state.ship/100; spend+=shipAmt;
+  return {full,spend,dutyTot,shipAmt,act,firstCommit,byG,byP};
+}
+
+function svgEl(tag, attrs, text){ const e=document.createElementNS('http://www.w3.org/2000/svg',tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(text!=null) e.textContent=text; return e; }
+
+function drawBars(svg, rows, opts){
+  // rows: [{label, buy, own, duty}] horizontal stacked bars
+  svg.innerHTML='';
+  const W=640, top=10, rowH=opts.rowH||36, left=opts.left||170, right=110;
+  const H = top + rows.length*rowH + 30; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const max = Math.max(...rows.map(r=>r.buy+r.own+r.duty), opts.minMax||1);
+  const nice = niceMax(max); const sx = v => (W-left-right)*v/nice;
+  for(let i=0;i<=4;i++){ const v=nice*i/4, x=left+sx(v);
+    svg.appendChild(svgEl('line',{x1:x,x2:x,y1:top,y2:H-24,stroke:'#2a3340','stroke-width':1}));
+    svg.appendChild(svgEl('text',{x:x,y:H-8,fill:'#9aa7b4','font-size':11,'text-anchor':'middle'}, fmtShort(v)));
+  }
+  rows.forEach((r,i)=>{
+    const y=top+i*rowH+6, h=rowH-14;
+    svg.appendChild(svgEl('text',{x:left-8,y:y+h/2+4,fill:'#e6edf3','font-size':13,'text-anchor':'end'}, r.label));
+    let x=left;
+    if(r.buy>0){ svg.appendChild(svgEl('rect',{x,y,width:Math.max(sx(r.buy),1),height:h,rx:3,fill:'#4fb3ff'})); x+=sx(r.buy); }
+    if(r.duty>0){ svg.appendChild(svgEl('rect',{x,y,width:sx(r.duty),height:h,fill:'#ff6b6b'})); x+=sx(r.duty); }
+    if(r.own>0){ svg.appendChild(svgEl('rect',{x,y,width:sx(r.own),height:h,rx:3,fill:'#3a4757'})); x+=sx(r.own); }
+    const tot=r.buy+r.own+r.duty;
+    svg.appendChild(svgEl('text',{x:x+6,y:y+h/2+4,fill:'#e6edf3','font-size':12,'font-family':'ui-monospace,monospace'}, tot>0?fmt(tot,0):'$0 (simulation)'.replace('$',CUR[state.cur][0])));
+  });
+  return {nice};
+}
+function niceMax(v){ const p=Math.pow(10,Math.floor(Math.log10(v))); for(const m of [1,1.5,2,2.5,3,4,5,6,8,10]){ if(m*p>=v) return m*p; } return 10*p; }
+function fmtShort(usd){ const [sym,k]=CUR[state.cur]; const v=usd*k; if(v>=1e6) return sym+(v/1e6).toFixed(1)+'M'; if(v>=1000) return sym+(v/1000).toFixed(v>=10000?0:1)+'k'; return sym+Math.round(v); }
+
+function render(){
+  const R=compute();
+  const svg=$('view');
+  if(state.view==='group'){
+    $('charttitle').textContent='Cost by group, largest first';
+    const rows=Object.keys(GROUPS).map(g=>({label:GROUPS[g],...R.byG[g]})).sort((a,b)=>(b.buy+b.own+b.duty)-(a.buy+a.own+a.duty));
+    drawBars(svg, rows, {rowH:36,left:170});
+    $('leg_cum').style.display='none';
+  } else {
+    $('charttitle').textContent='Spend per build phase (phase mapping is this guide\'s; see "Spend per build phase")';
+    let c=0; const rows=PHASES.map((l,p)=>{ const b=R.byP[p]; c+=b.buy+b.own+b.duty; return {label:l.length>22?l.slice(0,21)+'…':l, ...b, cum:c}; });
+    drawBars(svg, rows, {rowH:40,left:190});
+    // cumulative labels at right edge
+    rows.forEach((r,i)=>{ svg.appendChild(svgEl('text',{x:636,y:10+i*40+6+13+4,fill:'#ffb454','font-size':11,'text-anchor':'end','font-family':'ui-monospace,monospace'}, 'Σ '+fmtShort(r.cum))); });
+    $('leg_cum').style.display='';
+  }
+  setRo('r_full', fmt(R.full,0), '');
+  setRo('r_spend', fmt(R.spend,0), R.spend<R.full?'ok':(R.spend>R.full?'warn':''));
+  const delta = R.spend - BOMTOTAL;
+  setRo('r_save', (delta>0?'+':'')+fmt(delta,0), delta<0?'ok':(delta>0?'bad':''));
+  setRo('r_act', Math.round(100*R.act/R.full)+'%', '');
+  setRo('r_first', fmt(R.firstCommit,0), '');
+  renderTable(); renderPhaseTable(R); updateNote(R);
+}
+function setRo(id, v, cls){ const el=$(id); el.className='ro'+(cls?' '+cls:''); el.querySelector('.v').textContent=v; }
+
+// ---------- table ----------
+let sortK='line', sortDir=-1;
+function phaseText(r){ return Object.keys(r.ph).map(p=>{ const u=r.ph[p]; const n=r.qty+r.sp; return (n>1 && Number.isInteger(u))? `${p} (${u})` : p; }).join(', '); }
+function renderTable(){
+  const fg=$('f_group').value, fp=$('f_phase').value, fk=$('f_kind').value, ft=$('f_text').value.trim().toLowerCase();
+  let rows=BOM.filter(r=> (!fg||r.g===fg) && (!fp|| r.ph[fp]!=null) && (!fk || (fk==='est'? /estimate/i.test(r.basis) : fk==='cn'? r.cn : !/estimate/i.test(r.basis))) && (!ft || (r.item+' '+r.note+' '+r.basis+' '+r.id).toLowerCase().includes(ft)));
+  rows.sort((a,b)=>{ let x=a[sortK], y=b[sortK]; if(sortK==='g'){x=GROUPS[a.g];y=GROUPS[b.g];} if(sortK==='p'){x=+Object.keys(a.ph)[0];y=+Object.keys(b.ph)[0];}
+    return (typeof x==='string'? x.localeCompare(y) : x-y)*sortDir; });
+  const tb=document.querySelector('#bomtable tbody'); tb.innerHTML='';
+  let sl=0, se=0;
+  rows.forEach(r=>{ sl+=r.line; se+=r.eff;
+    const tr=document.createElement('tr'); if(r.own) tr.className='owned';
+    const tags=(/estimate/i.test(r.basis)?'<span class="tag est">estimate</span>':'')+(r.cn?'<span class="tag cn">ships from China</span>':'')+(r.own?'<span class="tag">owned</span>':'');
+    tr.innerHTML=`<td>${GROUPS[r.g]}</td><td>${esc(r.item)}<br>${tags}</td><td class="num">${r.qty}</td><td class="num">${r.sp||''}</td><td class="num">${r.unit.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td class="num">${r.line.toLocaleString('en-US',{minimumFractionDigits:2})}</td><td class="num">${fmt(r.eff,2)}</td><td>${phaseText(r)}</td><td class="basis">${esc(r.basis)}</td>`;
+    tb.appendChild(tr); });
+  $('t_line').textContent='$'+sl.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  $('t_eff').textContent=fmt(se,2);
+  $('f_count').textContent=`${rows.length} of ${BOM.length} lines`;
+  document.querySelectorAll('#bomtable th').forEach(th=>th.classList.toggle('sorted', th.dataset.k===sortK));
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const PHASE_NOTES={
+  0:['nothing: repo, requirements, v0 layout','plan'],
+  1:['nothing in parts: simulation runs on a training computer (not counted)','plan'],
+  2:['one RS04 and one RS03 bought singly, bench supply, regen clamp, single-channel CAN adapter, RobStride debug adapter, wired e-stop, hand tools; the Orin, NVMe and CAN transceivers for the CAN-timing check','plan + decisions; Orin placement is an inference'],
+  3:['the other 11 RS03 in one 10+ order, two more RS04, one dual-channel CAN adapter, 7075 bar, half the leg stock and service machining, bearings, push rods, rod ends, jig, end mills, printing tools and filament','plan + decisions; splits are inferences'],
+  4:['second leg (three RS04 + spare), pelvis machining, battery cells, BMS, charger, power distribution, contactor, IMU, gantry, wireless e-stop, padding, spot welder','plan; splits are inferences'],
+  5:['RS06 ×5, RS00 ×2, four STS3250 servos, hand kits and their converters, camera, crossed-roller waist bearing, torso machining, upper-body materials','plan'],
+  6:['the last kilogram of carbon-fibre nylon to finish the shells','plan (“finish the shells”); inference'],
+};
+function renderPhaseTable(R){
+  const tb=$('phasetable'); tb.innerHTML='';
+  for(let p=0;p<7;p++){ const b=R.byP[p]; const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${PHASES[p]}</td><td class="num">${fmt(b.buy+b.own+b.duty,0)}</td><td>${PHASE_NOTES[p][0]}</td><td style="color:var(--muted)">${PHASE_NOTES[p][1]}</td>`; tb.appendChild(tr); }
+}
+
+// ---------- cost per N·m ----------
+const ACT=[
+  {m:'RS04',peak:120,rated:40,p:255,t:242,n:7},
+  {m:'RS03',peak:60,rated:20,p:225,t:214,n:12},
+  {m:'RS06',peak:36,rated:11,p:210,t:200,n:5},
+  {m:'RS00',peak:14,rated:5,p:138.99,t:131.99,n:2},
+  {m:'STS3250 servo',peak:4.9,rated:1.57,p:97,t:97,n:4},
+  {m:'Damiao DM-J10010L',peak:120,rated:40,p:230,t:230,alt:true},
+  {m:'CubeMars AK80-64',peak:120,rated:48,p:890,t:890,alt:true},
+];
+const nm={by:'peak',price:'single',alt:false};
+function renderNm(){
+  const svg=$('nmview'); svg.innerHTML='';
+  const list=ACT.filter(a=>nm.alt||!a.alt).map(a=>({...a,v:(nm.price==='tier'?a.t:a.p)/a[nm.by]}));
+  const W=640,left=150,right=90,rowH=34,top=8,H=top+list.length*rowH+28; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const nice=niceMax(Math.max(...list.map(a=>a.v))); const sx=v=>(W-left-right)*v/nice;
+  for(let i=0;i<=4;i++){ const v=nice*i/4,x=left+sx(v);
+    svg.appendChild(svgEl('line',{x1:x,x2:x,y1:top,y2:H-22,stroke:'#2a3340'}));
+    svg.appendChild(svgEl('text',{x,y:H-6,fill:'#9aa7b4','font-size':11,'text-anchor':'middle'},'$'+(+v.toFixed(1))));
+  }
+  list.forEach((a,i)=>{ const y=top+i*rowH+5,h=rowH-12;
+    svg.appendChild(svgEl('text',{x:left-8,y:y+h/2+4,fill:a.alt?'#9aa7b4':'#e6edf3','font-size':13,'text-anchor':'end'},a.m));
+    svg.appendChild(svgEl('rect',{x:left,y,width:sx(a.v),height:h,rx:3,fill:a.alt?'#b48cff':'#4fb3ff'}));
+    svg.appendChild(svgEl('text',{x:left+sx(a.v)+6,y:y+h/2+4,fill:'#e6edf3','font-size':12,'font-family':'ui-monospace,monospace'},'$'+a.v.toFixed(2)+'/N·m'));
+  });
+  $('nmtitle').textContent=`US dollars per N·m of ${nm.by==='peak'?'peak':'continuous (rated)'} torque, ${nm.price==='tier'?'10+ tier':'single-unit'} price`+(nm.alt?' (purple: alternatives at reseller prices)':'');
+  const bom=list.filter(a=>!a.alt); const best=bom.reduce((a,b)=>a.v<b.v?a:b);
+  setRo('n_best', `${best.m} $${best.v.toFixed(2)}`, 'ok');
+  // installed: total RobStride + servo spend (used units only) / total torque installed (used units)
+  const used={RS04:6,RS03:11,RS06:4,RS00:2,'STS3250 servo':4};
+  let $s=0,tq=0; ACT.filter(a=>!a.alt).forEach(a=>{ $s+=used[a.m]*(nm.price==='tier'?a.t:a.p); tq+=used[a.m]*a[nm.by]; });
+  setRo('n_robot', `$${($s/tq).toFixed(2)}/N·m (${Math.round(tq)} N·m)`, '');
+}
+function nmBtn(id,k,v,other){ $(id).addEventListener('click',()=>{ nm[k]=v; $(id).classList.add('on'); $(other).classList.remove('on'); renderNm(); }); }
+nmBtn('t_peak','by','peak','t_rated'); nmBtn('t_rated','by','rated','t_peak');
+nmBtn('t_single','price','single','t_tier'); nmBtn('t_tier','price','tier','t_single');
+$('alt').addEventListener('change',e=>{ nm.alt=e.target.checked; renderNm(); });
+
+// ---------- note ----------
+function updateNote(R){
+  const parts=[];
+  const tierTxt={staged:'staged buying (one order per build phase, taking the 10+ price wherever a single order reaches ten units)',bulk:'ordering everything in one order now to get the 10+ tier where a model reaches ten units',second:'ordering for two robots at once (cost shown per robot)'};
+  if(state.tier!=='single') parts.push(tierTxt[state.tier]);
+  const ownNames=[]; document.querySelectorAll('#owned input:checked').forEach(c=>ownNames.push(c.parentElement.textContent.trim()));
+  if(ownNames.length) parts.push('already owning: '+ownNames.join('; '));
+  if(state.duty) parts.push(`a hypothetical ${state.duty}% duty on the parts shipped from China (actuators, servos, hand kits)`);
+  if(state.ship) parts.push(`a ${state.ship}% shipping allowance`);
+  if(state.cur!=='USD') parts.push(`amounts shown in ${state.cur} at an illustrative fixed rate`);
+  if(!parts.length){ $('note').textContent='Change a control above to build a note.'; return; }
+  const delta=R.spend-BOMTOTAL;
+  $('note').textContent=`For Marvin Bot (1.44 m, 41 kg, 27-DOF humanoid; bom/bom.xlsx totals $17,531.03 for 60 lines at October 2026 prices), I costed the build assuming ${parts.join(', ')}.
+Result: full cost to replicate ${fmt(R.full,0)}; still to spend ${fmt(R.spend,0)} (${delta<=0?'':'+'}${fmt(delta,0)} vs the BOM total), of which ${fmt(R.dutyTot,0)} hypothetical duty and ${fmt(R.shipAmt,0)} shipping. About ${fmt(R.firstCommit,0)} is committed before the one-leg test (phases 0-2${state.tier==='bulk'||state.tier==='second'?', plus the actuator models ordered whole for the 10+ tier':''}).
+Next steps: mark owned lines in my copy of bom/bom.xlsx; get a direct RobStride quote and current import costs (roadmap open item 1); price the "estimate" lines before each phase's order. Duty and exchange rates here are illustrative, not quotes.`;
+}
+
+// ---------- wiring ----------
+function syncControls(){
+  document.querySelectorAll('input[name=tier]').forEach(i=>i.checked=(i.value===state.tier));
+  document.querySelectorAll('#owned input').forEach(i=>i.checked=i.dataset.own.split(',').every(o=>state.owned.includes(o)));
+  $('duty').value=state.duty; $('o_duty').textContent=state.duty+'%';
+  $('ship').value=state.ship; $('o_ship').textContent=state.ship+'%';
+  $('cur').value=state.cur;
+  $('v_group').classList.toggle('on',state.view==='group'); $('v_phase').classList.toggle('on',state.view==='phase');
+}
+function readOwned(){ const o=[]; document.querySelectorAll('#owned input:checked').forEach(c=>c.dataset.own.split(',').forEach(x=>o.push(x))); state.owned=o; }
+document.querySelectorAll('input[name=tier]').forEach(i=>i.addEventListener('change',()=>{ state.tier=i.value; render(); }));
+document.querySelectorAll('#owned input').forEach(i=>i.addEventListener('change',()=>{ readOwned(); render(); }));
+$('duty').addEventListener('input',e=>{ state.duty=+e.target.value; $('o_duty').textContent=state.duty+'%'; render(); });
+$('ship').addEventListener('input',e=>{ state.ship=+e.target.value; $('o_ship').textContent=state.ship+'%'; render(); });
+$('cur').addEventListener('change',e=>{ state.cur=e.target.value; render(); renderNm(); });
+$('v_group').addEventListener('click',()=>{ state.view='group'; syncControls(); render(); });
+$('v_phase').addEventListener('click',()=>{ state.view='phase'; syncControls(); render(); });
+['f_group','f_phase','f_kind'].forEach(id=>$(id).addEventListener('change',renderTable));
+$('f_text').addEventListener('input',renderTable);
+for(const g in GROUPS){ const o=document.createElement('option'); o.value=g; o.textContent=GROUPS[g]; $('f_group').appendChild(o); }
+document.querySelectorAll('#bomtable th[data-k]').forEach(th=>th.addEventListener('click',()=>{ const k=th.dataset.k; if(sortK===k) sortDir=-sortDir; else { sortK=k; sortDir=(k==='item'||k==='g'||k==='basis'||k==='p')?1:-1; } renderTable(); }));
+const PRESETS={
+  today:{...DEFAULTS},
+  staged:{...DEFAULTS, tier:'staged', view:'phase'},
+  owner:{...DEFAULTS, owned:['compute','hand-kit'], tier:'staged'},
+  second:{...DEFAULTS, tier:'second'},
+  shock:{...DEFAULTS, duty:25, ship:5},
+};
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{ Object.assign(state, JSON.parse(JSON.stringify(PRESETS[b.dataset.preset]))); syncControls(); render(); renderNm(); }));
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+syncControls(); render(); renderNm();
+</script>
+</body>
+</html>

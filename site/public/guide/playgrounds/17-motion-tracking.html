@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion tracking: Kimodo, retargeting and BeyondMimic · Marvin Bot guide</title>
+<meta name="description" content="How Marvin Bot learns skills by copying human motion: text-to-motion with Kimodo, retargeting with PyRoki, and a BeyondMimic-style tracking policy, with playgrounds for body scaling and reward kernels.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+.pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:14px 0}
+.pipe .st{flex:1 1 150px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px}
+.pipe .st b{display:block;color:var(--accent)}
+.pipe .ar{align-self:center;color:var(--muted)}
+.seg{display:flex;gap:0;margin:4px 0 8px}
+.seg button{border-radius:0;flex:1}
+.seg button:first-child{border-radius:6px 0 0 6px}.seg button:last-child{border-radius:0 6px 6px 0}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:6px 0}
+.chk input{margin-top:4px}
+.viol{font:13px/1.5 var(--mono);color:var(--bad);margin-top:8px;min-height:1.5em}
+.viol.okv{color:var(--good)}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin:4px 0;max-width:100%;overflow-x:auto}
+@media (max-width:620px){.pipe .ar{display:none}}
+.termtbl input[type=range]{width:100%;accent-color:var(--accent)}
+.termtbl td{vertical-align:middle}
+th.sort{cursor:pointer;user-select:none} th.sort:hover{color:var(--text)}
+.bar{height:10px;border-radius:3px;background:var(--accent);display:inline-block;vertical-align:middle}
+.bar.h{background:var(--violet)}
+.transport{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
+.transport input{flex:1;accent-color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 5 · Learning</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 17</p>
+<h1>Motion tracking: Kimodo, retargeting and BeyondMimic</h1>
+<p class="lede">Instead of writing a new reward for every skill, Marvin Bot learns one <a class="g" href="../glossary.html#policy">policy</a> (a trained neural-network controller, <a href="16-rl-walking.html">page 16</a>) that copies a reference motion. A new skill is then a new clip. This page follows a clip from a text prompt to a trained tracker, and lets you break the two steps that most often go wrong: scaling a human to a 1.44 m robot, and the shape of the reward.</p>
+<p>Think of a dance class: rather than explaining in words what a good bow looks like, the teacher does it and you copy. A humanoid is expected to do many things besides walking, such as waving, bowing, squatting or clapping, and writing a separate scoring rule for each would take weeks per skill. With motion tracking the robot is shown a recording and scored on how closely it copies it. The hard parts are getting a good recording for a body that is not human-shaped, and deciding what "close enough" means.</p>
+<div class="meta"><span class="chip">~35 min</span><span class="chip">Before this: <a href="16-rl-walking.html">16 Reinforcement learning for walking</a></span><span class="chip">Also useful: <a href="01-dof-kinematics.html">01 Degrees of freedom</a>, <a href="13-description.html">13 The robot description</a></span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>Why tracking a reference motion scales better than designing a reward per skill.</li>
+<li>The four steps of Marvin Bot's pipeline: Kimodo text-to-motion, PyRoki retargeting, clip checks, and a BeyondMimic-style tracker trained in ProtoMotions on Newton.</li>
+<li>Why a person cannot simply be shrunk to the robot's size, and what goes wrong with feet, hands and joint limits when you try.</li>
+<li>How the exponential reward kernel exp(−e²/σ²) works, and why a 0.3 m kernel barely notices a 3 cm crouch.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>For walking (<a href="16-rl-walking.html">page 16</a>) the reward is hand-written: follow the commanded velocity, keep the body upright, do not waste torque, lift the feet. That works for one skill, but every new skill (a bow, a squat, a wave) needs new reward terms and weeks of tuning. <a class="g" href="../glossary.html#motion-tracking">Motion tracking</a> turns the problem around: give the policy a <dfn>reference motion</dfn>, a recording of where every body part should be at every moment, and reward it for staying close. The reward is the same for every skill; only the clip changes.<sup class="cite"><a href="#s1">[1]</a></sup></p>
+
+<div class="pipe">
+  <div class="st"><b>1 · Generate</b>Kimodo turns a text prompt and a root path into a human motion (SOMA skeleton, 30 fps).<sup class="cite"><a href="#s2">[2]</a></sup></div><div class="ar">→</div>
+  <div class="st"><b>2 · Retarget</b>PyRoki solves for Marvin Bot joint angles whose body points match the scaled human keypoints.<sup class="cite"><a href="#s3">[3]</a></sup></div><div class="ar">→</div>
+  <div class="st"><b>3 · Check</b><code>check_clips.py</code>: text match, foot sliding, per-skill geometry, review renders.</div><div class="ar">→</div>
+  <div class="st"><b>4 · Track</b>One policy learns all clips with BeyondMimic's rewards in ProtoMotions on Newton.<sup class="cite"><a href="#s1">[1]</a></sup><sup class="cite"><a href="#s4">[4]</a></sup></div>
+</div>
+
+<p class="hint" style="color:var(--muted);font-size:13px">Words in the pipeline: Kimodo is a <a class="g" href="../glossary.html#diffusion-model">diffusion model</a>, a neural network that generates new motions (much as image generators make pictures from text). SOMA is the human skeleton it outputs; 30 fps means 30 poses (frames) per second. A <dfn>root path</dfn> is the route the hips should follow; <dfn>keypoints</dfn> are tracked points on the body such as wrists, knees and ankles.</p>
+<p>Two of these steps hide most of the difficulty. <a class="g" href="../glossary.html#retargeting">Retargeting</a> has to turn a 1.75 m person into a 1.44 m robot with different proportions and joint limits, and every compromise it makes becomes part of the "truth" the policy is trained to copy. The tracker's reward has to say how close is close enough. The two playgrounds below let you try both.</p>
+
+<h2 id="play">Playground A: scaling a person to Marvin Bot</h2>
+<p>The left panel shows a human source (a stick figure with typical adult proportions). The right panel shows Marvin Bot's skeleton (lengths from <code>description/robot.yaml</code> and <code>skeleton.yaml</code>) doing its best to put its joints on the <em>scaled</em> human keypoints (hollow circles). Legs are solved exactly (two-link <a class="g" href="../glossary.html#inverse-kinematics">inverse kinematics</a>: working backwards from where the foot should be to the joint angles that put it there), arms by a small optimisation that nudges four joint angles until the hand gets as close as it can, the same kind of solver PyRoki uses. Joint limits are applied after the solve; any limit the motion asks the robot to break is listed in red.</p>
+<p><b>Start here:</b> leave <i>Reach forward</i> playing, press <i>Uniform by height</i>, then <i>Marvin Bot today</i>, and watch the feet and the readouts. How to read the picture: the robot (orange) is trying to put its joints on the hollow blue circles (the shrunk human, shown in grey on the left at full size); red marks show where it misses or hits a joint limit. Good readouts: hand error a few centimetres, stance sole height near 0 mm (on the floor), little foot sliding, a standing knee bend near the robot's 15° stance, and no joint-limit hits. The lower chart plots the shoulder over the clip: the purple path should stay out of the shaded (forbidden) area.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="today">Marvin Bot today</button>
+      <button data-preset="uniform">Uniform by height</button>
+      <button data-preset="none">No scaling</button>
+      <button data-preset="small">Too small</button>
+      <button data-preset="wave2">Two-hand wave</button>
+      <button data-preset="squat">Deep squat</button>
+    </div>
+    <h4>Motion</h4>
+    <div class="ctl"><select id="motion" aria-label="Motion">
+      <option value="reach">Reach forward</option>
+      <option value="clap">Clap in front of the chest</option>
+      <option value="squat">Squat with arms forward (two squats)</option>
+      <option value="wave">Wave (right hand)</option>
+      <option value="wave2">Wave both hands above the head</option>
+      <option value="march">March in place</option>
+    </select></div>
+    <div class="ctl"><label>View</label>
+      <div class="seg"><button id="v_side" class="on">Side</button><button id="v_front">Front</button></div></div>
+    <h4>Scaling</h4>
+    <div class="seg"><button id="m_uni">Uniform</button><button id="m_sep" class="on">Per body part</button></div>
+    <div id="uniBox">
+      <div class="ctl"><label>Uniform scale <output id="o_su"></output></label>
+        <input type="range" id="su" min="0.55" max="1.05" step="0.005" value="0.822">
+        <div class="hint">Every human keypoint × this, about a point on the floor. 1.438/1.75 = 0.822 matches heights.</div></div>
+    </div>
+    <div id="sepBox">
+      <div class="ctl"><label>Leg scale <output id="o_sl"></output></label>
+        <input type="range" id="sl" min="0.55" max="1.0" step="0.005" value="0.75">
+        <div class="hint">Pelvis and legs. Repo: robot straight leg 0.640 m ÷ source 0.853 m = 0.750.</div></div>
+      <div class="ctl"><label>Arm scale <output id="o_sa"></output></label>
+        <input type="range" id="sa" min="0.55" max="1.0" step="0.005" value="0.745">
+        <div class="hint">Each arm about its shoulder. Repo formula: 0.418 m reach ÷ 0.56 m = 0.746 (the README says 0.79).</div></div>
+      <div class="ctl"><label>Shoulder height scale <output id="o_st"></output></label>
+        <input type="range" id="st" min="0.6" max="1.2" step="0.005" value="0.955">
+        <div class="hint">Shoulders above the hips. Repo: 0.75 × 0.465/0.365 = 0.955.</div></div>
+    </div>
+    <h4>Fixes</h4>
+    <label class="chk"><input type="checkbox" id="fixSole" checked><span>Foot-on-floor fix: lift or lower the whole clip so the stance foot is on the floor (<code>fix_sole_height.py</code>)</span></label>
+    <label class="chk"><input type="checkbox" id="fixTorso" checked><span>Shoulders 6.5 cm forward, 0.62 as wide; knees 1.5 cm and feet 3 cm further apart (<code>retarget_marvin_bot.py</code>)</span></label>
+  </div>
+  <div class="preview">
+    <svg id="view" viewBox="0 0 760 420" role="img" aria-label="Human source and Marvin Bot skeleton side by side, with target keypoints and errors"></svg>
+    <div class="transport"><button id="play">Pause</button><span>time</span><input type="range" id="time" min="0" max="99" value="0" aria-label="Time in clip"><output id="o_time" class="mono">0.0 s</output></div>
+    <div class="readouts">
+      <div class="ro" id="r_hand"><div class="k">Hand error, mean / max</div><div class="v">–</div></div>
+      <div class="ro" id="r_sole"><div class="k">Stance sole height</div><div class="v">–</div></div>
+      <div class="ro" id="r_slide"><div class="k">Foot sliding in contact</div><div class="v">–</div></div>
+      <div class="ro" id="r_knee"><div class="k">Standing knee bend</div><div class="v">–</div></div>
+      <div class="ro" id="r_pel"><div class="k">Pelvis target height</div><div class="v">–</div></div>
+      <div class="ro" id="r_lim"><div class="k">Joint-limit hits (frames)</div><div class="v">–</div></div>
+    </div>
+    <div class="viol" id="viol"></div>
+    <svg id="coupled" viewBox="0 0 760 230" role="img" aria-label="Shoulder pitch against shoulder roll, with the coupled limit shaded" style="margin-top:10px"></svg>
+    <div class="legend"><span><i style="background:#cfd8e3"></i>human</span><span><i style="background:var(--accent2)"></i>Marvin Bot</span><span><i style="background:transparent;border:1px solid var(--accent)"></i>scaled target keypoint</span><span><i style="background:var(--bad)"></i>error / limit hit</span><span><i style="background:var(--violet)"></i>shoulder path over the clip</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <b>Uniform by height</b> with <i>Reach forward</i>. The robot's straight leg (0.640 m) is shorter than the shrunk human leg (0.70 m), so with the pelvis held at its target the feet hang in the air. Untick the foot-on-floor fix to see by how much. Then press <b>Marvin Bot today</b>: legs scaled by leg length, and the gap closes.</li>
+<li>Pick <b>Too small</b>: now the target legs are too short, the robot has to bend its knees to reach them and stands in a crouch. The repo found exactly this: a target leg only 1.5 cm short held the knee at 26°.</li>
+<li>Choose <b>Clap</b> and look at the shoulder chart under the figures. The hands can only meet if the shoulder roll goes below 0°, which Marvin Bot allows only with the arm forward (the shaded corner). Now try <b>Two-hand wave</b>: the human lifts the arms sideways past 120° of roll.</li>
+<li>Try <b>Deep squat</b>: the human's knee goes to 140°, ten past the robot's 130° stop. Watch the feet: with the knee stopped, the ankle cannot reach its target and the stance foot ends up below the floor or sliding.</li>
+</ol></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>Why a reference motion?</h3>
+<p>Reinforcement learning (<a href="16-rl-walking.html">page 16</a>) needs a number, the <a class="g" href="../glossary.html#reward">reward</a>, that says how good each moment was. For walking, people write it by hand. A tracker's reward is generic: "be where the reference is". BeyondMimic showed that one such formulation, with one set of hyperparameters, learns sprints, cartwheels and dances and transfers to a real humanoid without per-skill tuning.<sup class="cite"><a href="#s1">[1]</a></sup> The price is that you need good reference motions, and that the robot must be physically able to do them.</p>
+
+<h3>Step 1: making motions from text (Kimodo)</h3>
+<p>Kimodo is NVIDIA's kinematic motion <a class="g" href="../glossary.html#diffusion-model">diffusion model</a>, trained on about 700 hours of commercially usable optical motion capture. It takes a text prompt and optional constraints (full-body keyframes, hand or foot positions, a 2D root path or waypoints) and outputs a human motion on NVIDIA's SOMA skeleton.<sup class="cite"><a href="#s2">[2]</a></sup><sup class="cite"><a href="#s5">[5]</a></sup> <details><summary>Go deeper: Kimodo's licences</summary><p>Its code is Apache-2.0; the SOMA "RP" model is under the NVIDIA Open Model License; its text encoder (the part that turns the prompt into numbers) is Meta's Llama 3 8B Instruct (gated, Meta Llama 3 Community License) with LLM2Vec adapters.</p></details>
+<p>"Kinematic" means it outputs positions and angles only, not forces: nothing guarantees the motion is physically possible, which is why the clips are checked.</p>
+<p>Wording alone does not set speed. In the repo, "a person jogs forward" produced a 2 m/s run that no tracker could follow. So every locomotion clip and in-place skill gets a <dfn>root path</dfn>: the hips' speed, heading and direction of travel frame by frame (<code>generate_kimodo.py</code>). Several samples are generated per clip (4 by default, 8 for the clips that needed it) and the one with the fewest failed skill checks, then the least foot sliding and crossing of the feet, is kept.</p>
+
+<h3>Step 2: retargeting (PyRoki)</h3>
+<p>The robot has different segment lengths, fewer joints (no waist pitch, no wrist roll) and joint limits. Retargeting finds, frame by frame, the robot joint angles <i>q</i> that best put the robot's body points on the human's <dfn>keypoints</dfn> (pelvis, hips, knees, ankles, toes, shoulders, elbows, wrists). PyRoki writes this as a least-squares problem (add up the squared misses and make the total as small as possible) and solves it with a Levenberg–Marquardt optimiser, a standard method that repeatedly nudges the angles downhill, written in the JAX numerical library:<sup class="cite"><a href="#s3">[3]</a></sup></p>
+<p class="eq">minimise over q:  Σ<sub>k</sub> w<sub>k</sub> ‖FK<sub>k</sub>(q) − s ⊙ p<sub>k</sub>‖² + w<sub>lim</sub>·limits(q) + w<sub>coll</sub>·self-collision(q) + w<sub>rest</sub>‖q − q<sub>rest</sub>‖² + smoothness</p>
+<p>Here FK<sub>k</sub>(q) is <a class="g" href="../glossary.html#forward-kinematics">forward kinematics</a>: the position of robot body point <i>k</i> for joint angles <i>q</i>; p<sub>k</sub> is the human keypoint; s is the scale (⊙ means each direction can be scaled separately); the w are weights saying how much each wish matters; ‖…‖² is the squared distance. In words: put the robot's points on the shrunk human's points, stay inside the joint limits, do not let limbs pass through each other, stay near a resting pose, and move smoothly.</p>
+<p>The scale is the hard part. Shrink everything by the height ratio (1.438/1.75 = 0.82) and the human's leg is still 0.70 m long while Marvin Bot's straight leg is 0.640 m: either the feet float or the pelvis must drop. Shrink by too much and the robot has to crouch. Arms, torso and legs each need their own scale, which is what the playground's "Per body part" mode does. GMR, a retargeter built for exactly this problem, also uses non-uniform local scaling followed by a two-stage optimisation, and its authors show that retargeting artefacts (foot sliding, self-penetration) directly hurt the trained tracker.<sup class="cite"><a href="#s6">[6]</a></sup></p>
+<details><summary>What the playground's solver does, exactly</summary>
+<p>Human proportions come from the repo's measured source (hip-to-ankle 0.853 m and shoulder-to-wrist 0.56 m for a 1.75 m person) plus standard anthropometry for the rest. Each frame, the human's joint angles give its keypoints; they are scaled (uniformly about the floor point under the hips, or legs about the floor, shoulders about the hips, arms about each shoulder, as in <code>scale_keypoints()</code>). The robot pelvis is pinned to the scaled pelvis target with the human's pelvis tilt. Each leg is solved analytically (hip roll, hip pitch, knee) to reach its ankle target, then clamped to its limits; the ankle pitch keeps the foot flat within ±40°. Each arm (shoulder pitch, roll, yaw, elbow) is solved by 30 damped Gauss–Newton steps on wrist error plus 0.3 × elbow error plus a small pull to the human's angles; it is solved once without limits (to find what the motion <em>asks</em> for) and once with limits, including the coupled shoulder-roll limit. Simplifications: no self-collision, no smoothness term, no root optimisation (PyRoki moves the root too), and a 2-link leg instead of the full chain.</p></details>
+
+<h3>Step 3: checking the clips</h3>
+<p>A bad clip wastes hours of training and teaches the wrong thing, so <code>sim/motion/check_clips.py</code> runs four layers, the first three on Kimodo's human clip and the third again on the retargeted robot clip, so a failure points at generation or at retargeting:</p>
+<ol>
+<li><b>Text match.</b> NVIDIA's text–motion retrieval model for SOMA (TMR-SOMA-RP-v1, the model Kimodo's benchmark scores with) turns every clip and every prompt into a list of numbers (an "embedding") placed so that a motion and a sentence describing it land close together. Each clip gets its similarity to its own prompt (cosine mapped to 0–1) and that prompt's rank among all 25. A clip that another prompt describes better is suspect.</li>
+<li><b>Motion quality.</b> Kimodo's benchmark metrics: foot sliding from toe height and from Kimodo's contact labels, the share of contact frames that skate, contact consistency, and how far the hips strayed from the requested root path. Kimodo's published foot skate is 2–4 cm/s.</li>
+<li><b>Skill checks.</b> A geometric test per clip, in units of the standing head height H so it runs on both bodies: the hands meet (closer than 0.07 H) in front of the chest at least three times in a clap; a hand above the shoulder 40% of the time and swinging in a wave; the pelvis dropping by 30% in a squat; distance within ±25% and turn within 25° of the root path for a walk; both feet off the ground in 5% of jog frames, and so on.</li>
+<li><b>Review renders.</b> The human as a stick figure beside the robot reference, with the checks written on the frame.</li>
+</ol>
+<p>On the first 25 clips every clip ranked its own prompt first or second and slid 0.2–3.8 cm/s, but five did less than asked (the wave waved for 2 s of 8; the arm raise reached about 45°). Those five were regenerated with sharper prompts and more samples, now picked by the skill checks, and all 25 pass on the human. On the robot two fall short: the clap's palms meet once rather than three times, and the pick-up's hands stop 27 cm above the floor, because with no waist pitch the robot cannot bend over.</p>
+
+<h3>Step 4: the tracker's reward (BeyondMimic)</h3>
+<p>The tracker observes its own joint angles, joint velocities, IMU (the inertial sensor in the pelvis) and last action, plus the reference: the target pose at the next few frames (ProtoMotions uses 1, 2, 4 and 8 frames ahead) and the error of an <dfn>anchor body</dfn> (the torso) against the reference's anchor.<sup class="cite"><a href="#s1">[1]</a></sup><sup class="cite"><a href="#s4">[4]</a></sup> Every other body's target is expressed relative to the anchor, so a small drift in where the robot stands does not count as a pose error. Each tracking term is an exponential <a class="g" href="../glossary.html#reward-kernel">kernel</a>, a scoring curve that pays 1 for a perfect match and fades towards 0 as the error grows:</p>
+<p class="eq">r(ē, σ) = exp(−ē / σ²),  ē = mean over bodies of ‖x<sub>robot</sub> − x<sub>ref</sub>‖²</p>
+<p>ē is a mean squared error (m² for positions, rad² for orientations), and σ (sigma) is the "tolerance": an error of one σ gives exp(−1) = 0.37 of the reward, two σ gives 0.02. In BeyondMimic σ is 0.3 m for body positions, 0.4 rad for orientations, 1.0 m/s for linear and 3.14 rad/s for angular velocities, each with weight 1.0, plus optional anchor position and orientation terms with weight 0.5.</p>
+<p>Penalties are −10 for soft joint limits (0.9 of the mechanical range), −0.1 for action rate and −0.1 for undesired contacts.<sup class="cite"><a href="#s1">[1]</a></sup></p>
+<p> An <dfn>episode</dfn> (one attempt) ends when the anchor or an end effector (a hand or foot) is 0.25 m too high or low, or the anchor is tilted 0.8 rad from the reference. Training starts episodes at random points of the clips, more often in the one-second bins where the policy has been failing (<dfn>adaptive sampling</dfn>, a moving average of failures with a uniform floor).<sup class="cite"><a href="#s1">[1]</a></sup></p>
+<p>The kernel's shape matters. Its slope, dr/de = −(2e/σ²)·r, is zero at e = 0 and largest at e = σ/√2. With σ = 0.3 m, a body 3 cm off keeps exp(−0.03²/0.3²) = exp(−0.01) = <b>0.990</b> of its reward and the gradient is tiny. Playground B shows what that does.</p>
+
+<h2 id="play2">Playground B: the reward kernel</h2>
+<p>How strict should the score be? Here you set the tolerance σ and an error, and see how much reward the robot keeps and how strongly the score pushes it to improve (the slope: zero slope means "no reason to fix this"). <b>Start here:</b> press <i>3 cm crouch</i> and read <i>Reward lost</i>: well under 1%, too little for training to bother fixing. Then press the other scenarios. How to read the chart: the solid blue curve is the reward if every scored body is off by the error on the x-axis; the dashed purple curve is the same when only some of them are off (the average dilutes the miss); the orange dot is your current setting. A flat curve under the dot means the robot feels almost no pull towards the reference.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Scenarios</h4>
+    <div class="presets">
+      <button data-rp="crouch">3 cm crouch</button>
+      <button data-rp="arm">Arm left hanging</button>
+      <button data-rp="hop">Hopping</button>
+      <button data-rp="behind">Fell behind</button>
+      <button data-rp="good">Good tracking</button>
+    </div>
+    <h4>One kernel</h4>
+    <div class="ctl"><label>σ (tolerance) <output id="o_sig"></output></label>
+      <input type="range" id="sig" min="0.02" max="0.8" step="0.01" value="0.3">
+      <div class="hint">Body position term: 0.3 m in BeyondMimic and in Marvin Bot's tracker.</div></div>
+    <div class="ctl"><label>Error of one body e <output id="o_err"></output></label>
+      <input type="range" id="err" min="0" max="0.6" step="0.005" value="0.03">
+      <div class="hint">How far one scored body is from its reference.</div></div>
+    <div class="ctl"><label>Bodies scored N <output id="o_nb"></output></label>
+      <input type="range" id="nb" min="1" max="28" step="1" value="15">
+      <div class="hint">ē is a mean over N bodies. Marvin Bot scores 15 (BeyondMimic's 14 plus the head); upstream scored all 28.</div></div>
+    <div class="ctl"><label>Bodies that are off <output id="o_noff"></output></label>
+      <input type="range" id="noff" min="1" max="28" step="1" value="15">
+      <div class="hint">The rest are exactly on target. 1 = a single hand that misses.</div></div>
+  </div>
+  <div class="preview">
+    <svg id="kern" viewBox="0 0 760 300" role="img" aria-label="Reward kernel exp(-e squared over sigma squared) against error"></svg>
+    <div class="readouts">
+      <div class="ro" id="k_r"><div class="k">Term reward</div><div class="v">–</div></div>
+      <div class="ro" id="k_lost"><div class="k">Reward lost</div><div class="v">–</div></div>
+      <div class="ro" id="k_g"><div class="k">Slope dr/de</div><div class="v">–</div></div>
+      <div class="ro" id="k_rms"><div class="k">RMS error over N</div><div class="v">–</div></div>
+    </div>
+  </div>
+</div>
+<h3>The weighted sum</h3>
+<p>The policy sees one number per step: the weighted sum of all terms. Slide the errors and see how much each term contributes. The defaults are Marvin Bot's tracker (<code>mlp_bm_marvin_bot.py</code> as written by <code>setup_protomotions.py</code>).</p>
+<div class="tablewrap"><table class="termtbl" id="terms">
+<thead><tr><th>Term</th><th class="num">Weight</th><th class="num">σ</th><th style="min-width:160px">Error</th><th class="num">Error value</th><th class="num">Contribution</th><th style="min-width:120px"></th></tr></thead>
+<tbody></tbody>
+<tfoot><tr><th colspan="5">Total per step (max positive 5.5)</th><th class="num" id="tot">–</th><th></th></tr></tfoot>
+</table></div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li><b>3 cm crouch</b>: every leg body 3 cm low costs about 1% of the body-position term, while the joint-angle term Marvin Bot added sees the 6.5° of extra bend directly. Then set the joint error to 0 and notice how little the body terms care.</li>
+<li><b>Arm left hanging</b>: one hand 0.6 m off. Set N to 28 (all bodies) and the term still pays most of the reward, because one bad body is averaged with 27 good ones. At N = 15 the loss is about twice as large. That is why BeyondMimic scores 14 key bodies.</li>
+<li><b>Hopping</b>: both feet in the air while the reference has one down, so one foot's contact differs. That single −2.0 penalty outweighs everything the body terms lose to the hop; at upstream's −0.1 it would hardly register.</li>
+<li>Drag σ down to 0.05 m with a 3 cm error: the kernel becomes strict, but large errors then earn almost nothing and give almost no gradient, which makes early training hard.</li>
+</ol></div>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b>
+One tracker follows all 25 Kimodo clips on the 1.44 m model: trained for 4,800 epochs with 16,384 robots at once (an epoch is one round of collecting experience and updating the network; batch 65,536, about 5.6 s an epoch, about 7.5 hours on one RTX-class GPU), and every clip stays upright. Joint errors are 8–13° RMS on most clips and the hands 3–9 cm from the reference's; the two-hand wave is the weakest (34.6°, 12.1 cm). Nothing has been replayed in MuJoCo or run on hardware yet. <b>These results are provisional:</b> a new tracker (v4, with the head and joint-angle rewards below) is still training on the regenerated clips, so the per-clip numbers will change. Sources: <code>sim/motion/README.md</code>, <code>docs/skills.md</code>, <code>docs/decisions.md</code> (2026-10-27 to 2026-10-29).</div>
+<p>What Marvin Bot changed from upstream's BeyondMimic config in ProtoMotions, and why (each was found by a failed tracker):</p>
+<ul>
+<li><b>Scale.</b> Legs by leg length, shoulders about the hips (0.62 as wide, about 0.955 as high, 6.5 cm forward), arms about each shoulder; the knees and feet moved 1.5 and 3 cm outwards because the shrunk human feet ended up 12–14 cm apart and Marvin Bot's feet are 11 cm wide. With the shoulders or pelvis left high, the solver crouched the robot (knees 37–58° through a walk). The solver also starts from the standing pose, not the middle of each joint's range (a 65° knee).</li>
+<li><b>Arms kept out of the body.</b> Upstream leaves the self-collision cost off; retargeted hands went 4–10 cm into the thighs in most walking frames and the palms 9 cm through each other in the clap. <code>retarget_marvin_bot.py</code> turns it on (weight 10, margin 2 cm) for the arms against the trunk, legs and the other arm.</li>
+<li><b>Soles.</b> ProtoMotions' converter puts the lowest body origin 4 cm above the floor, which suits another robot's foot frame. <code>fix_sole_height.py</code> lifts each clip until the flatter (stance) foot is on the floor; lifting until the single lowest corner touched left walks 3–5 cm in the air, and the trackers hopped to keep up.</li>
+<li><b>Anchor reward and termination.</b> BeyondMimic's global anchor-position reward (weight 0.5, σ 0.3 m) and a "fell behind" termination at 0.5 m were missing upstream; without them trackers 1–4 stood still.</li>
+<li><b>Contact penalty −2.0</b> per foot whose contact differs from the reference's. Without it the trackers hopped (both feet down 70% of the time, both up 20%); −0.5 only halved it; at −2.0 both feet are up 1–2% of the time.</li>
+<li><b>Fifteen scored bodies</b>: BeyondMimic's 14 key bodies plus the head. Scoring all 28 let an arm hang while the reference raised it (hands 40–75 cm off); leaving the head out made it shake (46–60°/s RMS standing still).</li>
+<li><b>Joint-angle term</b>, weight 0.5, σ 0.3 rad, exp(−mean squared joint error/σ²) over all joints. The body-position kernel paid 99% for a body 3 cm off, so the tracker stood and walked 5–8° deeper in the hips, knees and ankles than the reference, and with an arm overhead chose a different arm posture for the same hand position (shoulder yaw 95° off in the two-hand wave).</li>
+<li><b>Looser velocity term</b> (σ 0.5 m/s instead of 1.0), more exploration (log std −2.3), softer gains for an action scale of at least 0.4 rad, and an episode end when any scored body is 25 cm from the reference.</li>
+<li><b>Adaptive sampling</b> in ProtoMotions is per clip: a clip's sampling weight goes back to 1 when the policy fails it and decays by 0.999 per evaluation when it succeeds (BeyondMimic's own version works on one-second bins within a clip).</li>
+<li><b>A second check.</b> ProtoMotions counts a clip as tracked when the torso height stays within 25 cm; <code>check_tracking.py</code> also compares distance covered, joint angles and the hands and feet alone. That is how the first tracker's shuffling on the spot (0–32% of the reference's distance) showed up.</li>
+</ul>
+
+<h3>The 25 skills</h3>
+<p>From <code>docs/skills.md</code> (provisional: the tracker before v4, which is still training): joint RMS error against the reference, and the hands' mean distance from where the reference puts them, both relative to the pelvis. Click a column heading to sort.</p>
+<div class="tablewrap"><table id="skills">
+<thead><tr><th class="sort" data-k="name">Skill</th><th class="sort" data-k="group">Group</th><th class="sort num" data-k="j">Joints RMS (°)</th><th></th><th class="sort num" data-k="h">Hands (cm)</th><th></th></tr></thead>
+<tbody></tbody></table></div>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Choice</th><th>Picked</th><th>Alternatives considered</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Motion source</td><td>Kimodo (text to motion)</td><td>100STYLE motion capture (CC-BY-4.0), CMU database, BONES-SEED, AMASS, LAFAN1, own motion capture</td><td>Same eight motions, tracked the same way: 100STYLE kept the tracker up on 5 of 8, Kimodo 5 of 8 with gentler prompts, CMU 3 of the 5 that passed the filter (feet slid 0.43 m/s median vs 0.06–0.07). Kimodo makes skills no open dataset has; BONES-SEED's licence covers only non-profits and small companies; AMASS and LAFAN1 are non-commercial or no-derivatives. 100STYLE stays as a locomotion option.</td></tr>
+<tr><td>Retargeter</td><td>ProtoMotions' PyRoki retargeter, with Marvin Bot's link map, scaling and self-collision</td><td>GMR<sup class="cite"><a href="#s6">[6]</a></sup> (named in the 2026-10-25 compute decision and in <code>ACKNOWLEDGMENTS.md</code> as a possible alternative)</td><td>PyRoki comes with ProtoMotions' Kimodo route (SOMA converter and keypoint extraction), so no converter of Marvin Bot's own is needed.</td></tr>
+<tr><td>Tracker framework</td><td>ProtoMotions on Newton<sup class="cite"><a href="#s4">[4]</a></sup></td><td>mjlab's BeyondMimic task (kept as a fallback), BeyondMimic's original code</td><td>One framework for retargeting, motion library and training.</td></tr>
+<tr><td>Skills by tracking vs by reward</td><td>Tracking for skills beyond walking</td><td>Reward per skill</td><td>A new skill is a new clip. The command-driven walking and stair policies stay: a tracker needs a reference to follow, and a joystick does not produce one.</td></tr>
+<tr><td>Not yet tried</td><td>–</td><td>A style discriminator (AMP), BeyondMimic's gain rule, a stronger smoothness term</td><td>Listed in <code>docs/decisions.md</code> (2026-10-29) as next options for the two-hand wave and the clap.</td></tr>
+</tbody></table></div>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b>
+<ul>
+<li><b>Arm and leg scale.</b> <code>sim/motion/README.md</code> says the legs scale by 0.69 and the arms by 0.79, and a code comment says "0.79 for the 0.443 m reach of a 50 mm shoulder drop". The same script computes its scales from the current description: (0.325 + 0.315)/0.853 = <b>0.750</b> for the legs and (0.025 + 0.200 + 0.188 + 0.005)/0.56 = <b>0.746</b> for the arms, since the shoulder-roll offset in <code>skeleton.yaml</code> is now 25 mm. The README numbers appear to date from the 1.29 m body; the playground's "Marvin Bot today" uses the computed values. Which values the trained 25-clip tracker's references used is not recorded.</li>
+<li><b>Shoulder height scale.</b> The README says "0.75 high"; the code multiplies 0.75 by the ratio of the robot's shoulder-above-hip height to the source's, which is 0.955 on the 1.44 m body.</li>
+<li><b>Samples per clip.</b> <code>docs/decisions.md</code> (2026-10-28) says the best of four samples is kept, by foot sliding and crossing. The current script keeps the sample with the fewest failed skill checks first, then the least sliding, crossing and jerk, and the README says 8 samples were used for some clips.</li>
+<li><b>Retargeter.</b> The 2026-10-25 compute decision names GMR for retargeting; the implemented pipeline uses PyRoki.</li>
+<li><b>BeyondMimic vs ProtoMotions sampling.</b> The paper samples one-second bins inside each clip by failure rate; ProtoMotions' evaluator re-weights whole clips. Both are called adaptive sampling.</li>
+</ul></div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>How to scale: by height, by limb length, or per body part. Per body part keeps the feet on the floor and the knees straight, at the cost of changing the motion's proportions.</li>
+<li>Which joint limits to relax (the coupled shoulder roll is already relaxed with the arm forward) and which skills to drop because the body cannot do them (no waist pitch: no picking things off the floor).</li>
+<li>Reward tolerances: tighter σ for precise poses vs looser for faster early learning; whether to add terms (joint angles, contacts) or a style discriminator (a second network that scores whether a motion "looks human"). Each extra term fixes one failure but adds a weight to tune and another hours-long training run to test it.</li>
+<li>How many bodies to score, and whether hands deserve their own term. Fewer bodies make each one count more (no hanging arm) but leave the unscored ones free to do odd things (the shaking head).</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<div class="callout"><b>Where this leads</b> This page reused page 16's machinery (PPO, rewards, thousands of simulated robots) with a reward that says "copy this". <a href="18-wbc-vla.html">Page 18</a> looks at how tracked skills, walking and higher-level models that understand language and images fit together into whole-body control; <a href="20-sim-to-real.html">page 20</a> covers the checks a tracker still needs before it runs on hardware.</div>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2508.08241">BeyondMimic (Liao et al., 2025)</a>: read the supplementary material for the exact rewards, terminations, adaptive sampling and the PD-gain rule.</li>
+<li><a href="https://arxiv.org/abs/2510.02252">Retargeting Matters / GMR (Araújo et al., 2025)</a>: a careful study of how retargeting artefacts hurt tracking.</li>
+<li><a href="https://arxiv.org/abs/2505.03728">PyRoki (Kim et al., 2025)</a>: how kinematic problems become composable costs.</li>
+<li><a href="https://github.com/nv-tlabs/kimodo">Kimodo</a>: the prompting advice and constraint types.</li>
+<li><a href="https://github.com/NVlabs/ProtoMotions">ProtoMotions</a>: the training framework, with BeyondMimic-style experiments.</li>
+<li><a href="https://arxiv.org/abs/2511.07820">SONIC (Luo et al., 2025)</a>: what motion tracking looks like scaled to 700 hours of data; see <a href="18-wbc-vla.html">page 18</a>.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://arxiv.org/abs/2508.08241">Q. Liao, T. E. Truong, X. Huang, Y. Gao, G. Tevet, K. Sreenath, C. K. Liu, "BeyondMimic: From Motion Tracking to Versatile Humanoid Control via Guided Diffusion", arXiv:2508.08241, 2025</a> <span class="used">— used for: tracking formulation, observations, anchor body, kernel form, σ values and weights, penalties, terminations, adaptive sampling.</span></li>
+  <li id="s2"><a href="https://github.com/nv-tlabs/kimodo">NVIDIA, Kimodo repository (nv-tlabs/kimodo)</a> <span class="used">— used for: what Kimodo is, constraint types, skeletons, licences of code and models.</span></li>
+  <li id="s3"><a href="https://arxiv.org/abs/2505.03728">C. M. Kim, B. Yi, H. Choi, Y. Ma, K. Goldberg, A. Kanazawa, "PyRoki: A Modular Toolkit for Robot Kinematic Optimization", arXiv:2505.03728, 2025</a> <span class="used">— used for: retargeting as cost minimisation, Levenberg–Marquardt solver in JAX.</span></li>
+  <li id="s4"><a href="https://github.com/NVlabs/ProtoMotions">NVIDIA, ProtoMotions repository (NVlabs/ProtoMotions)</a> <span class="used">— used for: BeyondMimic-style experiment config (future frames 1/2/4/8, per-clip motion weights).</span></li>
+  <li id="s5"><a href="https://arxiv.org/abs/2603.15546">D. Rempe, M. Petrovich, Y. Yuan et al., "Kimodo: Scaling Controllable Human Motion Generation", arXiv:2603.15546, 2026</a> <span class="used">— used for: Kimodo as a kinematic motion diffusion model.</span></li>
+  <li id="s6"><a href="https://arxiv.org/abs/2510.02252">J. P. Araújo, Y. Ze, P. Xu, J. Wu, C. K. Liu, "Retargeting Matters: General Motion Retargeting for Humanoid Motion Tracking", arXiv:2510.02252, 2025</a> <span class="used">— used for: GMR, non-uniform scaling, effect of retargeting artefacts on tracking.</span></li>
+  <li id="s7"><a href="https://zenodo.org/records/8127870">I. Mason, S. Starke, T. Komura, 100STYLE dataset (CC-BY-4.0), 2022</a> <span class="used">— used for: the alternative motion source.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="16-rl-walking.html"><span>← Previous</span>16 Reinforcement learning for walking</a>
+  <a class="next" href="18-wbc-vla.html"><span>Next →</span>18 Whole-body control and VLA models</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const D2R = Math.PI/180, R2D = 180/Math.PI;
+const NS = 'http://www.w3.org/2000/svg';
+
+/* ---------------- vector helpers (x forward, y left, z up) ---------------- */
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s], norm=a=>Math.hypot(a[0],a[1],a[2]);
+// pitch: rotate the "down" vector forward by p (Ry(-p))
+const P=(v,p)=>{const c=Math.cos(p),s=Math.sin(p);return [v[0]*c-v[2]*s,v[1],v[0]*s+v[2]*c];};
+const Rl=(v,r)=>{const c=Math.cos(r),s=Math.sin(r);return [v[0],v[1]*c-v[2]*s,v[1]*s+v[2]*c];};
+const Yw=(v,y)=>{const c=Math.cos(y),s=Math.sin(y);return [v[0]*c-v[1]*s,v[0]*s+v[1]*c,v[2]];};
+const torsoRot=(v,lean)=>P(v,-lean); // pelvis pitched forward by lean
+
+/* ---------------- bodies ---------------- */
+const HH=1.75;
+const HUMAN={ thigh:0.4265,shin:0.4265,ankle:0.079,hipHalf:0.09,heel:0.07,toe:0.19,
+  sh:[-0.03,0.18,0.4725],off:[0,0,0],upper:0.315,fore:0.245,hand:0.19,neck:0.56,headTop:HH };
+const ROBOT={ thigh:0.325,shin:0.315,ankle:0.060,hipHalf:0.100,heel:0.09,toe:0.15,
+  sh:[0.025,0.110,0.465],off:[0,0.048,-0.025],upper:0.200,fore:0.188,hand:0.181,neck:0.525,headTop:1.438,
+  lim:{hip:[-30,120],roll:[-30,45],knee:[0,130],ankle:[-40,40],sp:[-60,180],sr:[-20,120],sy:[-150,150],el:[0,135]} };
+const COUPLED=[[20,0],[45,-10],[75,-10],[90,-20],[135,-20],[150,0]];
+function rollMin(p){ // degrees
+  if(p<=COUPLED[0][0]||p>=COUPLED[COUPLED.length-1][0]) return 0;
+  for(let i=0;i<COUPLED.length-1;i++){const [a,va]=COUPLED[i],[b,vb]=COUPLED[i+1]; if(p>=a&&p<=b) return va+(vb-va)*(p-a)/(b-a);}
+  return 0;}
+
+/* leg FK in pelvis frame: returns knee, ankle (relative to pelvis) */
+function legFK(B,side,th,ph,kn){ // radians; side +1 left, -1 right
+  const hip=[0,side*B.hipHalf,0];
+  const t=Rl(P([0,0,-B.thigh],th),side*ph), s=Rl(P([0,0,-B.shin],th-kn),side*ph);
+  const knee=add(hip,t); return {hip,knee,ank:add(knee,s)};}
+/* arm FK in torso frame (relative to pelvis) */
+function armFK(B,side,q){ // q=[pitch,roll,yaw,elbow] radians
+  const S=[B.sh[0],side*B.sh[1],B.sh[2]];
+  const r0=add(S,P([B.off[0],side*B.off[1],B.off[2]],q[0]));
+  const up=v=>P(Rl(v,side*q[1]),q[0]);
+  const el=add(r0,up([0,0,-B.upper]));
+  const fd=up(Yw(P([0,0,-1],q[3]),side*q[2]));
+  const wr=add(el,mul(fd,B.fore)), hd=add(wr,mul(fd,B.hand*0.6));
+  return {S,r0,el,wr,hd};}
+
+/* ---------------- human motions (degrees; keyframes) ---------------- */
+const STAND={p:0,lth:4,lph:2,lkn:6,rth:4,rph:2,rkn:6,la:[5,8,0,15],ra:[5,8,0,15]};
+function K(t,o){return [t,Object.assign(JSON.parse(JSON.stringify(STAND)),o)];}
+const MOTIONS={
+ reach:[K(0,{}),K(0.4,{}),K(1.4,{p:12,lth:14,rth:14,lkn:8,rkn:8,la:[95,-6,0,4],ra:[95,-6,0,4]}),K(2.6,{p:12,lth:14,rth:14,lkn:8,rkn:8,la:[95,-6,0,4],ra:[95,-6,0,4]}),K(3.6,{}),K(4,{})],
+ clap:(()=>{const a={la:[62,6,0,78],ra:[62,6,0,78]},m={la:[62,-30,0,78],ra:[62,-30,0,78]};
+   return [K(0,{}),K(0.6,a),K(1.0,m),K(1.4,a),K(1.8,m),K(2.2,a),K(2.6,m),K(3.2,a),K(4,{})];})(),
+ squat:[K(0,{la:[85,0,0,5],ra:[85,0,0,5]}),K(0.3,{la:[88,0,0,5],ra:[88,0,0,5]}),
+   K(1.2,{p:25,lth:93,rth:93,lkn:108,rkn:108,la:[85,0,0,5],ra:[85,0,0,5]}),K(1.6,{la:[85,0,0,5],ra:[85,0,0,5]}),
+   K(2.0,{la:[85,0,0,5],ra:[85,0,0,5]}),K(3.0,{p:24,lth:124,rth:124,lkn:140,rkn:140,la:[90,0,0,5],ra:[90,0,0,5]}),K(3.3,{p:24,lth:124,rth:124,lkn:140,rkn:140,la:[90,0,0,5],ra:[90,0,0,5]}),K(4,{la:[85,0,0,5],ra:[85,0,0,5]})],
+ wave:(()=>{const u={ra:[15,100,90,70]},v={ra:[15,100,90,112]};
+   return [K(0,{}),K(0.7,u),K(1.1,v),K(1.5,u),K(1.9,v),K(2.3,u),K(2.7,v),K(3.2,u),K(4,{})];})(),
+ wave2:(()=>{const u={la:[10,150,90,30],ra:[10,150,90,30]},v={la:[10,150,90,70],ra:[10,150,90,70]};
+   return [K(0,{}),K(0.8,u),K(1.2,v),K(1.6,u),K(2.0,v),K(2.4,u),K(2.8,v),K(3.3,u),K(4,{})];})(),
+ march:(()=>{const L={lth:70,lkn:85,la:[-20,8,0,30],ra:[30,8,0,40]},R={rth:70,rkn:85,la:[30,8,0,40],ra:[-20,8,0,30]};
+   return [K(0,{}),K(0.5,L),K(1.0,{}),K(1.5,R),K(2.0,{}),K(2.5,L),K(3.0,{}),K(3.5,R),K(4,{})];})()
+};
+const FPS=25, NF=100;
+function lerpPose(a,b,u){const s=u*u*(3-2*u),o={};for(const k in a){o[k]=Array.isArray(a[k])?a[k].map((x,i)=>x+(b[k][i]-x)*s):a[k]+(b[k]-a[k])*s;}return o;}
+function poseAt(keys,t){for(let i=0;i<keys.length-1;i++){if(t<=keys[i+1][0]){return lerpPose(keys[i][1],keys[i+1][1],(t-keys[i][0])/(keys[i+1][0]-keys[i][0]));}}return keys[keys.length-1][1];}
+
+/* human frame: world keypoints; pelvis placed so the stance (lower) foot stays at its rest spot */
+function humanFrame(ps){
+  const B=HUMAN,lean=ps.p*D2R;
+  const legs=[1,-1].map(sd=>{const k=sd>0?'l':'r';const f=legFK(B,sd,ps[k+'th']*D2R,ps[k+'ph']*D2R,ps[k+'kn']*D2R);
+    const a=(ps[k+'kn']-ps[k+'th']+ps.p)*D2R; // foot flat
+    return {hip:torsoRot(f.hip,lean),knee:torsoRot(f.knee,lean),ank:torsoRot(f.ank,lean),fp:(ps[k+'th']-ps[k+'kn']+(a*R2D))*D2R-lean};});
+  // stance = lower ankle
+  const st=legs[0].ank[2]<=legs[1].ank[2]+1e-9?0:1;
+  const restA=legFK(B,1,STAND.lth*D2R,STAND.lph*D2R,STAND.lkn*D2R).ank;
+  const pel=[restA[0]-legs[st].ank[0],0,B.ankle-legs[st].ank[2]];
+  const W=v=>add(pel,v);
+  const arms=[1,-1].map(sd=>{const q=(sd>0?ps.la:ps.ra).map(x=>x*D2R);const f=armFK(B,sd,q);
+    return {S:W(torsoRot(f.S,lean)),el:W(torsoRot(f.el,lean)),wr:W(torsoRot(f.wr,lean)),hd:W(torsoRot(f.hd,lean)),q};});
+  const neck=W(torsoRot([B.sh[0],0,B.neck],lean)), head=W(torsoRot([B.sh[0]+0.02,0,B.neck+0.2],lean));
+  return {pel,lean,legs:legs.map(l=>({hip:W(l.hip),knee:W(l.knee),ank:W(l.ank),fp:l.fp})),arms,neck,head,ps};
+}
+
+/* ---------------- scaling (as scale_keypoints) ---------------- */
+function scaleFrame(h,S){
+  const T={};const g=v=>[v[0],v[1],v[2]];
+  if(S.mode==='uni'){const s=S.su; const sc=v=>mul(v,s);
+    T.pel=sc(h.pel);T.legs=h.legs.map(l=>({knee:sc(l.knee),ank:sc(l.ank)}));
+    T.arms=h.arms.map(a=>({S:sc(a.S),el:sc(a.el),wr:sc(a.wr)}));}
+  else{const sl=S.sl,sa=S.sa;const sc=v=>mul(v,sl);
+    T.pel=sc(h.pel);
+    T.legs=h.legs.map((l,i)=>{const side=i===0?1:-1;const kn=sc(l.knee),an=sc(l.ank);
+      if(S.fixTorso){kn[1]+=side*0.015;an[1]+=side*0.03;} return {knee:kn,ank:an};});
+    const sw=S.fixTorso?0.62:sl, fwd=S.fixTorso?0.065:0;
+    T.arms=h.arms.map(a=>{const d=sub(a.S,h.pel);const Sn=add(T.pel,[d[0]*sw+fwd,d[1]*sw,d[2]*S.st]);
+      const f=v=>add(Sn,mul(sub(v,a.S),sa));return {S:Sn,el:f(a.el),wr:f(a.wr)};});}
+  return T;}
+
+/* ---------------- robot solve ---------------- */
+function legIK(B,side,dl){ // dl: target ankle relative to hip joint, pelvis frame
+  const ph=Math.atan2(side*dl[1],-dl[2]); const zp=-Math.hypot(dl[1],dl[2]);
+  const r=Math.hypot(dl[0],zp),T=B.thigh,S=B.shin;
+  let kn=0; if(r<T+S){const c=(T*T+S*S-r*r)/(2*T*S);kn=Math.PI-Math.acos(Math.max(-1,Math.min(1,c)));}
+  const g=Math.atan2(dl[0],-zp); const th=g+Math.atan2(S*Math.sin(kn),T+S*Math.cos(kn));
+  return [th,ph,kn];}
+const clampD=(v,l)=>Math.max(l[0]*D2R,Math.min(l[1]*D2R,v));
+function solve4(x){ // 4x4 linear system, x = augmented [A|b]
+  const n=4;for(let i=0;i<n;i++){let m=i;for(let r=i+1;r<n;r++)if(Math.abs(x[r][i])>Math.abs(x[m][i]))m=r;[x[i],x[m]]=[x[m],x[i]];
+    const pv=x[i][i]||1e-12;for(let r=0;r<n;r++){if(r===i)continue;const f=x[r][i]/pv;for(let c=i;c<=n;c++)x[r][c]-=f*x[i][c];}}
+  return x.map((row,i)=>row[n]/(row[i]||1e-12));}
+function armIK(B,side,tS,tEl,tWr,q0,limited){ // targets relative to pelvis (torso frame)
+  let q=q0.slice();const wE=0.3,wR=0.003;
+  const proj=q=>{if(!limited)return q;const L=B.lim;q[0]=clampD(q[0],L.sp);
+    const rmin=Math.max(L.sr[0],rollMin(q[0]*R2D));q[1]=Math.max(rmin*D2R,Math.min(L.sr[1]*D2R,q[1]));q[2]=clampD(q[2],L.sy);q[3]=clampD(q[3],L.el);return q;};
+  const res=q=>{const f=armFK(B,side,q);const a=sub(f.wr,tWr),b=mul(sub(f.el,tEl),Math.sqrt(wE));
+    return [...a,...b,...q.map((v,i)=>(v-q0[i])*Math.sqrt(wR))];};
+  q=proj(q);
+  for(let it=0;it<30;it++){const r=res(q);const J=[];const h=1e-4;
+    for(let j=0;j<4;j++){const qq=q.slice();qq[j]+=h;const r2=res(qq);J.push(r2.map((v,i)=>(v-r[i])/h));}
+    const A=[];for(let i=0;i<4;i++){A.push([]);for(let j=0;j<4;j++){let s=0;for(let k=0;k<r.length;k++)s+=J[i][k]*J[j][k];A[i].push(s+(i===j?1e-3:0));}
+      let b=0;for(let k=0;k<r.length;k++)b-=J[i][k]*r[k];A[i].push(b);}
+    const d=solve4(A);for(let j=0;j<4;j++)q[j]+=Math.max(-0.3,Math.min(0.3,d[j]));q=proj(q);}
+  return q;}
+
+function robotFrame(h,T){
+  const B=ROBOT,lean=h.lean,L=B.lim;
+  const inv=v=>P(v,lean); // world->pelvis frame rotation (inverse of torsoRot)
+  const viol=[];
+  const legs=[1,-1].map((sd,i)=>{const dl=sub(inv(sub(T.legs[i].ank,T.pel)),[0,sd*B.hipHalf,0]);
+    const need=legIK(B,sd,dl); const q=[clampD(need[0],L.hip),Math.max(L.roll[0]*D2R,Math.min(L.roll[1]*D2R,need[1])),clampD(need[2],L.knee)];
+    const nm=sd>0?'left':'right';
+    if(need[2]*R2D>L.knee[1]+0.5)viol.push([nm+' knee',need[2]*R2D,L.knee[1]]);
+    if(need[0]*R2D>L.hip[1]+0.5)viol.push([nm+' hip pitch',need[0]*R2D,L.hip[1]]);
+    if(need[0]*R2D<L.hip[0]-0.5)viol.push([nm+' hip pitch',need[0]*R2D,L.hip[0]]);
+    const aNeed=(q[2]-q[0])*R2D+lean*R2D; const a=Math.max(L.ankle[0],Math.min(L.ankle[1],aNeed));
+    if(Math.abs(aNeed)>L.ankle[1]+0.5)viol.push([nm+' ankle pitch',aNeed,aNeed>0?L.ankle[1]:L.ankle[0]]);
+    const f=legFK(B,sd,q[0],q[1],q[2]); const fp=(q[0]-q[2])+a*D2R-lean;
+    return {hip:add(T.pel,torsoRot(f.hip,lean)),knee:add(T.pel,torsoRot(f.knee,lean)),ank:add(T.pel,torsoRot(f.ank,lean)),fp,q,hit:{knee:need[2]*R2D>L.knee[1]+0.5,hip:need[0]*R2D>L.hip[1]+0.5||need[0]*R2D<L.hip[0]-0.5,ankle:Math.abs(aNeed)>L.ankle[1]+0.5}};});
+  const arms=[1,-1].map((sd,i)=>{const t=T.arms[i];const rel=v=>inv(sub(v,T.pel));
+    const q0=h.arms[i].q;const free=armIK(B,sd,rel(t.S),rel(t.el),rel(t.wr),q0,false);
+    const q=armIK(B,sd,rel(t.S),rel(t.el),rel(t.wr),free,true);
+    const nm=sd>0?'left':'right';const fd=free.map(x=>x*R2D);const hit={sp:false,sr:false,el:false};
+    const rmin=Math.max(L.sr[0],rollMin(Math.max(L.sp[0],Math.min(L.sp[1],fd[0]))));
+    if(fd[1]>L.sr[1]+1){viol.push([nm+' shoulder roll',fd[1],L.sr[1]]);hit.sr=true;}
+    if(fd[1]<rmin-1){viol.push([nm+' shoulder roll',fd[1],rmin,'coupled']);hit.sr=true;}
+    if(fd[0]>L.sp[1]+1||fd[0]<L.sp[0]-1){viol.push([nm+' shoulder pitch',fd[0],fd[0]>0?L.sp[1]:L.sp[0]]);hit.sp=true;}
+    if(fd[3]>L.el[1]+1){viol.push([nm+' elbow',fd[3],L.el[1]]);hit.el=true;}
+    const f=armFK(B,sd,q);const W=v=>add(T.pel,torsoRot(v,lean));
+    return {S:W(f.S),r0:W(f.r0),el:W(f.el),wr:W(f.wr),hd:W(f.hd),q,free,hit};});
+  const neck=add(T.pel,torsoRot([B.sh[0],0,B.neck],lean)),head=add(T.pel,torsoRot([B.sh[0]+0.02,0,B.neck+0.13],lean));
+  return {pel:T.pel,lean,legs,arms,neck,head,viol};}
+
+function soleZ(B,leg){const heel=add(leg.ank,P([-B.heel,0,-B.ankle],-leg.fp));const toe=add(leg.ank,P([B.toe,0,-B.ankle],-leg.fp));
+  return {heel,toe,z:Math.min(heel[2],toe[2]),flat:add(leg.ank,[0,0,-B.ankle])};}
+function shiftF(F,dz){const s=v=>[v[0],v[1],v[2]+dz];F.pel=s(F.pel);F.neck=s(F.neck);F.head=s(F.head);
+  F.legs.forEach(l=>{l.hip=s(l.hip);l.knee=s(l.knee);l.ank=s(l.ank);});F.arms.forEach(a=>{for(const k of ['S','r0','el','wr','hd'])if(a[k])a[k]=s(a[k]);});}
+
+/* ---------------- whole clip ---------------- */
+let CLIP=null;
+function computeClip(){
+  const keys=MOTIONS[state.motion];const S={mode:state.mode,su:state.su,sl:state.sl,sa:state.sa,st:state.st,fixTorso:state.fixTorso};
+  const H=[],R=[],T=[];
+  for(let i=0;i<NF;i++){const h=humanFrame(poseAt(keys,i/FPS));const t=scaleFrame(h,S);H.push(h);T.push(t);R.push(robotFrame(h,t));}
+  // human contacts
+  const hc=H.map((h,i)=>h.legs.map((l,k)=>{const j=Math.max(0,i-1),m=Math.min(NF-1,i+1);const v=Math.hypot(H[m].legs[k].ank[0]-H[j].legs[k].ank[0],H[m].legs[k].ank[2]-H[j].legs[k].ank[2])*FPS/Math.max(1,m-j);return soleZ(HUMAN,l).z<0.02&&v<0.15;}));
+  // robot soles before fix
+  let minS=R.map(r=>Math.min(...r.legs.map(l=>soleZ(ROBOT,l).z)));
+  let dz=0;
+  if(state.fixSole){const ms=minS.slice().sort((a,b)=>a-b);dz=-ms[Math.floor(ms.length*0.5)];}
+  // the fix moves the robot, not the targets (targets stay where scaling put them)
+  R.forEach((r,i)=>{shiftF(r,dz);});
+  // metrics
+  let he=0,hm=0,n=0,slide=0,ns=0,stance=[],lim=0;
+  for(let i=0;i<NF;i++){const r=R[i],t=T[i];
+    r.arms.forEach((a,k)=>{const e=norm(sub(a.wr,t.arms[k].wr));he+=e;hm=Math.max(hm,e);n++;});
+    if(r.viol.length)lim++;
+    r.legs.forEach((l,k)=>{if(hc[i][k]){stance.push(soleZ(ROBOT,l).z);
+      if(i>0&&hc[i-1][k]){const a=R[i-1].legs[k].ank,b=l.ank;slide+=Math.hypot(b[0]-a[0],b[1]-a[1])*FPS;ns++;}}});}
+  stance.sort((a,b)=>a-b);
+  const med=stance.length?stance[Math.floor(stance.length/2)]:0;
+  const pen=stance.length?Math.min(0,stance[0], ...R.map(r=>Math.min(...r.legs.map(l=>soleZ(ROBOT,l).z)))):0;
+  const all=[];R.forEach(r=>r.viol.forEach(v=>all.push(v)));
+  const worst={};all.forEach(v=>{const k=v[0]+(v[3]||'');const ex=Math.abs(v[1]-v[2]);if(!worst[k]||ex>Math.abs(worst[k][1]-worst[k][2]))worst[k]=v;});
+  CLIP={H,R,T,dz,handMean:he/n,handMax:hm,soleMed:med,pen,slide:ns?slide/ns:0,knee0:R[0].legs[0].q[2]*R2D,lim,worst:Object.values(worst),pelT:T[0].pel[2]};
+}
+
+/* ---------------- drawing ---------------- */
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function drawFrame(i){
+  const svg=$('view');svg.innerHTML='';
+  const side=state.view==='side';const sc=200, floorY=392;
+  const proj=(v,cx)=>side?[cx+v[0]*sc,floorY-v[2]*sc]:[cx-v[1]*sc,floorY-v[2]*sc];
+  el('rect',{x:0,y:0,width:760,height:420,fill:'#0c1015'},svg);
+  // grid
+  for(let m=0;m<=2;m+=0.25){const y=floorY-m*sc;el('line',{x1:0,x2:760,y1:y,y2:y,stroke:'#1a222c','stroke-width':1},svg);
+    if(m>0)el('text',{x:4,y:y-3,fill:'#56636f','font-size':10,'font-family':'monospace'},svg).textContent=m.toFixed(2)+' m';}
+  el('line',{x1:0,x2:760,y1:floorY,y2:floorY,stroke:'#56636f','stroke-width':2},svg);
+  el('line',{x1:380,x2:380,y1:10,y2:410,stroke:'#2a3340','stroke-dasharray':'4 4'},svg);
+  const h=CLIP.H[i],r=CLIP.R[i],t=CLIP.T[i];
+  const cxH=190-(side?h.pel[0]*sc*0:0), cxR=575;
+  const line=(a,b,c,w,cx,dash)=>{const p=proj(a,cx),q=proj(b,cx);el('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:c,'stroke-width':w,'stroke-linecap':'round','stroke-dasharray':dash||''},svg);};
+  const dot=(a,c,rad,cx,fill)=>{const p=proj(a,cx);el('circle',{cx:p[0],cy:p[1],r:rad,fill:fill===undefined?c:fill,stroke:c,'stroke-width':1.5},svg);};
+  const order=side?[1,0]:[0,1]; // draw far side first
+  // human
+  const hc='#cfd8e3', hcF='#7f8b97';
+  const drawBody=(F,B,cx,col,colF,isRobot)=>{
+    order.forEach(k=>{const l=F.legs[k];const c=(side&&k===1)?colF:col;const s=soleZ(B,l);
+      line(F.pel,l.hip,c,4,cx);line(l.hip,l.knee,c,5,cx);line(l.knee,l.ank,c,5,cx);
+      if(side){line(s.heel,s.toe,c,4,cx);line(l.ank,s.heel,c,2,cx);line(l.ank,s.toe,c,2,cx);}else{line(l.ank,s.flat,c,4,cx);const p=add(s.flat,[0,0.05,0]),q=add(s.flat,[0,-0.05,0]);line(p,q,c,4,cx);}
+      if(isRobot){if(l.hit.knee)dot(l.knee,'var(--bad)',6,cx);if(l.hit.hip)dot(l.hip,'var(--bad)',6,cx);if(l.hit.ankle)dot(l.ank,'var(--bad)',6,cx);}});
+    const shc=[(F.arms[0].S[0]+F.arms[1].S[0])/2,(F.arms[0].S[1]+F.arms[1].S[1])/2,(F.arms[0].S[2]+F.arms[1].S[2])/2];
+    line(F.pel,shc,col,6,cx);line(F.arms[0].S,F.arms[1].S,col,4,cx);line(shc,F.neck,col,4,cx);
+    const hp=proj(F.head,cx);el('circle',{cx:hp[0],cy:hp[1],r:(isRobot?0.11:0.11)*sc,fill:'none',stroke:col,'stroke-width':3},svg);
+    order.forEach(k=>{const a=F.arms[k];const c=(side&&k===1)?colF:col;
+      if(a.r0)line(a.S,a.r0,c,4,cx);line(a.r0||a.S,a.el,c,4,cx);line(a.el,a.wr,c,4,cx);line(a.wr,a.hd,c,3,cx);
+      if(isRobot){if(a.hit.sr||a.hit.sp)dot(a.S,'var(--bad)',6,cx);if(a.hit.el)dot(a.el,'var(--bad)',6,cx);}});
+  };
+  drawBody(h,HUMAN,cxH,hc,hcF,false);
+  // robot targets
+  const tc='#4fb3ff';
+  [0,1].forEach(k=>{dot(t.legs[k].ank,tc,4,cxR,'none');dot(t.legs[k].knee,tc,4,cxR,'none');dot(t.arms[k].S,tc,4,cxR,'none');dot(t.arms[k].el,tc,4,cxR,'none');dot(t.arms[k].wr,tc,5,cxR,'none');});
+  dot(t.pel,tc,5,cxR,'none');
+  drawBody(r,ROBOT,cxR,'#ffb454','#a7783a',true);
+  // errors: wrist
+  [0,1].forEach(k=>{const e=norm(sub(r.arms[k].wr,t.arms[k].wr));if(e>0.02)line(r.arms[k].wr,t.arms[k].wr,'#ff6b6b',2,cxR,'3 3');
+    const ea=norm(sub(r.legs[k].ank,t.legs[k].ank));if(ea>0.02)line(r.legs[k].ank,t.legs[k].ank,'#ff6b6b',2,cxR,'3 3');});
+  el('text',{x:12,y:22,fill:'#cfd8e3','font-size':13},svg).textContent=`Human source, ${HH.toFixed(2)} m`;
+  el('text',{x:392,y:22,fill:'#ffb454','font-size':13},svg).textContent=`Marvin Bot, 1.44 m · ${side?'side':'front'} view`;
+  el('text',{x:392,y:40,fill:'#9aa7b4','font-size':11},svg).textContent=state.fixSole?`foot-on-floor fix: clip moved ${(CLIP.dz*100>=0?'+':'')}${(CLIP.dz*100).toFixed(1)} cm`:'no foot-on-floor fix (pelvis pinned to its target)';
+  $('o_time').textContent=(i/FPS).toFixed(1)+' s';
+  drawCoupled(i);
+}
+function drawCoupled(i){
+  const svg=$('coupled');svg.innerHTML='';
+  el('rect',{x:0,y:0,width:760,height:230,fill:'#0c1015'},svg);
+  const x0=60,x1=740,y0=22,y1=205;const px=p=>x0+(p+60)/(240)*(x1-x0), py=r=>y1-(r+40)/(200)*(y1-y0);
+  // forbidden regions: below rollMin(p) and below -20, above 120
+  let d=`M${px(-60)},${py(-40)}`;for(let p=-60;p<=180;p+=2)d+=` L${px(p)},${py(Math.max(-20,rollMin(p)))}`;d+=` L${px(180)},${py(-40)} Z`;
+  el('path',{d,fill:'rgba(255,107,107,.18)',stroke:'#ff6b6b','stroke-width':1},svg);
+  el('rect',{x:px(-60),y:py(160),width:px(180)-px(-60),height:py(120)-py(160),fill:'rgba(255,107,107,.18)'},svg);
+  for(const r of [-20,0,60,120]){el('line',{x1:x0,x2:x1,y1:py(r),y2:py(r),stroke:'#1f2933'},svg);el('text',{x:x0-6,y:py(r)+4,fill:'#56636f','font-size':10,'text-anchor':'end'},svg).textContent=r+'°';}
+  for(const p of [-60,0,45,90,135,180]){el('text',{x:px(p),y:y1+14,fill:'#56636f','font-size':10,'text-anchor':'middle'},svg).textContent=p+'°';}
+  el('text',{x:x0,y:13,fill:'#9aa7b4','font-size':11},svg).textContent='Shoulder roll (up) vs shoulder pitch (along) the motion asks for · shaded: outside the limits';
+  [0,1].forEach(k=>{let dd='';CLIP.R.forEach((r,j)=>{const q=r.arms[k].free;dd+=(j?' L':'M')+px(q[0]*R2D)+','+py(Math.max(-40,Math.min(160,q[1]*R2D)));});
+    el('path',{d:dd,fill:'none',stroke:'#b48cff','stroke-width':1.5,opacity:k?0.6:1},svg);
+    const q=CLIP.R[i].arms[k].free;el('circle',{cx:px(q[0]*R2D),cy:py(Math.max(-40,Math.min(160,q[1]*R2D))),r:5,fill:CLIP.R[i].arms[k].hit.sr||CLIP.R[i].arms[k].hit.sp?'#ff6b6b':'#b48cff'},svg);});
+}
+
+/* ---------------- state, readouts ---------------- */
+const DEFAULTS={motion:'reach',view:'side',mode:'sep',su:0.822,sl:0.75,sa:0.745,st:0.955,fixSole:true,fixTorso:true,
+  sig:0.3,err:0.03,nb:15,noff:15};
+const state={...DEFAULTS};
+const PRESETS={
+ today:{mode:'sep',sl:0.75,sa:0.745,st:0.955,fixSole:true,fixTorso:true},
+ uniform:{mode:'uni',su:0.822,fixSole:true,fixTorso:false},
+ none:{mode:'uni',su:1.0,fixSole:false,fixTorso:false},
+ small:{mode:'sep',sl:0.72,sa:0.68,st:0.85,fixSole:true,fixTorso:true},
+ wave2:{motion:'wave2',view:'front',mode:'sep',sl:0.75,sa:0.745,st:0.955,fixSole:true,fixTorso:true},
+ squat:{motion:'squat',view:'side',mode:'sep',sl:0.75,sa:0.745,st:0.955,fixSole:true,fixTorso:true}
+};
+function setRO(id,txt,cls){const e=$(id);e.querySelector('.v').textContent=txt;e.className='ro'+(cls?' '+cls:'');}
+function readouts(){
+  const c=CLIP;
+  setRO('r_hand',`${(c.handMean*100).toFixed(1)} / ${(c.handMax*100).toFixed(1)} cm`,c.handMean>0.05?'bad':c.handMean>0.02?'warn':'ok');
+  const s=c.soleMed*100; setRO('r_sole',(s>=0?'+':'')+s.toFixed(1)+' cm'+(c.pen<-0.005?` (dips ${(c.pen*100).toFixed(1)})`:''),Math.abs(s)>2||c.pen<-0.02?'bad':Math.abs(s)>0.5?'warn':'ok');
+  setRO('r_slide',(c.slide*100).toFixed(1)+' cm/s',c.slide>0.04?'bad':c.slide>0.02?'warn':'ok');
+  setRO('r_knee',c.knee0.toFixed(0)+'°',c.knee0>25?'bad':c.knee0>12?'warn':'ok');
+  setRO('r_pel',`${(c.pelT*100).toFixed(0)} cm (robot 70)`,Math.abs(c.pelT-0.70)>0.04?'warn':'ok');
+  setRO('r_lim',`${c.lim} of ${NF}`,c.lim>0?'bad':'ok');
+  const v=$('viol');
+  if(!c.worst.length){v.textContent='No joint limit asked to be broken in this clip.';v.className='viol okv';}
+  else{v.className='viol';v.textContent='Motion asks for: '+c.worst.map(w=>`${w[0]} ${w[1].toFixed(0)}° (${w[3]?'coupled limit':'limit'} ${w[2].toFixed(0)}°)`).join(' · ');}
+}
+let frame=0,playing=true,last=0;
+function recompute(){computeClip();readouts();drawFrame(frame);updateNote();}
+function syncUI(){
+  $('motion').value=state.motion;
+  $('v_side').classList.toggle('on',state.view==='side');$('v_front').classList.toggle('on',state.view==='front');
+  $('m_uni').classList.toggle('on',state.mode==='uni');$('m_sep').classList.toggle('on',state.mode==='sep');
+  $('uniBox').style.display=state.mode==='uni'?'':'none';$('sepBox').style.display=state.mode==='sep'?'':'none';
+  for(const k of ['su','sl','sa','st','sig','err','nb','noff']){$(k).value=state[k];}
+  $('o_su').textContent=state.su.toFixed(3);$('o_sl').textContent=state.sl.toFixed(3);$('o_sa').textContent=state.sa.toFixed(3);$('o_st').textContent=state.st.toFixed(3);
+  $('fixSole').checked=state.fixSole;$('fixTorso').checked=state.fixTorso;
+}
+['su','sl','sa','st'].forEach(k=>$(k).addEventListener('input',e=>{state[k]=parseFloat(e.target.value);syncUI();recompute();}));
+$('motion').addEventListener('change',e=>{state.motion=e.target.value;if(['wave','wave2','clap'].includes(state.motion))state.view='front';else state.view='side';syncUI();recompute();});
+$('v_side').onclick=()=>{state.view='side';syncUI();drawFrame(frame);};
+$('v_front').onclick=()=>{state.view='front';syncUI();drawFrame(frame);};
+$('m_uni').onclick=()=>{state.mode='uni';syncUI();recompute();};
+$('m_sep').onclick=()=>{state.mode='sep';syncUI();recompute();};
+$('fixSole').onchange=e=>{state.fixSole=e.target.checked;recompute();};
+$('fixTorso').onchange=e=>{state.fixTorso=e.target.checked;recompute();};
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{Object.assign(state,PRESETS[b.dataset.preset]);syncUI();recompute();}));
+$('time').addEventListener('input',e=>{frame=parseInt(e.target.value);playing=false;$('play').textContent='Play';drawFrame(frame);});
+$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'Pause':'Play';};
+function tick(ts){if(playing&&ts-last>1000/FPS){last=ts;frame=(frame+1)%NF;$('time').value=frame;drawFrame(frame);}requestAnimationFrame(tick);}
+
+/* ---------------- Playground B: kernel ---------------- */
+const TERMS=[
+ {k:'pos',name:'Body positions (15 bodies, relative to anchor)',w:1.0,s:0.3,u:'m',max:0.5,step:0.005,v:0.03,src:'BeyondMimic'},
+ {k:'ori',name:'Body orientations',w:1.0,s:0.4,u:'rad',max:1.5,step:0.01,v:0.05,src:'BeyondMimic'},
+ {k:'lv',name:'Body linear velocities',w:1.0,s:0.5,u:'m/s',max:2,step:0.01,v:0.1,src:'Marvin Bot: σ 0.5 (BeyondMimic 1.0)'},
+ {k:'av',name:'Body angular velocities',w:1.0,s:3.14,u:'rad/s',max:8,step:0.05,v:0.5,src:'BeyondMimic'},
+ {k:'ap',name:'Anchor (torso) position, global',w:0.5,s:0.3,u:'m',max:0.6,step:0.005,v:0.05,src:'BeyondMimic; added back by Marvin Bot'},
+ {k:'ao',name:'Anchor orientation, global',w:0.5,s:0.4,u:'rad',max:1.5,step:0.01,v:0.05,src:'BeyondMimic'},
+ {k:'jp',name:'Joint angles, all joints (RMS)',w:0.5,s:0.3,u:'rad',max:1.2,step:0.005,v:0.05,src:'Marvin Bot addition'},
+ {k:'ar',name:'Action rate ‖aₜ − aₜ₋₁‖²',w:-0.1,s:null,u:'',max:3,step:0.05,v:0.3,src:'BeyondMimic'},
+ {k:'cm',name:'Feet whose contact differs from the reference',w:-2.0,s:null,u:'feet',max:2,step:1,v:0,src:'Marvin Bot (upstream −0.1)'}
+];
+const RP={
+ crouch:{sig:0.3,err:0.03,nb:15,noff:7,t:{pos:0.03*Math.sqrt(7/15),ori:0.05,lv:0.1,av:0.5,ap:0.03,ao:0.03,jp:0.113*Math.sqrt(6/27),ar:0.3,cm:0}},
+ arm:{sig:0.3,err:0.6,nb:15,noff:1,t:{pos:0.6/Math.sqrt(15),ori:0.3,lv:0.3,av:1,ap:0.03,ao:0.03,jp:0.25,ar:0.3,cm:0}},
+ hop:{sig:0.3,err:0.06,nb:15,noff:15,t:{pos:0.06,ori:0.08,lv:0.4,av:1.5,ap:0.06,ao:0.05,jp:0.12,ar:0.8,cm:1}},
+ behind:{sig:0.3,err:0.4,nb:15,noff:15,t:{pos:0.05,ori:0.08,lv:0.5,av:1,ap:0.4,ao:0.1,jp:0.1,ar:0.4,cm:1}},
+ good:{sig:0.3,err:0.02,nb:15,noff:15,t:{pos:0.02,ori:0.04,lv:0.08,av:0.4,ap:0.02,ao:0.02,jp:0.03,ar:0.2,cm:0}}
+};
+const tv={};TERMS.forEach(t=>tv[t.k]=t.v);
+function buildTerms(){const tb=$('terms').querySelector('tbody');
+  TERMS.forEach(t=>{const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${t.name}<div style="font-size:11px;color:var(--muted)">${t.src}</div></td><td class="num">${t.w}</td><td class="num">${t.s===null?'–':t.s+' '+t.u}</td>
+    <td><input type="range" id="t_${t.k}" min="0" max="${t.max}" step="${t.step}" value="${t.v}" aria-label="${t.name} error"></td><td class="num mono" id="tv_${t.k}"></td><td class="num mono" id="tc_${t.k}"></td><td><span class="bar" id="tb_${t.k}"></span></td>`;
+    tb.appendChild(tr);$('t_'+t.k).addEventListener('input',e=>{tv[t.k]=parseFloat(e.target.value);drawTerms();updateNote();});});}
+function termVal(t,e){return t.s===null?t.w*(t.k==='ar'?e*e:e):t.w*Math.exp(-(e*e)/(t.s*t.s));}
+function drawTerms(){let tot=0;TERMS.forEach(t=>{const e=tv[t.k];const c=termVal(t,e);tot+=c;
+  $('tv_'+t.k).textContent=t.k==='cm'?e.toFixed(0):e.toFixed(3)+' '+t.u;$('tc_'+t.k).textContent=(c>=0?'+':'')+c.toFixed(3);
+  const b=$('tb_'+t.k);b.style.width=Math.min(110,Math.abs(c)*55)+'px';b.style.background=c<0?'var(--bad)':'var(--accent)';
+  $('t_'+t.k).value=e;});
+  $('tot').textContent=tot.toFixed(3);}
+function drawKernel(){
+  const svg=$('kern');svg.innerHTML='';el('rect',{x:0,y:0,width:760,height:300,fill:'#0c1015'},svg);
+  const x0=56,x1=740,y0=20,y1=260,E=0.6;const px=e=>x0+e/E*(x1-x0),py=r=>y1-r*(y1-y0);
+  for(const r of [0,0.25,0.5,0.75,1]){el('line',{x1:x0,x2:x1,y1:py(r),y2:py(r),stroke:'#1f2933'},svg);el('text',{x:x0-6,y:py(r)+4,fill:'#56636f','font-size':11,'text-anchor':'end'},svg).textContent=r.toFixed(2);}
+  for(let e=0;e<=E+1e-9;e+=0.1){el('text',{x:px(e),y:y1+16,fill:'#56636f','font-size':11,'text-anchor':'middle'},svg).textContent=e.toFixed(1)+' m';}
+  el('text',{x:x1,y:y1+32,fill:'#9aa7b4','font-size':11,'text-anchor':'end'},svg).textContent='error of the bodies that are off';
+  const s=state.sig,N=state.nb,no=Math.min(state.noff,state.nb);
+  // curve for one-body-everything (all off) and diluted
+  const curve=(f,col,w,dash)=>{let d='';for(let i=0;i<=200;i++){const e=E*i/200;d+=(i?' L':'M')+px(e)+','+py(f(e));}el('path',{d,fill:'none',stroke:col,'stroke-width':w,'stroke-dasharray':dash||''},svg);};
+  curve(e=>Math.exp(-e*e/(s*s)),'#4fb3ff',2.5);
+  curve(e=>Math.exp(-(no/N)*e*e/(s*s)),'#b48cff',2,'5 4');
+  // sigma marker
+  el('line',{x1:px(s),x2:px(s),y1:y0,y2:y1,stroke:'#56636f','stroke-dasharray':'2 3'},svg);
+  el('text',{x:px(s)+4,y:y0+12,fill:'#9aa7b4','font-size':11},svg).textContent='σ → 0.37';
+  const e=state.err,r=Math.exp(-(no/N)*e*e/(s*s));
+  el('circle',{cx:px(Math.min(e,E)),cy:py(r),r:6,fill:'#ffb454'},svg);
+  el('text',{x:px(Math.min(e,E))+9,y:py(r)-8,fill:'#ffb454','font-size':12},svg).textContent=`r = ${r.toFixed(3)}`;
+  el('text',{x:x0+8,y:y1-10,fill:'#4fb3ff','font-size':11},svg).textContent='solid: all scored bodies off by e';
+  el('text',{x:x0+8,y:y1-26,fill:'#b48cff','font-size':11},svg).textContent=`dashed: ${no} of ${N} bodies off by e (the mean dilutes it)`;
+  const g=-(2*(no/N)*e/(s*s))*r;
+  setRO('k_r',r.toFixed(3),r>0.9?'ok':r>0.5?'warn':'bad');
+  setRO('k_lost',((1-r)*100).toFixed(1)+'%');
+  setRO('k_g',g.toFixed(2)+' /m');
+  setRO('k_rms',(e*Math.sqrt(no/N)*100).toFixed(1)+' cm');
+  $('o_sig').textContent=s.toFixed(2)+' m';$('o_err').textContent=(e*100).toFixed(1)+' cm';$('o_nb').textContent=N;$('o_noff').textContent=no;
+}
+['sig','err','nb','noff'].forEach(k=>$(k).addEventListener('input',e=>{state[k]=parseFloat(e.target.value);drawKernel();updateNote();}));
+document.querySelectorAll('[data-rp]').forEach(b=>b.addEventListener('click',()=>{const p=RP[b.dataset.rp];
+  state.sig=p.sig;state.err=p.err;state.nb=p.nb;state.noff=p.noff;Object.assign(tv,p.t);syncUI();drawKernel();drawTerms();updateNote();}));
+
+/* ---------------- skills table ---------------- */
+const SK=[['Walk','Walking and turning',8.5,6.0],['Walk slow','Walking and turning',8.1,6.6],['Walk back','Walking and turning',7.9,7.0],
+['Jog','Walking and turning',8.8,5.8],['March','Walking and turning',9.2,4.4],['Start stop','Walking and turning',8.8,5.6],
+['Carry walk','Walking and turning',11.4,6.8],['Side left','Walking and turning',10.7,7.8],['Side right','Walking and turning',10.9,7.5],
+['Turn left','Walking and turning',8.2,6.3],['Turn right','Walking and turning',8.4,7.5],['Turn in place','Walking and turning',8.2,4.9],
+['Kick','Whole body',10.7,5.7],['Squat','Whole body',15.8,8.6],['Pick up','Whole body',12.6,3.9],['Bow','Whole body',8.1,4.4],
+['Dance sway','Whole body',9.9,4.4],['Idle','Whole body',9.4,3.7],['Look around','Whole body',8.3,3.2],
+['Clap','Arms and gestures',12.6,11.0],['Wave','Arms and gestures',11.7,6.9],['Wave both','Arms and gestures',34.6,12.1],
+['Point','Arms and gestures',9.3,6.5],['Reach forward','Arms and gestures',18.4,9.3],['Arms raise','Arms and gestures',12.3,8.3]];
+let sortK='j',sortDir=-1;
+function drawSkills(){const tb=$('skills').querySelector('tbody');tb.innerHTML='';
+  const idx={name:0,group:1,j:2,h:3}[sortK];
+  const rows=SK.slice().sort((a,b)=>(a[idx]>b[idx]?1:a[idx]<b[idx]?-1:0)*sortDir);
+  rows.forEach(r=>{const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2].toFixed(1)}</td><td><span class="bar" style="width:${r[2]*4}px;${r[2]>15?'background:var(--bad)':''}"></span></td><td class="num">${r[3].toFixed(1)}</td><td><span class="bar h" style="width:${r[3]*8}px"></span></td>`;tb.appendChild(tr);});}
+document.querySelectorAll('#skills th.sort').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k;if(sortK===k)sortDir*=-1;else{sortK=k;sortDir=(k==='name'||k==='group')?1:-1;}drawSkills();}));
+
+/* ---------------- note ---------------- */
+function updateNote(){
+  const parts=[];const c=CLIP;
+  const motionName=$('motion').selectedOptions[0].textContent;
+  if(state.mode==='uni')parts.push(`uniform keypoint scale ${state.su.toFixed(3)} (height ratio is 0.822)`);
+  else if(state.sl!==DEFAULTS.sl||state.sa!==DEFAULTS.sa||state.st!==DEFAULTS.st)parts.push(`per-part scale: legs ${state.sl.toFixed(3)}, arms ${state.sa.toFixed(3)}, shoulder height ${state.st.toFixed(3)} (repo today: 0.750, 0.746, 0.955)`);
+  if(!state.fixSole)parts.push('no foot-on-floor fix');
+  if(!state.fixTorso&&state.mode==='sep')parts.push('no shoulder/feet adjustment');
+  const kparts=[];
+  if(state.sig!==DEFAULTS.sig)kparts.push(`body-position σ ${state.sig.toFixed(2)} m (repo 0.3)`);
+  if(state.nb!==DEFAULTS.nb)kparts.push(`${state.nb} scored bodies (repo 15)`);
+  const changedTerms=TERMS.filter(t=>tv[t.k]!==t.v);
+  if(!parts.length&&!kparts.length&&!changedTerms.length&&state.motion===DEFAULTS.motion){$('note').textContent='Change a control above to build a note.';return;}
+  let s=`Marvin Bot (1.44 m, 27-DOF humanoid) motion-tracking pipeline: Kimodo clips retargeted with PyRoki (sim/motion/retarget_marvin_bot.py), tracked BeyondMimic-style in ProtoMotions.\n`;
+  s+=`Retargeting test, "${motionName}" from a ${HH} m source`+(parts.length?`, with ${parts.join('; ')}`:' with the repo\'s current per-part scales')+`:\n`;
+  s+=`- hands ${(c.handMean*100).toFixed(1)} cm from their scaled targets on average (max ${(c.handMax*100).toFixed(1)} cm); stance sole ${(c.soleMed*100).toFixed(1)} cm from the floor; foot sliding ${(c.slide*100).toFixed(1)} cm/s in contact; standing knee bend ${c.knee0.toFixed(0)}°; pelvis target ${(c.pelT*100).toFixed(0)} cm vs the robot's 70 cm hip axis.\n`;
+  s+=c.worst.length?`- the motion asks for: ${c.worst.map(w=>`${w[0]} ${w[1].toFixed(0)}° (limit ${w[2].toFixed(0)}°${w[3]?', coupled':''})`).join('; ')}.\n`:'- no joint limit is asked to be broken.\n';
+  if(kparts.length||changedTerms.length){let tot=0;TERMS.forEach(t=>tot+=termVal(t,tv[t.k]));
+    s+=`Reward explored: ${kparts.join('; ')||'repo kernels'}; one-body kernel at e = ${(state.err*100).toFixed(1)} cm gives r = ${Math.exp(-(Math.min(state.noff,state.nb)/state.nb)*state.err*state.err/(state.sig*state.sig)).toFixed(3)}; weighted sum with my errors = ${tot.toFixed(2)} of 5.5.\n`;}
+  s+=`Question: is this scaling/reward choice better than the repo's (sim/motion/README.md, docs/decisions.md 2026-10-29), and what would it change for the weakest clips (two-hand wave 34.6° joint RMS, reach 18.4°, clap hands 11 cm)?`;
+  $('note').textContent=s;}
+$('copy').addEventListener('click',()=>{navigator.clipboard.writeText($('note').textContent).then(()=>{const b=$('copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1200);});});
+
+buildTerms();syncUI();recompute();drawKernel();drawTerms();drawSkills();updateNote();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marvin Bot guide · map of playgrounds</title>
+<meta name="description" content="An interactive guide to the Marvin Bot open humanoid: 22 playgrounds from degrees of freedom to sim-to-real, with a suggested learning path.">
+<style>
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --s1:#4fb3ff; --s2:#ffb454; --s3:#ff6b6b; --s4:#b48cff; --s5:#4cc38a; --s6:#e3d26f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2.2rem;line-height:1.15;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+p{max-width:80ch}
+.lede{font-size:1.15rem;color:var(--muted);max-width:80ch}
+.callout{border-left:4px solid var(--accent2);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:90ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:16px 0}
+.fact{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.fact .k{font-size:12px;color:var(--muted)} .fact .v{font:600 15px/1.3 var(--mono)}
+.mapwrap{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:16px;align-items:start}
+@media (max-width:860px){.mapwrap{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+svg{width:100%;height:auto;display:block}
+.hot{cursor:pointer}
+.hot:hover .shape,.hot:focus .shape,.hot.sel .shape{stroke:#fff;stroke-width:2.5}
+.hot:focus{outline:none}
+#info{min-height:120px}
+#info h3{margin:.2em 0}
+#info .links a{display:inline-block;margin:4px 8px 0 0;font-size:14px}
+.stages{display:grid;gap:14px}
+.stage{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:var(--radius);padding:12px 14px}
+.stage h3{margin:0 0 4px;font-size:1.05rem} .stage .why{color:var(--muted);font-size:14px;margin:0 0 10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.cardlink{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;text-decoration:none;color:var(--text)}
+.cardlink:hover{border-color:var(--c)}
+.cardlink .n{font:600 12px var(--mono);color:var(--c)}
+.cardlink .t{font-weight:600;display:block;margin:2px 0}
+.cardlink .d{font-size:13px;color:var(--muted);line-height:1.45}
+.cardlink .pg{font-size:12px;color:var(--muted);margin-top:6px;display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:8px 0}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.start{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:18px 0;align-items:stretch}
+.sbox{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;font-size:15px}
+.sn{flex:0 0 26px;height:26px;border-radius:50%;background:var(--accent);color:#0f1216;font-weight:700;display:grid;place-items:center;font-size:14px}
+.go{grid-column:1/-1;justify-self:start;background:var(--accent);color:#0f1216;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px}
+.go:hover{filter:brightness(1.1)}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="index.html">Marvin Bot guide</a>
+  <nav><a href="../">Project home</a><a href="../overview/">Docs</a><a href="index.html">Guide map</a><a href="glossary.html">Glossary</a><a href="sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<h1>How a humanoid robot works, one playground at a time</h1>
+<p class="lede"><b>Marvin Bot</b> is an open-source humanoid robot, a walking, two-armed machine about 1.44 m tall and 41 kg, that is being designed in the open so anyone can study, copy or improve it. This guide explains how it works, from its joints and motors to the AI that makes it walk, for a reader with school maths and physics and no robotics background.</p>
+
+<div class="start" aria-label="Start here">
+  <div class="sbox"><span class="sn">1</span><div><b>What is a playground?</b> One page on one topic, with sliders and a live picture. You change something (a battery size, a joint angle, a motor) and immediately see what happens, then read why. Each takes 20–40 minutes.</div></div>
+  <div class="sbox"><span class="sn">2</span><div><b>Where do I start?</b> Meet the robot in 3-D first (playground 00), then follow the numbers from 01: each one builds on the ones before. Curious about one part? Click it on the robot below.</div></div>
+  <div class="sbox"><span class="sn">3</span><div><b>Stuck on a word?</b> Dotted-underlined words link to the <a href="glossary.html">glossary</a>, which explains every term in plain language.</div></div>
+  <a class="go" href="playgrounds/00-3d-model.html">Start with 00 · Marvin Bot in 3-D →</a>
+</div>
+
+<div class="callout"><b>Where the project stands.</b> Marvin Bot is in phase 1 of 7: it exists only as a computer model, tested in physics simulators, and no hardware has been built yet. Every number in this guide comes from the project repository as of 2026-10-29, or from a cited source. Where the two disagree, the page says so.</div>
+
+<div class="facts" aria-label="Marvin Bot at a glance">
+  <div class="fact"><div class="k">Height</div><div class="v">1.44 m</div></div>
+  <div class="fact"><div class="k">Mass (with shells)</div><div class="v">41.3 kg</div></div>
+  <div class="fact"><div class="k">Powered joints</div><div class="v">27</div></div>
+  <div class="fact"><div class="k">Hands</div><div class="v">2 × 8 servos</div></div>
+  <div class="fact"><div class="k">Actuators</div><div class="v">23 motors + 4 servos</div></div>
+  <div class="fact"><div class="k">Battery</div><div class="v">48 V · 630 Wh</div></div>
+  <div class="fact"><div class="k">Computer</div><div class="v">Jetson AGX Orin</div></div>
+  <div class="fact"><div class="k">Parts cost</div><div class="v">≈ $17.5k</div></div>
+</div>
+
+<h2 id="map">The map</h2>
+<p>Click a part of the robot (left) or a box in the pipeline (right). For the real thing, in 3-D, open <a href="playgrounds/00-3d-model.html">playground 00</a>. The panel shows what that part does and which playgrounds explain it. The pipeline reads left to right: the robot is described once in a file, turned into models, trained in simulation, and finally built and run. The colours match the stages of the learning path below.</p>
+
+<div class="mapwrap">
+  <div class="panel">
+    <svg id="robot" viewBox="0 0 300 560" role="img" aria-label="Front view of Marvin Bot: click a body region">
+      <!-- simple front-view figure; proportions follow description/robot.yaml (1 px ≈ 2.6 mm) -->
+      <g class="hot" tabindex="0" data-k="head"><rect class="shape" x="122" y="8" width="56" height="66" rx="26" fill="#2b3644" stroke="#4fb3ff"/><rect x="128" y="30" width="44" height="14" rx="6" fill="#0b0e12"/><rect x="134" y="34" width="32" height="6" rx="3" fill="#cfd8e3"/></g>
+      <g class="hot" tabindex="0" data-k="torso"><path class="shape" d="M88 92 L212 92 L204 196 L182 228 L118 228 L96 196 Z" fill="#2b3644" stroke="#ff6b6b"/><rect x="122" y="104" width="56" height="34" rx="4" fill="#1b2a3a"/><text x="150" y="126" text-anchor="middle" font-size="10" fill="#9aa7b4">battery</text><rect x="126" y="146" width="48" height="44" rx="4" fill="#163020"/><text x="150" y="172" text-anchor="middle" font-size="10" fill="#9aa7b4">Orin</text></g>
+      <g class="hot" tabindex="0" data-k="waist"><rect class="shape" x="124" y="228" width="52" height="18" rx="5" fill="#334050" stroke="#ffb454"/></g>
+      <g class="hot" tabindex="0" data-k="pelvis"><rect class="shape" x="104" y="246" width="92" height="34" rx="8" fill="#2b3644" stroke="#ffb454"/><circle cx="150" cy="262" r="5" fill="#4fb3ff"/><text x="150" y="276" text-anchor="middle" font-size="9" fill="#9aa7b4">IMU</text></g>
+      <g class="hot" tabindex="0" data-k="arms">
+        <circle class="shape" cx="78" cy="104" r="17" fill="#334050" stroke="#ffb454"/><circle class="shape" cx="222" cy="104" r="17" fill="#334050" stroke="#ffb454"/>
+        <rect class="shape" x="66" y="120" width="22" height="80" rx="9" fill="#2b3644" stroke="#ffb454"/><rect class="shape" x="212" y="120" width="22" height="80" rx="9" fill="#2b3644" stroke="#ffb454"/>
+        <rect class="shape" x="66" y="204" width="20" height="72" rx="8" fill="#2b3644" stroke="#ffb454"/><rect class="shape" x="214" y="204" width="20" height="72" rx="8" fill="#2b3644" stroke="#ffb454"/>
+      </g>
+      <g class="hot" tabindex="0" data-k="hands"><path class="shape" d="M62 280 h26 v30 l-4 36 h-18 l-4 -36 z" fill="#3a4656" stroke="#4cc38a"/><path class="shape" d="M212 280 h26 v30 l-4 36 h-18 l-4 -36 z" fill="#3a4656" stroke="#4cc38a"/></g>
+      <g class="hot" tabindex="0" data-k="hips"><circle class="shape" cx="122" cy="292" r="19" fill="#334050" stroke="#ffb454"/><circle class="shape" cx="178" cy="292" r="19" fill="#334050" stroke="#ffb454"/></g>
+      <g class="hot" tabindex="0" data-k="legs">
+        <rect class="shape" x="108" y="312" width="28" height="104" rx="10" fill="#2b3644" stroke="#ffb454"/><rect class="shape" x="164" y="312" width="28" height="104" rx="10" fill="#2b3644" stroke="#ffb454"/>
+        <circle class="shape" cx="122" cy="420" r="17" fill="#334050" stroke="#ffb454"/><circle class="shape" cx="178" cy="420" r="17" fill="#334050" stroke="#ffb454"/>
+        <rect class="shape" x="110" y="436" width="24" height="92" rx="9" fill="#2b3644" stroke="#ffb454"/><rect class="shape" x="166" y="436" width="24" height="92" rx="9" fill="#2b3644" stroke="#ffb454"/>
+      </g>
+      <g class="hot" tabindex="0" data-k="ankles"><circle class="shape" cx="122" cy="460" r="11" fill="#3a4656" stroke="#ffb454"/><circle class="shape" cx="178" cy="460" r="11" fill="#3a4656" stroke="#ffb454"/><circle class="shape" cx="122" cy="506" r="11" fill="#3a4656" stroke="#ffb454"/><circle class="shape" cx="178" cy="506" r="11" fill="#3a4656" stroke="#ffb454"/></g>
+      <g class="hot" tabindex="0" data-k="feet"><rect class="shape" x="100" y="530" width="44" height="18" rx="7" fill="#334050" stroke="#4fb3ff"/><rect class="shape" x="156" y="530" width="44" height="18" rx="7" fill="#334050" stroke="#4fb3ff"/></g>
+      <line x1="20" y1="554" x2="280" y2="554" stroke="#2a3340"/>
+    </svg>
+  </div>
+  <div class="panel">
+    <svg id="pipe" viewBox="0 0 700 430" role="img" aria-label="Pipeline from the robot description to the real robot: click a box">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#9aa7b4"/></marker></defs>
+      <g font-size="13" fill="#e6edf3" text-anchor="middle">
+        <text x="350" y="18" fill="#9aa7b4" font-size="12">DESIGN → MODEL → SIMULATE &amp; LEARN → BUILD &amp; RUN</text>
+        <g class="hot" tabindex="0" data-k="yaml"><rect class="shape" x="20" y="40" width="150" height="56" rx="8" fill="#211d33" stroke="#b48cff"/><text x="95" y="64">robot.yaml</text><text x="95" y="82" font-size="11" fill="#9aa7b4">single source of truth</text></g>
+        <g class="hot" tabindex="0" data-k="cad"><rect class="shape" x="20" y="130" width="150" height="56" rx="8" fill="#2a2314" stroke="#ffb454"/><text x="95" y="154">code-CAD</text><text x="95" y="172" font-size="11" fill="#9aa7b4">parts, masses, checks</text></g>
+        <g class="hot" tabindex="0" data-k="bom"><rect class="shape" x="20" y="220" width="150" height="56" rx="8" fill="#2a2814" stroke="#e3d26f"/><text x="95" y="244">BOM</text><text x="95" y="262" font-size="11" fill="#9aa7b4">bom.xlsx · ≈$17.5k</text></g>
+        <g class="hot" tabindex="0" data-k="urdf"><rect class="shape" x="220" y="85" width="150" height="56" rx="8" fill="#211d33" stroke="#b48cff"/><text x="295" y="109">URDF · MJCF · USD</text><text x="295" y="127" font-size="11" fill="#9aa7b4">generated models</text></g>
+        <g class="hot" tabindex="0" data-k="isaac"><rect class="shape" x="420" y="40" width="130" height="56" rx="8" fill="#14262a" stroke="#4cc38a"/><text x="485" y="64">Isaac Lab</text><text x="485" y="82" font-size="11" fill="#9aa7b4">PPO walking, stairs</text></g>
+        <g class="hot" tabindex="0" data-k="motion"><rect class="shape" x="420" y="130" width="130" height="56" rx="8" fill="#14262a" stroke="#4cc38a"/><text x="485" y="154">Motion tracking</text><text x="485" y="172" font-size="11" fill="#9aa7b4">human motion → skills</text></g>
+        <g class="hot" tabindex="0" data-k="mujoco"><rect class="shape" x="580" y="85" width="105" height="56" rx="8" fill="#211d33" stroke="#b48cff"/><text x="632" y="109">MuJoCo</text><text x="632" y="127" font-size="11" fill="#9aa7b4">cross-check</text></g>
+        <g class="hot" tabindex="0" data-k="vla"><rect class="shape" x="420" y="220" width="130" height="56" rx="8" fill="#14262a" stroke="#4cc38a"/><text x="485" y="244">GR00T VLA</text><text x="485" y="262" font-size="11" fill="#9aa7b4">manipulation (planned)</text></g>
+        <g class="hot" tabindex="0" data-k="model3d"><rect class="shape" x="220" y="190" width="150" height="56" rx="8" fill="#1c232c" stroke="#e6edf3"/><text x="295" y="214">3-D model</text><text x="295" y="232" font-size="11" fill="#9aa7b4">layers · assembly · skills</text></g>
+        <g class="hot" tabindex="0" data-k="bench"><rect class="shape" x="220" y="320" width="150" height="56" rx="8" fill="#2a2814" stroke="#e3d26f"/><text x="295" y="344">Bench &amp; sys-ID</text><text x="295" y="362" font-size="11" fill="#9aa7b4">phase 2: measure motors</text></g>
+        <g class="hot" tabindex="0" data-k="robot"><rect class="shape" x="420" y="320" width="265" height="56" rx="8" fill="#2a1a1a" stroke="#ff6b6b"/><text x="552" y="344">The real robot</text><text x="552" y="362" font-size="11" fill="#9aa7b4">Orin · CAN · battery · e-stop (phases 3–6)</text></g>
+      </g>
+      <g stroke="#9aa7b4" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+        <path d="M95 96 V128"/><path d="M295 141 V188"/><path d="M95 186 V218"/><path d="M170 68 H195 V100 H218"/><path d="M170 158 H195 V126 H218"/>
+        <path d="M370 105 H395 V68 H418"/><path d="M370 121 H395 V158 H418"/><path d="M550 68 H565 V100 H578"/><path d="M550 158 H565 V126 H578"/>
+        <path d="M632 141 V318"/><path d="M485 276 V318"/><path d="M370 348 H418"/><path d="M95 276 V348 H218"/>
+        <path d="M295 320 V302 H405 V176 H418" stroke-dasharray="4 4"/>
+      </g>
+      <text x="300" y="294" font-size="11" fill="#9aa7b4" text-anchor="middle">measured models feed back</text>
+    </svg>
+    <div id="info" class="panel" style="margin-top:12px" aria-live="polite"><h3>Pick a part</h3><p style="color:var(--muted);margin:0">Click a body region or a pipeline box to see what it is and where to learn about it.</p></div>
+  </div>
+</div>
+
+<h2 id="path">Suggested learning path</h2>
+<p>The playgrounds are numbered in the suggested order, from basics to advanced. Each stage builds on the ones before it, but every page names its own prerequisites, so you can also jump to whatever you are curious about.</p>
+<div class="legend" id="legend"></div>
+<div class="stages" id="stages"></div>
+
+<h2 id="how">How to use this guide</h2>
+<ul>
+  <li><b>Play first, then read.</b> Each page opens with a short idea and a playground. Try the presets, then the "Try this" experiments, then read the explanation.</li>
+  <li><b>Marvin Bot boxes</b> (amber) give the robot's real numbers, with the repository file they come from. <b>Violet boxes</b> mark places where a published source and the repository disagree.</li>
+  <li><b>Decision notes.</b> Every playground writes a short note from your settings. Copy it into an issue, a design discussion or an AI-assistant session to take the idea further.</li>
+  <li><b>Words you don't know</b> are underlined with dots and link to the <a href="glossary.html">glossary</a>. Every source is credited on its page and collected on the <a href="sources.html">sources page</a>.</li>
+</ul>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../">Marvin Bot documentation</a> · Apache-2.0 · static pages, no tracking, no build step · numbers from the project repository as of 2026-10-29 · <a href="sources.html">sources</a> · <a href="glossary.html">glossary</a></footer>
+
+<script>
+const STAGES=[
+ {n:0,name:'Start here',c:'#e6edf3',why:'The whole robot in 3-D: what it is made of, how it is assembled, and how its joints move.'},
+ {n:1,name:'Foundations',c:'var(--s1)',why:'What a humanoid is made of, how its joints add up, and why it falls over.'},
+ {n:2,name:'Mechanics',c:'var(--s2)',why:'Motors, loads, the ankle linkage, mass and the frame: what sets how strong and heavy the robot is.'},
+ {n:3,name:'Electrical, sensing and safety',c:'var(--s3)',why:'Battery, power, the CAN buses, the sensors and computer, and how to keep people safe.'},
+ {n:4,name:'Model and simulation',c:'var(--s4)',why:'One description file becomes the models every simulator uses; how simulators and joint controllers work.'},
+ {n:5,name:'Learning',c:'var(--s5)',why:'How the robot learns to walk, to copy human motion, and later to use its hands.'},
+ {n:6,name:'Toward hardware',c:'var(--s6)',why:'Closing the gap between simulation and the real robot, what it costs, and the order it gets built in.'}];
+const PAGES=[
+ ['00-3d-model',0,'Marvin Bot in 3-D','Turn the real model around, X-ray the motors, electronics and battery, step through the assembly order, and play skills with live motor loads.'],
+ ['01-dof-kinematics',1,'Degrees of freedom and kinematic chains','Joints, ranges and how 27 of them add up; bend a leg and see where the foot goes.'],
+ ['02-balance',1,'Balance: centre of mass, support polygon, ZMP and capture point','Why a robot stays up, why it falls, and where to step to recover from a push.'],
+ ['03-architecture',1,'System architecture: from battery to policy','Every block from battery to neural network, and one 20 ms control tick traced end to end.'],
+ ['04-actuators',2,'Actuators: quasi-direct drive, torque, speed and heat','Gear ratios, torque–speed curves, rated vs peak torque, motor heating, and why each RobStride model sits where it does.'],
+ ['05-leg-loads-stairs',2,'Leg loads and stairs','Bend a leg on a stair and watch the knee torque climb past its rating.'],
+ ['06-ankle-linkage',2,'The parallel-linkage ankle','Two motors on the shin push rods that tilt the foot; see how they share pitch and roll.'],
+ ['07-mass-proportions',2,'Mass budget and proportions','Where the 41 kg goes, how scaling changes torque, and the 1.44 m redesign.'],
+ ['08-structure-cad',2,'Structure and code-CAD','Aluminium or plastic, safety factors, pocketed plates, and sweeping joints for collisions.'],
+ ['09-power-battery',3,'Power and battery','Runtime calculator, regenerative-braking voltage margin, and the power path from pack to motors.'],
+ ['10-can-bus',3,'CAN buses and bandwidth','How many motors fit on one bus at 500 Hz, worked out frame by frame.'],
+ ['11-sensors-compute',3,'Sensors and compute','IMU noise and delay, stereo depth error, and the Jetson AGX Orin compute budget.'],
+ ['12-safety',3,'Safety','Fall energy, pinch hazards, the e-stop chain and what catches each fault.'],
+ ['13-description',4,'The robot description: one source of truth','robot.yaml becomes URDF and MJCF; explore the coupled shoulder limit.'],
+ ['14-simulation',4,'Simulation: MuJoCo, Isaac Lab, Newton and PhysX','Timesteps, contacts and integrators, and why a second simulator cross-checks the first.'],
+ ['15-pd-control',4,'PD control, gains and armature','Tune a joint’s stiffness and damping and watch it overshoot, settle or go unstable.'],
+ ['16-rl-walking',5,'Reinforcement learning for walking','PPO, observations, actions and a reward-shaping sandbox where you can make the robot cheat.'],
+ ['17-motion-tracking',5,'Motion tracking: Kimodo, retargeting and BeyondMimic','From a text prompt to a tracked skill: scale a human onto the robot and tune reward kernels.'],
+ ['18-wbc-vla',5,'Whole-body control and VLA models','Decoupled control versus one general tracker, and how vision-language-action models drive the arms.'],
+ ['19-hands',5,'Hands','The four-finger hands, the wrist, and how much the arm can actually hold.'],
+ ['20-sim-to-real',6,'Sim-to-real and system identification','Fit a motor model to bench data and see why randomisation ranges matter.'],
+ ['21-bom-costs',6,'Bill of materials and costs','Explore the ≈$17.5k bill of materials by group, phase and cost per newton-metre.'],
+ ['22-roadmap',6,'Build phases and roadmap','Seven phases from foundations to perception, what each must prove, and which risks it retires.']];
+const INFO={
+ head:['Head and neck','A printed helmet with a dark visor holds the Orbbec Gemini 335L depth camera at eye height, on a 2-DOF neck driven by two small serial-bus servos.',['00-3d-model#view=xelec','11-sensors-compute','13-description']],
+ torso:['Torso','Carries the 48 V battery high under the shoulder motors, the Jetson AGX Orin stood on its edge, and the electronics bay: contactor, precharge, e-stop relay and the USB-CAN adapters.',['00-3d-model#view=xelec','03-architecture','09-power-battery','11-sensors-compute','12-safety']],
+ waist:['Waist yaw','One RS03 turns the upper body ±150°. A waist that could also tilt was considered (+2.5 kg, +$630) and left for a simulation experiment first.',['00-3d-model#tab=skills&skill=look','01-dof-kinematics','07-mass-proportions']],
+ pelvis:['Pelvis and IMU','The pelvis holds the hip-roll motors and the IMU, the sensor that tells the policy which way is down and how fast the body is turning.',['00-3d-model#view=xelec','02-balance','11-sensors-compute']],
+ arms:['Arms','Six joints per arm: shoulder pitch, roll and yaw, elbow, wrist yaw and wrist pitch. The shoulder roll may only go below 0° when the arm is swung forward (a coupled limit).',['00-3d-model#tab=skills&skill=clap','01-dof-kinematics','04-actuators','13-description','19-hands']],
+ hands:['Hands','Bought AmazingHand kits: four fingers, eight small servos each, about 0.40 kg, carried on a servo-driven wrist pitch joint.',['00-3d-model#tab=skills&skill=wave','19-hands','18-wbc-vla']],
+ hips:['Hips','Roll, then pitch, then yaw. The two RS04 hip-roll motors sit fixed in the pelvis, so they don’t swing with the leg.',['00-3d-model#view=xact','01-dof-kinematics','04-actuators','05-leg-loads-stairs']],
+ legs:['Thigh, knee and shin','Thigh 0.325 m, shin 0.315 m. The knee RS04 is the joint most at risk on stairs: about 118% of its continuous rating in the static 18 cm step check.',['00-3d-model#tab=skills&skill=stair','05-leg-loads-stairs','04-actuators','08-structure-cad']],
+ ankles:['Ankle motors','Two RS03 per ankle, staggered on the shin, push rods that tilt the foot in pitch and roll together: a parallel linkage.',['00-3d-model#view=xact','06-ankle-linkage','05-leg-loads-stairs']],
+ feet:['Feet','Shoe-shaped plates, 0.24 × 0.11 m, with a rubbery (TPU) sole. The foot outline defines the support polygon the robot balances over.',['00-3d-model#tab=skills&skill=walk','02-balance','08-structure-cad']],
+ yaml:['robot.yaml: the single source of truth','Joints, ranges, sizes, motors and CAN buses are written once in description/robot.yaml; everything else is generated or checked from it.',['13-description']],
+ cad:['Code-CAD','Python (manifold3d) generates every part, computes masses and inertias for the models, checks strength, and sweeps parts through every joint range looking for collisions.',['00-3d-model#view=made','08-structure-cad','07-mass-proportions']],
+ bom:['Bill of materials','One workbook lists every bought part, with price, source and spares: about $17.5k to replicate the robot.',['21-bom-costs']],
+ urdf:['Generated models','The URDF (robot model format) is generated from the description; Isaac Lab converts it to USD, and MuJoCo builds its model from the URDF in memory (an MJCF file is written only for the motion-tracking tools).',['00-3d-model','13-description','14-simulation']],
+ isaac:['Isaac Lab training','Thousands of simulated robots learn to walk and climb stairs with PPO, on the Newton or PhysX physics engines.',['16-rl-walking','14-simulation','15-pd-control']],
+ motion:['Motion tracking','Human motions generated from text (Kimodo) are retargeted onto Marvin Bot (PyRoki) and tracked by one policy (BeyondMimic-style, in ProtoMotions); its results are provisional while a new version trains.',['17-motion-tracking']],
+ mujoco:['MuJoCo cross-check','Every trained policy is replayed in a second simulator, with sensor noise, to catch tricks that only work in the first one.',['14-simulation','20-sim-to-real']],
+ vla:['Vision-language-action model','Planned: GR00T N1.7, fine-tuned on teleoperated demonstrations, sends arm and hand commands on top of the walking controller.',['18-wbc-vla','19-hands']],
+ bench:['Bench and system identification','Phase 2 buys one RS04 and one RS03 and measures torque, speed, heating and CAN timing, then corrects the simulation to match.',['20-sim-to-real','04-actuators','22-roadmap']],
+ model3d:['Interactive 3-D model','The generated model, drawn in your browser: peel back the shells, X-ray the motors and electronics, follow the assembly order and watch every motor’s load as the robot squats, walks and steps up a stair.',['00-3d-model','00-3d-model#tab=skills&skill=stair','13-description']],
+ robot:['The real robot','Built leg first, then lower body, then the rest; a real-time process on the Orin runs the 50 Hz policy and talks to the motors over CAN, behind a hardware e-stop.',['00-3d-model#tab=assembly&step=1','03-architecture','10-can-bus','12-safety','22-roadmap']]};
+const byId=Object.fromEntries(PAGES.map(p=>[p[0],p]));
+const stColor=n=>STAGES.find(s=>s.n===n).c;
+document.getElementById('legend').innerHTML=STAGES.map(s=>`<span><i style="background:${s.c}"></i>${s.n?`Stage ${s.n} · `:''}${s.name}</span>`).join('');
+document.getElementById('stages').innerHTML=STAGES.map(s=>`<section class="stage" style="--c:${s.c}"><h3>${s.n?`Stage ${s.n} · `:''}${s.name}</h3><p class="why">${s.why}</p><div class="cards">`+
+  PAGES.filter(p=>p[1]===s.n).map(p=>`<a class="cardlink" style="--c:${s.c}" href="playgrounds/${p[0]}.html"><span class="n">${p[0].slice(0,2)}</span><span class="t">${p[2]}</span><span class="d">${p[3]}</span></a>`).join('')+`</div></section>`).join('');
+const info=document.getElementById('info');
+function show(k,el){
+  document.querySelectorAll('.hot.sel').forEach(e=>e.classList.remove('sel')); el.classList.add('sel');
+  const [t,d,links]=INFO[k];
+  info.innerHTML=`<h3>${t}</h3><p style="margin:.3em 0">${d}</p><div class="links">`+links.map(l=>{const [id,h]=l.split('#'),p=byId[id];return `<a href="playgrounds/${id}.html${h?'#'+h:''}" style="color:${stColor(p[1])}">${id.slice(0,2)} · ${h?'see it in 3-D':p[2]} →</a>`}).join('')+`</div>`;
+}
+document.querySelectorAll('.hot').forEach(el=>{
+  el.setAttribute('role','button');
+  el.addEventListener('click',()=>show(el.dataset.k,el));
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show(el.dataset.k,el);}});
+});
+</script>
+</body>
+</html>

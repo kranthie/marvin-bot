@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actuators: quasi-direct drive, torque, speed and heat · Marvin Bot guide</title>
+<meta name="description" content="How a quasi-direct-drive actuator trades torque, speed, inertia and heat, explored with Marvin Bot's RobStride RS04, RS03, RS06 and RS00 actuators.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+.pgtitle{font-size:13px;color:var(--muted);margin:0 0 6px}
+.statusline{margin-top:8px;font-size:14px;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+.statusline.ok{border-color:var(--good)} .statusline.warn{border-color:var(--warn)} .statusline.bad{border-color:var(--bad)}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:.6em 0;max-width:78ch;overflow-x:auto;white-space:nowrap}
+.sym{font-size:14px;color:var(--muted)}
+.ctl.check label{justify-content:flex-start;gap:8px;align-items:center}
+.jt td.bar{min-width:160px}
+.pct{font-family:var(--mono)}
+.pct.ok{color:var(--good)} .pct.warn{color:var(--warn)} .pct.bad{color:var(--bad)}
+.small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 2 · Mechanics</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 04</p>
+<h1>Actuators: quasi-direct drive, torque, speed and heat</h1>
+<p class="lede">Every joint of a humanoid is only as strong, fast and gentle as the actuator behind it. This page explains what an electric actuator can and cannot do (how much torque, at what speed, for how long before it overheats), and why Marvin Bot uses four sizes of low-ratio RobStride actuators.</p>
+<div class="meta"><span class="chip">~40 min</span><span class="chip">Before this: <a href="01-dof-kinematics.html">01 Degrees of freedom</a>, <a href="03-architecture.html">03 System architecture</a></span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>How current becomes torque and speed becomes voltage in a brushless motor (torque constant and back-EMF), and why that gives a torque-speed envelope.</li>
+<li>What a gearbox trades: torque up by N, speed down by N, reflected inertia up by N², and what "quasi-direct drive" means.</li>
+<li>Why rated (continuous) torque is a heat limit, not a strength limit, and how the heat sink and the duty cycle change it.</li>
+<li>Why each RobStride model sits at each of Marvin Bot's joints, and where the knee runs out of margin on stairs.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>Actuators are the robot's muscles: every joint from page 01 has one, and every balancing move from page 02 has to come out of them. You already know their three limits from your own arm. You can lift a heavy shopping bag for a moment, but not for an hour; you can swing an empty arm fast, but not a loaded one; and if you hold the bag out for long, the muscle gets tired and hot. A motor is the same, except that "tired" means "the copper inside is getting too hot".</p>
+<p>Two units first. <b>Torque</b> is turning force, measured in newton-metres (N·m): holding a 1 kg bag 10 cm from a joint takes about 1 N·m, and Marvin Bot's knee holds about 47 N·m on a high stair step. Joint <b>speed</b> is in radians per second (rad/s; 1 rad/s is about 9.5 revolutions per minute, rpm).</p>
+<p>An <dfn>actuator</dfn> here means a brushless electric motor (one with no rubbing contacts inside, so it lasts and runs cool), a small gearbox and a motor driver (the electronics that feed it) in one housing. The motor turns electric <b>current into torque</b>; the gearbox multiplies that torque and divides the speed; the driver decides, a few thousand times a second, how much current to push. Three limits shape everything it can do:</p>
+<ul>
+<li><b>Current limit</b> (the flat top of the envelope): the driver and the magnets allow only so much current, so only so much <a class="g" href="../glossary.html#peak-torque">peak torque</a>.</li>
+<li><b>Voltage limit</b> (the falling edge): a spinning motor generates a voltage against its supply, the <a class="g" href="../glossary.html#back-emf">back-EMF</a>. Near the top speed there is no voltage left to push current, so torque falls to zero at the no-load speed.</li>
+<li><b>Heat limit</b> (the dashed line): current heats the copper windings. The torque the motor can hold forever without overheating is the <a class="g" href="../glossary.html#rated-torque">continuous (rated) torque</a>, typically a third of the peak.</li>
+</ul>
+<p>So there are two different "how strong?" numbers: the <b>peak</b> torque (for a moment) and the <b>rated</b> torque (for ever). Most design questions on this page come down to which of the two a task needs. The first playground draws these limits for Marvin Bot's actuators and lets you ask "can this joint do that?". The second follows the winding temperature through a stair climb. The third shows why each model sits where it does.</p>
+
+<h2 id="play">Playground 1: torque-speed explorer</h2>
+<p><b>Start here:</b> press <b>Marvin Bot today</b>, then try the other presets. The two "What the joint needs" sliders place a dot: the torque and speed a task asks of the joint.</p>
+<p class="hint">How to read this picture: speed runs left to right, torque bottom to top. The outer (blue) line is the most the actuator can give for a moment; the green area is what it can give for ever without overheating. A dot inside green is fine; inside the outer line but above green is fine only briefly (a heat problem); outside the outer line is impossible. The orange band shows the speed range the motor's command format allows (explained under "Driver modes" below).</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets" id="tsPresets">
+      <button data-ts="today">Marvin Bot today: knee on an 18 cm step</button>
+      <button data-ts="swing">Knee swing while walking</button>
+      <button data-ts="stage">Parked 1.5:1 knee stage</button>
+      <button data-ts="hd">50:1 high-ratio knee</button>
+      <button data-ts="lowbat">Nearly empty battery</button>
+    </div>
+    <h4>Actuator</h4>
+    <div class="ctl"><label for="tsModel">RobStride model</label>
+      <select id="tsModel"><option value="RS04">RS04 (120 N·m peak, hips and knee)</option><option value="RS03">RS03 (60 N·m, hip yaw, ankles, waist, shoulders)</option><option value="RS06">RS06 (36 N·m, shoulder yaw, elbow)</option><option value="RS00">RS00 (14 N·m, wrist yaw)</option></select></div>
+    <div class="ctl"><label for="tsRatio">Total gear ratio <output id="o_tsRatio"></output></label>
+      <input type="range" id="tsRatio" min="3" max="60" step="0.5" value="9">
+      <div class="hint">Rescales the chosen motor as if it had a different gearbox (plus an extra stage). Native: 9:1 (RS00 10:1).</div></div>
+    <div class="ctl"><label for="tsV">Bus voltage <output id="o_tsV"></output></label>
+      <input type="range" id="tsV" min="24" max="60" step="0.5" value="48">
+      <div class="hint">The 48 V curve is always drawn for comparison. The battery runs from about 42 V (nearly empty) to 54.6 V (full).</div></div>
+    <h4>What the joint needs</h4>
+    <div class="ctl"><label for="tsT">Joint torque <output id="o_tsT"></output></label>
+      <input type="range" id="tsT" min="0" max="200" step="0.5" value="47">
+      <div class="hint">How hard the joint must turn (N·m). 47 N·m = the knee holding the robot on an 18 cm step.</div></div>
+    <div class="ctl"><label for="tsW">Joint speed <output id="o_tsW"></output></label>
+      <input type="range" id="tsW" min="0" max="50" step="0.1" value="0.5">
+      <div class="hint">How fast the joint must turn (rad/s; 1 rad/s ≈ 57° per second). A knee swinging in a walk reaches about 8 rad/s.</div></div>
+    <div class="ctl check"><label><input type="checkbox" id="tsDC" checked> Show the simulator's motor model</label>
+      <div class="hint">Isaac Lab's DC-motor model as Marvin Bot configures it: peak torque falling in a straight line to zero at the no-load speed.</div></div>
+  </div>
+  <div class="preview">
+    <p class="pgtitle">Torque at the joint versus joint speed</p>
+    <svg id="tsView" viewBox="0 0 640 400" role="img" aria-label="Torque-speed envelope of the chosen actuator with the operating point"></svg>
+    <div class="statusline" id="tsStatus">–</div>
+    <div class="readouts">
+      <div class="ro" id="tsR1"><div class="k">Peak / rated torque</div><div class="v">–</div></div>
+      <div class="ro" id="tsR2"><div class="k">No-load speed at this voltage</div><div class="v">–</div></div>
+      <div class="ro" id="tsR3"><div class="k">Torque available at this speed</div><div class="v">–</div></div>
+      <div class="ro" id="tsR4"><div class="k">Motor current (rms)</div><div class="v">–</div></div>
+      <div class="ro" id="tsR5"><div class="k">Heat vs rated</div><div class="v">–</div></div>
+      <div class="ro" id="tsR6"><div class="k">Mechanical power</div><div class="v">–</div></div>
+      <div class="ro" id="tsR7"><div class="k">Reflected inertia</div><div class="v">–</div></div>
+      <div class="ro" id="tsR8"><div class="k">Felt at the sole (knee, 0.375 m)</div><div class="v">–</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>peak envelope, this voltage</span><span><i style="background:#5b6b7c"></i>peak envelope, 48 V</span><span><i style="background:var(--good)"></i>continuous (rated) region</span><span><i style="background:var(--violet)"></i>simulator's straight-line model</span><span><i style="background:var(--accent2)"></i>MIT-mode speed range</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <i>Marvin Bot today</i>. The point (47 N·m, nearly still) is far inside the peak envelope but above the green continuous region: a heat problem, not a strength problem. Now press <i>Parked 1.5:1 knee stage</i>: the same point drops inside the continuous region, but the top speed falls from about 21 to 14 rad/s.</li>
+<li>Drag the gear ratio to 50. Torque looks wonderful, but watch <i>Felt at the sole</i>: the motor's spinning rotor now feels like about 7 kg bolted to the foot on impact, against about 0.2 kg at 9:1.</li>
+<li>Press <i>Knee swing while walking</i> and drag the voltage from 54 down to 36 V. The top of the envelope does not move; only the speed edge does.</li>
+<li>Switch on the simulator's motor model (violet). Compare it with the manual's curve: the straight line is much more pessimistic at mid speeds. That is a deliberate safety margin in Marvin Bot's training, and one of the things the bench test should calibrate.</li>
+</ol></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>Current makes torque: the torque constant</h3>
+<p>Inside a brushless motor, permanent magnets on the rotor (the part that spins) sit next to copper coils on the stator (the fixed part). Current in a coil in a magnetic field feels a force; arranged around a circle, that force is a torque. The driver keeps the current always pointing the most useful way (this is called field-oriented control, FOC), so torque is simply proportional to current:</p>
+<div class="eq">τ = K<sub>t</sub> · I</div>
+<p class="sym">τ: torque (N·m). I: phase current (A rms). K<sub>t</sub>: <a class="g" href="../glossary.html#torque-constant">torque constant</a> (N·m/A). RobStride quotes K<sub>t</sub> at the output of the gearbox: 2.1 N·m/A for the RS04, 2.36 for the RS03, 1.09 for the RS06 and 1.48 for the RS00.<sup class="cite"><a href="#s2">[2]</a></sup><sup class="cite"><a href="#s3">[3]</a></sup><sup class="cite"><a href="#s4">[4]</a></sup><sup class="cite"><a href="#s5">[5]</a></sup></p>
+<p>Check it against the RS04 manual: rated current 27 A peak = 27/√2 = 19.1 A rms, times 2.1 N·m/A = 40 N·m, exactly the rated torque. At the peak current (90 A peak = 63.6 A rms) the same sum gives 134 N·m, but the manual's peak is 120 N·m: at high current the iron saturates and K<sub>t</sub> drops by about 10%.<sup class="cite"><a href="#s2">[2]</a></sup> The playground's current readout uses this measured curve.</p>
+
+<h3>Speed makes voltage: back-EMF</h3>
+<p>The same magnets passing the same coils generate a voltage proportional to speed, the back-EMF. The supply must overcome it to push current in, so a motor on a fixed voltage has a top speed where the back-EMF eats the whole supply: the <a class="g" href="../glossary.html#no-load-speed">no-load speed</a>.</p>
+<div class="eq">ω<sub>0</sub> ≈ V<sub>bus</sub> / (√2 · k<sub>e</sub>) &nbsp;&nbsp; (motor speed, then ÷ N at the output)</div>
+<p class="sym">ω<sub>0</sub>: no-load speed. V<sub>bus</sub>: battery voltage (V). k<sub>e</sub>: back-EMF constant, line-to-line, in V rms per 1000 rpm of the rotor. √2 turns rms into the peak a 48 V bus can match.</p>
+<p>The RS03 manual gives 17 V rms per 1000 rpm.<sup class="cite"><a href="#s3">[3]</a></sup> At 48 V: 48/(1.414 × 17) = 2.0 thousand rpm at the rotor, ÷ 9 = 222 rpm at the output. The manual measures 195-200 rpm; the gap is resistance and losses. Two consequences matter for a robot: <b>speed scales with battery voltage</b> (a full 54.6 V pack is about 14% faster than 48 V, a nearly empty 42 V pack about 12% slower), and <b>torque falls as speed approaches the top</b>.</p>
+<details><summary>Go deeper: how the two constants are linked, and field weakening</summary>
+<p>The two constants are the same physics seen from two sides: for an ideal three-phase motor K<sub>t</sub> = √3 · k<sub>e</sub> (in SI units), which for the RS03 predicts 2.53 N·m/A against the quoted 2.36, consistent with a gearbox around 93% efficient.</p>
+<p>Some drivers can push past the top speed with <a class="g" href="../glossary.html#field-weakening">field weakening</a>: an extra current component that partly cancels the magnets' field, lowering the back-EMF at the cost of more heat and less torque.<sup class="cite"><a href="#s13">[13]</a></sup> RobStride drivers have a field-weakening current parameter (I_FW_MAX), set to 0 (off) by default.<sup class="cite"><a href="#s2">[2]</a></sup> Marvin Bot does not use it, and the envelope here assumes it is off.</p></details>
+
+<h3>The torque-speed envelope and power</h3>
+<p>Put the two limits together and you get the envelope in the playground: a flat top at the peak torque, then a falling edge down to the no-load speed. The manuals publish this "T-N curve" at 48 V; the playground uses those curves, digitised by hand from the manuals' plots.<sup class="cite"><a href="#s2">[2]</a></sup><sup class="cite"><a href="#s3">[3]</a></sup> Mechanical power is torque times speed, P = τ · ω (watts, with ω in rad/s). The RS04's curve passes about 78 N·m at 150 rpm (15.7 rad/s): 1.2 kW of short-burst output from a 1.42 kg actuator.</p>
+<p>A physics simulator needs a simpler rule. Isaac Lab's <code>DCMotor</code> model clips torque to a straight line from the "saturation" torque at standstill to zero at the maximum speed.<sup class="cite"><a href="#s11">[11]</a></sup> Marvin Bot sets the saturation torque equal to the peak torque (<code>sim/isaaclab/marvin_bot/robot_cfg.py</code>), which is the violet triangle in the playground: at 95 rpm the RS04 manual shows the full 120 N·m, while the straight line allows 63 N·m. Training against a weaker motor is safe in one direction (the policy never asks for torque that does not exist) but can make it slower and more cautious than the hardware needs to be.</p>
+
+<h3>The gearbox: torque × N, speed ÷ N, inertia × N²</h3>
+<p>A gearbox with ratio N (for example 9:1: the motor turns 9 times for each turn of the joint) multiplies torque by N and divides speed by N, like the low gears on a bicycle. Power stays the same, minus friction. So why not use a large ratio and a tiny motor? Because of three side effects:</p>
+<ul>
+<li><b><a class="g" href="../glossary.html#reflected-inertia">Reflected inertia</a> grows with N².</b> The rotor spins N times faster than the joint, so to accelerate the joint you must accelerate the rotor N times as much, and the rotor's kinetic energy is N² times larger. Seen from the joint, the rotor's inertia J<sub>rotor</sub> looks like J<sub>refl</sub> = N² · J<sub>rotor</sub>.<sup class="cite"><a href="#s10">[10]</a></sup> In a foot strike, this inertia must be stopped instantly, so it acts like extra mass at the foot, and the impact force grows with it.<sup class="cite"><a href="#s6">[6]</a></sup></li>
+<li><b><a class="g" href="../glossary.html#backdrivability">Backdrivability</a> falls.</b> Gear friction scales roughly with N, and at high ratios you cannot turn the output by hand. A backdrivable actuator lets the leg "give" on impact, and lets the driver estimate the joint torque from the motor current alone, without a torque sensor.<sup class="cite"><a href="#s6">[6]</a></sup></li>
+<li><b>Impact tolerance falls.</b> A gear tooth must stop the rotor's reflected inertia in an impact; high-ratio gears are where humanoid legs break.</li>
+</ul>
+<p>The playground reports reflected inertia from the armature values Marvin Bot's simulation uses (0.03 kg·m² for an RS04 joint, 0.02 for RS03, 0.01 for RS06, 0.005 for RS00, placeholders until the bench test) and divides it by the square of the knee-to-sole distance (0.315 m shin + 0.06 m ankle) to show the "mass" a foot strike feels.</p>
+
+<h3>Quasi-direct drive</h3>
+<p>"Quasi" means "almost": almost no gearbox. The MIT Cheetah group showed that a large-diameter motor (lots of torque per amp, because torque grows with the rotor's radius) with a single low-ratio planetary stage (a compact gearbox with small "planet" gears running round a central "sun" gear), about 6:1 to 10:1, keeps the benefits of direct drive (low reflected inertia, backdrivability, current-based force control) while getting enough torque. They called it <a class="g" href="../glossary.html#proprioceptive-actuation">proprioceptive actuation</a>: the actuator senses force from its own current.<sup class="cite"><a href="#s6">[6]</a></sup><sup class="cite"><a href="#s7">[7]</a></sup> The Mini Cheetah made it cheap and modular.<sup class="cite"><a href="#s8">[8]</a></sup> This is now called <a class="g" href="../glossary.html#quasi-direct-drive">quasi-direct drive (QDD)</a>, and RobStride's actuators are of this kind: 9:1 or 10:1 planetary gearboxes with a FOC driver on the back.</p>
+
+<h3>Other gearboxes</h3>
+<div class="tablewrap"><table>
+<tr><th>Type</th><th>Typical ratio</th><th>Good at</th><th>Costs</th></tr>
+<tr><td><dfn>Planetary</dfn> (QDD)</td><td>4:1-10:1 per stage</td><td>backdrivable, efficient, low reflected inertia, cheap</td><td>some backlash; one stage limits the ratio</td></tr>
+<tr><td><a class="g" href="../glossary.html#harmonic-drive">Harmonic (strain-wave)</a></td><td>30:1-160:1</td><td>no backlash, compact, precise</td><td>hard to backdrive, high reflected inertia, flexspline sensitive to shock loads<sup class="cite"><a href="#s10">[10]</a></sup></td></tr>
+<tr><td><a class="g" href="../glossary.html#cycloidal-drive">Cycloidal</a></td><td>10:1-100:1</td><td>load shared over many lobes, shock tolerant, compact</td><td>more parts; friction rises with ratio. Berkeley Humanoid Lite uses 3D-printed cycloidal gearboxes because they tolerate printed-plastic tolerances better than planetary gears<sup class="cite"><a href="#s9">[9]</a></sup></td></tr>
+<tr><td>Linkage or belt stage</td><td>1.2:1-3:1</td><td>moves the motor and adds a little ratio</td><td>parts, some compliance; the parked 1.5:1 knee option is this kind</td></tr>
+</table></div>
+
+<h3>Heat: copper loss, thermal resistance and time constants</h3>
+<p>Current through the windings' resistance R makes heat, the <a class="g" href="../glossary.html#copper-loss">copper loss</a> (Joule heating):</p>
+<div class="eq">P<sub>cu</sub> = 3 · I² · R<sub>phase</sub> &nbsp;&nbsp; ∝ τ²</div>
+<p>R is the winding's electrical resistance per phase (ohms) and the 3 counts the motor's three phases (its three sets of coils); ∝ means "is proportional to". Torque is proportional to current, so <b>heat goes with torque squared</b>: 118% of rated torque makes 1.39 times the rated heat; 3 times rated (the peak) makes 9 times. Copper's resistance also rises 0.39% per kelvin (a temperature step of 1 K is the same as 1 °C)<sup class="cite"><a href="#s14">[14]</a></sup>, so a hot winding (145 °C) makes about 47% more heat for the same current than a cold one.</p>
+<p>Think of a kettle on a low flame: it warms quickly at first, then levels off where the heat put in equals the heat lost to the room. A motor does the same, in two stages: the thin copper windings heat up within seconds, the heavy metal housing over many minutes. The heat flows out through a chain of <dfn>thermal resistances</dfn> (kelvin per watt: how many degrees warmer a part runs for each watt it must get rid of): winding to housing, then housing to the heat sink and the air. Each body also stores heat (a thermal capacitance). The simplest useful model has two nodes, a small fast winding and a large slow housing, the same structure motor makers publish as "winding" and "motor" <a class="g" href="../glossary.html#thermal-time-constant">thermal time constants</a>:<sup class="cite"><a href="#s12">[12]</a></sup></p>
+<details><summary>Go deeper: the two-node heat equations</summary>
+<div class="eq">C<sub>w</sub> dT<sub>w</sub>/dt = P − (T<sub>w</sub> − T<sub>h</sub>)/R<sub>wh</sub> &nbsp;&nbsp;&nbsp; C<sub>h</sub> dT<sub>h</sub>/dt = (T<sub>w</sub> − T<sub>h</sub>)/R<sub>wh</sub> − (T<sub>h</sub> − T<sub>amb</sub>)/R<sub>ha</sub></div>
+<p class="sym">T<sub>w</sub>, T<sub>h</sub>, T<sub>amb</sub>: winding, housing and ambient temperature (°C). C: heat capacity (J/K). R: thermal resistance (K/W). The time constants are τ<sub>w</sub> = R<sub>wh</sub>C<sub>w</sub> (seconds) and τ<sub>h</sub> = R<sub>ha</sub>C<sub>h</sub> (minutes). dT/dt means "how fast the temperature changes": heat in minus heat out, divided by the heat capacity.</p></details>
+<p>In steady state the winding sits P × (R<sub>wh</sub> + R<sub>ha</sub>) above ambient. The <b>rated torque is defined by that steady state</b>: the torque whose heat brings the winding to its limit. RobStride's manuals give a 145 °C winding limit (the protection threshold; the insulation itself survives 180 °C) at 25 °C ambient, a 120 K rise.<sup class="cite"><a href="#s2">[2]</a></sup> That is why the rated torque depends on the heat sink: the manual's RS04 makes 40 N·m bolted to a 345 × 345 mm aluminium plate but 35 N·m on a 220 × 200 mm plate. A bigger R<sub>ha</sub> needs less heat for the same 120 K, and torque goes with the square root of heat: 35/40 = 0.875, so the smaller plate has about 1.31 times the thermal resistance.</p>
+<p>Two more effects the playground includes. Above rated, the time to the limit depends on how far above: the manual's RS04 table (rotating at 50 rpm) gives 108 s at 60 N·m and 15 s at 100 N·m. <b>Holding still is worse than moving</b>: in a stall, the current stops rotating between the three phases and one phase carries the peak continuously, so it makes √2 times the average heat. The manual's stall-rated torque is 28.5 N·m for the RS04, close to 40/√2 = 28.3.<sup class="cite"><a href="#s2">[2]</a></sup></p>
+
+<h3>Driver modes: MIT mode</h3>
+<p>RobStride's default "operation control" mode is the <a class="g" href="../glossary.html#mit-mode">MIT mode</a>, named after the drivers of MIT's Mini Cheetah robot: every command carries a target position p, a target velocity v, stiffness k<sub>p</sub>, damping k<sub>d</sub> and a feed-forward torque τ<sub>ff</sub>, and the driver computes, at its own fast rate,</p>
+<div class="eq">τ<sub>ref</sub> = k<sub>p</sub>(p<sub>set</sub> − p) + k<sub>d</sub>(v<sub>set</sub> − v) + τ<sub>ff</sub></div>
+<p>and turns τ<sub>ref</sub> into current.<sup class="cite"><a href="#s2">[2]</a></sup> With k<sub>p</sub> = k<sub>d</sub> = 0 it is a pure torque motor; with k<sub>p</sub> = 0 and v<sub>set</sub> = 0 it is a damper; with k<sub>p</sub> &gt; 0 it is a spring around the target, which is what a walking policy uses (page <a href="15-pd-control.html">15</a>). Each value is packed into 16 bits over a fixed range per model; for the RS04 the velocity range is ±15 rad/s and for the RS03 ±20 rad/s (<code>robot/drivers/robstride.py</code>, from the manuals), drawn in orange in the playground. Other modes (position, velocity, current) exist but MIT mode is the one that suits a learned policy.</p>
+
+<h2 id="play2">Playground 2: winding temperature over a duty cycle</h2>
+<p>A <a class="g" href="../glossary.html#duty-cycle">duty cycle</a> is the pattern of work and rest a joint goes through, such as "push hard for 40% of each step, then ease off". <b>Start here:</b> press <b>Static 18 cm step hold</b> and then <b>Marvin Bot today</b>, and compare where the red line ends up.</p>
+<p class="hint">How to read this picture: time runs left to right (minutes), temperature bottom to top. The red line is the copper winding, the blue line the housing, and the amber dashed line the 145 °C point where the driver protects itself and cuts torque. A red line that levels off below amber is fine; one that crosses it means the joint would stop mid-task. RMS (root mean square) torque, in the readouts, is the average that matters for heat, because it weights big torques more.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets" id="thPresets">
+      <button data-th="today">Marvin Bot today: knee climbing stairs</button>
+      <button data-th="static">Static 18 cm step hold</button>
+      <button data-th="thigh">Same, thigh-sized heat sink</button>
+      <button data-th="walk">Knee while walking</button>
+      <button data-th="yaw">Hip yaw RS03 on one leg</button>
+    </div>
+    <h4>Actuator and mount</h4>
+    <div class="ctl"><label for="thModel">Model</label>
+      <select id="thModel"><option value="RS04">RS04 (rated 40 N·m)</option><option value="RS03">RS03 (rated 20 N·m)</option><option value="RS06">RS06 (rated 11 N·m)</option><option value="RS00">RS00 (rated 5 N·m)</option></select></div>
+    <div class="ctl"><label for="thSink">Heat path vs manual's plate <output id="o_thSink"></output></label>
+      <input type="range" id="thSink" min="60" max="120" step="1" value="100">
+      <div class="hint">The continuous rating your mount achieves, as % of the manual's. RS04 on the manual's smaller 220 × 200 mm plate: 87.5% (35 of 40 N·m).</div></div>
+    <div class="ctl"><label for="thAmb">Ambient temperature <output id="o_thAmb"></output></label>
+      <input type="range" id="thAmb" min="10" max="45" step="1" value="25"></div>
+    <h4>Torque profile</h4>
+    <div class="ctl"><label for="thProf">Profile</label>
+      <select id="thProf"><option value="const">Constant</option><option value="walk">Walking: 60% stance at full, 40% swing at 20%</option><option value="stairs">Stairs: 40% of each 3 s step at full, 60% at 30%</option><option value="hold">Hold 30 s, rest 30 s</option></select></div>
+    <div class="ctl"><label for="thT">Torque at the high part <output id="o_thT"></output></label>
+      <input type="range" id="thT" min="0" max="120" step="0.5" value="44"></div>
+    <div class="ctl check"><label><input type="checkbox" id="thStall"> Holding still (stall: hottest phase √2 × heat)</label></div>
+    <div class="ctl"><label for="thDur">Duration <output id="o_thDur"></output></label>
+      <input type="range" id="thDur" min="1" max="30" step="1" value="15"></div>
+  </div>
+  <div class="preview">
+    <p class="pgtitle">Winding and housing temperature over time</p>
+    <svg id="thView" viewBox="0 0 640 360" role="img" aria-label="Winding temperature rising over minutes towards the 145 degree limit"></svg>
+    <div class="statusline" id="thStatus">–</div>
+    <div class="readouts">
+      <div class="ro" id="thR1"><div class="k">RMS torque</div><div class="v">–</div></div>
+      <div class="ro" id="thR2"><div class="k">RMS / rated in this mount</div><div class="v">–</div></div>
+      <div class="ro" id="thR3"><div class="k">Winding at the end</div><div class="v">–</div></div>
+      <div class="ro" id="thR4"><div class="k">Time to 145 °C</div><div class="v">–</div></div>
+      <div class="ro" id="thR5"><div class="k">Steady-state winding</div><div class="v">–</div></div>
+      <div class="ro" id="thR6"><div class="k">Rated torque in this mount</div><div class="v">–</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--bad)"></i>winding</span><span><i style="background:var(--accent)"></i>housing</span><span><i style="background:var(--warn)"></i>145 °C protection limit</span></div>
+  </div>
+</div>
+<div class="callout"><b>Model and assumptions</b> Two-node model above. Its constants are fitted so that (a) the rated torque gives exactly a 120 K steady rise at 25 °C ambient, including copper's resistance rise, and (b) the times to the limit match the manuals' overload tables (RS04 rotating at 50 rpm; RS03 at 100 rpm) within about ±40%. Fitted: RS04 R<sub>wh</sub> = 10% of the total, τ<sub>w</sub> = 2 s, τ<sub>h</sub> = 250 s; RS03 20%, 20 s, 1000 s. RS06 and RS00 reuse the RS03 constants (their tables were not fitted: an assumption). Current follows the manual's two points (rated and peak current), so saturation is included. The heat-path slider scales the housing-to-ambient resistance. The model starts cold, has no airflow from motion, and the stall factor is a simple √2; the manuals' stall times are shorter than this model predicts, so treat stalls as optimistic.</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <i>Static 18 cm step hold</i>: 47 N·m held continuously, 118% of rated. The winding reaches 145 °C after about 6 minutes. Press <i>Same, thigh-sized heat sink</i> (87%, a 35 N·m rating): the limit comes about a minute sooner, and the steady state it is heading for is far higher.</li>
+<li>Press <i>Marvin Bot today</i>: an illustrative stair profile whose knee load averages about 74% of rated (RMS), the figure measured for the stair policy rough v5 on the earlier 1.29 m model. It warms up and levels off well below the limit: the duty cycle, not the peak, sets the temperature.</li>
+<li>Press <i>Knee while walking</i>: an illustrative profile set to 68% of rated (RMS), the hottest joint (a knee) in the flat policy v8's 1.0 m/s fast walk on the 1.44 m model (<code>sim/isaaclab/README.md</code>).</li>
+<li>Tick <i>Holding still</i> on the static hold. The same torque without rotation heats one phase √2 times faster.</li>
+<li>Set the RS04, constant profile, 120 N·m (peak). The model gives a few seconds: peak torque is for jumps, pushes and catching a fall, never for standing.</li>
+</ol></div>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b> Four RobStride quasi-direct-drive models plus Feetech servos, specifications in <code>description/actuators.yaml</code> (from RobStride's manuals<sup class="cite"><a href="#s1">[1]</a></sup>) and placement in <code>description/robot.yaml</code>: RS04 at hip pitch, hip roll and knee (6), RS03 at hip yaw, both ankle motors, the waist and shoulder pitch and roll (11 + 1 spare), RS06 at shoulder yaw and elbow (4), RS00 at wrist yaw (2), STS3250 servos at the neck and wrist pitch (4). All on 48 V, MIT mode over CAN at 500 Hz (legs) and 250 Hz (arms). The rule is: peak torques at most 70% of peak rating; continuous (RMS) torque within rating (<code>docs/design/stairs.md</code>).</div>
+
+<h3>Playground 3: why each model sits at each joint</h3>
+<p>Bars show the repo's worst static demand for each joint as a percentage of the actuator's continuous rating (filled) and peak (outline marker). Leg demands come from the static 18 cm step check (<code>sim/mujoco/check_step_up.py</code>, stance leg, current 1.44 m model); arm demands are hand calculations (arm straight out, 0.5 kg in the hand). Change the robot's mass, the heat path or the knee stage and see which joints cross 100%.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets" id="jaPresets">
+      <button data-ja="today">Marvin Bot today</button>
+      <button data-ja="target">35 kg target</button>
+      <button data-ja="thigh">Real thigh heat sink</button>
+      <button data-ja="stage">With 1.5:1 knee stage</button>
+    </div>
+    <div class="ctl"><label for="jaMass">Robot mass (bare) <output id="o_jaMass"></output></label>
+      <input type="range" id="jaMass" min="33" max="46" step="0.05" value="40.35">
+      <div class="hint">Leg demands scale with mass (about 1.2 N·m per kg at the knee in this pose; the repo rounds it to ~1.1).</div></div>
+    <div class="ctl"><label for="jaSink">Heat path vs manual's plate <output id="o_jaSink"></output></label>
+      <input type="range" id="jaSink" min="70" max="110" step="1" value="100"></div>
+    <div class="ctl check"><label><input type="checkbox" id="jaStage"> Add the parked 1.5:1 knee stage</label>
+      <div class="hint">Knee: 60 N·m rated, 180 N·m peak, 14 rad/s, about +0.2 kg per leg.</div></div>
+  </div>
+  <div class="preview">
+    <svg id="jaView" viewBox="0 0 640 430" role="img" aria-label="Bar chart of each joint's demand as a percentage of its actuator's rated torque"></svg>
+    <div class="legend"><span><i style="background:var(--good)"></i>demand ≤ 85% of rated</span><span><i style="background:var(--warn)"></i>85-100%</span><span><i style="background:var(--bad)"></i>over rated</span><span><i style="background:var(--violet)"></i>demand as % of peak (rule: ≤ 70%)</span></div>
+  </div>
+</div>
+<div class="tablewrap"><table class="jt">
+<tr><th>Model</th><th class="num">Peak N·m</th><th class="num">Rated N·m</th><th class="num">No-load rpm</th><th class="num">Mass kg</th><th class="num">Price</th><th class="num">kg per 10 N·m peak</th><th class="num">$ per N·m peak</th><th class="num">$ per N·m rated</th><th>Joints</th></tr>
+<tr><td>RS04</td><td class="num">120</td><td class="num">40</td><td class="num">200</td><td class="num">1.42</td><td class="num">$255</td><td class="num">0.12</td><td class="num">2.13</td><td class="num">6.4</td><td>hip pitch, hip roll, knee</td></tr>
+<tr><td>RS03</td><td class="num">60</td><td class="num">20</td><td class="num">195</td><td class="num">0.90</td><td class="num">$225</td><td class="num">0.15</td><td class="num">3.75</td><td class="num">11.3</td><td>hip yaw, ankle ×2, waist, shoulder pitch and roll</td></tr>
+<tr><td>RS06</td><td class="num">36</td><td class="num">11</td><td class="num">480</td><td class="num">0.621</td><td class="num">$210</td><td class="num">0.17</td><td class="num">5.83</td><td class="num">19.1</td><td>shoulder yaw, elbow</td></tr>
+<tr><td>RS00</td><td class="num">14</td><td class="num">5</td><td class="num">315</td><td class="num">0.31</td><td class="num">$139</td><td class="num">0.22</td><td class="num">9.93</td><td class="num">27.8</td><td>wrist yaw</td></tr>
+</table></div>
+<p class="small">Prices: Seeed Studio, October 2026 (<code>bom/bom.xlsx</code>). Torque and mass: <code>description/actuators.yaml</code>. Bigger actuators are cheaper and lighter per N·m, which is one reason the design uses the RS04 wherever the joint is heavily loaded, and why it stops at four sizes.</p>
+<p>Reading the chart, the joint-by-joint story:</p>
+<ul>
+<li><b>Knee (RS04):</b> the hardest working joint. In the static 18 cm step it holds 47 N·m: 39% of peak (fine) but 118% of continuous rating. The trained stair policy rough v5 loaded it only part of each step, 73-75% of rated RMS (measured on the earlier 1.29 m model; the current stair policy, rough v9, has no published knee RMS on the 1.44 m body). The real rating in a thigh-sized mount may be 30-35 N·m rather than 40, which would push the stair RMS to 85-100% (<code>docs/design/stairs.md</code>). The phase 2 bench test (<code>bench/actuator/bench_robstride.py thermal --torque 47</code>) measures it.</li>
+<li><b>Hip roll (RS04):</b> 42 N·m on one leg, 105% of rated; about 60% RMS on stairs in simulation (rough v5, 1.29 m model).</li>
+<li><b>Hip pitch (RS04):</b> lightly loaded in a static step (at most 12 N·m, in the swing-over-the-edge pose) but takes large dynamic peaks in walking and when standing up; the RS04 also keeps one model for the three big hip and knee joints.</li>
+<li><b>Hip yaw (RS03):</b> 17.7 N·m in the static step, 89% of the RS03's 20 N·m. It swings with the leg, so a lighter, smaller motor here also reduces leg inertia.</li>
+<li><b>Ankles (2 × RS03 through a linkage):</b> 24 N·m pitch and 17.5 N·m roll needed against 32 and 25 N·m continuous available at the worst pose (<code>tools/ankle_linkage.py</code>; page <a href="06-ankle-linkage.html">06</a>). RS06 ankles were tried in v0.2 and rejected: 22 / 11 N·m continuous was not enough for slow stairs and one-foot standing (<code>docs/decisions.md</code>, 2026-10-26).</li>
+<li><b>Shoulders (RS03 pitch and roll, RS06 yaw) and elbow (RS06):</b> holding the arm straight out takes about 6.7 N·m at the shoulder and 1.8 N·m at the elbow (9.4 and 3.4 N·m with 0.5 kg in the hand, from the URDF link masses). The margin is for push-ups and getting up after a fall, not for holding.</li>
+<li><b>Waist yaw (RS03):</b> not loaded by gravity; sized for the reaction of swinging arms and turning the torso. No static check in the repo.</li>
+<li><b>Wrist yaw (RS00) and wrist pitch / neck (STS3250 servos):</b> light loads; the wrist pitch servo is at 75% of its rating with 0.5 kg at the fingertips (<code>docs/requirements.md</code> R20).</li>
+</ul>
+<p>The simulator sees these actuators as peak torque and no-load speed per joint (<code>tools/build_urdf.py</code>), a straight-line DC-motor model, an armature (reflected inertia) placeholder per joint, and a 0-10 ms command delay. A heat penalty in training discourages holding more than about 0.9 times rated on average over one second (<code>sim/isaaclab/README.md</code>).</p>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<tr><th>Option</th><th>For</th><th>Against</th><th>Status</th></tr>
+<tr><td>RobStride RS04 / RS03 / RS06 / RS00 (QDD)</td><td>most torque per dollar of the QDD actuators compared; public manuals and STEP models; Python, Rust and ROS 2 drivers</td><td>ratings depend on the heat sink; some figures differ between README and manual</td><td>chosen (<code>docs/decisions.md</code>, 2026-10-25)</td></tr>
+<tr><td>Other QDD brands (CubeMars, Damiao, Encos, MyActuator)</td><td>second sources; the Damiao DM-J10010L matches the RS04 class</td><td>2-3× the price per N·m or fewer verified specs</td><td>DM-J10010L kept as second source</td></tr>
+<tr><td>Self-built cycloidal actuators</td><td>cheap, open (as in Berkeley Humanoid Lite<sup class="cite"><a href="#s9">[9]</a></sup>)</td><td>more work, lower torque, wear</td><td>rejected</td></tr>
+<tr><td>Parked 1.5:1 knee stage (belt or linkage after the RS04)</td><td>60 N·m continuous, 180 peak</td><td>~14 rad/s top speed, ~0.2 kg, some backlash, thigh redesign</td><td>parked until the bench test; also needed if legs grow longer (127% of rated at +90 mm legs)</td></tr>
+<tr><td>Better heat path (thigh plate as heat sink, paste, small fan)</td><td>+10-20% continuous, cheap</td><td>to be measured</td><td>first option to try</td></tr>
+<tr><td>RS06 instead of RS03 at shoulder pitch and roll</td><td>saves ~1.1 kg</td><td>shoulder peak 60 → 36 N·m, less margin for push-ups</td><td>listed as a mass saving</td></tr>
+</table></div>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b>
+<ul>
+<li><b>RS03 no-load speed and mass:</b> RobStride's specification README says 195 rpm and 900 g; the RS03 manual (CAN 2.0, revision 261013) says 200 rpm and 880 g. <code>actuators.yaml</code> uses the README's 195 rpm and 0.90 kg and records both.<sup class="cite"><a href="#s1">[1]</a></sup><sup class="cite"><a href="#s3">[3]</a></sup></li>
+<li><b>RS03 rated torque:</b> README 21 N·m, manual 20 N·m (215 × 220 mm plate); the repo uses 20.</li>
+<li><b>Voltage range:</b> the README gives 15-60 V for the RS03, RS04 and RS06; the RS03 and RS04 manuals say 24-60 V. The repo uses 24-60 V for those two (15-60 V for the RS06, matching its manual).</li>
+<li><b>RS06 test plate:</b> the RS06 manual says 130 × 160 mm in its service conditions and 130 × 155 mm in its overload test.</li>
+<li><b>Torque-speed model:</b> the manuals' T-N curves keep near-peak torque up to about half the no-load speed; the simulation's straight-line DC-motor model (saturation torque = peak) is much more conservative at mid speeds. Not an error, but a modelling choice to revisit with bench data.</li>
+<li><b>Ankle demand:</b> <code>docs/design/stairs.md</code> says the ankle needs "~22 and ~14 N·m" (pitch, roll); running <code>check_step_up.py</code> on today's 1.44 m model gives 24.4 and 17.5 N·m, still within the 32 / 25 N·m available.</li>
+</ul></div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>Whether the knee needs the 1.5:1 stage: compare the stair RMS (Playground 2) against the rating you expect in the real thigh mount. Trade: 50% more continuous knee torque, but a third less top speed, about +0.2 kg per leg and a thigh redesign.</li>
+<li>How much heat path to design in: every percent of rating gained by a better plate or a small fan is torque for little money, at the cost of some mass and design time.</li>
+<li>Whether to give the simulator the manual's torque-speed (T-N) curve instead of the straight line: faster, less cautious policies, but more risk of asking for torque the real motor lacks if the curve is optimistic.</li>
+<li>Gear ratio for a new joint: torque goes up by N, but the foot-strike "mass" goes up by N² and the joint stops giving way when bumped.</li>
+<li>Battery voltage window: letting the battery run lower gives more runtime per charge but costs top speed (not torque) near the end.</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<p><b>Where this leads.</b> This page treated each motor on its own. Page 05 works out where the leg loads come from (the robot's weight times lever arms) and why stairs are the hardest case, and page 06 shows how two of these motors share the ankle's work.</p>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://dspace.mit.edu/handle/1721.1/119863">Wensing et al., Proprioceptive actuator design in the MIT Cheetah (2017)</a>: the clearest explanation of why low gear ratios suit legged robots, with the impact and bandwidth analysis.</li>
+<li><a href="https://hades.mech.northwestern.edu/images/7/7f/MR.pdf">Lynch and Park, Modern Robotics, section 8.9</a>: motors, gearing, torque-speed curves and reflected inertia in textbook form.</li>
+<li><a href="https://github.com/RobStride/Product_Information">RobStride Product_Information</a>: the manuals with T-N curves, overload tables and the CAN protocol, worth reading before the bench test.</li>
+<li><a href="https://arxiv.org/abs/2504.17249">Chi et al., Berkeley Humanoid Lite (2025)</a>: an open humanoid with self-built cycloidal actuators, including their backlash and wear testing.</li>
+<li><a href="https://isaac-sim.github.io/IsaacLab/main/source/concepts/actuators.html">Isaac Lab actuator models</a>: what the simulator does with your torque and speed numbers.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://github.com/RobStride/Product_Information">RobStride, Product_Information repository, specification README</a> <span class="used">— used for: peak, rated, no-load speed, ratio, mass and voltage per model; README-versus-manual differences.</span></li>
+  <li id="s2"><a href="https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS04">RobStride, RS04 User Manual (CAN 2.0, rev. 260713)</a> <span class="used">— used for: K<sub>t</sub> 2.1 N·m/A, rated/peak currents, back-EMF, T-N curve, 345 / 220 mm plate ratings, 145 °C limit, overload and stall tables, operation-control (MIT) formula, field-weakening parameter.</span></li>
+  <li id="s3"><a href="https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS03">RobStride, RS03 User Manual (CAN 2.0, rev. 261013)</a> <span class="used">— used for: RS03 K<sub>t</sub>, 17 V/krpm back-EMF, 200 rpm and 880 g, T-N curve, 215 × 220 mm plate, overload table.</span></li>
+  <li id="s4"><a href="https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS06">RobStride, RS06 User Manual (CAN 2.0, rev. 260713)</a> <span class="used">— used for: RS06 K<sub>t</sub>, currents, back-EMF, T-N curve, test plate.</span></li>
+  <li id="s5"><a href="https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS00">RobStride, RS00 User Manual (CAN 2.0, rev. 260713)</a> <span class="used">— used for: RS00 K<sub>t</sub>, currents, back-EMF, T-N curve.</span></li>
+  <li id="s6"><a href="https://dspace.mit.edu/handle/1721.1/119863">P. M. Wensing, A. Wang, S. Seok, D. Otten, J. Lang, S. Kim, "Proprioceptive Actuator Design in the MIT Cheetah: Impact Mitigation and High-Bandwidth Physical Interaction for Dynamic Legged Robots," IEEE T-RO 33(3), 2017</a> <span class="used">— used for: proprioceptive actuation, reflected inertia and impact mitigation, backdrivability.</span></li>
+  <li id="s7"><a href="https://doi.org/10.1109/TMECH.2014.2339013">S. Seok et al., "Design Principles for Energy-Efficient Legged Locomotion and Implementation on the MIT Cheetah Robot," IEEE/ASME T-Mech, 2015</a> <span class="used">— used for: large-gap motors with a single low-ratio stage.</span></li>
+  <li id="s8"><a href="https://doi.org/10.1109/ICRA.2019.8793865">B. Katz, J. Di Carlo, S. Kim, "Mini Cheetah: A Platform for Pushing the Limits of Dynamic Quadruped Control," ICRA 2019</a> <span class="used">— used for: low-cost modular QDD actuators and the MIT-mode driver lineage.</span></li>
+  <li id="s9"><a href="https://arxiv.org/abs/2504.17249">Y. Chi et al., "Demonstrating Berkeley Humanoid Lite: An Open-source, Accessible, and Customizable 3D-printed Humanoid Robot," RSS 2025 (arXiv 2504.17249)</a> <span class="used">— used for: cycloidal gearboxes chosen for printed parts; directly driven joints.</span></li>
+  <li id="s10"><a href="https://hades.mech.northwestern.edu/images/7/7f/MR.pdf">K. M. Lynch, F. C. Park, Modern Robotics, Cambridge University Press, 2017, §8.9</a> <span class="used">— used for: gearing, reflected (apparent) inertia N²·J, harmonic drives.</span></li>
+  <li id="s11"><a href="https://isaac-sim.github.io/IsaacLab/main/source/concepts/actuators.html">Isaac Lab documentation, Actuators</a> <span class="used">— used for: the DC-motor torque-speed clipping model.</span></li>
+  <li id="s12"><a href="https://www.maxongroup.com/medias/sys_master/root/9399155752990/Cataloge-Page-EN-173.pdf">maxon, catalogue motor data page (thermal data block)</a> <span class="used">— used for: the convention of two thermal resistances and two time constants (winding, motor).</span></li>
+  <li id="s13"><a href="https://www.ti.com/document-viewer/lit/html/TIDUF56/GUID-8DA8E6AB-DFB2-40D3-89BE-4CE6D0397309">Texas Instruments, TIDUF56 design guide (field weakening and MTPA)</a> <span class="used">— used for: field weakening extends operation above base speed.</span></li>
+  <li id="s14"><a href="https://nvlpubs.nist.gov/nistpubs/Legacy/hb/nbshandbook100.pdf">NBS Handbook 100, Copper Wire Tables (1966)</a> <span class="used">— used for: copper's temperature coefficient of resistance, 0.00393 per K at 20 °C.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="03-architecture.html"><span>← Previous</span>System architecture: from battery to policy</a>
+  <a class="next" href="05-leg-loads-stairs.html"><span>Next →</span>Leg loads and stairs</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const RPM=2*Math.PI/60;
+// Manual data. tn: digitised 48 V T-N curve at the output (rpm, N·m). arm: repo armature placeholder (kg·m², joint side).
+const MODELS={
+ RS04:{peak:120,rated:40,rpm:200,N:9,kg:1.42,Kt:2.1,Ir:27/Math.SQRT2,Ip:90/Math.SQRT2,ke:16.9,mitV:15,arm:0.03,price:255,
+   tn:[[0,120],[95,120],[110,110],[130,95],[150,78],[160,62],[170,53],[180,46],[186,38],[189,25],[190,10],[200,0]],th:{f:0.10,tw:2,th:250}},
+ RS03:{peak:60,rated:20,rpm:195,N:9,kg:0.90,Kt:2.36,Ir:13/Math.SQRT2,Ip:43/Math.SQRT2,ke:17,mitV:20,arm:0.02,price:225,
+   tn:[[0,60],[120,60],[135,55],[150,47.5],[165,39],[180,29],[186,21],[187,10],[195,0]],th:{f:0.20,tw:20,th:1000}},
+ RS06:{peak:36,rated:11,rpm:480,N:9,kg:0.621,Kt:1.09,Ir:14.3/Math.SQRT2,Ip:57/Math.SQRT2,ke:7.6,mitV:50,arm:0.01,price:210,
+   tn:[[0,36],[280,36],[300,33],[320,30],[350,26],[380,22],[400,18],[420,12.5],[428,10],[430,5],[480,0]],th:{f:0.20,tw:20,th:1000}},
+ RS00:{peak:14,rated:5,rpm:315,N:10,kg:0.31,Kt:1.48,Ir:4.7/Math.SQRT2,Ip:15.5/Math.SQRT2,ke:9.5,mitV:33,arm:0.005,price:139,
+   tn:[[0,14],[100,14],[150,12],[200,9.3],[250,6.5],[300,2],[315,0.5],[318,0]],th:{f:0.20,tw:20,th:1000}}
+};
+function interp(tab,x){ if(x<=tab[0][0]) return tab[0][1]; for(let i=1;i<tab.length;i++){ if(x<=tab[i][0]){ const [x0,y0]=tab[i-1],[x1,y1]=tab[i]; return y0+(y1-y0)*(x-x0)/(x1-x0);} } return 0; }
+// envelope at the joint (N·m) for joint speed w (rad/s), ratio N, bus V
+function envelope(m,w,N,V){ const k=N/m.N; const rpmNative=(w/RPM)*k; return k*interp(m.tn, rpmNative*48/V); }
+function w0(m,N,V){ return m.tn[m.tn.length-1][0]*RPM*(V/48)/(N/m.N); }
+function el(tag,attrs,parent,text){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(text!==undefined) e.textContent=text; if(parent) parent.appendChild(e); return e; }
+function fmt(x,d=0){ return Number(x).toFixed(d); }
+function niceStep(range,n){ const raw=range/n, p=Math.pow(10,Math.floor(Math.log10(raw))); const f=raw/p; return (f<1.5?1:f<3?2:f<7?5:10)*p; }
+
+/* ---------- Playground 1: torque-speed ---------- */
+const TS_DEF={tsModel:'RS04',tsRatio:9,tsV:48,tsT:47,tsW:0.5,tsDC:true};
+const ts={...TS_DEF};
+const TS_PRESETS={
+ today:{tsModel:'RS04',tsRatio:9,tsV:48,tsT:47,tsW:0.5},
+ swing:{tsModel:'RS04',tsRatio:9,tsV:48,tsT:15,tsW:8},
+ stage:{tsModel:'RS04',tsRatio:13.5,tsV:48,tsT:47,tsW:0.5},
+ hd:{tsModel:'RS04',tsRatio:50,tsV:48,tsT:47,tsW:0.5},
+ lowbat:{tsModel:'RS04',tsRatio:9,tsV:42,tsT:60,tsW:13}
+};
+function renderTS(){
+ const m=MODELS[ts.tsModel], N=ts.tsRatio, V=ts.tsV, k=N/m.N;
+ const svg=$('tsView'); svg.innerHTML='';
+ const W=640,H=400,L=58,R=16,T=14,B=46, pw=W-L-R, ph=H-T-B;
+ const wmax=Math.max(w0(m,N,Math.max(V,48))*1.08, ts.tsW*1.1, 1);
+ const tmax=Math.max(m.peak*k*1.12, ts.tsT*1.1, 1);
+ const X=w=>L+pw*w/wmax, Y=t=>T+ph*(1-t/tmax);
+ // grid
+ const xs=niceStep(wmax,8), ys=niceStep(tmax,6);
+ for(let x=0;x<=wmax+1e-9;x+=xs){ el('line',{x1:X(x),x2:X(x),y1:T,y2:T+ph,stroke:'#1f2833'},svg); el('text',{x:X(x),y:T+ph+16,fill:'#9aa7b4','font-size':11,'text-anchor':'middle'},svg,fmt(x,xs<1?1:0)); }
+ for(let y=0;y<=tmax+1e-9;y+=ys){ el('line',{x1:L,x2:L+pw,y1:Y(y),y2:Y(y),stroke:'#1f2833'},svg); el('text',{x:L-6,y:Y(y)+4,fill:'#9aa7b4','font-size':11,'text-anchor':'end'},svg,fmt(y,ys<1?1:0)); }
+ el('text',{x:L+pw/2,y:H-8,fill:'#9aa7b4','font-size':12,'text-anchor':'middle'},svg,'joint speed (rad/s)');
+ el('text',{x:14,y:T+ph/2,fill:'#9aa7b4','font-size':12,'text-anchor':'middle',transform:`rotate(-90 14 ${T+ph/2})`},svg,'joint torque (N·m)');
+ const n=160;
+ const path=(fn,wEnd)=>{ let d=''; for(let i=0;i<=n;i++){ const w=wEnd*i/n; d+=(i?'L':'M')+X(w).toFixed(1)+','+Y(Math.max(0,fn(w))).toFixed(1); } return d; };
+ // continuous region
+ const rated=m.rated*k; const w0V=w0(m,N,V);
+ let dC='M'+X(0)+','+Y(0); for(let i=0;i<=n;i++){ const w=w0V*i/n; dC+='L'+X(w).toFixed(1)+','+Y(Math.min(rated,envelope(m,w,N,V))).toFixed(1); } dC+='L'+X(w0V)+','+Y(0)+'Z';
+ el('path',{d:dC,fill:'rgba(76,195,138,.16)',stroke:'none'},svg);
+ el('line',{x1:X(0),x2:X(w0V),y1:Y(rated),y2:Y(rated),stroke:'#4cc38a','stroke-dasharray':'5 4','stroke-width':1.5},svg);
+ el('text',{x:X(w0V*0.55),y:Y(rated)-5,fill:'#4cc38a','font-size':11},svg,`rated (continuous) ${fmt(rated,rated<20?1:0)} N·m`);
+ // 48 V reference
+ if(Math.abs(V-48)>0.01) el('path',{d:path(w=>envelope(m,w,N,48),w0(m,N,48)),fill:'none',stroke:'#5b6b7c','stroke-width':2,'stroke-dasharray':'6 4'},svg);
+ // DC model
+ if(ts.tsDC){ const wd=m.rpm*RPM/k, pk=m.peak*k; el('path',{d:`M${X(0)},${Y(pk)}L${X(wd)},${Y(0)}`,stroke:'#b48cff','stroke-width':1.8,fill:'none','stroke-dasharray':'2 3'},svg); }
+ // envelope at V
+ el('path',{d:path(w=>envelope(m,w,N,V),w0V),fill:'none',stroke:'#4fb3ff','stroke-width':2.5},svg);
+ el('text',{x:X(0)+6,y:Y(m.peak*k)-6,fill:'#4fb3ff','font-size':11},svg,`peak ${fmt(m.peak*k)} N·m at ${fmt(V,1)} V`);
+ // MIT speed range
+ const wm=m.mitV/k; if(wm<wmax){ el('line',{x1:X(wm),x2:X(wm),y1:T,y2:T+ph,stroke:'#ffb454','stroke-dasharray':'3 5'},svg); el('text',{x:X(wm)-4,y:T+12,fill:'#ffb454','font-size':10,'text-anchor':'end'},svg,'MIT-mode speed range'); }
+ // operating point
+ const avail=envelope(m,ts.tsW,N,V);
+ let cls,msg;
+ if(ts.tsT<=Math.min(rated,avail)+1e-9){cls='ok';msg='Inside the continuous region: the actuator can do this indefinitely (with the manual\'s heat sink).';}
+ else if(ts.tsT<=avail+1e-9){cls='warn';msg=`Inside the peak envelope but above rated: possible for a limited time (heat ${fmt((curr(m,ts.tsT/k)/m.Ir)**2,2)}× rated). See Playground 2.`;}
+ else {cls='bad';msg=`Outside the envelope: at ${fmt(ts.tsW,1)} rad/s the actuator gives at most ${fmt(avail,1)} N·m.`;}
+ if(ts.tsW>wm && cls!=='bad') msg+=' Note: faster than the MIT-mode velocity encoding range.';
+ if(ts.tsDC){ const dc=Math.max(0,m.peak*k*(1-ts.tsW/(m.rpm*RPM/k))); if(ts.tsT>dc+1e-9 && cls!=='bad') msg+=` The simulator's straight-line model would clip it to ${fmt(dc,1)} N·m.`; }
+ const col={ok:'#4cc38a',warn:'#ffb454',bad:'#ff6b6b'}[cls];
+ el('circle',{cx:X(ts.tsW),cy:Y(ts.tsT),r:7,fill:col,stroke:'#0c1015','stroke-width':2},svg);
+ el('text',{x:Math.min(X(ts.tsW)+10,W-120),y:Math.max(Y(ts.tsT)-10,T+24),fill:col,'font-size':12},svg,`${fmt(ts.tsT,1)} N·m @ ${fmt(ts.tsW,1)} rad/s`);
+ const st=$('tsStatus'); st.className='statusline '+cls; st.textContent=msg;
+ // readouts
+ const I=curr(m,ts.tsT/k);
+ setRO('tsR1',`${fmt(m.peak*k,m.peak*k<20?1:0)} / ${fmt(rated,rated<20?1:0)} N·m`);
+ setRO('tsR2',`${fmt(w0V,1)} rad/s (${fmt(w0V/RPM)} rpm)`);
+ setRO('tsR3',`${fmt(avail,1)} N·m`, avail>=ts.tsT?'ok':'bad');
+ setRO('tsR4',`${fmt(I,1)} A`);
+ const heat=(I/m.Ir)**2; setRO('tsR5',`${fmt(heat,2)}×`, heat<=1?'ok':heat<=1.5?'warn':'bad');
+ setRO('tsR6',`${fmt(ts.tsT*ts.tsW)} W`);
+ const Jr=m.arm*k*k; setRO('tsR7',`${Jr<0.1?fmt(Jr,3):fmt(Jr,2)} kg·m²`);
+ setRO('tsR8',`${fmt(Jr/(0.375**2),2)} kg`, Jr/0.1406<1?'ok':Jr/0.1406<3?'warn':'bad');
+ updateNote();
+}
+// rms current for an actuator-native torque (output of the native gearbox), piecewise through rated and peak currents
+function curr(m,tau){ tau=Math.abs(tau); return tau<=m.rated? tau/m.rated*m.Ir : m.Ir+(tau-m.rated)/(m.peak-m.rated)*(m.Ip-m.Ir); }
+function setRO(id,v,cls){ const e=$(id); e.className='ro'+(cls?' '+cls:''); e.querySelector('.v').textContent=v; }
+
+/* ---------- Playground 2: thermal ---------- */
+const TH_DEF={thModel:'RS04',thSink:100,thAmb:25,thProf:'stairs',thT:44,thStall:false,thDur:15};
+const th={...TH_DEF};
+const TH_PRESETS={
+ today:{thModel:'RS04',thSink:100,thAmb:25,thProf:'stairs',thT:44,thStall:false,thDur:15},
+ static:{thModel:'RS04',thSink:100,thAmb:25,thProf:'const',thT:47,thStall:false,thDur:20},
+ thigh:{thModel:'RS04',thSink:87,thAmb:25,thProf:'const',thT:47,thStall:false,thDur:20},
+ walk:{thModel:'RS04',thSink:100,thAmb:25,thProf:'walk',thT:34.7,thStall:false,thDur:15},
+ yaw:{thModel:'RS03',thSink:100,thAmb:25,thProf:'const',thT:17.7,thStall:false,thDur:30}
+};
+const ALPHA=0.00393, LIM=145, RISE=120;
+function profile(t){ const T=th.thT; switch(th.thProf){
+  case 'const': return T;
+  case 'walk': return (t%0.6)<0.36? T : 0.2*T;
+  case 'stairs': return (t%3)<1.2? T : 0.3*T;
+  case 'hold': return (t%60)<30? T : 0; } return T; }
+function simulate(m,sink,amb,dur,stall){
+ const p=m.th, a=RISE/(1+ALPHA*RISE);         // rated heat × R_total = a (K), cold-referenced
+ const Rtot=1/(sink*sink);                     // normalised total resistance (1 at the manual plate)
+ const Rwh=p.f, Rha=Rtot-p.f; const Cw=p.tw/p.f, Ch=p.th/(1-p.f);
+ let Tw=0,Th=0,t=0,dt=0.05, tlim=null, sumsq=0, nS=0; const out=[]; const every=Math.max(1,Math.round(dur/400/dt));
+ let i=0;
+ while(t<=dur){
+   const tau=profile(t); sumsq+=tau*tau; nS++;
+   const x=curr(m,tau)/m.Ir; const P=a*x*x*(1+ALPHA*(Tw+amb-25))*(stall?Math.SQRT2:1);
+   const dTw=(P-(Tw-Th)/Rwh)/Cw, dTh=((Tw-Th)/Rwh-Th/Rha)/Ch;
+   Tw+=dTw*dt; Th+=dTh*dt; t+=dt;
+   if(tlim===null && Tw+amb>=LIM) tlim=t;
+   if(i++%every===0) out.push([t,Tw+amb,Th+amb]);
+ }
+ return {out,tlim,rms:Math.sqrt(sumsq/nS),Tend:Tw+amb,Rtot,a};
+}
+function steadyState(m,rmsHeat,Rtot,amb,stall){ // solve ΔT = a·h·(1+α(ΔT+amb-25))·Rtot
+ const a=RISE/(1+ALPHA*RISE); const g=a*rmsHeat*Rtot*(stall?Math.SQRT2:1); const den=1-g*ALPHA; if(den<=0) return Infinity; return amb+g*(1+ALPHA*(amb-25))/den; }
+function renderTH(){
+ const m=MODELS[th.thModel], sink=th.thSink/100, dur=th.thDur*60;
+ const r=simulate(m,sink,th.thAmb,dur,th.thStall);
+ // mean of (I/Ir)^2 over one period for steady state
+ let h=0,nn=0; for(let t=0;t<60;t+=0.01){ const x=curr(m,profile(t))/m.Ir; h+=x*x; nn++; } h/=nn;
+ const Tss=steadyState(m,h,r.Rtot,th.thAmb,th.thStall);
+ const svg=$('thView'); svg.innerHTML='';
+ const W=640,H=360,L=50,R=16,T=14,B=44,pw=W-L-R,ph=H-T-B;
+ const ymin=Math.min(20,th.thAmb-5), ymax=Math.max(160, Math.min(220, Math.max(...r.out.map(o=>o[1]))+10));
+ const X=t=>L+pw*t/dur, Y=v=>T+ph*(1-(v-ymin)/(ymax-ymin));
+ const xs=niceStep(th.thDur,8);
+ for(let x=0;x<=th.thDur+1e-9;x+=xs){ el('line',{x1:X(x*60),x2:X(x*60),y1:T,y2:T+ph,stroke:'#1f2833'},svg); el('text',{x:X(x*60),y:T+ph+16,fill:'#9aa7b4','font-size':11,'text-anchor':'middle'},svg,fmt(x)); }
+ for(let y=Math.ceil(ymin/20)*20;y<=ymax;y+=20){ el('line',{x1:L,x2:L+pw,y1:Y(y),y2:Y(y),stroke:'#1f2833'},svg); el('text',{x:L-6,y:Y(y)+4,fill:'#9aa7b4','font-size':11,'text-anchor':'end'},svg,y); }
+ el('text',{x:L+pw/2,y:H-8,fill:'#9aa7b4','font-size':12,'text-anchor':'middle'},svg,'time (minutes)');
+ el('text',{x:14,y:T+ph/2,fill:'#9aa7b4','font-size':12,'text-anchor':'middle',transform:`rotate(-90 14 ${T+ph/2})`},svg,'temperature (°C)');
+ el('line',{x1:L,x2:L+pw,y1:Y(LIM),y2:Y(LIM),stroke:'#ffb454','stroke-dasharray':'6 4','stroke-width':1.5},svg);
+ el('text',{x:L+pw-4,y:Y(LIM)-5,fill:'#ffb454','font-size':11,'text-anchor':'end'},svg,'145 °C winding limit');
+ let dW='',dH=''; r.out.forEach((o,i)=>{ const c=i?'L':'M'; dW+=c+X(o[0]).toFixed(1)+','+Y(Math.min(o[1],ymax)).toFixed(1); dH+=c+X(o[0]).toFixed(1)+','+Y(Math.min(o[2],ymax)).toFixed(1); });
+ el('path',{d:dH,fill:'none',stroke:'#4fb3ff','stroke-width':2},svg);
+ el('path',{d:dW,fill:'none',stroke:'#ff6b6b','stroke-width':2.2},svg);
+ if(r.tlim!==null){ el('line',{x1:X(r.tlim),x2:X(r.tlim),y1:T,y2:T+ph,stroke:'#ff6b6b','stroke-dasharray':'3 4'},svg); el('text',{x:Math.min(X(r.tlim)+5,W-120),y:T+14,fill:'#ff6b6b','font-size':11},svg,`limit at ${fmtT(r.tlim)}`); }
+ const ratedM=m.rated*sink;
+ setRO('thR1',`${fmt(r.rms,1)} N·m`);
+ const pr=r.rms/ratedM; setRO('thR2',`${fmt(pr*100)}%`, pr<=0.85?'ok':pr<=1?'warn':'bad');
+ setRO('thR3',`${fmt(r.Tend)} °C`, r.Tend<LIM-15?'ok':r.Tend<LIM?'warn':'bad');
+ setRO('thR4', r.tlim===null? (Tss>=LIM?'later than shown':'never') : fmtT(r.tlim), r.tlim===null&&Tss<LIM?'ok':'bad');
+ setRO('thR5', isFinite(Tss)&&Tss<400? `${fmt(Tss)} °C`:'runaway', Tss<LIM-15?'ok':Tss<LIM?'warn':'bad');
+ setRO('thR6', `${fmt(ratedM,1)} N·m`);
+ const st=$('thStatus');
+ if(r.tlim!==null){ st.className='statusline bad'; st.textContent=`The winding reaches the 145 °C protection limit after ${fmtT(r.tlim)}; the driver would cut torque there.`; }
+ else if(Tss>=LIM){ st.className='statusline warn'; st.textContent=`Below the limit within ${th.thDur} min, but the steady state (${isFinite(Tss)&&Tss<400?fmt(Tss)+' °C':'runaway'}) is above it: it would trip if this went on.`; }
+ else { st.className='statusline ok'; st.textContent=`Sustainable: the winding levels off around ${fmt(Tss)} °C, ${fmt(LIM-Tss)} K below the limit.`; }
+ updateNote();
+}
+function fmtT(s){ return s<120? `${fmt(s)} s` : `${fmt(s/60,1)} min`; }
+
+/* ---------- Playground 3: joint assignment ---------- */
+const JA_DEF={jaMass:40.35,jaSink:100,jaStage:false};
+const ja={...JA_DEF};
+const JA_PRESETS={today:{jaMass:40.35,jaSink:100,jaStage:false},target:{jaMass:35,jaSink:100,jaStage:false},thigh:{jaMass:40.35,jaSink:85,jaStage:false},stage:{jaMass:40.35,jaSink:85,jaStage:true}};
+// demand (N·m), rated, peak of the actuator(s) at the joint; leg: scales with mass
+const JOINTS=[
+ {n:'Knee',m:'RS04',d:47.1,r:40,p:120,leg:1,src:'static 18 cm step'},
+ {n:'Hip roll',m:'RS04',d:41.9,r:40,p:120,leg:1,src:'static 18 cm step'},
+ {n:'Hip pitch',m:'RS04',d:12.3,r:40,p:120,leg:1,src:'static 18 cm step'},
+ {n:'Hip yaw',m:'RS03',d:17.7,r:20,p:60,leg:1,src:'static 18 cm step'},
+ {n:'Ankle pitch (2×RS03)',m:'RS03',d:24.4,r:32,p:96,leg:1,src:'step vs worst pose'},
+ {n:'Ankle roll (2×RS03)',m:'RS03',d:17.5,r:25,p:74,leg:1,src:'step vs worst pose'},
+ {n:'Shoulder pitch',m:'RS03',d:9.4,r:20,p:60,leg:0,src:'arm out, 0.5 kg'},
+ {n:'Shoulder roll',m:'RS03',d:9.4,r:20,p:60,leg:0,src:'arm out sideways, 0.5 kg'},
+ {n:'Elbow',m:'RS06',d:3.4,r:11,p:36,leg:0,src:'forearm level, 0.5 kg'},
+ {n:'Wrist pitch (servo)',m:'STS3250',d:1.18,r:1.57,p:4.9,leg:0,src:'0.5 kg at fingertips (R20)'}
+];
+function renderJA(){
+ const svg=$('jaView'); svg.innerHTML='';
+ const W=640,L=170,R=60,T=26,rowH=38,pw=W-L-R; const maxPct=1.6;
+ const X=p=>L+pw*Math.min(p,maxPct)/maxPct;
+ [0,0.5,1,1.5].forEach(p=>{ el('line',{x1:X(p),x2:X(p),y1:T-8,y2:T+rowH*JOINTS.length,stroke:p===1?'#ffb454':'#1f2833','stroke-dasharray':p===1?'5 4':''},svg); el('text',{x:X(p),y:T-12,fill:p===1?'#ffb454':'#9aa7b4','font-size':11,'text-anchor':'middle'},svg,(p*100)+'%'+(p===1?' of rated':'')); });
+ const scale=ja.jaMass/40.35, sink=ja.jaSink/100;
+ JOINTS.forEach((j,i)=>{
+   let d=j.d*(j.leg?scale:1), r=j.r, p=j.p;
+   if(j.m!=='STS3250') r*=sink;
+   if(ja.jaStage && j.n==='Knee'){ r*=1.5; p*=1.5; }
+   const pr=d/r, pp=d/p, y=T+i*rowH+6;
+   const col=pr<=0.85?'#4cc38a':pr<=1?'#ffb454':'#ff6b6b';
+   el('text',{x:L-8,y:y+12,fill:'#e6edf3','font-size':12,'text-anchor':'end'},svg,j.n);
+   el('text',{x:L-8,y:y+25,fill:'#9aa7b4','font-size':10,'text-anchor':'end'},svg,`${j.m} · ${j.src}`);
+   el('rect',{x:L,y:y+2,width:Math.max(1,X(pr)-L),height:14,rx:3,fill:col,opacity:.85},svg);
+   el('rect',{x:X(pp)-2,y:y+19,width:4,height:9,fill:'#b48cff'},svg);
+   el('line',{x1:L,x2:X(pp),y1:y+23.5,y2:y+23.5,stroke:'#b48cff','stroke-width':1,opacity:.5},svg);
+   el('text',{x:Math.min(X(pr)+6,W-R+4),y:y+14,fill:col,'font-size':11},svg,`${fmt(d,1)} / ${fmt(r,1)} N·m = ${fmt(pr*100)}%`+(pr>maxPct?' ▶':''));
+   el('text',{x:X(pp)+6,y:y+29,fill:'#b48cff','font-size':10},svg,`${fmt(pp*100)}% of peak`);
+ });
+ updateNote();
+}
+
+/* ---------- binding ---------- */
+function bindAll(stateObj, ids, renderFn, fmts){
+ ids.forEach(id=>{ const e=$(id); const out=$('o_'+id);
+   const upd=()=>{ stateObj[id]= e.type==='checkbox'? e.checked : (e.tagName==='SELECT'? e.value : parseFloat(e.value)); if(out) out.textContent=fmts[id]?fmts[id](stateObj[id]):stateObj[id]; renderFn(); };
+   e.addEventListener('input',upd); e.addEventListener('change',upd); });
+}
+function setUI(stateObj,s,fmts,renderFn){ Object.assign(stateObj,s); for(const k in stateObj){ const e=$(k); if(!e) continue; if(e.type==='checkbox') e.checked=!!stateObj[k]; else e.value=stateObj[k]; const o=$('o_'+k); if(o) o.textContent=fmts[k]?fmts[k](stateObj[k]):stateObj[k]; } renderFn(); }
+const TSF={tsRatio:v=>v+':1',tsV:v=>fmt(v,1)+' V',tsT:v=>fmt(v,1)+' N·m',tsW:v=>`${fmt(v,1)} rad/s (${fmt(v/RPM)} rpm)`};
+const THF={thSink:v=>v+'%',thAmb:v=>v+' °C',thT:v=>fmt(v,1)+' N·m',thDur:v=>v+' min'};
+const JAF={jaMass:v=>fmt(v,2)+' kg',jaSink:v=>v+'%'};
+bindAll(ts,['tsModel','tsRatio','tsV','tsT','tsW','tsDC'],renderTS,TSF);
+bindAll(th,['thModel','thSink','thAmb','thProf','thT','thStall','thDur'],renderTH,THF);
+bindAll(ja,['jaMass','jaSink','jaStage'],renderJA,JAF);
+// model change in P1 resets ratio to native
+$('tsModel').addEventListener('change',()=>{ const m=MODELS[ts.tsModel]; setUI(ts,{tsRatio:m.N},TSF,renderTS); });
+document.querySelectorAll('[data-ts]').forEach(b=>b.addEventListener('click',()=>setUI(ts,TS_PRESETS[b.dataset.ts],TSF,renderTS)));
+document.querySelectorAll('[data-th]').forEach(b=>b.addEventListener('click',()=>setUI(th,TH_PRESETS[b.dataset.th],THF,renderTH)));
+document.querySelectorAll('[data-ja]').forEach(b=>b.addEventListener('click',()=>setUI(ja,JA_PRESETS[b.dataset.ja],JAF,renderJA)));
+
+function updateNote(){
+ const parts=[];
+ if(!$('note')) return;
+ const m=MODELS[ts.tsModel], k=ts.tsRatio/m.N;
+ const tsChanged=['tsModel','tsRatio','tsV','tsT','tsW'].some(x=>ts[x]!==TS_DEF[x]);
+ if(tsChanged){
+   const avail=envelope(m,ts.tsW,ts.tsRatio,ts.tsV), rated=m.rated*k;
+   const verdict= ts.tsT<=Math.min(rated,avail)? 'inside the continuous (rated) region' : ts.tsT<=avail? `inside the peak envelope but above rated (${fmt((ts.tsT/rated)**2,2)}× rated heat), so time-limited` : `outside the envelope (max ${fmt(avail,1)} N·m at that speed)`;
+   parts.push(`Torque-speed: a ${ts.tsModel}${ts.tsRatio!==m.N?` rescaled to a ${ts.tsRatio}:1 total ratio (peak ${fmt(m.peak*k)} N·m, rated ${fmt(rated,1)} N·m, reflected inertia ~${fmt(m.arm*k*k,3)} kg·m² from the repo's armature placeholder)`:''} at ${fmt(ts.tsV,1)} V; a joint demand of ${fmt(ts.tsT,1)} N·m at ${fmt(ts.tsW,1)} rad/s is ${verdict}.`);
+ }
+ const thChanged=Object.keys(TH_DEF).some(x=>th[x]!==TH_DEF[x]);
+ if(thChanged){
+   const mm=MODELS[th.thModel]; const r=simulate(mm,th.thSink/100,th.thAmb,th.thDur*60,th.thStall);
+   const prof={const:'constant',walk:'walking-like (60% at full, 40% at 20%)',stairs:'stair-like (40% of a 3 s step at full, 60% at 30%)',hold:'30 s hold / 30 s rest'}[th.thProf];
+   parts.push(`Thermal (two-node model fitted to RobStride's overload tables, 145 °C limit): ${th.thModel}, ${prof} profile at ${fmt(th.thT,1)} N·m${th.thStall?' while holding still':''}, heat path ${th.thSink}% of the manual's plate rating (${fmt(mm.rated*th.thSink/100,1)} N·m continuous), ambient ${th.thAmb} °C. RMS torque ${fmt(r.rms,1)} N·m; ${r.tlim!==null?`reaches 145 °C after ${fmtT(r.tlim)}`:`stays below 145 °C for ${th.thDur} min (${fmt(r.Tend)} °C at the end)`}.`);
+ }
+ const jaChanged=Object.keys(JA_DEF).some(x=>ja[x]!==JA_DEF[x]);
+ if(jaChanged){
+   const scale=ja.jaMass/40.35, r=40*ja.jaSink/100*(ja.jaStage?1.5:1); const kn=47.1*scale, hr=41.9*scale, hrr=40*ja.jaSink/100;
+   parts.push(`Joint assignment: at ${fmt(ja.jaMass,2)} kg bare, heat path ${ja.jaSink}%${ja.jaStage?' and the parked 1.5:1 knee stage':''}, the static 18 cm step puts the knee at ${fmt(kn,1)} N·m = ${fmt(kn/r*100)}% of its continuous rating and hip roll at ${fmt(hr/hrr*100)}% (repo rule: RMS within rating, peaks ≤ 70% of peak).`);
+ }
+ $('note').textContent = parts.length ? `For Marvin Bot (1.44 m, 40.35 kg bare humanoid with RobStride QDD actuators, 48 V), I explored the actuator limits:\n- ${parts.join('\n- ')}\nOpen question: confirm against the phase 2 bench test (RS04 thermal hold at 47 N·m in a thigh-sized mount, bench/actuator/bench_robstride.py) before deciding on the 1.5:1 knee stage.`
+   : 'Change a control above to build a note.';
+}
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+setUI(ts,{},TSF,renderTS); setUI(th,{},THF,renderTH); setUI(ja,{},JAF,renderJA);
+</script>
+</body>
+</html>

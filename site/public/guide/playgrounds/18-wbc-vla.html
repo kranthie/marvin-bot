@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Whole-body control and VLA models · Marvin Bot guide</title>
+<meta name="description" content="How a humanoid splits control between a fast balance controller and a slow vision-language-action model, with playgrounds for control architectures and action-chunk latency.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+.seg{display:flex;gap:0;margin:4px 0 8px;flex-wrap:wrap}
+.seg button{border-radius:0;flex:1 1 auto}
+.seg button:first-child{border-radius:6px 0 0 6px}.seg button:last-child{border-radius:0 6px 6px 0}
+.archbtn{display:block;width:100%;text-align:left;margin:6px 0;padding:8px 10px;line-height:1.35}
+.archbtn small{display:block;color:var(--muted);font-size:12px}
+.archbtn .tag{float:right;font-size:11px;color:var(--accent2);border:1px solid var(--accent2);border-radius:99px;padding:0 6px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:6px 0}
+.chk input{margin-top:4px}
+.ratings{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;font-size:13px;margin-top:10px;align-items:center}
+.ratings .rb{height:9px;background:var(--panel2);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.ratings .rb i{display:block;height:100%;background:var(--accent)}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;font-size:14px}
+@media (max-width:620px){.pc{grid-template-columns:1fr}}
+.pc ul{margin:4px 0;padding-left:18px}
+.verdict{margin-top:10px;font-size:14px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin:4px 0;max-width:100%;overflow-x:auto}
+.est{color:var(--warn);font-size:12px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 5 · Learning</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 18</p>
+<h1>Whole-body control and VLA models</h1>
+<p class="lede">Walking, balancing, reaching and grasping all use the same 27 joints at the same time. This page is about how to split that job: between a fast balance controller and a slow "brain" that sees and understands language, and between learned and classical controllers. It ends with the timing problem every vision-language-action model has on a robot: its answers arrive late.</p>
+<div class="meta"><span class="chip">~30 min</span><span class="chip">Before this: <a href="16-rl-walking.html">16 Reinforcement learning for walking</a>, <a href="17-motion-tracking.html">17 Motion tracking</a></span><span class="chip">Also useful: <a href="03-architecture.html">03 System architecture</a>, <a href="11-sensors-compute.html">11 Sensors and compute</a></span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>What whole-body control means: one controller juggling balance, hands and head at once, and how it was done before machine learning.</li>
+<li>Three ways to split a humanoid's control: legs and arms handled separately, one general "copy this pose" controller, or one big network for everything.</li>
+<li>What a vision-language-action (VLA) model is: a network that looks through the camera, reads an instruction and plans the next second or two of arm motion. Marvin Bot plans to use NVIDIA's GR00T N1.7.</li>
+<li>Why a VLA that takes 150 ms per answer can still drive a robot whose controller runs every 20 ms.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>A humanoid has one body but many goals at once: keep the centre of mass over the feet (<a href="02-balance.html">page 2</a>), put the hand on the cup, look at the cup, do not hit the table. <a class="g" href="../glossary.html#whole-body-control">Whole-body control</a> (WBC) is any controller that decides all joint commands together so these goals are met at the same time, in order of importance. The question for a robot builder is not whether to do it, but how to split it into pieces that can each be built, trained and tested.</p>
+<p>You do this yourself without thinking. When you reach for a mug, reflexes in your legs and trunk keep you upright, while the slower, thinking part of your brain decides which mug and where your hand should go. If you are distracted for half a second, you do not fall over: the reflexes carry on. Robots are built the same way.</p>
+<p>The pieces run at very different speeds. A balance controller must react within tens of milliseconds, or the robot falls. A model that looks at a camera image and reads "put the red cup in the bin" may take a tenth of a second or more to think. So nearly every modern design is layered: a slow, smart layer on top sends goals to a fast, robust layer below. The playground lets you compare the three common layer splits.</p>
+<p>Three abbreviations come up all the time on this page:</p>
+<ul>
+<li><b>RL</b>, <a class="g" href="../glossary.html#reinforcement-learning">reinforcement learning</a>: training a controller by trial and error in simulation, as for Marvin Bot's walking (<a href="16-rl-walking.html">page 16</a>).</li>
+<li><b>IK</b>, <a class="g" href="../glossary.html#inverse-kinematics">inverse kinematics</a>: working out the joint angles that put the hand where you want it, with ordinary geometry and no learning (<a href="01-dof-kinematics.html">page 1</a>).</li>
+<li><b>VLA</b>, <a class="g" href="../glossary.html#vla">vision-language-action model</a>: a large neural network that takes camera images and a typed instruction and outputs short sequences of robot motion.</li>
+</ul>
+
+<h2 id="play">Playground A: how to split the control</h2>
+<p><b>How to use it:</b> click one of the three architectures, then pick a task. The diagram shows which boxes make up the controller, what data each needs and how often each runs; the bars below it rate the choice for that task (a longer bar is better, out of 5) and the lists give its strengths and weaknesses.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Architecture</h4>
+    <button class="archbtn on" data-arch="dec"><span class="tag">Marvin Bot first</span>Decoupled<small>RL legs + IK arms, VLA sends arm targets and walking commands</small></button>
+    <button class="archbtn" data-arch="trk"><span class="tag">Marvin Bot later</span>General motion tracker<small>One policy follows any whole-body pose from teleop or a VLA</small></button>
+    <button class="archbtn" data-arch="e2e">Single end-to-end policy<small>Camera and language in, joint targets out at 50 Hz</small></button>
+    <h4>Task</h4>
+    <div class="ctl"><select id="task" aria-label="Task">
+      <option value="table">Pick a cup from a table, standing</option>
+      <option value="carry">Carry a box while walking</option>
+      <option value="floor">Pick an object off the floor</option>
+      <option value="wave">Wave while walking</option>
+    </select></div>
+    <h4>Show</h4>
+    <label class="chk"><input type="checkbox" id="showData" checked><span>Data each module needs</span></label>
+    <label class="chk"><input type="checkbox" id="showRates" checked><span>Update rates</span></label>
+  </div>
+  <div class="preview">
+    <svg id="arch" viewBox="0 0 760 380" role="img" aria-label="Block diagram of the chosen control architecture with rates and data"></svg>
+    <div class="ratings" id="ratings"></div>
+    <div class="pc"><div><b style="color:var(--good)">Strengths</b><ul id="pros"></ul></div><div><b style="color:var(--bad)">Weaknesses</b><ul id="cons"></ul></div></div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Pick <b>Pick an object off the floor</b> and switch between the three architectures. Marvin Bot's waist only turns (no waist pitch), so reaching the floor means squatting: the decoupled split needs a height command for the legs, the tracker gets it for free from a human squat.</li>
+<li>Look at the rate labels on <b>Single end-to-end policy</b>: the model itself must answer every 20 ms. Compare that with the measured GR00T N1.7 latencies in Playground B.</li>
+<li>Untick <b>Update rates</b> and tick <b>Data</b>: notice where the expensive data sits in each design (teleoperation demonstrations, motion capture, or simulation only).</li>
+</ol></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>Classical whole-body control: a task-space optimisation</h3>
+<p>Start with one goal: move the hand to a point. The hand position <b>x</b> depends on the joint angles <b>q</b> through forward kinematics, <b>x</b> = f(<b>q</b>). For small motions, ẋ = J(<b>q</b>) q̇, where the <a class="g" href="../glossary.html#jacobian">Jacobian</a> J says how much each joint's speed moves the hand. <a class="g" href="../glossary.html#inverse-kinematics">Inverse kinematics</a> (IK) runs this backwards: find q̇ that gives the wanted ẋ, for example q̇ = J⁺ ẋ, with J⁺ the pseudo-inverse.<sup class="cite"><a href="#s1">[1]</a></sup> A humanoid arm with 6 joints and a hand pose with 6 numbers has a unique answer; the whole body with 27 joints has many, and the spare freedom (the <dfn>null space</dfn>) can serve lower-priority goals.</p>
+<p>Sentis and Khatib built whole-body behaviours from prioritised "primitives": constraints first (joint limits, contacts, balance), then tasks (hands, head), then posture in whatever freedom is left.<sup class="cite"><a href="#s2">[2]</a></sup> Today this is usually written as a quadratic program (QP) solved every control cycle:</p>
+<details><summary>Go deeper: the whole-body optimisation written out</summary>
+<p class="eq">minimise over q̈, τ, f:  Σᵢ wᵢ ‖Jᵢ q̈ + J̇ᵢ q̇ − ẍᵢ*‖²  subject to  M q̈ + h = Sᵀτ + J꜀ᵀ f,  f in friction cones,  τ and q within limits</p>
+<p>Here ẍᵢ* is the wanted acceleration of task <i>i</i> (hand, centre of mass, torso), M the mass matrix, h gravity and Coriolis terms, τ joint torques, f contact forces at the feet and J꜀ their Jacobian. It is exact, explainable and needs no training, but it needs an accurate model and contact plan, and tuning many weights by hand. Learned controllers swap that model for millions of simulated trials (<a href="16-rl-walking.html">page 16</a>).</p>
+</details>
+<p>In plain words: every few milliseconds the controller asks "which joint accelerations best satisfy all my goals, weighted by importance, without breaking physics, slipping the feet or exceeding any motor's torque?", and solves that as a <a class="g" href="../glossary.html#quadratic-program">quadratic program</a>, a type of optimisation computers solve very fast. It needs no training and is easy to explain, but it needs an accurate model of the robot and a plan of when each foot touches the ground, and many weights tuned by hand. Learned controllers replace that model with millions of simulated trials (<a href="16-rl-walking.html">page 16</a>), which is the route Marvin Bot takes.</p>
+
+<h3>Three ways to split a learned humanoid controller</h3>
+<ul>
+<li><b>Decoupled.</b> An RL policy owns the legs and balance, trained in simulation with the arms moved randomly so it learns to cope with them. The arms follow an IK solver (or a teleoperation device mapped joint to joint). NVIDIA's GR00T-WholeBodyControl ships this as "decoupled WBC", used with GR00T N1.5 and N1.6;<sup class="cite"><a href="#s3">[3]</a></sup> HOMIE drives the legs by RL from a pedal and the arms from an isomorphic exoskeleton, training the leg policy with an upper-body pose curriculum and a height command so it can squat.<sup class="cite"><a href="#s4">[4]</a></sup></li>
+<li><b>General motion tracker.</b> One policy follows any whole-body target pose, from a VR teleoperator or from a higher-level model: the motion tracking of <a href="17-motion-tracking.html">page 17</a>, but trained on so much motion that it can follow motions it has never seen. H2O and OmniH2O,<sup class="cite"><a href="#s5">[5]</a></sup> TWIST (one network trained with RL plus behaviour cloning on retargeted motion capture)<sup class="cite"><a href="#s6">[6]</a></sup> and SONIC (42M parameters, about 700 hours of motion capture, 21,000 GPU hours, 50 Hz, with a token interface a VLA can drive)<sup class="cite"><a href="#s7">[7]</a></sup> are examples.</li>
+<li><b>Single end-to-end policy.</b> Pixels and words in, joint targets out. Attractive, but the model must then answer within one control period and learn balance from demonstrations, which teleoperation rarely contains enough of. In practice VLAs sit on top of one of the other two.</li>
+</ul>
+
+<h3>Vision-language-action models</h3>
+<p>A <a class="g" href="../glossary.html#vla">VLA</a> is a neural network that takes camera images, a text instruction ("put the red cup in the bin") and the robot's state (its joint angles), and outputs actions: where the hands should move over the next second or so. It is built on the same kind of model as an AI chatbot that can look at pictures, with an extra part bolted on that outputs motion instead of words.</p>
+<p>GR00T N1 introduced NVIDIA's two-part design: a vision-language model, or VLM ("System 2", the slow thinker; in N1 the Eagle-2 VLM at 10 Hz on an L40, a data-centre graphics card) whose features condition a <a class="g" href="../glossary.html#diffusion-model">diffusion</a> transformer ("System 1", the fast actor) that turns noise into a sequence of 16 actions with 4 denoising steps, 63.9 ms per chunk on an L40.<sup class="cite"><a href="#s8">[8]</a></sup> The action head is trained with <a class="g" href="../glossary.html#flow-matching">flow matching</a>: it learns a velocity field that carries random noise to a real action sequence in a few steps.</p>
+<p><b>GR00T N1.7</b> is the current release (early access April 2026, now generally available) and the one Marvin Bot plans to use. What changed, and what it means:<sup class="cite"><a href="#s9">[9]</a></sup><sup class="cite"><a href="#s10">[10]</a></sup></p>
+<ul>
+<li><b>Size:</b> 3 billion parameters (the adjustable numbers inside the network). The System 2 part is NVIDIA's Cosmos-Reason2-2B (built on the Qwen3-VL design), replacing Eagle.</li>
+<li><b>Action part:</b> a flow-matching DiT (diffusion transformer) that outputs 40 actions per call (N1: 16).</li>
+<li><b>Robot interface:</b> state and action vectors widened from 29 to 132 numbers, so bigger robots fit; actions are given as <i>relative end-effector</i> moves ("move the hand 2 cm left"), not as joint angles.</li>
+<li><b>Training data:</b> pre-trained on 20,854 hours of first-person video of people using their hands.</li>
+<li><b>Licence and hardware:</b> the first GR00T release under a commercial licence; the repository lists Jetson Orin (tested with JetPack 7.2) and Jetson AGX Thor for running it on a robot.</li>
+</ul>
+<p>The output is an <a class="g" href="../glossary.html#action-chunk">action chunk</a>: a short trajectory of future actions, not a single command. Chunking (popularised by ACT)<sup class="cite"><a href="#s11">[11]</a></sup> makes motions smoother and lets a slow model keep a robot busy: while one chunk plays, the next is being computed. The catch is that every chunk was planned from an observation that is already old when it arrives. Real-time chunking (Black et al.) fixes the jump between chunks by freezing the actions that will run before the new chunk arrives and in-painting the rest.<sup class="cite"><a href="#s12">[12]</a></sup></p>
+
+<h3>Where the data comes from</h3>
+<p>VLAs learn by imitation, so they need demonstrations: a person <a class="g" href="../glossary.html#teleoperation">teleoperates</a> the robot (VR headset with hand tracking, an exoskeleton, or a motion tracker) while cameras and joint states are recorded. Demonstrations are slow to collect, so they are multiplied: Isaac Lab Mimic (NVIDIA's GR00T-Mimic workflow) splits a few demonstrations into object-centred subtasks and replays them in new object positions in simulation, keeping only the successful ones;<sup class="cite"><a href="#s13">[13]</a></sup> GR00T N1 reports 780,000 simulated trajectories (about 6,500 hours of demonstration) generated in 11 hours this way (with DexMimicGen), plus 827 hours of video from video models fine-tuned on 88 hours of teleoperation.<sup class="cite"><a href="#s8">[8]</a></sup> Cosmos, NVIDIA's world foundation models, can restyle simulated video (Cosmos Transfer) so a policy trained on it sees photoreal variety.<sup class="cite"><a href="#s14">[14]</a></sup></p>
+
+<h2 id="play2">Playground B: action chunks and latency</h2>
+<p>This playground simulates three seconds of a VLA driving the arms. Each time the model is asked for an answer (an <i>inference call</i>):</p>
+<ol>
+<li>it takes a camera image (an <a class="g" href="../glossary.html#observation">observation</a>);</li>
+<li>it thinks for <i>L</i> ms, plus a network round trip if it runs on a separate computer;</li>
+<li>it returns a chunk of <i>H</i> actions, meant to be played 1/<i>f</i> apart (for <i>f</i> = 20 Hz, one every 50 ms);</li>
+<li>the robot plays <i>E</i> of them (the <a class="g" href="../glossary.html#execution-horizon">execution horizon</a>) and then switches to the newest chunk.</li>
+</ol>
+<p>Underneath, the 50 Hz controller (walking policy or IK) keeps running whatever happens above it. Inside a chunk the robot acts <em>open loop</em>, meaning it is not looking: the last action of a chunk was planned from an image E/f plus the delay old, which the "time since image" lane shows. Numbers marked <span class="est">estimate</span> are not measurements on Marvin Bot: the desktop preset's 50 ms model time sits between NVIDIA's L40 figures (35 ms TensorRT, 67 ms torch.compile), and its Wi-Fi round trip of 15 ms with up to 40 ms of jitter is an <span class="est">estimate</span> for a busy home network.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="desk">Marvin Bot plan: desktop GPU over Wi-Fi</button>
+      <button data-preset="orin" title="TensorRT: NVIDIA's tool that compiles a network to run fast on its chips">Orin + TensorRT</button>
+      <button data-preset="eager" title="PyTorch eager: the model run as written, without optimisation">Orin, PyTorch eager</button>
+      <button data-preset="sync">Orin, wait for each chunk</button>
+      <button data-preset="nochunk">No chunking</button>
+    </div>
+    <h4>Inference</h4>
+    <div class="ctl"><label>Model latency L <output id="o_lat"></output></label>
+      <input type="range" id="lat" min="10" max="400" step="1" value="50">
+      <div class="hint">How long the model thinks per call. Measured GR00T N1.7: 35 ms on an L40 data-centre GPU, 149 ms on the Jetson Orin with <a class="g" href="../glossary.html#tensorrt">TensorRT</a> (NVIDIA's speed-up compiler), 358 ms on the Orin unoptimised ("PyTorch eager").</div></div>
+    <div class="ctl"><label>Network round trip <output id="o_rtt"></output></label>
+      <input type="range" id="rtt" min="0" max="100" step="1" value="15">
+      <div class="hint">Time to send the image to another computer and get the answer back over Wi-Fi; 0 when the model runs on the robot.</div></div>
+    <div class="ctl"><label>Jitter (extra delay, up to) <output id="o_jit"></output></label>
+      <input type="range" id="jit" min="0" max="150" step="1" value="40">
+      <div class="hint">Random extra delay per call: Wi-Fi retries, GPU contention.</div></div>
+    <h4>Chunks</h4>
+    <div class="ctl"><label>Chunk length H <output id="o_H"></output></label>
+      <input type="range" id="H" min="1" max="64" step="1" value="40">
+      <div class="hint">GR00T N1.7: 40 actions (N1: 16).</div></div>
+    <div class="ctl"><label>Action rate f <output id="o_fa"></output></label>
+      <input type="range" id="fa" min="5" max="50" step="1" value="20">
+      <div class="hint">How many actions per second the chunk holds (20 Hz = one every 50 ms); set by how fast the demonstrations were recorded.</div></div>
+    <div class="ctl"><label>Execution horizon E <output id="o_E"></output></label>
+      <input type="range" id="E" min="1" max="64" step="1" value="16">
+      <div class="hint">Actions played from each chunk before switching (at most H).</div></div>
+    <h4>Scheduling</h4>
+    <div class="seg"><button id="m_async" class="on">Infer while executing</button><button id="m_sync">Wait for each chunk</button></div>
+    <label class="chk"><input type="checkbox" id="skip" checked><span>Skip actions whose time has already passed when a chunk arrives</span></label>
+  </div>
+  <div class="preview">
+    <svg id="tl" viewBox="0 0 760 330" role="img" aria-label="Timeline of inference calls, executed chunks, action age and the 50 Hz controller"></svg>
+    <div class="readouts">
+      <div class="ro" id="r_hold"><div class="k">Arms holding (no fresh action)</div><div class="v">–</div></div>
+      <div class="ro" id="r_age"><div class="k">Time since image, mean / max</div><div class="v">–</div></div>
+      <div class="ro" id="r_lag"><div class="k">Plan delay if not skipping</div><div class="v">–</div></div>
+      <div class="ro" id="r_calls"><div class="k">Inference calls</div><div class="v">–</div></div>
+      <div class="ro" id="r_keep"><div class="k">Keeps up?</div><div class="v">–</div></div>
+      <div class="ro" id="r_ctl"><div class="k">50 Hz controller ticks per new action</div><div class="v">–</div></div>
+    </div>
+    <p class="hint" style="font-size:13px;color:var(--muted);margin:6px 0"><b>How to read this picture:</b> time runs left to right over three seconds. <i>Inference</i>: one bar per call, on two alternating rows so overlapping calls stay visible (blue = thinking, violet = network, amber = random extra delay; the white tick is when the image was taken). <i>Executing</i>: what the arms do, green while a chunk plays (two shades tell successive chunks apart), red while they hold still waiting. <i>Action age</i>: one dot per action, showing how old the image behind it was. <i>50 Hz control</i>: the walking controller's ticks, which never stop. Less red and lower dots are better.</p>
+    <div class="legend"><span><i style="background:var(--accent)"></i>model compute</span><span><i style="background:var(--violet)"></i>network</span><span><i style="background:var(--warn)"></i>jitter</span><span><i style="background:var(--good)"></i>executing a chunk</span><span><i style="background:var(--bad)"></i>holding the last action</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <b>Orin, wait for each chunk</b>: every 0.8 s of motion is followed by a 150 ms freeze while the next chunk is computed. Now switch to <b>Infer while executing</b>: the freezes vanish, because the next call starts while the current chunk is still playing.</li>
+<li>Press <b>No chunking</b>: one action per call. Even on a desktop GPU, a model that takes 50 ms cannot feed a 20 Hz action stream without gaps.</li>
+<li>With <b>Orin + TensorRT</b>, untick <b>Skip actions…</b>: the robot now plays each chunk from its first action, so everything it does is 150–200 ms behind the plan (the model time, the jitter and the wait for the next action tick). Tick it again and the timing is right, but the actions are still based on an old image: fine for slow manipulation, not for catching a ball.</li>
+<li>Lower E from 16 to 4 with <b>Orin + TensorRT</b>: the robot looks again four times as often (shorter open-loop stretches), but each call must now finish within 200 ms or the arms hold.</li>
+<li>Raise the jitter to 150 ms with the desktop preset. Occasional late chunks appear as red holds unless E leaves enough margin: lower E and watch.</li>
+</ol></div>
+<p>Why does a hold not make the robot fall? Because the VLA never commands balance. In the decoupled design it sends arm targets and a walking command; the 50 Hz walking policy keeps reading the IMU and joint encoders and keeps the robot upright whether or not a new chunk has arrived, and the motor drivers close their own position loops on the CAN commands (500 Hz to the legs, at least 250 Hz to the arms; <a href="10-can-bus.html">page 10</a>). A late chunk freezes the hands, not the legs.</p>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b>
+<ul>
+<li><b>Compute stack</b> (<code>docs/decisions.md</code>, 2026-10-25): a Jetson AGX Orin 64 GB developer kit, JetPack 7.2, Isaac ROS 4.6 and ROS 2 Jazzy; a real-time control process (CAN I/O, 50 Hz policy, safety) outside ROS. "Manipulation: GR00T N1.7, served from a desktop GPU first and moved to the Orin with TensorRT later. Whole-body control starts with the RL lower body plus IK arms; a motion-tracking controller (retargeting with GMR, BeyondMimic-style training) comes later. NVIDIA's SONIC checkpoints are for another robot and need far more compute to retrain, so it is deferred."</li>
+<li><b>Requirement R22</b> (<code>docs/requirements.md</code>, "should"): fine-tune a VLA (GR00T N1.7) from teleoperation data. README: carry and manipulate light objects (1–2 kg goal; the v1 hands manage about 0.5 kg).</li>
+<li><b>Phases</b> (<code>docs/plan.md</code>): phase 5 adds the whole-body controller and fall recovery; phase 6 adds teleoperation, data collection and GR00T N1.7 fine-tuning.</li>
+<li><b>Roadmap</b> (<code>docs/roadmap.md</code>): a general motion tracker for whole-body teleoperation (SONIC, TWIST, HOMIE), "which is how GR00T demonstrations get recorded"; walk, squat and reach with any arm pose (HOMIE), since "the waist only turns, so reaching low means squatting"; manipulation rehearsal in Isaac Sim with teleoperated demonstrations, GR00T-Mimic, Cosmos Transfer and N1.7 fine-tuning. Open item 10: GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.</li>
+<li><b>Today</b>: none of this is built. What exists is in simulation only: the flat-ground walking policy (flat v8, retrained on the 1.44 m body and passing the MuJoCo cross-check), the stair policy (rough v9, trained on the 1.29 m body; 14 of 15 stair runs on the new model) and the 25-clip motion tracker (<a href="17-motion-tracking.html">page 17</a>, results provisional while tracker v4 trains).</li>
+</ul></div>
+<p>Why this order makes sense: the decoupled split reuses the walking policy that already exists, and the VLA's job (arm and hand targets) matches what demonstrations of table-top tasks contain. Serving the model from a desktop GPU first avoids optimising for the Orin before anyone knows whether the fine-tuned model works; the measured numbers in Playground B (Orin TensorRT about 149 ms against about 35 ms on an L40-class GPU) show why moving it on board is a later, separate step. A general tracker is the bigger prize, since it gives whole-body teleoperation and squat-and-reach without new rewards, but SONIC-scale training is out of reach of one desktop GPU, and Marvin Bot's own tracker has seen only 25 clips.</p>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Choice</th><th>Marvin Bot</th><th>Alternative</th><th>Trade-off</th></tr></thead>
+<tbody>
+<tr><td>Control split</td><td>Decoupled first, general tracker later</td><td>General tracker first (SONIC adapted); end-to-end</td><td>Decoupled works with what exists; the tracker needs far more motion data (the roadmap names the gated BONES-SEED set) and compute.</td></tr>
+<tr><td>Where the VLA runs</td><td>Desktop GPU over the network first, then Orin + TensorRT</td><td>On the Orin from the start; a Jetson AGX Thor (noted in the decision log for a second robot)</td><td>Desktop: fast, but adds Wi-Fi delay and jitter and needs the network. Orin: no network, but about 4× slower per call than a server-class GPU. Thor's TensorRT figure is 76.8 ms (35.6 ms with NVFP4).</td></tr>
+<tr><td>Arms</td><td>IK from VLA end-effector targets</td><td>Joint-space VLA outputs; exoskeleton teleop (HOMIE)</td><td>GR00T N1.7 uses relative end-effector actions, which suit IK; Isaac Lab Mimic also needs task-space actions.</td></tr>
+<tr><td>Classical WBC (QP)</td><td>Not used</td><td>Task-space QP with priorities</td><td>Explainable and training-free, but needs an accurate dynamic model and contact schedule; learned policies already exist for walking and stairs.</td></tr>
+</tbody></table></div>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b>
+<ul>
+<li><b>GR00T N1.7's action head size.</b> The Isaac-GR00T README says the DiT went from 32 to 16 layers in N1.7; NVIDIA's Hugging Face announcement (April 2026, early access) describes a 32-layer DiT, and the repository's own deployment benchmark was run on a checkpoint it describes as having 32 DiT blocks (<code>nvidia/GR00T-N1.7-LIBERO</code>, <code>libero_10</code>).<sup class="cite"><a href="#s9">[9]</a></sup> The released checkpoints may differ; the playground does not depend on either number.</li>
+<li><b>"GR00T-Mimic".</b> The roadmap uses NVIDIA's marketing name; the tool in Isaac Lab is documented as Isaac Lab Mimic, and the GR00T N1 paper's simulated trajectories came from DexMimicGen.</li>
+<li><b>Orin numbers.</b> The Isaac-GR00T benchmark row is "Jetson Orin (MAXN)" without saying AGX Orin 64 GB, and was measured with two 256 × 256 cameras on a manipulation benchmark, without the 50 Hz controller running alongside: exactly what roadmap open item 10 says must still be measured.</li>
+<li><b>Retargeter for the later tracker.</b> The 2026-10-25 decision says GMR; the motion pipeline built since uses PyRoki (<a href="17-motion-tracking.html">page 17</a>).</li>
+</ul></div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>Which control split to build first, and what interface the VLA talks through (end-effector targets and a walking command, or whole-body poses). Decoupled works now with the walking policy that exists; a general tracker gives squat-and-reach and whole-body teleoperation, but needs far more motion data and training compute.</li>
+<li>Where to run the VLA, and how much latency and jitter the task can take. A desktop GPU answers about 4× faster but needs Wi-Fi and adds jitter; the Orin needs no network but takes about 150 ms per call.</li>
+<li>Chunk length and execution horizon: long chunks hide latency but react late; short ones react quickly but need a fast model.</li>
+<li>Which teleoperation device to record demonstrations with, since it fixes what the VLA can learn (arms only, or the whole body).</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://github.com/NVIDIA/Isaac-GR00T">Isaac-GR00T</a>: the model card, fine-tuning guide and the deployment benchmark the latency presets come from.</li>
+<li><a href="https://github.com/NVlabs/GR00T-WholeBodyControl">GR00T-WholeBodyControl</a>: decoupled WBC and SONIC, with code.</li>
+<li><a href="https://arxiv.org/abs/2503.14734">GR00T N1 paper</a>: the clearest description of the System 1 / System 2 design and the data pyramid.</li>
+<li><a href="https://arxiv.org/abs/2506.07339">Real-Time Execution of Action Chunking Flow Policies</a>: what goes wrong at chunk boundaries and how to fix it.</li>
+<li><a href="https://arxiv.org/abs/2502.13013">HOMIE</a> and <a href="https://arxiv.org/abs/2505.02833">TWIST</a>: two different answers to "how do I teleoperate a whole humanoid?".</li>
+<li><a href="https://hades.mech.northwestern.edu/index.php/Modern_Robotics">Modern Robotics</a>, chapters 5–6: Jacobians and inverse kinematics from scratch.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://hades.mech.northwestern.edu/index.php/Modern_Robotics">K. M. Lynch, F. C. Park, Modern Robotics: Mechanics, Planning, and Control, Cambridge University Press, 2017</a> <span class="used">— used for: Jacobian, pseudo-inverse and inverse kinematics.</span></li>
+  <li id="s2"><a href="https://doi.org/10.1142/S0219843605000594">L. Sentis, O. Khatib, "Synthesis of Whole-Body Behaviors through Hierarchical Control of Behavioral Primitives", International Journal of Humanoid Robotics 2(4), 2005</a> <span class="used">— used for: prioritised whole-body control (constraints, tasks, posture).</span></li>
+  <li id="s3"><a href="https://github.com/NVlabs/GR00T-WholeBodyControl">NVIDIA, GR00T-WholeBodyControl repository</a> <span class="used">— used for: decoupled WBC (RL lower body, IK upper body) used with GR00T N1.5/N1.6; SONIC checkpoints at 50 Hz, 80–200 ms reference look-ahead; licences.</span></li>
+  <li id="s4"><a href="https://arxiv.org/abs/2502.13013">Q. Ben et al., "HOMIE: Humanoid Loco-Manipulation with Isomorphic Exoskeleton Cockpit", arXiv:2502.13013, 2025</a> <span class="used">— used for: RL legs with pedal, exoskeleton arms, upper-body pose curriculum and height command.</span></li>
+  <li id="s5"><a href="https://arxiv.org/abs/2406.08858">T. He, Z. Luo et al., "OmniH2O: Universal and Dexterous Human-to-Humanoid Whole-Body Teleoperation and Learning", arXiv:2406.08858, 2024</a> <span class="used">— used for: whole-body teleoperation by a learned tracker with sparse inputs.</span></li>
+  <li id="s6"><a href="https://arxiv.org/abs/2505.02833">Y. Ze et al., "TWIST: Teleoperated Whole-Body Imitation System", arXiv:2505.02833, 2025</a> <span class="used">— used for: a single whole-body controller trained with RL plus behaviour cloning on retargeted motion capture.</span></li>
+  <li id="s7"><a href="https://arxiv.org/abs/2511.07820">Z. Luo, Y. Yuan, T. Wang, C. Li et al., "SONIC: Supersizing Motion Tracking for Natural Humanoid Whole-Body Control", arXiv:2511.07820, 2025</a> <span class="used">— used for: scale of a general tracker (42M parameters, 100M+ frames / ~700 h, 21k GPU hours), VR teleop and VLA interface.</span></li>
+  <li id="s8"><a href="https://arxiv.org/abs/2503.14734">NVIDIA, "GR00T N1: An Open Foundation Model for Generalist Humanoid Robots", arXiv:2503.14734, 2025</a> <span class="used">— used for: System 1/System 2, Eagle-2 at 10 Hz, 16-action chunks, 4 denoising steps, 63.9 ms on L40, data pyramid, DexMimicGen and neural trajectories.</span></li>
+  <li id="s9"><a href="https://github.com/NVIDIA/Isaac-GR00T">NVIDIA, Isaac-GR00T repository (GR00T N1.7) and its deployment benchmark</a> <span class="used">— used for: N1.7 backbone, flow-matching DiT, horizon 40, 132-D state/action, relative EEF actions, Jetson Orin/Thor support; latency table in <code>scripts/deployment/README.md</code> (median full policy call, batch 1, horizon 40, 4 denoising steps, two 256 × 256 cameras; H100 22.9, L40 35.0, Orin 149.0 TensorRT; Orin 357.9 eager; Thor 76.8 / 35.6 ms; LIBERO checkpoint with 32 DiT blocks).</span></li>
+  <li id="s10"><a href="https://huggingface.co/blog/nvidia/gr00t-n1-7">NVIDIA, "Isaac GR00T N1.7: Open Reasoning VLA Model for Humanoid Robots", Hugging Face blog, 17 April 2026</a> <span class="used">— used for: 3B parameters, Cosmos-Reason2-2B System 2, 20,854 h of egocentric video, commercial licence.</span></li>
+  <li id="s11"><a href="https://arxiv.org/abs/2304.13705">T. Z. Zhao, V. Kumar, S. Levine, C. Finn, "Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware" (ACT), arXiv:2304.13705, 2023</a> <span class="used">— used for: action chunking.</span></li>
+  <li id="s12"><a href="https://arxiv.org/abs/2506.07339">K. Black, M. Y. Galliker, S. Levine, "Real-Time Execution of Action Chunking Flow Policies", arXiv:2506.07339, 2025</a> <span class="used">— used for: inference delay with chunks; freezing committed actions and in-painting.</span></li>
+  <li id="s13"><a href="https://isaac-sim.github.io/IsaacLab/main/source/overview/imitation-learning/teleop_imitation.html">Isaac Lab documentation, "Teleoperation and Imitation Learning with Isaac Lab Mimic"</a> <span class="used">— used for: generating demonstrations from a few teleoperated ones; task-space action requirement.</span></li>
+  <li id="s14"><a href="https://github.com/nvidia-cosmos">NVIDIA Cosmos (world foundation models)</a> <span class="used">— used for: Cosmos Transfer as a source of photoreal synthetic training video.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="17-motion-tracking.html"><span>← Previous</span>17 Motion tracking: Kimodo, retargeting and BeyondMimic</a>
+  <a class="next" href="19-hands.html"><span>Next →</span>19 Hands</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+function el(tag,a,p){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+
+/* ================= Playground A ================= */
+const ARCH={
+ dec:{name:'Decoupled: RL legs + IK arms',
+  boxes:[
+   {c:0,r:0,t:'Head camera',s:'depth + colour',rate:'30 Hz',data:''},
+   {c:0,r:1,t:'Instruction',s:'"put the cup in the bin"',rate:'per task',data:''},
+   {c:1,r:0.5,t:'VLA (GR00T N1.7)',s:'System 2 + System 1',rate:'chunk every 0.15–0.8 s',data:'teleop demos of arm tasks (+ Mimic, Cosmos)',vla:true},
+   {c:2,r:0,t:'Arm/hand targets',s:'end-effector poses',rate:'20–30 Hz actions',data:''},
+   {c:2,r:1,t:'Walk command',s:'velocity, turn, height',rate:'20–30 Hz actions',data:''},
+   {c:3,r:0,t:'IK solver (arms)',s:'+ hand servos',rate:'50 Hz',data:'robot model only'},
+   {c:3,r:1,t:'RL walking policy',s:'legs, balance',rate:'50 Hz',data:'simulation (Isaac Lab)'},
+   {c:4,r:0.5,t:'Motor drivers',s:'PD on CAN commands',rate:'500 Hz legs, ≥250 Hz arms',data:''}],
+  links:[[0,2],[1,2],[2,3],[2,4],[3,5],[4,6],[5,7],[6,7]],
+  r:{lat:5,rob:4,data:4,breadth:2,train:5,now:4},
+  pros:['Reuses the existing walking/stair policies','VLA only outputs arm targets: matches table-top demonstrations','A late or wrong VLA output cannot knock the robot over','Each part testable on its own'],
+  cons:['Legs and arms do not cooperate: arm motions disturb balance unless the leg policy was trained with random arm poses','No whole-body skills (lunge, squat-and-reach) without extra commands','Teleoperation is arms only plus a joystick for walking']},
+ trk:{name:'General motion tracker',
+  boxes:[
+   {c:0,r:0,t:'Head camera',s:'depth + colour',rate:'30 Hz',data:''},
+   {c:0,r:1,t:'VR teleop',s:'headset + hand tracking',rate:'50–90 Hz',data:''},
+   {c:1,r:0,t:'VLA (or planner)',s:'outputs whole-body poses / tokens',rate:'chunk every 0.15–0.8 s',data:'whole-body teleop demos',vla:true},
+   {c:2,r:0.5,t:'Whole-body reference',s:'future poses, 80–200 ms ahead',rate:'50 Hz',data:''},
+   {c:3,r:0.5,t:'Motion tracker policy',s:'all 27 joints, balance',rate:'50 Hz',data:'large motion dataset (SONIC: ~700 h, 21k GPU h)'},
+   {c:4,r:0.5,t:'Motor drivers',s:'PD on CAN commands',rate:'500 Hz legs, ≥250 Hz arms',data:''}],
+  links:[[0,2],[2,3],[1,3],[3,4],[4,5]],
+  r:{lat:4,rob:3,data:2,breadth:5,train:2,now:2},
+  pros:['Whole-body skills from human motion: squat to reach, lean, step while reaching','The same policy serves teleoperation (to record demonstrations) and autonomy','A new skill is a new motion, not new reward code'],
+  cons:['Needs a lot of motion data and compute to generalise to unseen motions','Retargeting limits (page 17) appear as errors in every task','Locomotion on stairs and rough ground usually weaker than a dedicated walking policy']},
+ e2e:{name:'Single end-to-end policy',
+  boxes:[
+   {c:0,r:0,t:'Head camera',s:'depth + colour',rate:'30 Hz',data:''},
+   {c:0,r:1,t:'Instruction + state',s:'text, IMU, joints',rate:'50 Hz',data:''},
+   {c:2,r:0.5,t:'One large policy',s:'pixels + language → 27 joint targets',rate:'must answer every 20 ms',data:'demos that include balance, falls, pushes',vla:true},
+   {c:4,r:0.5,t:'Motor drivers',s:'PD on CAN commands',rate:'500 Hz legs, ≥250 Hz arms',data:''}],
+  links:[[0,2],[1,2],[2,3]],
+  r:{lat:1,rob:1,data:1,breadth:4,train:1,now:1},
+  pros:['No hand-designed interface between layers','In principle can learn any coordination the data shows'],
+  cons:['A 3B-parameter VLA takes 35–360 ms per call (GR00T N1.7 benchmark): far over the 20 ms budget','Balance must be learned from demonstrations, which rarely contain recoveries','A model error goes straight to the legs: unsafe on a 41 kg robot']}
+};
+const RNAMES=[['lat','Latency tolerance'],['rob','Balance robustness'],['data','Low data cost'],['breadth','Skill breadth'],['train','Low training compute'],['now','Ready for Marvin Bot']];
+const VERDICT={
+ table:{dec:'Good fit. The legs stand still under the walking policy; the VLA moves the arm through IK. This is what GR00T demonstrations usually show.',trk:'Works, but the tracker is more machinery than a standing table-top task needs.',e2e:'Possible only if the policy can run at 50 Hz and has learned to stand; a stalled inference stalls the legs too.'},
+ carry:{dec:'Works if the walking policy was trained with loads and random arm poses; the arms hold the box by IK while the VLA sends walking commands.',trk:'Natural: the reference contains walking and holding together; the tracker balances the load as part of the motion.',e2e:'Very hard: needs many demonstrations of walking with loads, all at 50 Hz.'},
+ floor:{dec:'Limited. Marvin Bot has no waist pitch, so the hands reach the floor only in a squat. The leg policy needs a height command (as in HOMIE), and the pick-up clip on page 17 still stopped 27 cm above the floor.',trk:'Best fit: a human squat-and-pick motion drives knees, hips and arms together. Still limited by the knee (130°) and the missing waist pitch.',e2e:'Would need demonstrations of squatting with balance; impractical.'},
+ wave:{dec:'Easy: arms by IK (or a recorded gesture), legs by the walking policy.',trk:'Easy and more natural (the gesture and the gait come from one human motion), and Marvin Bot\'s 25-clip tracker already does a standing wave in simulation.',e2e:'Overkill for a gesture.'}
+};
+const A={arch:'dec',task:'table',showData:true,showRates:true};
+function drawArch(){
+  const svg=$('arch');svg.innerHTML='';const a=ARCH[A.arch];
+  el('rect',{x:0,y:0,width:760,height:380,fill:'#0c1015'},svg);
+  const defs=el('defs',{},svg);const m=el('marker',{id:'ah',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'},defs);el('path',{d:'M0,0 L10,5 L0,10 z',fill:'#56636f'},m);
+  const cols=['Sense','Decide (slow)','Interface','Control (fast)','Actuate'];
+  const cx=c=>20+c*148, bw=132, bh=A.showData?114:90, ry=r=>48+r*156;
+  cols.forEach((t,i)=>el('text',{x:cx(i)+bw/2,y:26,fill:'#9aa7b4','font-size':12,'text-anchor':'middle'},svg).textContent=t);
+  // fast/slow band
+  el('rect',{x:cx(3)-8,y:38,width:bw*2+30,height:330,fill:'rgba(76,195,138,.05)',stroke:'rgba(76,195,138,.25)','stroke-dasharray':'4 4'},svg);
+  el('text',{x:cx(3),y:376,fill:'#4cc38a','font-size':11},svg).textContent='keeps balance even if the layers above stall';
+  const pos=a.boxes.map(b=>({x:cx(b.c),y:ry(b.r),b}));
+  a.links.forEach(([i,j])=>{const p=pos[i],q=pos[j];el('line',{x1:p.x+bw,y1:p.y+bh/2,x2:q.x-2,y2:q.y+bh/2,stroke:'#56636f','stroke-width':1.5,'marker-end':'url(#ah)'},svg);});
+  pos.forEach(({x,y,b})=>{
+    el('rect',{x,y,width:bw,height:bh,rx:8,fill:b.vla?'#1d2738':'#161b22',stroke:b.vla?'#4fb3ff':'#2a3340','stroke-width':b.vla?2:1},svg);
+    const tx=(t,dy,col,sz,w)=>{const e=el('text',{x:x+8,y:y+dy,fill:col,'font-size':sz,'font-weight':w||400},svg);e.textContent=t;return e;};
+    tx(b.t,18,'#e6edf3',12.5,600);
+    wrap(b.s,x+8,y+34,bw-14,11,'#9aa7b4',svg,2);
+    if(A.showRates&&b.rate)wrap('⏱ '+b.rate,x+8,y+64,bw-14,11,'#ffb454',svg,2);
+    if(A.showData&&b.data)wrap('▤ '+b.data,x+8,y+(A.showRates?92:64),bw-14,10.5,'#b48cff',svg,2);
+  });
+  if(A.arch==='dec'||A.arch==='trk'){el('rect',{x:20,y:350,width:212,height:22,rx:11,fill:'none',stroke:'#ffb454'},svg);
+    el('text',{x:126,y:365,fill:'#ffb454','font-size':12,'text-anchor':'middle'},svg).textContent=A.arch==='dec'?'Marvin Bot plan: first step':'Marvin Bot plan: later';}
+  // ratings
+  $('ratings').innerHTML=RNAMES.map(([k,n])=>`<span>${n}</span><span class="rb"><i style="width:${a.r[k]*20}%"></i></span><span class="mono">${a.r[k]}/5</span>`).join('');
+  $('pros').innerHTML=a.pros.map(x=>`<li>${x}</li>`).join('');$('cons').innerHTML=a.cons.map(x=>`<li>${x}</li>`).join('');
+  $('verdict').innerHTML=`<b>${$('task').selectedOptions[0].textContent}:</b> ${VERDICT[A.task][A.arch]}`;
+  document.querySelectorAll('[data-arch]').forEach(b=>b.classList.toggle('on',b.dataset.arch===A.arch));
+}
+function wrap(text,x,y,w,size,col,svg,maxLines){const words=text.split(' ');let line='',n=0;const cw=size*0.55;
+  for(let i=0;i<words.length;i++){const t=line?line+' '+words[i]:words[i];if(t.length*cw>w&&line){el('text',{x,y:y+n*(size+2),fill:col,'font-size':size},svg).textContent=line;n++;line=words[i];if(n>=maxLines){line=null;break;}}else line=t;}
+  if(line&&n<maxLines)el('text',{x,y:y+n*(size+2),fill:col,'font-size':size},svg).textContent=line;}
+document.querySelectorAll('[data-arch]').forEach(b=>b.addEventListener('click',()=>{A.arch=b.dataset.arch;drawArch();updateNote();}));
+$('task').addEventListener('change',e=>{A.task=e.target.value;drawArch();updateNote();});
+$('showData').onchange=e=>{A.showData=e.target.checked;drawArch();};
+$('showRates').onchange=e=>{A.showRates=e.target.checked;drawArch();};
+
+/* ================= Playground B ================= */
+const DEFAULTS={lat:50,rtt:15,jit:40,H:40,fa:20,E:16,mode:'async',skip:true};
+const state={...DEFAULTS};
+const PRESETS={
+ desk:{lat:50,rtt:15,jit:40,H:40,fa:20,E:16,mode:'async',skip:true},
+ orin:{lat:149,rtt:0,jit:15,H:40,fa:20,E:16,mode:'async',skip:true},
+ eager:{lat:358,rtt:0,jit:20,H:40,fa:20,E:16,mode:'async',skip:true},
+ sync:{lat:149,rtt:0,jit:15,H:40,fa:20,E:16,mode:'sync',skip:true},
+ nochunk:{lat:50,rtt:15,jit:40,H:1,fa:20,E:1,mode:'async',skip:true}
+};
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+const TEND=3.0;
+function simulate(){
+  const L=state.lat/1000,N=state.rtt/1000,J=state.jit/1000,H=state.H,f=state.fa,E=Math.min(state.E,state.H),dt=1/f;
+  const R=rng(12345);const calls=[];const ticks=[];const ages=[];let lagSum=0,lagN=0;
+  const launch=to=>{const j=R()*J;const c={tObs:to,L,N,j,tArr:to+L+N+j,id:calls.length};calls.push(c);return c;};
+  const nT=Math.ceil(TEND/dt)+1;
+  if(state.mode==='sync'){
+    let c=launch(0);let t=0;
+    while(t<TEND){ // wait, then play E actions, then observe again
+      while(t<c.tArr-1e-9&&t<TEND){ticks.push({t,type:'hold'});t+=dt;}
+      for(let i=0;i<E&&t<TEND;i++){ticks.push({t,type:'run',id:c.id});ages.push([t,t-c.tObs]);t+=dt;}
+      c=launch(t);}
+  }else{
+    let cur=null,nextLaunch=Infinity;const pending=[launch(0)];
+    for(let i=0;i<nT;i++){const t=i*dt;if(t>TEND)break;
+      pending.sort((x,y)=>x.tArr-y.tArr);
+      while(pending.length&&pending[0].tArr<=t+1e-9){const c=pending.shift();
+        if(!cur||c.id>cur.c.id){const late=t-c.tObs;cur={c,idx:state.skip?Math.min(H-1,Math.round(late*f)):0};
+          if(!state.skip){lagSum+=late;lagN++;}
+          nextLaunch=t+Math.max(0,E*dt-(L+N));}}
+      if(nextLaunch<=t+1e-9){pending.push(launch(t));nextLaunch=Infinity;}
+      if(cur&&cur.idx<H){ticks.push({t,type:'run',id:cur.c.id});ages.push([t,t-cur.c.tObs]);cur.idx++;}
+      else ticks.push({t,type:'hold'});}
+  }
+  const exec=[];ticks.forEach(k=>{const l=exec[exec.length-1];if(l&&l.type===k.type&&l.id===k.id)l.t1=k.t+dt;else exec.push({t0:k.t,t1:k.t+dt,type:k.type,id:k.id});});
+  const firstRun=ticks.findIndex(k=>k.type==='run');const after=firstRun<0?[]:ticks.slice(firstRun);
+  const holdFrac=after.length?after.filter(k=>k.type==='hold').length/after.length:1;
+  const ag=ages.map(a=>a[1]);const mean=ag.length?ag.reduce((x,y)=>x+y,0)/ag.length:0,max=ag.length?Math.max(...ag):0;
+  return {calls,exec,ages,holdFrac,mean,max,lag:lagN?lagSum/lagN:0,keep:(L+N+J)<=E*dt,E,dt};
+}
+function setRO(id,txt,cls){const e=$(id);e.querySelector('.v').textContent=txt;e.className='ro'+(cls?' '+cls:'');}
+let SIM=null;
+function drawTL(){
+  SIM=simulate();const s=SIM;const svg=$('tl');svg.innerHTML='';
+  el('rect',{x:0,y:0,width:760,height:330,fill:'#0c1015'},svg);
+  const x0=120,x1=748;const px=t=>x0+t/TEND*(x1-x0);
+  const lanes=[['Inference',30],['Executing',90],['Action age',150],['50 Hz control',268]];
+  lanes.forEach(([n,y])=>el('text',{x:8,y:y+14,fill:'#9aa7b4','font-size':12},svg).textContent=n);
+  for(let t=0;t<=TEND+1e-9;t+=0.5){el('line',{x1:px(t),x2:px(t),y1:24,y2:300,stroke:'#1a222c'},svg);el('text',{x:px(t),y:316,fill:'#56636f','font-size':11,'text-anchor':'middle'},svg).textContent=t.toFixed(1)+' s';}
+  // inference lane: stack overlapping calls on 2 rows
+  s.calls.forEach((c,i)=>{if(c.tObs>TEND)return;const y=24+(i%2)*20;
+    const seg=(a,b,col)=>{if(b>a)el('rect',{x:px(Math.min(a,TEND)),y,width:Math.max(1,px(Math.min(b,TEND))-px(Math.min(a,TEND))),height:14,fill:col,rx:2},svg);};
+    seg(c.tObs,c.tObs+c.L,'#4fb3ff');seg(c.tObs+c.L,c.tObs+c.L+c.N,'#b48cff');seg(c.tObs+c.L+c.N,c.tArr,'#ffb454');
+    el('line',{x1:px(c.tObs),x2:px(c.tObs),y1:y-3,y2:y+17,stroke:'#e6edf3','stroke-width':1},svg);});
+  // executing lane
+  const cols=['#4cc38a','#2f9e6b'];
+  s.exec.forEach(e=>{const a=Math.min(e.t0,TEND),b=Math.min(e.t1,TEND);if(b<=a)return;
+    el('rect',{x:px(a),y:88,width:Math.max(1,px(b)-px(a)),height:22,fill:e.type==='hold'?'#ff6b6b':cols[(e.id||0)%2],rx:2},svg);});
+  // ages
+  const ay0=150,ay1=250;const amax=Math.max(0.2,Math.ceil(s.max*10)/10);
+  const py=v=>ay1-v/amax*(ay1-ay0);
+  [0,amax/2,amax].forEach(v=>{el('line',{x1:x0,x2:x1,y1:py(v),y2:py(v),stroke:'#1f2933'},svg);el('text',{x:x0-4,y:py(v)+4,fill:'#56636f','font-size':10,'text-anchor':'end'},svg).textContent=(v*1000).toFixed(0)+' ms';});
+  s.ages.forEach(([t,a])=>{if(t<TEND)el('circle',{cx:px(t),cy:py(a),r:2.2,fill:'#e6edf3'},svg);});
+  el('text',{x:x0+4,y:ay0-4,fill:'#9aa7b4','font-size':10.5},svg).textContent='time since the image each executed action was planned from';
+  // 50 Hz ticks
+  for(let t=0;t<TEND;t+=0.02){const hold=s.exec.some(e=>e.type==='hold'&&t>=e.t0&&t<e.t1);
+    el('line',{x1:px(t),x2:px(t),y1:268,y2:284,stroke:hold?'#ff6b6b':'#56636f','stroke-width':1},svg);}
+  el('text',{x:x0,y:298,fill:'#56636f','font-size':10.5},svg).textContent='legs balance on every tick; red = arms hold their last target';
+  // readouts
+  setRO('r_hold',(s.holdFrac*100).toFixed(0)+'%',s.holdFrac>0.1?'bad':s.holdFrac>0.01?'warn':'ok');
+  setRO('r_age',`${(s.mean*1000).toFixed(0)} / ${(s.max*1000).toFixed(0)} ms`,s.max>1.0?'bad':s.max>0.4?'warn':'ok');
+  setRO('r_lag',state.mode==='async'&&!state.skip?`${(s.lag*1000).toFixed(0)} ms behind`:(state.skip||state.mode==='sync')?'0 (aligned)':'–',state.mode==='async'&&!state.skip&&s.lag>0.1?'warn':'ok');
+  setRO('r_calls',`${(s.calls.filter(c=>c.tObs<TEND).length/TEND).toFixed(1)} per s`);
+  setRO('r_keep',s.keep?`yes (${((state.lat+state.rtt+state.jit)).toFixed(0)} < ${(s.E*s.dt*1000).toFixed(0)} ms)`:`no (${((state.lat+state.rtt+state.jit)).toFixed(0)} > ${(s.E*s.dt*1000).toFixed(0)} ms)`,s.keep?'ok':'bad');
+  setRO('r_ctl',(50/state.fa).toFixed(1));
+}
+function bind(id,fmt){const e=$(id),o=$('o_'+id);e.addEventListener('input',()=>{state[id]=parseFloat(e.value);if(id==='H'&&state.E>state.H){state.E=state.H;$('E').value=state.E;$('o_E').textContent=state.E;}o.textContent=fmt(state[id]);drawTL();updateNote();});o.textContent=fmt(state[id]);}
+const FMT={lat:v=>v+' ms',rtt:v=>v+' ms',jit:v=>v+' ms',H:v=>v+' actions',fa:v=>v+' Hz',E:v=>v+' actions'};
+Object.keys(FMT).forEach(k=>bind(k,FMT[k]));
+function sync(){for(const k in FMT){$(k).value=state[k];$('o_'+k).textContent=FMT[k](state[k]);}
+  $('m_async').classList.toggle('on',state.mode==='async');$('m_sync').classList.toggle('on',state.mode==='sync');$('skip').checked=state.skip;}
+$('m_async').onclick=()=>{state.mode='async';sync();drawTL();updateNote();};
+$('m_sync').onclick=()=>{state.mode='sync';sync();drawTL();updateNote();};
+$('skip').onchange=e=>{state.skip=e.target.checked;drawTL();updateNote();};
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{Object.assign(state,PRESETS[b.dataset.preset]);sync();drawTL();updateNote();}));
+
+function updateNote(){
+  const parts=[];
+  for(const k in DEFAULTS)if(state[k]!==DEFAULTS[k])parts.push(k);
+  if(A.arch==='dec'&&A.task==='table'&&!parts.length){$('note').textContent='Change a control above to build a note.';return;}
+  const s=SIM;const a=ARCH[A.arch];
+  let t=`Marvin Bot (1.44 m, 41 kg, 27-DOF humanoid; Jetson AGX Orin 64 GB, 50 Hz policy, CAN to RobStride actuators at 500 Hz legs / 250 Hz arms). Plan (docs/decisions.md 2026-10-25): decoupled RL legs + IK arms first, GR00T N1.7 served from a desktop GPU then moved to the Orin with TensorRT, motion-tracking controller later.\n`;
+  t+=`Control split I looked at: ${a.name}, for the task "${$('task').selectedOptions[0].textContent}". ${VERDICT[A.task][A.arch]}\n`;
+  t+=`VLA timing I explored: ${state.lat} ms model + ${state.rtt} ms network + up to ${state.jit} ms jitter; chunks of ${state.H} actions at ${state.fa} Hz, ${Math.min(state.E,state.H)} executed per chunk, ${state.mode==='async'?'inference while executing':'waiting for each chunk'}${state.mode==='async'?(state.skip?', stale actions skipped':', chunks played from their first action'):''}.\n`;
+  t+=`Result: arms hold their last target ${(s.holdFrac*100).toFixed(0)}% of the time; executed actions are planned from images ${(s.mean*1000).toFixed(0)} ms old on average (max ${(s.max*1000).toFixed(0)} ms); ${s.keep?'the pipeline keeps up':'the pipeline does not keep up'}.\n`;
+  t+=`Latency figures are from NVIDIA's Isaac-GR00T N1.7 benchmark (Orin TensorRT 149 ms, L40 TensorRT 35 ms); network figures are my estimates. Question: what chunk/horizon settings and where to run the model for roadmap open item 10 (N1.7 closed-loop latency on the Orin with the 50 Hz controller running)?`;
+  $('note').textContent=t;}
+$('copy').addEventListener('click',()=>{navigator.clipboard.writeText($('note').textContent).then(()=>{const b=$('copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1200);});});
+drawArch();sync();drawTL();updateNote();
+</script>
+</body>
+</html>
