@@ -34,6 +34,7 @@ import numpy as np
 import yaml
 
 from .lib import Part, box, cyl, ellipsoid, hull, union
+from .mounts import face as contact
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -95,7 +96,11 @@ def parts() -> list[Part]:
         (s_wid - 4, s_hi - s_lo + 8, case_bot - base_z - 8), (0, ymid, (case_bot + base_z) / 2)
     )  # an open frame, not a block
     bracket = union(hub, base, cradle, *cheeks)
-    out.append(Part("neck_bracket", "neck_link", "al6061", bracket, "cnc"))
+    nb_if = [contact("neck_yaw", (0, 0, horn_top), "z", 0, 8)]
+    nb_if += [
+        contact("neck_pitch", (g * s_wid / 2, ymid, case_bot + 12.5), "x", 0, 20) for g in (1, -1)
+    ]
+    out.append(Part("neck_bracket", "neck_link", "al6061", bracket, "cnc", extra={"ifaces": nb_if}))
 
     # --- head frame: side plates on the pitch servo's horn (+y) and idler (-y), a bridge with an
     # arm forward to the camera's tripod thread, and a top bar joining them

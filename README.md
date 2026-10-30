@@ -116,6 +116,7 @@ python tools/build_urdf.py --check  # URDF matches the description files
 python tools/build_harness.py --check  # wiring harness routes, gauges and fuses (electrical/)
 python -m cad.build                 # part meshes (needed by every MuJoCo check), masses, sizes
 python -m cad.strength              # hand-calc strength check of the frame and printed parts
+python -m cad.fea                   # finite-element check of every load-carrying part (~1 h; pip install -e ".[fea]")
 python -m cad.covers --check        # shells and parts swept through the joint ranges
 python -m cad.export                # STL per part, DXF per flat part (outputs/), CAD sheets of bom/bom.xlsx
 python sim/mujoco/check_standing.py # stands in MuJoCo; joint torques against ratings

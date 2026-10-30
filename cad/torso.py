@@ -25,7 +25,16 @@ from pathlib import Path
 import yaml
 
 from .lib import Part, box, cyl, hull, lighten, strap, union
-from .mounts import bolt_holes, output_flange, rear_ring, spec, spider
+from .mounts import (
+    bolt_holes,
+    bore,
+    output_face,
+    output_flange,
+    rear_ring,
+    spec,
+    spider,
+    stator_face,
+)
 from .mounts import posts as mount_posts
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -74,14 +83,34 @@ def parts() -> list[Part]:
     )
     # stub axles behind the roll motors for the roll brackets' far-side bearings
     stubs = [cyl(30, 14, "x", (bx - hip_t / 2 - 7, s * rc[1], rc[2])) for s in (1, -1)]
-    out.append(Part("pelvis_back", "pelvis", "al6061", union(back, *stubs), "service"))
+    pb_if = [bore("left_hip_roll", (bx - hip_t / 2 - 7, rc[1], rc[2]), "x", 30, 14)]
+    out.append(
+        Part(
+            "pelvis_back",
+            "pelvis",
+            "al6061",
+            union(back, *stubs),
+            "service",
+            extra={"ifaces": pb_if},
+        )
+    )
     # each roll motor's stator bolts to a ring on its body's rear face; posts join it to the
     # back plate over the driver cap
     for side, s in (("l", 1), ("r", -1)):
         c = (rc[0], s * rc[1], rc[2])
         ring, _ = rear_ring("RS04", c, "x", 1)
         mount = union(ring, mount_posts("RS04", c, "x", 1, 4.0, t04 / 2))
-        out.append(Part(f"pelvis_roll_mount_{side}", "pelvis", "al6061", mount, "cnc"))
+        rm_if = [stator_face("left_hip_roll", "RS04", c, "x", 1)] if s == 1 else []
+        out.append(
+            Part(
+                f"pelvis_roll_mount_{side}",
+                "pelvis",
+                "al6061",
+                mount,
+                "cnc",
+                extra={"ifaces": rm_if},
+            )
+        )
     wx = j["waist_yaw"][0]  # the waist motor sits a little ahead of the hips
     front_x = wx + 50.0
     bf = bx + hip_t / 2  # back plate's front face
@@ -90,7 +119,10 @@ def parts() -> list[Part]:
     # the waist motor's stator bolts to a ring on its body's underside, on posts over the cap
     w_ring, _ = rear_ring("RS03", (wx, 0, waist_z), "z", 1)
     w_mount = union(w_ring, mount_posts("RS03", (wx, 0, waist_z), "z", 1, 4.0, t03 / 2))
-    out.append(Part("pelvis_waist_mount", "pelvis", "al6061", w_mount, "cnc"))
+    wm_if = [stator_face("waist_yaw", "RS03", (wx, 0, waist_z), "z", 1)]
+    out.append(
+        Part("pelvis_waist_mount", "pelvis", "al6061", w_mount, "cnc", extra={"ifaces": wm_if})
+    )
     top = lighten(top, "z", keep=[cyl(56, 40, "z", (wx, 0, top_z))], hole=18, pitch=24, rim=9)
     out.append(Part("pelvis_top", "pelvis", "al6061", top, "service"))  # 210 mm: laser cut
     gy = 23.0  # gussets: vertical plates under the top plate, a channel with it
@@ -129,7 +161,10 @@ def parts() -> list[Part]:
     tops = ((-70.0, sh[2] - 18), (42.0, sh[2] - 58))  # back and front spacers (x, z)
     base = box((fx1 - fx0, 2 * y_bot - t, t), ((fx0 + fx1) / 2, 0, base_z))  # between the plates
     base = lighten(base, "z", keep=[cyl(60, 40, "z", (0, 0, base_z))], hole=22, rim=10)
-    out.append(Part("torso_waist_flange", "torso_link", "al6061", flange, "cnc"))
+    wf_if = [output_face("waist_yaw", "RS03", (0, 0, 0), "z", 1)]
+    out.append(
+        Part("torso_waist_flange", "torso_link", "al6061", flange, "cnc", extra={"ifaces": wf_if})
+    )
     out.append(Part("torso_base", "torso_link", "al6061", base, "cnc"))
     # the battery shelf, clear of the computer plate in front
     sx0, sx1 = fx0 + 5, (bat["xyz"][0] + bat["size"][0] / 2) * 1000 + 2
@@ -159,7 +194,17 @@ def parts() -> list[Part]:
         sh_h = spec("RS03")["holes"]["stator"]
         up = up - cyl(spec("RS03")["cap_d"] + 2, t + 2, "y", ring)
         up = up - bolt_holes(sh_h["n"], sh_h["thread"], sh_h["pcd"], "y", ring, t + 2)
-        out.append(Part(f"torso_shoulder_plate_{side}", "torso_link", "al6061", up, "cnc"))
+        sp_if = [stator_face("left_shoulder_pitch", "RS03", sh, "y", 1)] if s == 1 else []
+        out.append(
+            Part(
+                f"torso_shoulder_plate_{side}",
+                "torso_link",
+                "al6061",
+                up,
+                "cnc",
+                extra={"ifaces": sp_if},
+            )
+        )
         for k, (x, z) in enumerate(tops):
             yc = s * (up_y + t / 2 + gap / 2)
             spacer = box((20, gap, 20), (x, yc, z)) - cyl(7, gap + 2, "y", (x, yc, z))

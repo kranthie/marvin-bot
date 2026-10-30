@@ -184,9 +184,46 @@ def output_flange(model: str, centre, axis: str, sign: int, d: float, t: float =
     return plate, pc
 
 
+# --- interfaces: where a part is driven or carries the next link, for cad/fea.py. Each is a dict:
+# the joint it serves, and a patch of the part's surface (cad.fea.Patch's fields): "face", an
+# annulus r0-r1 on the plane through `centre` normal to `axis`; "cyl", a cylinder of radius r1
+# about `axis` through `centre`, `span` along it.
+_AX = {"x": (1.0, 0.0, 0.0), "y": (0.0, 1.0, 0.0), "z": (0.0, 0.0, 1.0)}
+
+
+def face(joint: str, centre, axis: str, r0: float, r1: float, rigid: bool = True) -> dict:
+    """`rigid` False: a load spread over the face (the ground), not a bolted part."""
+    out = dict(joint=joint, kind="face", centre=tuple(centre), axis=_AX[axis], r0=r0, r1=r1)
+    return out if rigid else {**out, "rigid": False}
+
+
+def bore(joint: str, centre, axis: str, d: float, length: float) -> dict:
+    """A bearing bore or pin hole of diameter d through a plate `length` thick."""
+    span = (-length / 2, length / 2)
+    return dict(joint=joint, kind="cyl", centre=tuple(centre), axis=_AX[axis], r1=d / 2, span=span)
+
+
+def output_face(joint: str, model: str, centre, axis: str, sign: int) -> dict:
+    """The contact face of a part bolted to a motor's output flange."""
+    s = spec(model)
+    return face(joint, _at(centre, axis, sign, s["t"] / 2), axis, 0.0, s["output_d"] / 2)
+
+
+def stator_face(joint: str, model: str, centre, axis: str, sign: int) -> dict:
+    """The contact face of a rear ring on a motor's body (its stator bolt circle)."""
+    s = spec(model)
+    r0 = (s["cap_d"] + 2) / 2 if s["cap_d"] else s["body_d"] / 2 - 10
+    r1 = s["holes"]["stator"]["pcd"] / 2 + 7 if "stator" in s["holes"] else s["body_d"] / 2
+    return face(joint, _at(centre, axis, -sign, s["rear"]), axis, r0, r1)
+
+
 __all__ = [
+    "bore",
     "box",
     "bolt_holes",
+    "face",
+    "output_face",
+    "stator_face",
     "output_flange",
     "post_points",
     "posts",

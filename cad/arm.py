@@ -31,7 +31,8 @@ import numpy as np
 import yaml
 
 from .lib import Part, box, cyl, hull, lighten, strap, union
-from .mounts import bolt_holes, output_flange, rear_ring, spec
+from .mounts import bolt_holes, output_face, output_flange, rear_ring, spec, stator_face
+from .mounts import face as contact
 from .mounts import posts as mount_posts
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -93,12 +94,30 @@ def parts() -> list[Part]:
     sr_ring, _ = rear_ring("RS03", roll, "x", 1, outer=108.0)
     sr_ring = sr_ring - box((40, 200, 200), (roll[0] - 20, y0 + t + 1 - 100, roll[2]))
     sr_mount = union(sr_ring, mount_posts("RS03", roll, "x", 1, 4.0, t03 / 2))
+    sr_if = [stator_face("left_shoulder_roll", "RS03", roll, "x", 1)]
     out.append(
-        Part("left_shoulder_roll_mount", "left_shoulder_pitch_link", "al6061", sr_mount, "cnc")
+        Part(
+            "left_shoulder_roll_mount",
+            "left_shoulder_pitch_link",
+            "al6061",
+            sr_mount,
+            "cnc",
+            extra={"ifaces": sr_if},
+        )
     )
     flange = lighten(flange, "y", keep=[cyl(56, 40, "y", (0, y0, 0))], hole=12, pitch=20, rim=6)
     # two plates bolted at the corner (an L in one piece is too tall for 60 mm stock)
-    out.append(Part("left_shoulder_flange", "left_shoulder_pitch_link", "al6061", flange, "cnc"))
+    sf_if = [output_face("left_shoulder_pitch", "RS03", (0, y0 - t03 / 2, 0), "y", 1)]
+    out.append(
+        Part(
+            "left_shoulder_flange",
+            "left_shoulder_pitch_link",
+            "al6061",
+            flange,
+            "cnc",
+            extra={"ifaces": sf_if},
+        )
+    )
     out.append(Part("left_shoulder_back", "left_shoulder_pitch_link", "al6061", back, "cnc"))
 
     # --- shoulder roll link: frame on the roll axis (roll RS03 centred here); output face at
@@ -119,11 +138,31 @@ def parts() -> list[Part]:
     top = lighten(top, "z", keep=[cyl(d06 + 4, 40, "z", (0, 0, yaw_top))], hole=16, rim=8)
     yr, _ = rear_ring("RS06", yaw, "z", -1)
     y_mount = union(yr, mount_posts("RS06", yaw, "z", -1, 4.0, t06 / 2))
-    out.append(Part("left_shoulder_yaw_mount", "left_shoulder_roll_link", "al6061", y_mount, "cnc"))
+    sy_if = [stator_face("left_shoulder_yaw", "RS06", yaw, "z", -1)]
+    out.append(
+        Part(
+            "left_shoulder_yaw_mount",
+            "left_shoulder_roll_link",
+            "al6061",
+            y_mount,
+            "cnc",
+            extra={"ifaces": sy_if},
+        )
+    )
     top = top - box(
         (tb + 0.2, 80, t + 2), (face + tb / 2, 0, yaw_top + t / 2)
     )  # bolts to the front
-    out.append(Part("left_shoulder_roll_front", "left_shoulder_roll_link", "al6061", front, "cnc"))
+    rf_if = [output_face("left_shoulder_roll", "RS03", (0, 0, 0), "x", 1)]
+    out.append(
+        Part(
+            "left_shoulder_roll_front",
+            "left_shoulder_roll_link",
+            "al6061",
+            front,
+            "cnc",
+            extra={"ifaces": rf_if},
+        )
+    )
     out.append(Part("left_shoulder_roll_top", "left_shoulder_roll_link", "al6061", top, "cnc"))
 
     # --- upper arm: frame on the yaw joint (yaw RS06 centred here, output face at -t06/2); the
@@ -133,7 +172,17 @@ def parts() -> list[Part]:
     ring_top = output_flange("RS06", (0, 0, 0), "z", -1, 70, t)[0] - cyl(
         16, 20, "z", (0, 0, yaw_out)
     )
-    out.append(Part("left_upper_arm_ring", "left_upper_arm_link", "al6061", ring_top, "cnc"))
+    ut_if = [output_face("left_shoulder_yaw", "RS06", (0, 0, 0), "z", -1)]
+    out.append(
+        Part(
+            "left_upper_arm_ring",
+            "left_upper_arm_link",
+            "al6061",
+            ring_top,
+            "cnc",
+            extra={"ifaces": ut_if},
+        )
+    )
     stator_y = el[1] - spec("RS06")["rear"] - t / 2  # on the elbow motor's body rear face
     ring_el = cyl(d06 + 11, t, "y", (el[0], stator_y, el[2]))
     eh = spec("RS06")["holes"]["stator"]
@@ -141,7 +190,17 @@ def parts() -> list[Part]:
     ring_el = ring_el - bolt_holes(
         eh["n"], eh["thread"], eh["pcd"], "y", (el[0], stator_y, el[2]), t + 2
     )
-    out.append(Part("left_upper_arm_elbow_ring", "left_upper_arm_link", "al6061", ring_el, "cnc"))
+    ue_if = [stator_face("left_elbow", "RS06", el, "y", 1)]
+    out.append(
+        Part(
+            "left_upper_arm_elbow_ring",
+            "left_upper_arm_link",
+            "al6061",
+            ring_el,
+            "cnc",
+            extra={"ifaces": ue_if},
+        )
+    )
     # shell: a rounded tube from the top ring to around the elbow motor's inner half; it
     # carries the forearm and hand, so 3.5 mm walls (cad/strength.py)
     UW = 3.5
@@ -165,7 +224,17 @@ def parts() -> list[Part]:
     wr = j["left_wrist_yaw"]
     out_y = t06 / 2
     flange_f = output_flange("RS06", (0, 0, 0), "y", 1, 72, t)[0]
-    out.append(Part("left_forearm_flange", "left_forearm_link", "al6061", flange_f, "cnc"))
+    ff_if = [output_face("left_elbow", "RS06", (0, 0, 0), "y", 1)]
+    out.append(
+        Part(
+            "left_forearm_flange",
+            "left_forearm_link",
+            "al6061",
+            flange_f,
+            "cnc",
+            extra={"ifaces": ff_if},
+        )
+    )
     cup_top = wr[2] + t00 / 2
     o = hull(
         cyl(68, 6, "y", (0, out_y + t + 3, -6)),
@@ -183,7 +252,17 @@ def parts() -> list[Part]:
         cyl(d00 + 2 * WALL, WALL, "z", (0, 0, cup_top + WALL / 2))
         - cyl(20, 10, "z", (0, 0, cup_top)),
     )
-    out.append(Part("left_forearm_shell", "left_forearm_link", "pa_cf", fore, "print"))
+    fs_if = [contact("left_wrist_yaw", (0, 0, cup_top), "z", 10, d00 / 2)]  # the wrist motor's seat
+    out.append(
+        Part(
+            "left_forearm_shell",
+            "left_forearm_link",
+            "pa_cf",
+            fore,
+            "print",
+            extra={"ifaces": fs_if},
+        )
+    )
 
     # --- wrist: frame on the wrist yaw joint (RS00 centred here, output face down). The pitch
     # servo hangs from the RS00's output in a printed cradle, its case running up from its shaft

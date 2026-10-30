@@ -32,7 +32,17 @@ from pathlib import Path
 import yaml
 
 from .lib import Part, box, cyl, hull, lighten, strap, union
-from .mounts import bolt_holes, output_flange, rear_ring, spec, spider
+from .mounts import (
+    bolt_holes,
+    bore,
+    output_face,
+    output_flange,
+    rear_ring,
+    spec,
+    spider,
+    stator_face,
+)
+from .mounts import face as contact
 from .mounts import posts as mount_posts
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -97,16 +107,56 @@ def parts() -> list[Part]:
     # the stator plate, with the thigh's far-side stub, over its driver cap
     hp_ring, _ = rear_ring("RS04", pj, "y", 1)
     hp_mount = union(hp_ring, mount_posts("RS04", pj, "y", 1, 4.0, t04 / 2))
-    out.append(Part("left_hip_pitch_mount", "left_hip_roll_link", "al6061", hp_mount, "cnc"))
+    hp_if = [stator_face("left_hip_pitch", "RS04", pj, "y", 1)]
+    out.append(
+        Part(
+            "left_hip_pitch_mount",
+            "left_hip_roll_link",
+            "al6061",
+            hp_mount,
+            "cnc",
+            extra={"ifaces": hp_if},
+        )
+    )
     rear = union(
         cyl(brg_d + 16, plate, "x", (rear_x, 0, 0)),
         box((plate, 30, over + 10), (rear_x, 0, (over + 10) / 2)),
     ) - cyl(brg_d, plate + 2, "x", (rear_x, 0, 0))
     bar = box((fx - rear_x + plate, 60, 10), ((fx + rear_x) / 2, 0, over + 5))
     bar = bar - box((fx - rear_x - 10, 44, 12), ((fx + rear_x) / 2, 0, over + 5 + 3))  # channel
-    out.append(Part("left_hip_roll_front", "left_hip_roll_link", "al6061", front, "cnc"))
-    out.append(Part("left_hip_roll_stator", "left_hip_roll_link", "al6061", stator, "cnc"))
-    out.append(Part("left_hip_roll_rear", "left_hip_roll_link", "al6061", rear, "cnc"))
+    roll_if = [output_face("left_hip_roll", "RS04", roll_c, "x", 1)]
+    stub_if = [bore("left_hip_pitch", (pj[0], sy - st / 2 - 6, pj[2]), "y", 30, 12)]
+    rear_if = [bore("left_hip_roll", (rear_x, 0, 0), "x", brg_d, plate)]
+    out.append(
+        Part(
+            "left_hip_roll_front",
+            "left_hip_roll_link",
+            "al6061",
+            front,
+            "cnc",
+            extra={"ifaces": roll_if},
+        )
+    )
+    out.append(
+        Part(
+            "left_hip_roll_stator",
+            "left_hip_roll_link",
+            "al6061",
+            stator,
+            "cnc",
+            extra={"ifaces": stub_if},
+        )
+    )
+    out.append(
+        Part(
+            "left_hip_roll_rear",
+            "left_hip_roll_link",
+            "al6061",
+            rear,
+            "cnc",
+            extra={"ifaces": rear_if},
+        )
+    )
     out.append(Part("left_hip_roll_bar", "left_hip_roll_link", "al6061", bar, "cnc"))
     out.append(
         Part(
@@ -130,7 +180,17 @@ def parts() -> list[Part]:
     yaw_top = yaw_c[2] + t03 / 2  # the yaw motor's driver cap top
     tz = yaw_top + web_t / 2  # the box floor, over the cap; posts down to a ring on the body
     flange = output_flange("RS04", (0, 0, 0), "y", 1, 80, plate)[0]
-    out.append(Part("left_hip_pitch_flange", "left_hip_pitch_link", "al6061", flange, "cnc"))
+    fl_if = [output_face("left_hip_pitch", "RS04", (0, 0, 0), "y", 1)]
+    out.append(
+        Part(
+            "left_hip_pitch_flange",
+            "left_hip_pitch_link",
+            "al6061",
+            flange,
+            "cnc",
+            extra={"ifaces": fl_if},
+        )
+    )
     side_t = 5.0  # the box walls carry the twist (SF > 4, cad/strength.py)
     oy = face + plate + side_t / 2
     outer_p = union(
@@ -153,9 +213,29 @@ def parts() -> list[Part]:
     )
     y_ring, _ = rear_ring("RS03", yaw_c, "z", -1)
     y_mount = union(y_ring, mount_posts("RS03", yaw_c, "z", -1, 4.0, t03 / 2))
-    out.append(Part("left_hip_yaw_mount", "left_hip_pitch_link", "al6061", y_mount, "cnc"))
+    ym_if = [stator_face("left_hip_yaw", "RS03", yaw_c, "z", -1)]
+    out.append(
+        Part(
+            "left_hip_yaw_mount",
+            "left_hip_pitch_link",
+            "al6061",
+            y_mount,
+            "cnc",
+            extra={"ifaces": ym_if},
+        )
+    )
     out.append(Part("left_hip_pitch_outer", "left_hip_pitch_link", "al6061", outer_p, "cnc"))
-    out.append(Part("left_hip_pitch_inner", "left_hip_pitch_link", "al6061", inner_p, "cnc"))
+    in_if = [bore("left_hip_pitch", (0, iy, 0), "y", brg_d, plate)]
+    out.append(
+        Part(
+            "left_hip_pitch_inner",
+            "left_hip_pitch_link",
+            "al6061",
+            inner_p,
+            "cnc",
+            extra={"ifaces": in_if},
+        )
+    )
     out.append(Part("left_hip_pitch_top", "left_hip_pitch_link", "al6061", top, "cnc"))
     wall_t = 4.0
     wz0 = -math.sqrt((d04 / 2) ** 2 - 24.0**2) - 7  # 7 mm under the pitch motor at x = +-24
@@ -185,7 +265,17 @@ def parts() -> list[Part]:
         output_flange("RS03", (0, 0, 0), "z", -1, 84, plate)[0],
         box((60, 16, plate), (0, t04 / 2 + 2, yaw_out - plate / 2)),
     )
-    out.append(Part("left_thigh_flange", "left_thigh_link", "al6061", tflange, "cnc"))
+    tf_if = [output_face("left_hip_yaw", "RS03", (0, 0, 0), "z", -1)]
+    out.append(
+        Part(
+            "left_thigh_flange",
+            "left_thigh_link",
+            "al6061",
+            tflange,
+            "cnc",
+            extra={"ifaces": tf_if},
+        )
+    )
     # The thigh plate is a single plate beside the leg's line, so a sideways fall onto the knee
     # bends it out of plane: from 9 mm stock, pocketed from the outside to a 2 mm floor, it takes
     # that case at SF 2.3 (cad/strength.py, side fall); the drilled 6 mm plate it replaces was
@@ -204,12 +294,27 @@ def parts() -> list[Part]:
     )
     # stub axle for the shin's far-side bearing, on the knee axis outside the plate
     tplate = union(tplate, cyl(30, 12, "y", (0, py + thigh_t / 2 + 6, knee[2])))
-    out.append(Part("left_thigh_plate", "left_thigh_link", "al6061", tplate, "cnc"))
+    tp_if = [bore("left_knee", (0, py + thigh_t / 2 + 6, knee[2]), "y", 30, 12)]
+    out.append(
+        Part(
+            "left_thigh_plate", "left_thigh_link", "al6061", tplate, "cnc", extra={"ifaces": tp_if}
+        )
+    )
     # the knee motor's stator bolts to a ring on its body's rear (outer) face; posts join it to
     # the thigh plate over the driver cap
     kn_ring, _ = rear_ring("RS04", knee, "y", -1)
     kn_mount = union(kn_ring, mount_posts("RS04", knee, "y", -1, 4.0, t04 / 2))
-    out.append(Part("left_thigh_knee_mount", "left_thigh_link", "al6061", kn_mount, "cnc"))
+    km_if = [stator_face("left_knee", "RS04", knee, "y", -1)]
+    out.append(
+        Part(
+            "left_thigh_knee_mount",
+            "left_thigh_link",
+            "al6061",
+            kn_mount,
+            "cnc",
+            extra={"ifaces": km_if},
+        )
+    )
     shell_top, shell_bot = yaw_out - 12, knee[2] + d04 / 2 + 4
     outer = hull(
         cyl(d03 + 16, 2, "z", (0, 0, shell_top)),
@@ -273,14 +378,37 @@ def parts() -> list[Part]:
     outer = lighten(
         outer, "y", keep=[cyl(64, 40, "y", (kb[0], yo, kb[2]))], hole=14, pitch=20, rim=8
     )
-    out.append(Part("left_shin_inner", "left_shin_link", "al6061", inner, "service"))
-    out.append(Part("left_shin_outer", "left_shin_link", "al6061", outer, "service"))
+    si_if = [
+        contact("left_knee", (0, yi + shin_t / 2, 0), "y", 8.0, kh["pcd"] / 2 + 6),
+        bore("left_ankle_pitch", (0, yi, ankle_z), "y", 22, shin_t),
+    ]
+    so_if = [bore("left_ankle_pitch", (0, yo, ankle_z), "y", 22, shin_t)]
+    out.append(
+        Part(
+            "left_shin_inner", "left_shin_link", "al6061", inner, "service", extra={"ifaces": si_if}
+        )
+    )
+    out.append(
+        Part(
+            "left_shin_outer", "left_shin_link", "al6061", outer, "service", extra={"ifaces": so_if}
+        )
+    )
     # each ankle motor's stator bolts to a ring on its body's rear face (its ears), joined by
     # posts to the side plate over its driver cap: a's to the inner plate, b's to the outer
     for name, c, sgn in (("a", ka, 1), ("b", kb, -1)):
         ring, _ = rear_ring("RS03", c, "y", sgn, outer=112.0)
         mount = union(ring, mount_posts("RS03", c, "y", sgn, 4.0, t03 / 2))
-        out.append(Part(f"left_ankle_mount_{name}", "left_shin_link", "al6061", mount, "cnc"))
+        am_if = [stator_face(f"left_ankle_{name}", "RS03", c, "y", sgn)]
+        out.append(
+            Part(
+                f"left_ankle_mount_{name}",
+                "left_shin_link",
+                "al6061",
+                mount,
+                "cnc",
+                extra={"ifaces": am_if},
+            )
+        )
     # the knee's far side: a plate on a bearing on the thigh plate's stub axle, tied to both
     # side plates by a bridge in front of the knee motor
     oy = t04 / 2 + web_t + 2 + 6 + plate / 2  # outside the thigh plate and its stub
@@ -291,7 +419,17 @@ def parts() -> list[Part]:
     bridge = box((20, oy - yi + plate, 20), (bridge_c[0], (oy + yi) / 2, bridge_c[1])) - box(
         (14, oy - yi + plate + 2, 14), (bridge_c[0], (oy + yi) / 2, bridge_c[1])
     )  # a square tube
-    out.append(Part("left_shin_knee_outer", "left_shin_link", "al6061", outer_pl, "cnc"))
+    ko_if = [bore("left_knee", (0, oy, 0), "y", brg_d, plate)]
+    out.append(
+        Part(
+            "left_shin_knee_outer",
+            "left_shin_link",
+            "al6061",
+            outer_pl,
+            "cnc",
+            extra={"ifaces": ko_if},
+        )
+    )
     out.append(Part("left_shin_bridge", "left_shin_link", "al6061", bridge, "cnc"))
     out.append(
         Part(
@@ -319,7 +457,20 @@ def parts() -> list[Part]:
             hull(cyl(36, 6, "y", (c[0], s * cy, c[2])), cyl(18, 6, "y", tip)),
             cyl(hub, cy - t03 / 2 - 3, "y", (c[0], s * (t03 / 2 + cy - 3) / 2, c[2])),
         )
-        out.append(Part(f"left_ankle_crank_{name}", "left_shin_link", "al7075", crank, "cnc"))
+        cr_if = [
+            output_face(f"left_ankle_{name}", "RS03", c, "y", s),
+            bore(f"left_ankle_rod_{name}", tip, "y", 18, 6),
+        ]
+        out.append(
+            Part(
+                f"left_ankle_crank_{name}",
+                "left_shin_link",
+                "al7075",
+                crank,
+                "cnc",
+                extra={"ifaces": cr_if, "group": f"left_ankle_crank_{name}"},
+            )
+        )
         # rod from the crank tip to its ball joint on the foot (neutral pose, shin frame)
         foot_end = (
             -link["rod_back"] * 1000,
@@ -341,7 +492,11 @@ def parts() -> list[Part]:
     # --- ankle cross and foot: frames on the ankle axes
     cross_w = t03 - 4  # between the shin's side plates
     cross = box((44, cross_w, 30)) - box((32, cross_w - 12, 32))  # hollow frame
-    out.append(Part("left_ankle_cross", "left_ankle_link", "al7075", cross, "cnc"))
+    cx_if = [contact("left_ankle_pitch", (0, s * cross_w / 2, 0), "y", 0, 40) for s in (1, -1)]
+    cx_if += [contact("left_ankle_roll", (s * 22, 0, 0), "x", 0, 40) for s in (1, -1)]
+    out.append(
+        Part("left_ankle_cross", "left_ankle_link", "al7075", cross, "cnc", extra={"ifaces": cx_if})
+    )
     foot = _skel["collisions"][[c["link"] for c in _skel["collisions"]].index("left_foot_link")]
     fl, fw, _ = mm(foot["size"])
     fx = foot["xyz"][0] * 1000
@@ -367,7 +522,12 @@ def parts() -> list[Part]:
     # the base is longer than the desktop mill's travel: a flat plate cut by an online
     # laser or water-jet service; posts and lugs are machined and bolted on
     fbase = lighten(shoe(fl - 10, fw - 10, 5, fx, pz), "z", hole=24, pitch=30, rim=10)
-    out.append(Part("left_foot_base", "left_foot_link", "al6061", fbase, "service"))
+    fb_if = [contact("ground", (fx, 0, pz - 2.5), "z", 0, 200, rigid=False)]
+    out.append(
+        Part(
+            "left_foot_base", "left_foot_link", "al6061", fbase, "service", extra={"ifaces": fb_if}
+        )
+    )
     # stiffening ribs along the foot either side of the lugs (bolted on; the base is a flat plate)
     for k, ry in (("rib_a", 24), ("rib_b", -24)):
         rib = box((fl - 90, 6, 16), (fx - 10, ry, pz + 2.5 + 8))  # 150 mm, short of the toe
@@ -382,7 +542,23 @@ def parts() -> list[Part]:
         ("lug_front", lugs[0]),
         ("lug_back", lugs[1]),
     ):
-        out.append(Part(f"left_foot_{name}", "left_foot_link", "al6061", solid, "cnc"))
+        if name.startswith("lug"):
+            x = 32 if name == "lug_front" else -32
+            f_if = [bore("left_ankle_roll", (x, 0, 0), "x", 18, 8)]
+        else:
+            s = 1 if name == "post_a" else -1
+            top = (-link["rod_back"] * 1000, s * link["rod_side"] * 1000, -link["rod_below"] * 1000)
+            f_if = [contact(f"left_ankle_rod_{name[-1]}", top, "z", 0, 9)]
+        out.append(
+            Part(
+                f"left_foot_{name}",
+                "left_foot_link",
+                "al6061",
+                solid,
+                "cnc",
+                extra={"ifaces": f_if},
+            )
+        )
     return out
 
 
