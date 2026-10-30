@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build phases and roadmap · Marvin Bot guide</title>
+<meta name="description" content="How Marvin Bot is built in seven phases, simulation first, each ending with a pass check; what each phase costs, which risks it retires and what to study before it.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+
+.gantt-wrap{position:relative}
+#gantt .ph{cursor:pointer}
+#gantt .ph:hover rect.bar{stroke:#8fd0ff;stroke-width:2}
+.detail{margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.detail h3{margin:.1em 0 .4em}
+.detail dl{display:grid;grid-template-columns:130px 1fr;gap:4px 12px;margin:0;font-size:14px}
+.detail dt{color:var(--muted)} .detail dd{margin:0}
+@media (max-width:620px){.detail dl{grid-template-columns:1fr}.detail dt{margin-top:6px}}
+.pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);margin:1px 3px 1px 0}
+.pill.done{color:var(--good);border-color:#256b4b}.pill.prog{color:var(--warn);border-color:#6b4f1d}.pill.todo{color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+#risktable tr.hl td{background:#1d2a38}
+#risktable td.ph{white-space:nowrap;font-family:var(--mono);font-size:13px}
+.ctl .chk{display:flex;gap:8px;align-items:flex-start;justify-content:flex-start;font-size:14px}
+.ctl .chk input{margin-top:4px;accent-color:var(--accent)}
+.checklist li{font-size:14px}
+.checklist li.done::marker{content:'✓  ';color:var(--good)}
+.checklist li.open::marker{content:'○  ';color:var(--warn)}
+svg text{font-family:var(--font)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 6 · Toward hardware</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 22</p>
+<h1>Build phases and roadmap</h1>
+<p class="lede">Marvin Bot is built in seven phases, from an empty repository to a robot that climbs real stairs using its camera. Each phase ends with a pass check that decides whether to go on, and parts are bought only when the next phase needs them, so a wrong assumption costs one phase, not the whole budget. This page shows the phases on a timeline, what each one costs and proves, and which risks it puts to rest.</p>
+<div class="meta"><span class="chip">~25 min</span><span class="chip">Before this: <a href="21-bom-costs.html">21 Bill of materials and costs</a></span><span class="chip"><a href="20-sim-to-real.html">20 Sim-to-real</a></span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>The four principles behind the plan: simulation first, test the riskiest part with the smallest build, buy in stages, measure and then update the model.</li>
+<li>The seven phases (0-6): their work, <a class="g" href="../glossary.html#pass-check">pass checks</a>, indicative times and spend.</li>
+<li>Where the project stands today (phase 1, in progress) and the 13 open items to verify before ordering parts.</li>
+<li>How each phase retires specific risks, and which pages of this guide to study before each one.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>Building a humanoid is a chain of bets: that the actuators really deliver their datasheet torque, that a policy trained in simulation walks on the real robot, that the knee does not overheat on stairs. Any one of them can be wrong. The cheapest way to find out is to test each bet with the smallest, cheapest build that can expose it, before spending money that depends on it. It is like test-driving one car before buying a fleet.</p>
+<p>Software engineers call this a <a class="g" href="../glossary.html#risk-driven-development">risk-driven</a> process: each round tackles the biggest remaining risk first, and the project's plan is shaped by its risks rather than by a fixed document sequence.<sup class="cite"><a href="#s1">[1]</a></sup> NASA's <a class="g" href="../glossary.html#technology-readiness-level">technology readiness levels</a> express the same idea for hardware: a component moves from analysis, to a lab test of a part, to a test of a subsystem, to the whole system in its real environment.<sup class="cite"><a href="#s2">[2]</a></sup> Marvin Bot's phases follow that ladder:</p>
+<ol start="0">
+<li><b>Foundations</b> (done): the repository, requirements, decision log and a first design (joints, sizes, mass budget, BOM).</li>
+<li><b>Robot in simulation</b> (now): walking, stairs and skills trained and checked in simulators. No parts bought.</li>
+<li><b>Actuator bench</b>: buy one large and one medium motor and measure them (<a href="20-sim-to-real.html">page 20</a>).</li>
+<li><b>One leg</b>: build a single leg and test it under walking-like loads.</li>
+<li><b>Lower body</b>: both legs and the pelvis, standing and walking, first held up by a <a class="g" href="../glossary.html#gantry">gantry</a> (a safety harness frame).</li>
+<li><b>Torso, arms and head</b>: waist, arms, hands, neck and camera, making the whole robot; it must carry objects and get up after a fall.</li>
+<li><b>Perception and intelligence</b>: climbing real stairs using the depth camera, teleoperation and fine-tuning the VLA (<a href="18-wbc-vla.html">page 18</a>).</li>
+</ol>
+<p>This is the last page of the guide; it pulls together the costs of <a href="21-bom-costs.html">page 21</a> and the measurements of <a href="20-sim-to-real.html">page 20</a>.</p>
+
+<h2 id="play">Playground: the phase timeline</h2>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="today">Marvin Bot today</button>
+      <button data-preset="evenings">Evenings only</button>
+      <button data-preset="fulltime">Full-time</button>
+      <button data-preset="pess">Pessimistic</button>
+      <button data-preset="shipping">Long shipping</button>
+    </div>
+    <h4>Pace</h4>
+    <div class="ctl"><label>Hours per week <output id="o_hours"></output></label>
+      <input type="range" id="hours" min="3" max="40" step="1" value="10">
+      <div class="hint">The plan's times are "part-time" and give no hours. This page assumes part-time means about 10 h a week; that number is this guide's assumption, not the repo's.</div></div>
+    <div class="ctl"><label>Estimate</label>
+      <select id="est"><option value="0">Optimistic (low end of each range)</option><option value="0.5" selected>Middle of each range</option><option value="1">Pessimistic (high end)</option></select></div>
+    <div class="ctl"><label>Parts lead time per hardware phase <output id="o_lead"></output></label>
+      <input type="range" id="lead" min="0" max="8" step="1" value="0">
+      <div class="hint">Waiting for an order to arrive (phases 2-5). Waiting does not shrink when you work more hours.</div></div>
+    <div class="ctl"><label class="chk"><input type="checkbox" id="show6" checked> Show phase 6 (ongoing; drawn as a 12-week window)</label></div>
+    <h4>Phase</h4>
+    <div class="ctl"><select id="sel"></select>
+      <div class="hint">Or click a bar in the timeline.</div></div>
+  </div>
+  <div class="preview">
+    <svg id="gantt" viewBox="0 0 700 330" role="img" aria-label="Gantt-style timeline of the seven build phases with today's date marked"></svg>
+    <div class="readouts">
+      <div class="ro" id="r_p2"><div class="k">Actuator bench starts</div><div class="v">–</div></div>
+      <div class="ro" id="r_walk"><div class="k">Lower body walks (end of 4)</div><div class="v">–</div></div>
+      <div class="ro" id="r_full"><div class="k">Whole robot (end of 5)</div><div class="v">–</div></div>
+      <div class="ro" id="r_wk"><div class="k">Phases 1-5, weeks</div><div class="v">–</div></div>
+      <div class="ro" id="r_spent"><div class="k">Spent by end of selected phase</div><div class="v">–</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--good)"></i>done</span><span><i style="background:var(--warn)"></i>in progress</span><span><i style="background:var(--accent)"></i>not started</span><span><i style="background:#3a4757"></i>lead time</span><span><i style="background:var(--bad)"></i>today, 2026-10-29</span></div>
+    <p class="hint" style="font-size:13px;color:var(--muted);margin:6px 0"><b>How to read this picture:</b> calendar dates run left to right, with today as the red line; one row per phase, coloured by status. A bar's length is how long the phase takes at your hours per week; the grey stretch before a hardware phase is waiting for parts to arrive. Click a bar to see that phase's work, pass check and spend below.</p>
+    <div class="detail" id="detail"></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <b>Marvin Bot today</b> and click phase 2. It costs about $4,750 in parts at single prices, but $3,499 of that is the Orin; without it the actuator bench is about $1,250. That is the "smallest build" that can test the most expensive assumption in the robot.</li>
+<li>Press <b>Full-time</b>. Phases 1-5 shrink to a quarter, but then drag the lead time to 4 weeks: hardware phases are now limited by shipping, not by your hours. Order the next phase's parts while the current one is being tested (once its risky question has been answered).</li>
+<li>Scroll to the risk register and click <b>Phase 2</b>: seven of the thirteen open items are settled, at least in part, on one bench. That is why the bench comes before the leg.</li>
+</ol></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>1. Simulation before hardware</h3>
+<p>A physics simulator lets you test a walking controller thousands of times an hour with no broken parts. With GPU simulation, thousands of simulated robots train in parallel, so a walking policy can be learned in minutes to hours rather than weeks.<sup class="cite"><a href="#s3">[3]</a></sup><sup class="cite"><a href="#s9">[9]</a></sup> Marvin Bot's rule (<code>docs/plan.md</code>): the robot must stand, walk and climb stairs in simulation, with torques inside the actuators' ratings, before more than two test actuators are bought. Phase 1 costs nothing in parts, apart from a training computer that the BOM leaves out.</p>
+<h3>2. Test the riskiest part with the smallest build</h3>
+<p>The order is one actuator, one leg, the lower body, the full robot. Each step adds only what the previous step has made safe to add. If the RS04 turns out to hold only 30 N·m continuously in a thigh-sized mount instead of 40, you learn that on a $255 bench unit, not after buying seven of them and machining two legs around them.</p>
+<h3>3. Buy in stages</h3>
+<p>Spend is committed one phase at a time. The cost of this caution is small: staged buying keeps $121 of the $132 that a single up-front actuator order would save (see <a href="21-bom-costs.html">21 Bill of materials and costs</a>). The gain is that a failed pass check costs one phase's parts.</p>
+<h3>4. Measure, then update the model</h3>
+<p>Every hardware phase measures the real thing (torque, speed, heat, latency, mass) and feeds it back into <code>description/</code> and the simulation. This is how legged-robot research closes the <a class="g" href="../glossary.html#sim-to-real-gap">sim-to-real gap</a>: identify the actuator from bench measurements, put that model into simulation, retrain.<sup class="cite"><a href="#s4">[4]</a></sup><sup class="cite"><a href="#s5">[5]</a></sup> See <a href="20-sim-to-real.html">20 Sim-to-real and system identification</a>.</p>
+<h3>Durations and the hours slider</h3>
+<p>The plan gives each phase a range in weeks, part-time. If a phase needs a fixed amount of work, its duration in weeks is roughly</p>
+<p class="mono" style="padding-left:1em">weeks = plan weeks × (assumed 10 h/week ÷ your h/week) + lead time</p>
+<p>The first term scales with effort; the lead time (waiting for parts, machining services, prints) does not. Real projects are not perfectly linear: some work, such as a 7.5-hour training run or a thermal soak test, takes calendar time however many hours you have. Treat the slider as a planning aid, not a forecast.</p>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b> <code>docs/plan.md</code> defines the phases, pass checks and indicative times; <code>docs/roadmap.md</code> tracks status and lists the open items; <code>docs/decisions.md</code> records why. Phase 0 is done; phase 1, robot in simulation, has been in progress since 2026-10-25. Spend per phase below is this guide's mapping of the 60 BOM lines to phases (single prices; total $17,531), explained on <a href="21-bom-costs.html#phases">page 21</a>.</div>
+
+<div class="tablewrap"><table>
+<thead><tr><th>#</th><th>Phase</th><th>Pass check</th><th>Time (part-time)</th><th class="num">Spend</th><th>Status</th></tr></thead>
+<tbody id="phtable"></tbody></table></div>
+
+<h3 id="status">Phase 1 today</h3>
+<p>Of the 30 checklist items in the roadmap's phase 1 section, 26 are ticked. Highlights and what is open:</p>
+<ul class="checklist">
+<li class="done">URDF generated from the description; MuJoCo standing check (worst holding torque 40% of rated); static step-up check.</li>
+<li class="done">Ankle linkage geometry and push-rod loads; Isaac Lab package on Newton and PhysX; MuJoCo cross-checks.</li>
+<li class="done">Flat policy v8, retrained on the 1.44 m model, passes the MuJoCo cross-check (0.53 m/s for 0.5 commanded, fast walk 0.95 for 1.0 m/s, hottest joint a knee at 68% of rated). Stair policies (rough v5-v9, trained on the earlier 1.29 m body) climb 5-20 cm stairs up and down; on that body rough v5 kept the knees at 73-75% of rated (RMS).</li>
+<li class="done">Code-CAD of legs, pelvis, torso, arms and head; strength check (worst <a class="g" href="../glossary.html#safety-factor">safety factor</a> 2.4 after the second pass); covers and harness; battery cradle and electronics bay.</li>
+<li class="open">Stair robustness: rough v9 (still the stair policy) falls in 1 of 15 runs on 15-20 cm stairs on the 1.44 m model (2 of 15 on the old body); a retrained rough v10 did worse (6 of 15) and is not used.</li>
+<li class="open">Motion tracking: one tracker follows all 25 Kimodo clips upright on the 1.44 m model; five weak clips were regenerated and all 25 now pass the skill checks. A new tracker (v4) is still training, so tracking results are provisional; next a jog with a flight phase, a closer two-hand wave and a MuJoCo replay.</li>
+<li class="open">Leg CAD fasteners, bearing seats and hip-yaw far-side support; fasteners, clips and connector footprints in the CAD.</li>
+<li class="open">Retrain the walking and stair policies on the 1.44 m body with hands (listed under the roadmap's hands section): flat v8 is done and passing; the stair policy is still rough v9 until a retrain beats it.</li>
+</ul>
+<p>Phase 2 preparation has also started: a RobStride CAN driver written from the official manuals, with unit-tested frame encoding (<code>robot/drivers/robstride.py</code>), and bench scripts for scan, latency, step response and thermal tests (<code>bench/</code>, untested on hardware).</p>
+
+<h2 id="risks">Risk register: open items to verify before ordering</h2>
+<p>The roadmap lists 13 items to verify before ordering. Each is a <a class="g" href="../glossary.html#risk-register">risk register</a> entry: something that, if wrong, changes a design or a purchase. The phase column is when each is settled; where the repo does not say, it is this guide's inference (marked *). Click a phase above, or a row, to link the two views.</p>
+<div class="tabs" id="riskfilter"></div>
+<div class="tablewrap"><table id="risktable">
+<thead><tr><th>#</th><th>Open item (<code>docs/roadmap.md</code>)</th><th>Settled in</th><th>How</th></tr></thead>
+<tbody></tbody></table></div>
+<div class="callout"><b>Example: how the knee-heating risk retires</b> In the static 18 cm step check on the 1.44 m model the stance knee holds 47 N·m, 118% of the RS04's continuous rating (item 11). Phase 1 shrank the risk: a trained stair policy (on the old 1.29 m model) loads the knees at 73-75% of rated RMS, because a dynamic gait loads each knee for only part of each step (<code>docs/design/stairs.md</code>). The stair policy in use (rough v9) was trained on the 1.29 m body, and no knee RMS on the 1.44 m body is published yet, so this still has to be re-measured. Phase 2's bench thermal test then measures the RS04's real continuous rating in a thigh-sized mount; if it is 30-35 N·m instead of 40, stair RMS rises to roughly 85-100%. Phase 3 confirms it on one leg under gait-like loads ("nothing overheats"). Only if those fail does the parked 1.5:1 knee stage come back.</div>
+
+<h2 id="skills">Skills beyond walking</h2>
+<p>The roadmap lists skills that can be trained in simulation now and retrained once phase 2 has fitted the actuator models:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Skill</th><th>Status</th><th>Method or reference</th><th>Lands in phase</th></tr></thead>
+<tbody>
+<tr><td>Get up from a fall, face up and face down</td><td><span class="pill todo">open</span></td><td>HoST: RL for standing up from varied postures<sup class="cite"><a href="#s6">[6]</a></sup></td><td>5 (pass check)</td></tr>
+<tr><td>Expressive clips: gestures, squats, a kick, a dance</td><td><span class="pill done">done in sim</span></td><td>Kimodo + retargeting + motion tracking (<a href="17-motion-tracking.html">17</a>)</td><td>5</td></tr>
+<tr><td>General motion tracker for whole-body teleoperation</td><td><span class="pill todo">open</span></td><td>Needs far more clips; how GR00T demonstrations get recorded (<a href="18-wbc-vla.html">18</a>)</td><td>6</td></tr>
+<tr><td>Walk, squat and reach with any arm pose</td><td><span class="pill todo">open</span></td><td>HOMIE<sup class="cite"><a href="#s7">[7]</a></sup>; the waist only turns, so reaching low means squatting</td><td>5</td></tr>
+<tr><td>Stairs from depth images</td><td><span class="pill todo">open</span></td><td>Student policy on simulated depth, distilled from rough v9<sup class="cite"><a href="#s8">[8]</a></sup></td><td>6 (pass check)</td></tr>
+<tr><td>Carry a box; sit on and stand up from a chair</td><td><span class="pill todo">open</span></td><td>PhysHSI<sup class="cite"><a href="#s10">[10]</a></sup></td><td>5-6</td></tr>
+<tr><td>Walk to and kick a ball</td><td><span class="pill todo">open</span></td><td>Camera detection noise and latency modelled</td><td>6</td></tr>
+<tr><td>Manipulation rehearsal in Isaac Sim, GR00T N1.7 fine-tuning</td><td><span class="pill todo">open</span></td><td>Teleoperated demos, GR00T-Mimic, Cosmos Transfer<sup class="cite"><a href="#s11">[11]</a></sup></td><td>6</td></tr>
+</tbody></table></div>
+<p>Out of scope for this robot: parkour and tall jumps (past the 70%-of-peak torque rule) and floor work such as crawling, until the shells are in the collision model.</p>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<ul>
+<li><b>Build everything at once.</b> Faster on paper and slightly cheaper (quantity tiers), but every wrong assumption is paid for in full and debugging a 27-joint robot with all parts new is hard: you cannot tell a bad motor from a bad controller. Rejected (<code>docs/decisions.md</code>, 2026-10-25: "built in stages, simulation first").</li>
+<li><b>Start from a bought robot or a kit.</b> Faster to a walking robot but the project's goal is an open design anyone can build and change.</li>
+<li><b>Skip the single-leg phase.</b> Saves 4-6 weeks, but the ankle linkage's range, the leg's tracking and its heating would all be tested for the first time on a 40 kg robot on a gantry.</li>
+<li><b>More simulation before hardware.</b> Simulation cannot settle the open items that are about the real parts (bearing type, regen, CAN timing on the Orin, real continuous rating); after a point only the bench answers.</li>
+</ul>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b>
+<ul>
+<li><b>Inside the repo:</b> <code>docs/plan.md</code> lists the Orin and IMU as phase 4 work, but phase 2's pass check is "CAN at the planned rates works on the Orin", and roadmap items 4 and 13 need it on the bench. This page's spend puts the Orin in phase 2. The project already owns one, so in practice it does not matter.</li>
+<li><b>Pace:</b> the plan gives phase 1 three to five weeks part-time; the roadmap already shows 26 of 30 phase 1 items ticked four days after it started (2026-10-25 to 2026-10-29). The indicative times are a planning baseline, not a measured rate.</li>
+<li><b>Walking requirement vs phase 1's current model:</b> the stair heat figures (73-75% knee RMS) come from a policy trained on the 1.29 m body; the static check on the 1.44 m body is worse (118% vs 112%). Flat walking has been re-checked on the current model (flat v8 passes); the stair heat figure has not.</li>
+</ul></div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>How many hours a week you can give, and so when each phase's parts need ordering.</li>
+<li>Whether to order the next phase's parts while the current phase is still testing (saves lead time, adds risk).</li>
+<li>Which open items to work on first: those that block phase 2's order (1, 2, 3, 4, 13).</li>
+<li>Which pages of this guide to study before the next phase.</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://faculty.washington.edu/hazeline/misc/reserve/boehm_spiralmodel.pdf">Boehm, "A spiral model of software development and enhancement"</a>: the classic argument for letting risk, not a document checklist, decide what to do next.</li>
+<li><a href="https://esto.nasa.gov/trl">NASA technology readiness levels</a>: a vocabulary for "how proven is this part?" that maps well onto bench, leg and lower-body tests.</li>
+<li><a href="https://arxiv.org/abs/1901.08652">Hwangbo et al., Learning agile and dynamic motor skills for legged robots</a>: measure the actuator, model it, train in simulation, deploy; the loop phases 2-4 follow.</li>
+<li><a href="https://isaac-sim.github.io/IsaacLab/">Isaac Lab documentation</a>: the simulator stack phase 1 runs on.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://faculty.washington.edu/hazeline/misc/reserve/boehm_spiralmodel.pdf">B. W. Boehm, "A spiral model of software development and enhancement", IEEE Computer 21(5), 1988</a> <span class="used">— used for: risk-driven development, resolving the largest risk first.</span></li>
+  <li id="s2"><a href="https://esto.nasa.gov/trl">NASA Earth Science Technology Office, Technology Readiness Levels</a> <span class="used">— used for: the ladder from component to subsystem to system tests.</span></li>
+  <li id="s3"><a href="https://arxiv.org/abs/2109.11978">N. Rudin et al., "Learning to walk in minutes using massively parallel deep reinforcement learning", CoRL 2021</a> <span class="used">— used for: GPU-parallel simulation makes simulation-first training cheap.</span></li>
+  <li id="s4"><a href="https://arxiv.org/abs/1804.10332">J. Tan et al., "Sim-to-real: learning agile locomotion for quadruped robots", RSS 2018</a> <span class="used">— used for: identifying actuators and improving the simulator to close the sim-to-real gap.</span></li>
+  <li id="s5"><a href="https://arxiv.org/abs/1901.08652">J. Hwangbo et al., "Learning agile and dynamic motor skills for legged robots", Science Robotics 2019</a> <span class="used">— used for: an actuator model learned from measured data, used in simulation for training.</span></li>
+  <li id="s6"><a href="https://arxiv.org/abs/2502.08378">T. Huang et al., "Learning humanoid standing-up control across diverse postures" (HoST), 2025</a> <span class="used">— used for: getting up from a fall as a trainable skill.</span></li>
+  <li id="s7"><a href="https://arxiv.org/abs/2502.13013">Q. Ben et al., "HOMIE: humanoid loco-manipulation with isomorphic exoskeleton cockpit", 2025</a> <span class="used">— used for: walking and squatting while the arms move freely.</span></li>
+  <li id="s8"><a href="https://arxiv.org/abs/2601.07718">S. Zhu et al., "Hiking in the Wild: a scalable perceptive parkour framework for humanoids", 2026</a> <span class="used">— used for: depth-image locomotion policies (the method behind "stairs from depth images").</span></li>
+  <li id="s9"><a href="https://isaac-sim.github.io/IsaacLab/">NVIDIA, Isaac Lab documentation</a> <span class="used">— used for: the GPU simulation and RL framework of phase 1.</span></li>
+  <li id="s10"><a href="https://arxiv.org/abs/2510.11072">H. Wang, W. Zhang, R. Yu et al., PhysHSI: Towards a Real-World Generalizable and Natural Humanoid-Scene Interaction System, arXiv 2510.11072, 2025</a> <span class="used">— used for: humanoid-scene interaction skills (carrying, sitting), as cited in the roadmap.</span></li>
+  <li id="s11"><a href="https://developer.nvidia.com/isaac/gr00t">NVIDIA, Isaac GR00T</a> <span class="used">— used for: GR00T models and synthetic-data tools for manipulation (phase 6).</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="21-bom-costs.html"><span>← Previous</span>Bill of materials and costs</a>
+  <a class="next" href="../glossary.html"><span>Next →</span>Glossary</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+// Spend per phase: the 60 BOM lines mapped to phases at single prices (same mapping as page 21; total $17,531.03)
+const SPEND=[0,0,4751.50,4342.50,5053.55,3288.48,95.00];
+const PH=[
+ {n:'Foundations',lo:1,hi:1,status:'done',
+  work:'Repo, requirements, decision log, licences, v0 design: joints, sizes, mass budget, BOM.',
+  pass:'Requirements and v0 layout agreed.',
+  buys:'Nothing.',
+  risks:'Scope: what the robot must do (requirements R1-R65) and whether it fits the mass and cost budgets on paper.',
+  study:['01-dof-kinematics','02-balance','03-architecture','07-mass-proportions']},
+ {n:'Robot in simulation',lo:3,hi:5,status:'prog',
+  work:'Code-CAD of the frame, URDF and masses generated from it; standing, step-up and torque/thermal checks; walking and stair policies in Isaac Lab, cross-checked in MuJoCo.',
+  pass:'Walks and climbs 15-18 cm steps in simulation; peak torques ≤70% of rating; continuous torques within rating.',
+  buys:'Nothing in parts (a training GPU, not counted in the BOM, or a rented one).',
+  risks:'Can this body walk and climb at all with these actuators? Knee heating partly (a stair policy on the old 1.29 m body at 73-75% RMS; flat v8 on the 1.44 m body at most 68%); ankle push-rod loads (item 9); mass and strength on paper.',
+  study:['13-description','14-simulation','15-pd-control','16-rl-walking','05-leg-loads-stairs','06-ankle-linkage','08-structure-cad','17-motion-tracking']},
+ {n:'Actuator bench',lo:2,hi:3,status:'todo',
+  work:'One RS04 and one RS03, CAN adapter, bench supply with regen clamp. Measure torque constant, speed, heating, CAN timing, built-in position control; fit actuator models and feed them back into simulation.',
+  pass:'Manual figures confirmed; models match measurements; CAN at the planned rates works on the Orin.',
+  buys:'RS04 ×1, RS03 ×1 (single price), 48 V bench supply, regen clamp, USB-CAN adapter, RobStride debug adapter, wired e-stop, hand tools; the Orin, NVMe and CAN transceivers (inference: the pass check needs the Orin).',
+  risks:'Datasheet vs reality for torque, speed and heat; RS04 continuous rating in a small mount (item 11); output bearing (2); bus current and regen (3); CAN timing (4, 13); IMU choice (6).',
+  study:['04-actuators','10-can-bus','09-power-battery','12-safety','20-sim-to-real','15-pd-control']},
+ {n:'One leg',lo:4,hi:6,status:'todo',
+  work:'Remaining actuators for one leg; machine and print one leg; test on a jig: trajectory tracking, ankle linkage range, gait-like loads for heat, simple hops.',
+  pass:'Leg tracks simulated motion; linkage reaches its range; nothing overheats.',
+  buys:'The other 11 RS03 in one 10+ order, two more RS04, a dual-channel CAN adapter, 7075 bar, leg stock and service machining (half), bearings, push rods, rod ends, leg jig, end mills, printing tools, filament.',
+  risks:'Machining accuracy (item 8); ankle linkage range and rod loads under real motion (9); leg heating under gait-like loads (11); sim-to-real tracking of one limb.',
+  study:['05-leg-loads-stairs','06-ankle-linkage','08-structure-cad','15-pd-control','20-sim-to-real']},
+ {n:'Lower body',lo:6,hi:8,status:'todo',
+  work:'Second leg, pelvis, battery and power system, e-stop, Orin, IMU. Stand on a gantry, walk on the gantry, then walk free.',
+  pass:'Walks at 0.5 m/s, turns, stops, recovers from pushes, handles low steps.',
+  buys:'Second leg (three RS04 + the spare), pelvis machining, 39 cells, BMS, charger, power distribution, contactor, primary IMU, gantry, wireless e-stop, padding, spot welder.',
+  risks:'Cell supply and pack mass (item 7); the walking policy’s sim-to-real gap on a real balancing robot; e-stop and power chain under load.',
+  study:['02-balance','09-power-battery','12-safety','16-rl-walking','20-sim-to-real','11-sensors-compute']},
+ {n:'Torso, arms, head',lo:4,hi:6,status:'todo',
+  work:'Waist, arms, wrist pitch and hands, neck, camera; whole-body controller; fall recovery.',
+  pass:'Walks while carrying objects; gets up after a fall.',
+  buys:'RS06 ×5, RS00 ×2, four STS3250 servos, hand kits and converters, depth camera, waist crossed-roller bearing, torso machining, upper-body materials.',
+  risks:'Camera driver on JetPack 7.2 (item 5); hand mass, wrist pattern and servo-bus timing (12); arm torques for getting up.',
+  study:['18-wbc-vla','19-hands','17-motion-tracking','11-sensors-compute','07-mass-proportions']},
+ {n:'Perception and intelligence',lo:12,hi:12,status:'todo',ongoing:true,
+  work:'Terrain map from the depth camera for stairs, teleoperation, data collection, GR00T N1.7 fine-tuning; finish the shells.',
+  pass:'Climbs real stairs using vision; picks up objects on command.',
+  buys:'The last kilogram of carbon-fibre nylon for the shells; a training GPU if you have none (not in the BOM).',
+  risks:'GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs (item 10); vision-based stairs.',
+  study:['11-sensors-compute','18-wbc-vla','17-motion-tracking','16-rl-walking']},
+];
+const TITLES={'01-dof-kinematics':'Degrees of freedom','02-balance':'Balance','03-architecture':'System architecture','04-actuators':'Actuators','05-leg-loads-stairs':'Leg loads and stairs','06-ankle-linkage':'Ankle linkage','07-mass-proportions':'Mass budget','08-structure-cad':'Structure and code-CAD','09-power-battery':'Power and battery','10-can-bus':'CAN buses','11-sensors-compute':'Sensors and compute','12-safety':'Safety','13-description':'Robot description','14-simulation':'Simulation','15-pd-control':'PD control','16-rl-walking':'RL for walking','17-motion-tracking':'Motion tracking','18-wbc-vla':'Whole-body control and VLA','19-hands':'Hands','20-sim-to-real':'Sim-to-real','21-bom-costs':'BOM and costs'};
+const RISKS=[
+ [1,'RobStride direct quote, lead time and import tariffs vs Seeed; price the unquoted BOM lines','2 → 3','Before each phase’s order; settled for the actuators before the phase 3 bulk RS03 order*'],
+ [2,'RobStride output-bearing type, backlash and moment ratings','2','Open up and load the bench units; decides the far-side bearing design before the leg is machined*'],
+ [3,'RobStride bus current and regen behaviour','2','Bench test with supply and regen clamp; sizes the fuse, clamp and precharge'],
+ [4,'Real CAN timing with 3-5 motors per bus on the Orin under JetPack 7.2; on-board CAN pin setup','2','Phase 2 pass check: "CAN at the planned rates works on the Orin"'],
+ [5,'Depth camera driver support on JetPack 7.2; camera baseline figure','5','Before buying the camera for the head*'],
+ [6,'Primary IMU choice (industrial AHRS or BMI088 on a microcontroller)','2 → 4','Decided after a bench test (decisions log), fitted in phase 4*'],
+ [7,'Cell availability (genuine stock) and the built pack’s mass','4','When the battery is built for the lower body*'],
+ [8,'Desktop-CNC feeds and accuracy in 6061 (coupon cuts)','3','Coupon cuts before machining the first leg*'],
+ [9,'Ankle push-rod loads and rod-end sizing','1 → 3','Simulation with gait loads (phase 1), then linkage range on the leg jig (phase 3)*'],
+ [10,'GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs','6','When manipulation moves onto the robot*'],
+ [11,'Knee and hip-roll heating on slow stairs (static check: knee 118%, hip roll 105% of rated)','1 → 2 → 3','Stair policy RMS on the 1.44 m model (phase 1), RS04 thermal test in a thigh-sized mount (phase 2), gait-like loads on one leg (phase 3)'],
+ [12,'Hands: weigh the kits, confirm the 6 × M3 on Ø42 wrist pattern, servo-bus timing with 8 servos per hand','5','The kits are owned, so this can be done any time; needed before the arms are built*'],
+ [13,'CAN interfaces: does a dual-channel adapter carry two 500 Hz buses on one USB link? Find a US price','2','With the CAN timing test (item 4); otherwise 5 single-channel adapters and room for 2 more in the bay'],
+];
+const DEFAULTS={hours:10, est:0.5, lead:0, show6:true, sel:1};
+const state={...DEFAULTS};
+const $=id=>document.getElementById(id);
+const BASEH=10;                 // assumed part-time hours/week behind the plan's ranges (this guide's assumption)
+const P1START=new Date('2026-10-25T00:00:00Z'), TODAY=new Date('2026-10-29T00:00:00Z');
+const DAY=86400000;
+function weeks(i){ const p=PH[i]; let w=(p.lo+(p.hi-p.lo)*state.est)*(p.ongoing?1:BASEH/state.hours); const lt=(i>=2&&i<=5)?state.lead:0; return {work:w, lead:lt, tot:w+lt}; }
+function schedule(){
+  // phase 0 done: ended when phase 1 started. Phase 1 started 2026-10-25.
+  const out=[]; let t=new Date(P1START.getTime()-7*DAY);
+  for(let i=0;i<7;i++){ const w= i===0? {work:1,lead:0,tot:1} : weeks(i);
+    const s=new Date(t), e=new Date(t.getTime()+w.tot*7*DAY); out.push({i,s,e,...w}); t=e; }
+  return out;
+}
+function fmtD(d){ return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}); }
+function fmtM(d){ return d.toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'}); }
+function svgEl(tag,a,txt){ const e=document.createElementNS('http://www.w3.org/2000/svg',tag); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
+const COL={done:'#4cc38a',prog:'#ffb454',todo:'#4fb3ff'};
+function money(v){ return '$'+Math.round(v).toLocaleString('en-US'); }
+
+function render(){
+  const S=schedule(); const vis=S.filter(x=>state.show6||x.i<6);
+  const svg=$('gantt'); svg.innerHTML='';
+  const W=Math.max(360,Math.min(700,svg.clientWidth||700)), narrow=W<560, left=narrow?118:190,right=14,top=30,rowH=38,H=top+vis.length*rowH+12; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const t0=S[0].s.getTime(), t1=vis[vis.length-1].e.getTime();
+  const sx=t=>left+(W-left-right)*(t-t0)/(t1-t0);
+  // month ticks
+  const d=new Date(Date.UTC(S[0].s.getUTCFullYear(),S[0].s.getUTCMonth()+1,1)); const span=(t1-t0)/DAY; const stepM= span>900?6: span>450?3: span>200?2:1;
+  for(;d.getTime()<t1; d.setUTCMonth(d.getUTCMonth()+stepM)){ const x=sx(d.getTime());
+    svg.appendChild(svgEl('line',{x1:x,x2:x,y1:top-6,y2:H-6,stroke:'#2a3340'}));
+    svg.appendChild(svgEl('text',{x:x+3,y:top-12,fill:'#9aa7b4','font-size':11},fmtM(d))); }
+  vis.forEach((p,k)=>{ const y=top+k*rowH; const g=svgEl('g',{class:'ph','data-i':p.i,tabindex:0,role:'button','aria-label':'Phase '+p.i});
+    if(p.i===state.sel) g.appendChild(svgEl('rect',{x:0,y:y-2,width:W,height:rowH-4,fill:'#1d2a38',rx:4}));
+    g.appendChild(svgEl('text',{x:8,y:y+rowH/2,fill:p.i===state.sel?'#4fb3ff':'#e6edf3','font-size':13,'font-weight':p.i===state.sel?700:400},`${p.i} ${narrow&&PH[p.i].n.length>14?PH[p.i].n.slice(0,13)+'…':PH[p.i].n}`));
+    const x0=sx(p.s.getTime()), xl=sx(p.s.getTime()+p.lead*7*DAY), x1=sx(p.e.getTime());
+    if(p.lead>0) g.appendChild(svgEl('rect',{x:x0,y:y+6,width:Math.max(xl-x0,1),height:rowH-16,fill:'#3a4757',rx:3}));
+    const bar=svgEl('rect',{class:'bar',x:xl,y:y+6,width:Math.max(x1-xl,2),height:rowH-16,fill:COL[PH[p.i].status],rx:3,'fill-opacity':PH[p.i].ongoing?0.45:1});
+    g.appendChild(bar);
+    const lbl=(PH[p.i].ongoing?'ongoing':(p.tot<10?p.tot.toFixed(1):Math.round(p.tot))+' wk');
+    const tx= x1+4 > W-50 ? xl+4 : x1+4;
+    g.appendChild(svgEl('text',{x:tx,y:y+rowH/2,fill: x1+4>W-50?'#0f1216':'#9aa7b4','font-size':11,'font-family':'ui-monospace,monospace'},lbl));
+    g.addEventListener('click',()=>{ state.sel=p.i; $('sel').value=p.i; render(); });
+    g.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); state.sel=p.i; $('sel').value=p.i; render(); } });
+    svg.appendChild(g); });
+  const xt=sx(TODAY.getTime());
+  svg.appendChild(svgEl('line',{x1:xt,x2:xt,y1:top-6,y2:H-6,stroke:'#ff6b6b','stroke-width':2}));
+  svg.appendChild(svgEl('text',{x:xt+3,y:H-4,fill:'#ff6b6b','font-size':10},'today'));
+  // readouts
+  $('r_p2').querySelector('.v').textContent=fmtD(S[2].s);
+  $('r_walk').querySelector('.v').textContent=fmtD(S[4].e);
+  $('r_full').querySelector('.v').textContent=fmtD(S[5].e);
+  const wk=S.slice(1,6).reduce((s,p)=>s+p.tot,0);
+  $('r_wk').querySelector('.v').textContent=wk.toFixed(0)+' wk';
+  const spent=SPEND.slice(0,state.sel+1).reduce((a,b)=>a+b,0);
+  $('r_spent').querySelector('.v').textContent=money(spent);
+  $('r_spent').querySelector('.k').textContent=`Spent by end of phase ${state.sel}`;
+  renderDetail(S); renderRisks(); updateNote(S);
+}
+function renderDetail(S){
+  const i=state.sel,p=PH[i],s=S[i];
+  const st={done:'<span class="pill done">done</span>',prog:'<span class="pill prog">in progress since 25 Oct 2026</span>',todo:'<span class="pill todo">not started</span>'}[p.status];
+  const items=RISKS.filter(r=>r[2].split(/\s*→\s*/).includes(String(i))).map(r=>'#'+r[0]).join(', ')||'none of the 13';
+  const study=p.study.map(id=>`<a href=${JSON.stringify(id+".html")}>${id.slice(0,2)} ${TITLES[id]}</a>`).join(' · ');
+  const dur = p.ongoing? 'ongoing (drawn as 12 weeks)' : (i===0?'1 week (done)':`plan ${p.lo===p.hi?p.lo:p.lo+'-'+p.hi} weeks part-time → about ${s.work.toFixed(1)} weeks of work at ${state.hours} h/week${s.lead?` + ${s.lead} weeks waiting for parts`:''}`);
+  $('detail').innerHTML=`<h3>Phase ${i}: ${p.n} ${st}</h3><dl>
+   <dt>Work</dt><dd>${p.work}</dd>
+   <dt>Pass check</dt><dd><b>${p.pass}</b></dd>
+   <dt>Duration</dt><dd>${dur}; ${fmtD(s.s)} to ${fmtD(s.e)}</dd>
+   <dt>Spend (approx.)</dt><dd>${money(SPEND[i])} at single prices${i===3?' ($4,221 with the 10+ RS03 price)':''}${i===2?' ($1,252 without the Orin)':''}. ${p.buys}</dd>
+   <dt>Risks retired</dt><dd>${p.risks}<br><span style="color:var(--muted)">Open items settled here: ${items}</span></dd>
+   <dt>Study first</dt><dd>${study}</dd></dl>`;
+}
+let riskFilter=null;
+function renderRisks(){
+  const f=$('riskfilter'); if(!f.childElementCount){
+    const all=document.createElement('button'); all.textContent='All phases'; all.dataset.p=''; f.appendChild(all);
+    for(let i=1;i<7;i++){ const b=document.createElement('button'); b.textContent='Phase '+i; b.dataset.p=i; f.appendChild(b); }
+    f.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; riskFilter=b.dataset.p===''?null:+b.dataset.p; if(riskFilter!=null){ state.sel=riskFilter; $('sel').value=riskFilter; } render(); });
+  }
+  f.querySelectorAll('button').forEach(b=>b.classList.toggle('on', (b.dataset.p===''&&riskFilter==null)||(+b.dataset.p===riskFilter&&riskFilter!=null)));
+  const tb=document.querySelector('#risktable tbody'); tb.innerHTML='';
+  RISKS.forEach(r=>{ const phases=r[2].split(/\s*→\s*/).map(Number);
+    if(riskFilter!=null && !phases.includes(riskFilter)) return;
+    const tr=document.createElement('tr'); if(phases.includes(state.sel)) tr.className='hl';
+    tr.innerHTML=`<td>${r[0]}</td><td>${r[1]}</td><td class="ph">${r[2]}</td><td>${r[3]}</td>`;
+    tr.style.cursor='pointer'; tr.addEventListener('click',()=>{ state.sel=phases[phases.length-1]; $('sel').value=state.sel; render(); });
+    tb.appendChild(tr); });
+}
+function renderTable(){
+  const tb=$('phtable'); const S=schedule();
+  PH.forEach((p,i)=>{ const tr=document.createElement('tr');
+    const st={done:'<span class="pill done">done</span>',prog:'<span class="pill prog">in progress</span>',todo:'<span class="pill todo">not started</span>'}[p.status];
+    tr.innerHTML=`<td>${i}</td><td>${p.n}</td><td>${p.pass}</td><td>${p.ongoing?'ongoing':(p.lo===p.hi?p.lo+' week':p.lo+'-'+p.hi+' weeks')}</td><td class="num">${money(SPEND[i])}</td><td>${st}</td>`; tb.appendChild(tr); });
+  const tr=document.createElement('tr'); tr.innerHTML=`<th></th><th>Total</th><th></th><th></th><th class="num">${money(SPEND.reduce((a,b)=>a+b,0))}</th><th></th>`; tb.appendChild(tr);
+}
+function updateNote(S){
+  const parts=[];
+  if(state.hours!==DEFAULTS.hours) parts.push(`${state.hours} hours a week (the plan's "part-time" times are taken as about ${BASEH} h/week, an assumption)`);
+  if(state.est!==DEFAULTS.est) parts.push(state.est===0?'the low end of each phase’s time range':'the high end of each phase’s time range');
+  if(state.lead) parts.push(`${state.lead} weeks of parts lead time in each hardware phase (2-5)`);
+  if(state.sel!==DEFAULTS.sel) parts.push(`a focus on phase ${state.sel} (${PH[state.sel].n})`);
+  if(!parts.length){ $('note').textContent='Change a control above to build a note.'; return; }
+  const i=state.sel;
+  $('note').textContent=`For Marvin Bot (1.44 m, 41 kg, 27-DOF humanoid; currently in phase 1, robot in simulation, since 2026-10-25), I planned the build with ${parts.join(', ')}.
+Projected: actuator bench (phase 2) starts ${fmtD(S[2].s)}; lower body walking (end of phase 4) ${fmtD(S[4].e)}; whole robot (end of phase 5) ${fmtD(S[5].e)}.
+Phase ${i} pass check: ${PH[i].pass} Approximate parts spend: ${money(SPEND[i])} (single prices; guide's mapping of bom/bom.xlsx to phases). Risks it retires: ${PH[i].risks}
+Before ordering, verify the docs/roadmap.md open items settled in or before this phase. Durations are indicative, from docs/plan.md, scaled by hours; not a forecast.`;
+}
+// wiring
+function bind(id,fmt){ const el=$(id),o=$('o_'+id); el.addEventListener('input',()=>{ state[id]=+el.value; if(o) o.textContent=fmt(state[id]); render(); }); }
+bind('hours',v=>v+' h'); bind('lead',v=>v+' wk');
+$('est').addEventListener('change',e=>{ state.est=+e.target.value; render(); });
+$('show6').addEventListener('change',e=>{ state.show6=e.target.checked; render(); });
+PH.forEach((p,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${i} ${p.n}`; $('sel').appendChild(o); });
+$('sel').addEventListener('change',e=>{ state.sel=+e.target.value; render(); });
+function sync(){ $('hours').value=state.hours; $('o_hours').textContent=state.hours+' h'; $('lead').value=state.lead; $('o_lead').textContent=state.lead+' wk'; $('est').value=String(state.est); $('show6').checked=state.show6; $('sel').value=state.sel; }
+const PRESETS={today:{...DEFAULTS},evenings:{...DEFAULTS,hours:5},fulltime:{...DEFAULTS,hours:40},pess:{...DEFAULTS,est:1,lead:3},shipping:{...DEFAULTS,lead:6,sel:2}};
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{ Object.assign(state,PRESETS[b.dataset.preset]); riskFilter=null; sync(); render(); }));
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+sync(); renderTable(); render();
+let _rw=0; window.addEventListener('resize',()=>{ clearTimeout(_rw); _rw=setTimeout(render,150); });
+</script>
+</body>
+</html>

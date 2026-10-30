@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAN buses and bandwidth · Marvin Bot guide</title>
+<meta name="description" content="How long each CAN frame takes, why bus load must stay near half, and why Marvin Bot runs seven CAN buses.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+
+.fld{font:11px var(--mono)}
+.bmtable td.ok{color:var(--good)} .bmtable td.warn{color:var(--warn)} .bmtable td.bad{color:var(--bad)}
+.ctl .row{display:flex;gap:6px;flex-wrap:wrap}
+.ctl .row label{display:inline-flex;gap:4px;align-items:center;font-size:13px}
+.eq{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:14px/1.7 var(--mono);overflow-x:auto;max-width:86ch}
+.small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 3 · Electrical, sensing and safety</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 10</p>
+<h1>CAN buses and bandwidth</h1>
+<p class="lede">Every leg motor on Marvin Bot must receive a command and send back its position 500 times a second, over a pair of twisted wires shared with its neighbours. This page shows how long each message takes on the wire, why a bus should stay at most about half full, and why the robot ends up with seven buses rather than one.</p>
+<div class="meta"><span class="chip">~30 min</span><span class="chip">Before this: <a href="03-architecture.html">03 System architecture</a>, <a href="04-actuators.html">04 Actuators</a></span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>How a <a class="g" href="../glossary.html#can-bus">CAN bus</a> works: the differential pair, termination, and how nodes take turns without a master (<a class="g" href="../glossary.html#arbitration">arbitration</a>).</li>
+<li>How to count the exact worst-case length of a frame, including <a class="g" href="../glossary.html#bit-stuffing">bit stuffing</a>, and turn it into <a class="g" href="../glossary.html#bus-load">bus load</a>.</li>
+<li>Why Marvin Bot runs six motor buses plus a battery bus, and what CAN FD would change.</li>
+<li>Why the repo budgets 160 bits per frame: the exact worst case for a 29-bit, 8-byte frame, including the 3-bit inter-frame space.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>Marvin Bot's computer has to talk to 23 motors, many times a second: "go to this angle with this stiffness", and back from each motor, "here is where I am and how hard I am pushing". Running a separate cable from the computer to every motor would be a tangle, so motors share cables called <b>buses</b>, like several houses sharing one road. The rules for sharing that road are the <b>CAN</b> protocol (Controller Area Network), invented for cars and now common in robots.</p>
+<p>The catch is that a shared road can fill up. If the messages for one control cycle do not fit in the time that cycle lasts, commands arrive late and the robot's balance suffers. This page is about counting that traffic.</p>
+<p>A CAN bus is a single pair of wires that every node on it (here: the computer's CAN adapter and a handful of motors) listens to all the time. Only one node can talk at a time. Each message, called a <a class="g" href="../glossary.html#frame">frame</a>, takes a fixed number of bit-times; at 1 Mbit/s (one million bits per second) one bit lasts 1 µs (one microsecond, a millionth of a second). If a control loop needs <i>N</i> frames every cycle, those frames have to fit in the cycle, with room to spare. That is the whole problem: <b>frames × bits per frame × cycles per second must stay well below the bit rate.</b></p>
+<p>Marvin Bot's RobStride actuators use classic CAN at 1 Mbit/s with 29-bit identifiers, and each motor exchanges <b>one command and one reply</b> per control cycle (<code>description/robot.yaml</code>, <code>robot/drivers/robstride.py</code>).<sup class="cite"><a href="#s9">[9]</a></sup> "29-bit identifiers" means each message starts with a 29-bit label saying who it is for and what kind it is. A leg motor bus runs at 500 Hz, so each cycle lasts 2,000 µs. Three motors × 2 frames × 160 µs is 960 µs: the bus is busy 48% of the time.</p>
+
+<h2 id="play">Playground: CAN bus-load calculator</h2>
+<p><b>Start here:</b> click <b>Marvin Bot today: hip bus</b>, then the other presets, and watch the <b>Bus load</b> readout: the share of time the wires are busy. Green is at or below your load limit (60% by default), amber is above it. The frame settings (identifier, data bytes, stuffing) are explained under <a href="#frame">Counting the bits</a>; you can leave them alone at first.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="hip">Marvin Bot today: hip bus</button>
+      <button data-preset="rarm">Right arm + waist</button>
+      <button data-preset="six">All six leg motors, one bus</button>
+      <button data-preset="fd">CAN FD, 5 Mbit/s data</button>
+      <button data-preset="larm">Left arm (5 motors, 250 Hz)</button>
+    </div>
+    <h4>Physical layer</h4>
+    <div class="ctl"><label>Protocol <output id="o_fdmode"></output></label>
+      <select id="fdmode"><option value="0">Classic CAN 2.0B</option><option value="1">CAN FD (bit-rate switch)</option></select>
+      <div class="hint">RobStride's motors use classic CAN; FD is shown as an alternative for other motors.</div></div>
+    <div class="ctl"><label>Nominal bit rate <output id="o_rate"></output></label>
+      <select id="rate"><option value="125000">125 kbit/s</option><option value="250000">250 kbit/s</option><option value="500000">500 kbit/s</option><option value="1000000" selected>1 Mbit/s</option></select>
+      <div class="hint">Classic CAN tops out at 1 Mbit/s; FD uses this rate for arbitration.</div></div>
+    <div class="ctl" id="dratebox"><label>FD data bit rate <output id="o_drate"></output></label>
+      <select id="drate"><option value="2000000">2 Mbit/s</option><option value="4000000">4 Mbit/s</option><option value="5000000" selected>5 Mbit/s</option><option value="8000000">8 Mbit/s</option></select>
+      <div class="hint">Only the data phase speeds up. The Orin's controllers support up to 15 Mbit/s with a suitable transceiver<sup class="cite"><a href="#s8">[8]</a></sup>.</div></div>
+    <h4>Frame</h4>
+    <div class="ctl"><label>Identifier length <output id="o_ext"></output></label>
+      <select id="ext"><option value="1">29-bit (extended, CAN 2.0B)</option><option value="0">11-bit (standard)</option></select></div>
+    <div class="ctl"><label>Data bytes <output id="o_dbi"></output></label>
+      <input type="range" id="dbi" min="0" max="15" step="1" value="8">
+      <div class="hint">RobStride commands and replies carry 8 bytes. FD allows 12-64 in steps.</div></div>
+    <div class="ctl"><label>Bit stuffing (% of worst case) <output id="o_stuff"></output></label>
+      <input type="range" id="stuff" min="0" max="100" step="1" value="100">
+      <div class="hint">100% = the exact worst case a scheduler must plan for; real traffic is usually lower but data-dependent.</div></div>
+    <h4>Traffic</h4>
+    <div class="ctl"><label>Motors on this bus <output id="o_motors"></output></label>
+      <input type="range" id="motors" min="1" max="12" step="1" value="3">
+      <div class="hint">How many motors share this one pair of wires.</div></div>
+    <div class="ctl"><label>Frames per motor per cycle <output id="o_fpm"></output></label>
+      <input type="range" id="fpm" min="1" max="4" step="1" value="2">
+      <div class="hint">RobStride: one command + one reply = 2.</div></div>
+    <div class="ctl"><label>Control loop rate <output id="o_hz"></output></label>
+      <input type="range" id="hz" min="50" max="2000" step="50" value="500">
+      <div class="hint">Marvin Bot: legs 500 Hz, arms 250 Hz.</div></div>
+    <div class="ctl"><label>Load limit you accept <output id="o_lim"></output></label>
+      <input type="range" id="lim" min="30" max="90" step="5" value="60">
+      <div class="hint">The highest share of busy time you are willing to plan for; the rest is spare room for errors and retries. The repo uses 60%.</div></div>
+  </div>
+  <div class="preview">
+    <svg id="tl" viewBox="0 0 640 210" role="img" aria-label="Timeline of one control cycle with command and reply frames as coloured blocks"></svg>
+    <svg id="anat" viewBox="0 0 640 120" role="img" aria-label="Anatomy of one frame: fields drawn to scale in bits" style="margin-top:10px"></svg>
+    <div class="readouts">
+      <div class="ro" id="r_bits"><div class="k">Bits per frame</div><div class="v">–</div></div>
+      <div class="ro" id="r_ft"><div class="k">Time per frame</div><div class="v">–</div></div>
+      <div class="ro" id="r_cyc"><div class="k">Bus time per cycle</div><div class="v">–</div></div>
+      <div class="ro" id="r_load"><div class="k">Bus load</div><div class="v">–</div></div>
+      <div class="ro" id="r_max"><div class="k">Max motors at your limit</div><div class="v">–</div></div>
+      <div class="ro" id="r_lat"><div class="k">Last reply after</div><div class="v">–</div></div>
+    </div>
+    <p class="small"><b>How to read this picture:</b> the top strip is one control cycle (2,000 µs at 500 Hz) drawn left to right; each block is one frame on the wire, commands from the computer (the "host") in blue and replies in orange. Empty strip is idle bus time; the green dashed box marks your load limit. The lower strip zooms into a single frame and shows its fields to scale, with the inserted stuff bits in violet. "Last reply after" is how long into the cycle the final motor's answer arrives.</p>
+    <div class="legend"><span><i style="background:var(--accent)"></i>command (host → motor)</span><span><i style="background:var(--accent2)"></i>reply (motor → host)</span><span><i style="background:#3a2a2a;border:1px solid var(--bad)"></i>past the load limit</span><span><i style="background:var(--violet)"></i>stuff bits</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Start from <b>Marvin Bot today: hip bus</b> (48%, the repo's figure). Drag the stuffing down to about 65%: the frame shrinks to about 150 bits and the load to 45%. The repo used that 150-bit budget until it was corrected to the exact worst case; <a href="#frame">the frame count below</a> shows why 160 is the number to plan with.</li>
+<li>Press <b>All six leg motors, one bus</b>. The exact worst case is 96%, the repo's estimate "roughly 80-90%". Either way one bus per leg cannot hold 500 Hz with margin. Now drag the loop rate down until the load drops to 60% (it takes about 300 Hz): that is the price of a single bus.</li>
+<li>Press <b>CAN FD, 5 Mbit/s data</b>. The same six motors now take 48%: the data phase shrinks fivefold, but the arbitration phase and the end of the frame still run at 1 Mbit/s, so the gain is about 2×, not 5×.</li>
+<li>Set stuffing to 0% on the hip bus: 131 bits, 39%. No real bus is that lucky every time, which is why schedules use the worst case.</li>
+</ol></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>The wires: a differential pair with a resistor at each end</h3>
+<p>CAN sends each bit as the <i>difference</i> between two wires, CAN_H and CAN_L. In the "dominant" state (a logical 0) a transmitter pulls CAN_H up to about 3.5 V and CAN_L down to about 1.5 V; in the "recessive" state (logical 1) nobody drives, and both wires sit near 2.5 V. Noise picked up by a twisted pair hits both wires almost equally, so the receiver, which only looks at the difference, ignores it.<sup class="cite"><a href="#s5">[5]</a></sup></p>
+<p>A 120 Ω resistor at each physical end of the bus matches the cable's characteristic impedance, so a fast edge is absorbed at the end instead of reflecting back and corrupting later bits. Two 120 Ω resistors in parallel read 60 Ω across CAN_H and CAN_L with the power off: a quick check that a bus is terminated correctly.<sup class="cite"><a href="#s5">[5]</a></sup> Marvin Bot's harness puts one terminator at the hub end and one on the last motor of each bus (<code>docs/design/assembly_wiring.md</code>).</p>
+
+<h3>Arbitration: the lowest identifier wins, and nobody loses time</h3>
+<p>Every frame begins with an identifier. If two nodes start at once, they both send their identifiers bit by bit while listening. A dominant 0 overwrites a recessive 1, so a node that sent a 1 but hears a 0 knows it has lost, stops, and tries again when the bus is free. The frame with the numerically lowest identifier gets through untouched. This is called bitwise, non-destructive arbitration.<sup class="cite"><a href="#s1">[1]</a></sup> It makes CAN a priority bus, and it has a consequence for timing: a frame that is ready can still be delayed by up to one whole frame that already started (no node can interrupt a frame), plus every higher-priority frame that is waiting.</p>
+<p>Classic CAN 2.0A uses 11-bit identifiers; CAN 2.0B adds an "extended" format with 29 bits.<sup class="cite"><a href="#s1">[1]</a></sup> RobStride packs a lot into those 29 bits: a 5-bit communication type, a 16-bit field (for the command type 1 it holds the feed-forward torque; for the reply it holds fault and mode bits) and the 8-bit motor ID (<code>robot/drivers/robstride.py</code>, after RobStride's manuals<sup class="cite"><a href="#s9">[9]</a></sup>).</p>
+
+<h3 id="frame">Counting the bits in one frame, exactly</h3>
+<p>A classic extended data frame with <i>s</i> data bytes is made of:</p>
+<div class="tablewrap"><table>
+<tr><th>Field</th><th class="num">Bits</th><th>What it is for</th></tr>
+<tr><td>Start of frame (SOF)</td><td class="num">1</td><td>one dominant bit that wakes every receiver</td></tr>
+<tr><td>Identifier A, SRR, IDE, identifier B, RTR</td><td class="num">11 + 1 + 1 + 18 + 1</td><td>the 29-bit identifier and flags; arbitration happens here</td></tr>
+<tr><td>Reserved bits r1, r0; DLC</td><td class="num">2 + 4</td><td>DLC = data length code (0-8 bytes)</td></tr>
+<tr><td>Data</td><td class="num">8<i>s</i></td><td>the payload: 64 bits for RobStride's 8 bytes</td></tr>
+<tr><td>CRC</td><td class="num">15</td><td>checksum (cyclic redundancy check): lets the receiver detect a corrupted frame</td></tr>
+<tr><td>CRC delimiter, ACK slot, ACK delimiter</td><td class="num">1 + 1 + 1</td><td>any receiver that got the frame right overwrites the ACK slot with a dominant bit</td></tr>
+<tr><td>End of frame (EOF)</td><td class="num">7</td><td>seven recessive bits</td></tr>
+<tr><td>Intermission (inter-frame space)</td><td class="num">3</td><td>minimum gap before the next frame may start</td></tr>
+</table></div>
+<p>With 8 data bytes that is 131 bits. Then comes <a class="g" href="../glossary.html#bit-stuffing">bit stuffing</a>: CAN receivers resynchronise their clocks on edges, so after five identical bits in a row the transmitter inserts one opposite "stuff" bit, which the receiver removes. Stuffing applies from the SOF to the end of the CRC (54 + 8<i>s</i> bits for an extended frame, 34 + 8<i>s</i> for a standard one).<sup class="cite"><a href="#s1">[1]</a></sup> In the worst case a stuff bit can appear after the first five bits and then after every four more (because the stuff bit itself starts the next run), so Davis, Burns, Bril and Lukkien give the worst-case frame length as<sup class="cite"><a href="#s2">[2]</a></sup></p>
+<div class="eq">C = g + 8s + 13 + ⌊(g + 8s − 1) / 4⌋   bits<br>
+g = 54 (29-bit ID) or 34 (11-bit ID); s = data bytes; 13 = CRC delimiter, ACK, EOF and intermission (not stuffed)<br>
+29-bit, 8 bytes:  54 + 64 + 13 + ⌊117/4⌋ = 131 + 29 = <b>160 bits</b> → 160 µs at 1 Mbit/s<br>
+11-bit, 8 bytes:  34 + 64 + 13 + ⌊97/4⌋ = 111 + 24 = <b>135 bits</b></div>
+<p>The same formula is used by the Linux <code>can-utils</code> bus-load tool and the kernel's CAN length helpers.<sup class="cite"><a href="#s3">[3]</a><a href="#s4">[4]</a></sup> It is the length a schedule must assume, because the stuffing depends on the data (an angle that happens to be 0x0000 or 0xFFFF stuffs a lot).</p>
+
+<h3>From bits to bus load</h3>
+<div class="eq">load = (motors × frames per motor × loop rate × bits per frame) / bit rate<br>
+hip bus: 3 × 2 × 500 /s × 160 bit / 1,000,000 bit/s = 0.48 → 48%</div>
+<p><b>Why keep load at or below about 50-60%?</b> Three reasons:</p>
+<ul>
+<li><b>Error recovery.</b> A corrupted frame is followed by an error frame and a retransmission, which eats bus time the schedule did not plan.</li>
+<li><b>Latency</b> (delay): a frame that becomes ready while others queue must wait for all of them; the fuller the bus, the longer and more variable that wait (the <a class="g" href="../glossary.html#jitter">jitter</a>), and response-time analysis of the kind Davis et al. formalised shows the low-priority worst case growing sharply as load approaches 100%.<sup class="cite"><a href="#s2">[2]</a></sup></li>
+<li><b>Reply gaps.</b> The motors do not answer instantly: each reply comes some tens of microseconds after its command, and those gaps are idle bus time that the load figure does not count.</li>
+</ul>
+<p>A 50-60% ceiling is engineering practice rather than a number from the CAN standard; Marvin Bot's <code>robot.yaml</code> sets <code>max_load: 0.6</code>.</p>
+
+<h3>CAN FD: a faster data phase</h3>
+<p>CAN FD ("flexible data-rate") is a newer version of CAN that sends the payload faster. In short: for 8-byte messages it halves the frame time, but Marvin Bot's RobStride motors do not speak it.</p>
+<details><summary>Go deeper: how CAN FD counts its bits</summary>
+<p>CAN FD keeps the arbitration phase at the nominal rate (so every node still hears every identifier bit) and then, if the BRS (bit-rate switch) bit is set, switches to a faster bit rate for the control bits, data and CRC, before switching back for the acknowledge. It also allows up to 64 data bytes.<sup class="cite"><a href="#s6">[6]</a><a href="#s7">[7]</a></sup> The playground counts an FD extended frame as the Linux kernel does: 41 header bits plus the data are dynamically stuffed, then a CRC field with a stuff counter, CRC-17 (up to 16 bytes) or CRC-21, and fixed stuff bits, then ACK, EOF and intermission.<sup class="cite"><a href="#s4">[4]</a></sup> For 8 bytes that is 171 bits in the worst case, of which 57 run at the nominal rate and 114 at the data rate: 57 µs + 22.8 µs ≈ 80 µs at 1/5 Mbit/s, half the 160 µs of a classic frame. (The exact point where the rate switches is inside the BRS and CRC-delimiter bits; the split here is accurate to about one bit.)</p>
+</details>
+
+<h3>Getting CAN into a Linux computer</h3>
+<p>On Linux, CAN controllers appear as network interfaces through <a class="g" href="../glossary.html#socketcan">SocketCAN</a>: you bring one up with <code>ip link set can0 up type can bitrate 1000000</code> and programs read and write frames through ordinary sockets.<sup class="cite"><a href="#s10">[10]</a></sup> The Jetson AGX Orin has two on-board CAN controllers (MTTCAN, classic up to 1 Mbit/s and FD up to 15 Mbit/s data rate) that need external 3.3 V transceivers (the small chip that turns the controller's logic signals into the voltages on the wires).<sup class="cite"><a href="#s8">[8]</a></sup></p>
+<p>More buses come from USB adapters; many use the open <a class="g" href="../glossary.html#gs-usb">gs_usb</a> protocol (the candleLight firmware), for which Linux has a driver built in.<sup class="cite"><a href="#s11">[11]</a></sup> USB adds its own latency and jitter (USB frames are scheduled on a 125 µs microframe grid at high speed, 1 ms at full speed), which is why Marvin Bot plans a bench timing test before relying on adapters.</p>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b>
+<i>Why two buses per leg?</i> One bus per leg would be busy 96% of the time in the worst case, leaving no room for errors; splitting each leg into a hip bus and a shank bus brings every bus down to 48% and means a fault on one bus leaves the other half of the leg working. The details: <code>description/robot.yaml</code> sets classic CAN 2.0B at 1 Mbit/s, <code>bits_per_frame: 160</code> ("29-bit ID, 8 data bytes: 131 bits plus up to 29 stuff bits", the exact worst case derived above), <code>frames_per_motor_cycle: 2</code>, <code>max_load: 0.6</code>. <code>docs/decisions.md</code> (2026-10-25, "six motor CAN buses plus one battery bus") gives the reasoning and says every motor bus stays "at or below 48%" load; <code>robot/drivers/robstride.py</code> implements the frames (untested on hardware until the phase 2 bench test).</div>
+<p>The bus map below is computed live: the first load column uses the repo's 160 bits, the second the playground's stuffing setting (the same 160 bits by default). The repo's figures are 48% for the hip, shank and right-arm buses and 40% for the left arm.</p>
+<div class="tablewrap"><table class="bmtable" id="busmap"></table></div>
+<p>Interfaces (BOM, <code>docs/decisions.md</code> 2026-10-29): the Orin's two on-board controllers carry the arm buses; one dual-channel isolated USB-CAN adapter per leg carries its hip and shank buses; a single-channel adapter carries the battery bus. That choice is "to be confirmed by the bench timing test" (roadmap item 13). A microcontroller bridge that runs the 500 Hz exchange itself is the fallback if USB jitter is too high.</p>
+<p>Why 500 Hz when the <a class="g" href="../glossary.html#policy">policy</a> (the trained neural-network controller) only runs at 50 Hz? The policy runs at 50 Hz, so each policy step spans 10 motor cycles on the legs and 5 on the arms; the faster motor loop exists so that the motors' own PD control (RobStride's MIT-style "operation control" mode: <i>τ = k<sub>p</sub>(q<sub>target</sub> − q) + k<sub>d</sub>(q̇<sub>target</sub> − q̇) + τ<sub>ff</sub></i>) gets fresh targets and the controller gets fresh feedback often. (PD stands for proportional-derivative: a spring-and-damper rule, explained in <a href="15-pd-control.html">15 PD control</a>; k<sub>p</sub> and k<sub>d</sub> are the spring and damper strengths, q the joint angle, q̇ its speed and τ<sub>ff</sub> an extra feed-forward torque.) The battery bus, the seventh, carries the BMS reports from <a href="09-power-battery.html">09 Power and battery</a>.</p>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<tr><th>Option</th><th>For</th><th>Against</th></tr>
+<tr><td>One bus per leg (6 motors at 500 Hz)</td><td>fewer adapters and wires</td><td>96% worst-case load (repo: "roughly 80-90%"): no room for errors, retries or parameter reads</td></tr>
+<tr><td>One bus per leg at 250 Hz</td><td>48% load</td><td>below the 500 Hz leg command rate in requirement R43</td></tr>
+<tr><td><b>Two buses per leg (chosen)</b></td><td>48% worst case; a fault on one bus leaves the other half of the leg talking</td><td>more adapters, a 6-pin leg signal connector</td></tr>
+<tr><td>CAN FD at 5 Mbit/s</td><td>about half the frame time</td><td>needs motors whose firmware speaks FD; RobStride's documented protocol is classic CAN</td></tr>
+<tr><td>Microcontroller bridge</td><td>deterministic timing next to the bus, USB only at 50 Hz</td><td>custom firmware to write and maintain</td></tr>
+<tr><td>EtherCAT or another fieldbus (industrial Ethernet-based motor networks)</td><td>much higher bandwidth</td><td>not offered by the chosen motors</td></tr>
+</table></div>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b>
+The repo's frame budget (160 bits) and loads (48% and 40%) match the worst-case formula of Davis et al.<sup class="cite"><a href="#s2">[2]</a></sup>, <code>can-utils</code> and the Linux kernel.<sup class="cite"><a href="#s3">[3]</a><a href="#s4">[4]</a></sup> One small difference remains: <code>docs/decisions.md</code> says six motors on one bus at 500 Hz "would load it to roughly 80–90%"; with 160-bit frames the worst case is 96%. The conclusion (two buses per leg) is the same either way.</div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li><b>How many motors per bus, and at what loop rate</b> (the two multiply). Trade: fewer buses mean fewer adapters and cables, but six leg motors on one bus at 500 Hz is 96% load; keeping one bus means dropping to about 300 Hz.</li>
+<li><b>Which frame length to budget.</b> Trade: the exact worst case (160 bits) is safe but plans for traffic you rarely see; a typical value (about 150) fits about 7% more traffic but can be overrun by unlucky data.</li>
+<li><b>Which load ceiling to accept</b> (50%, 60%, more). Trade: a higher ceiling fits more motors or a faster loop, but leaves less room for parameter reads, error frames and logging, and makes delays more variable.</li>
+<li><b>USB-CAN adapters, on-board controllers or a microcontroller bridge</b>, once the bench timing test reports latency and jitter. Trade: adapters are cheap and quick but add USB delay; a bridge gives steady timing but means writing and maintaining firmware.</li>
+<li><b>Whether to require CAN FD of future actuators.</b> Trade: about half the frame time, so room for more motors per bus, but it rules out today's RobStride motors.</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+<p>Next: <a href="11-sensors-compute.html">11 Sensors and compute</a> looks at the other end of these wires: the computer that sends the commands, and the sensors that tell it where the robot is.</p>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://www.ti.com/lit/an/sloa101b/sloa101b.pdf">Texas Instruments, Introduction to the Controller Area Network (SLOA101)</a>: the clearest short introduction to the physical layer and frame format.</li>
+<li><a href="https://doi.org/10.1007/s11241-007-9012-7">Davis et al., CAN schedulability analysis: refuted, revisited and revised</a>: how to bound the response time of every frame on a loaded bus; the reference for frame lengths.</li>
+<li><a href="https://docs.kernel.org/networking/can.html">Linux SocketCAN documentation</a>: how CAN looks to a program on the Orin.</li>
+<li><a href="https://can-cia.org/fileadmin/cia/documents/proceedings/2013_hartwich_v2.pdf">Hartwich, Bit time requirements for CAN FD (CiA, 2013)</a>: why the FD data phase can be faster than arbitration.</li>
+<li><a href="https://github.com/RobStride/Product_Information">RobStride product information</a>: the manuals with the private CAN protocol that <code>robstride.py</code> implements.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="http://esd.cs.ucr.edu/webres/can20.pdf">Robert Bosch GmbH, CAN Specification version 2.0 (1991)</a> <span class="used">— used for: frame fields, standard and extended identifiers, arbitration, bit stuffing rule.</span></li>
+  <li id="s2"><a href="https://doi.org/10.1007/s11241-007-9012-7">R. I. Davis, A. Burns, R. J. Bril, J. J. Lukkien, Controller Area Network (CAN) schedulability analysis: refuted, revisited and revised, Real-Time Systems 35(3), 2007</a> <span class="used">— used for: worst-case frame length formula (g + 8s + 13 + ⌊(g + 8s − 1)/4⌋), response time growth with load.</span></li>
+  <li id="s3"><a href="https://rtime.felk.cvut.cz/gitweb/can-utils.git/blob/HEAD:/canframelen.h">can-utils, canframelen.h (Czech Technical University in Prague)</a> <span class="used">— used for: confirmation that Linux bus-load tools use the same worst-case length (80 + 10s bits for 29-bit frames).</span></li>
+  <li id="s4"><a href="https://github.com/torvalds/linux/blob/master/include/linux/can/length.h">Linux kernel, include/linux/can/length.h</a> <span class="used">— used for: classic and CAN FD field counts (41-bit FD extended header, CRC-17/21 fields with fixed stuff bits, 9-bit footer, 3-bit intermission).</span></li>
+  <li id="s5"><a href="https://www.ti.com/lit/an/sloa101b/sloa101b.pdf">Texas Instruments, Introduction to the Controller Area Network (CAN), SLOA101B</a> <span class="used">— used for: differential signalling, dominant/recessive levels, 120 Ω termination.</span></li>
+  <li id="s6"><a href="https://can-cia.org/fileadmin/cia/documents/proceedings/2013_hartwich_v2.pdf">F. Hartwich, Bit time requirements for CAN FD, iCC 2013, CAN in Automation</a> <span class="used">— used for: bit-rate switching after arbitration.</span></li>
+  <li id="s7"><a href="https://www.can-cia.org/can-knowledge/designing-a-can-network">CAN in Automation, Designing a CAN network</a> <span class="used">— used for: CAN FD payload up to 64 bytes; data-phase rate limited by topology and transceivers.</span></li>
+  <li id="s8"><a href="https://docs.nvidia.com/jetson/archives/r36.4/DeveloperGuide/HR/ControllerAreaNetworkCan.html">NVIDIA, Jetson Linux Developer Guide: Controller Area Network (CAN)</a> <span class="used">— used for: two MTTCAN controllers on AGX Orin, classic up to 1 Mbit/s, FD data up to 15 Mbit/s, external 3.3 V transceiver, bring-up commands.</span></li>
+  <li id="s9"><a href="https://github.com/RobStride/Product_Information">RobStride, Product_Information (user manuals RS00, RS03, RS04, RS06)</a> <span class="used">— used for: 1 Mbit/s classic CAN, 29-bit identifier layout, operation-control command and feedback reply (as implemented in robot/drivers/robstride.py).</span></li>
+  <li id="s10"><a href="https://docs.kernel.org/networking/can.html">Linux kernel documentation, SocketCAN</a> <span class="used">— used for: CAN as network interfaces, ip link configuration.</span></li>
+  <li id="s11"><a href="https://github.com/candle-usb/candleLight_fw">candleLight_fw (gs_usb firmware)</a> <span class="used">— used for: the open gs_usb USB-CAN protocol supported by the Linux gs_usb driver.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="09-power-battery.html"><span>← Previous</span>Power and battery</a>
+  <a class="next" href="11-sensors-compute.html"><span>Next →</span>Sensors and compute</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+const DLEN=[0,1,2,3,4,5,6,7,8,12,16,20,24,32,48,64];
+const DEFAULTS={fdmode:0,rate:1000000,drate:5000000,ext:1,dbi:8,stuff:100,motors:3,fpm:2,hz:500,lim:60};
+const state={...DEFAULTS};
+const $=id=>document.getElementById(id);
+const PRESETS={
+  hip:{...DEFAULTS},
+  rarm:{...DEFAULTS,motors:6,hz:250},
+  six:{...DEFAULTS,motors:6,hz:500},
+  fd:{...DEFAULTS,fdmode:1,motors:6,hz:500,drate:5000000},
+  larm:{...DEFAULTS,motors:5,hz:250}
+};
+const FMT={fdmode:v=>+v?'FD':'classic',rate:v=>(v/1e6>=1?v/1e6+' Mbit/s':v/1e3+' kbit/s'),drate:v=>v/1e6+' Mbit/s',ext:v=>+v?'29-bit':'11-bit',
+  dbi:v=>DLEN[v]+' B',stuff:v=>v+'%',motors:v=>v,fpm:v=>v,hz:v=>v+' Hz',lim:v=>v+'%'};
+function frameBits(s){
+  // returns {total, nom, dat, stuff, fields:[[name,bits,phase]]}
+  const n=DLEN[s.dbi]; const f=s.stuff/100;
+  if(!+s.fdmode){
+    const nn=Math.min(n,8);
+    const g=+s.ext?54:34; const worst=Math.floor((g+8*nn-1)/4); const st=f*worst;
+    const fields=+s.ext?[['SOF',1],['ID A',11],['SRR',1],['IDE',1],['ID B',18],['RTR',1],['r1 r0',2],['DLC',4],['data',8*nn],['CRC',15],['stuff',st],['CRC del, ACK',3],['EOF',7],['IFS',3]]
+                       :[['SOF',1],['ID',11],['RTR',1],['IDE',1],['r0',1],['DLC',4],['data',8*nn],['CRC',15],['stuff',st],['CRC del, ACK',3],['EOF',7],['IFS',3]];
+    const total=g+8*nn+13+st;
+    return {total,nom:total,dat:0,stuff:st,worst,fields,n:nn};
+  }
+  // CAN FD (counted as in Linux include/linux/can/length.h)
+  const arb=+s.ext?36:17;               // SOF..BRS
+  const hdr=arb+5;                      // + ESI + DLC  (41 ext / 22 std)
+  const dyn=hdr+8*n;
+  const stTot=Math.floor((dyn-1)/4), stArb=Math.floor((arb-1)/4);
+  const crc=n<=16?17:21, fixed=n<=16?6:7;
+  const crcData=4+crc+fixed;            // stuff count + CRC + fixed stuff bits
+  const nom=arb+f*stArb+13;             // + CRC delimiter, ACK 2, EOF 7, IFS 3
+  const dat=5+8*n+f*(stTot-stArb)+crcData;
+  const fields=+s.ext?[['SOF',1,0],['ID A',11,0],['SRR IDE',2,0],['ID B',18,0],['RRS FDF res BRS',4,0],['stuff',f*stArb,0],['ESI DLC',5,1],['data',8*n,1],['stuff',f*(stTot-stArb),1],['SBC CRC',crcData,1],['CRC del ACK',3,0],['EOF',7,0],['IFS',3,0]]
+                     :[['SOF',1,0],['ID',11,0],['RRS IDE FDF res BRS',5,0],['stuff',f*stArb,0],['ESI DLC',5,1],['data',8*n,1],['stuff',f*(stTot-stArb),1],['SBC CRC',crcData,1],['CRC del ACK',3,0],['EOF',7,0],['IFS',3,0]];
+  return {total:nom+dat,nom,dat,stuff:f*stTot,worst:stTot,fields,n};
+}
+function frameTime(s,fb){ return fb.nom/s.rate + (+s.fdmode? fb.dat/s.drate:0); } // seconds
+function bind(id){ const el=$(id), out=$('o_'+id);
+  const upd=()=>{ state[id]= el.type==='checkbox'? el.checked : parseFloat(el.value); if(out) out.textContent=FMT[id]?FMT[id](state[id]):state[id]; render(); };
+  el.addEventListener('input',upd); el.addEventListener('change',upd); if(out) out.textContent=FMT[id]?FMT[id](el.value):el.value; }
+function setState(s){ Object.assign(state,s); for(const k in s){ const el=$(k); if(!el) continue; if(el.type==='checkbox') el.checked=!!s[k]; else el.value=s[k]; const o=$('o_'+k); if(o) o.textContent=FMT[k]?FMT[k](s[k]):s[k]; } render(); }
+function ro(id,txt,cls){ const e=$(id); e.querySelector('.v').textContent=txt; e.className='ro'+(cls?' '+cls:''); }
+const us=x=>(x*1e6).toFixed(x*1e6<100?1:0)+' µs';
+function render(){
+  const s=state;
+  $('dratebox').style.display=+s.fdmode?'':'none';
+  // classic limits data to 8 bytes
+  const dbiEl=$('dbi'); dbiEl.max=+s.fdmode?15:8; if(!+s.fdmode && s.dbi>8){ s.dbi=8; dbiEl.value=8; $('o_dbi').textContent='8 B'; }
+  const fb=frameBits(s); const ft=frameTime(s,fb);
+  const T=1/s.hz; const nF=s.motors*s.fpm; const busT=nF*ft; const load=busT/T;
+  const maxM=Math.floor((s.lim/100)*T/(s.fpm*ft));
+  ro('r_bits',(Math.round(fb.total*10)/10)+(+s.fdmode?` (${Math.round(fb.nom)}+${Math.round(fb.dat)})`:''));
+  ro('r_ft',us(ft));
+  ro('r_cyc',us(busT)+' / '+us(T));
+  ro('r_load',(load*100).toFixed(1)+'%', load*100<=s.lim? 'ok' : load<1?'warn':'bad');
+  ro('r_max',maxM+(maxM<s.motors?' (fewer than you have)':''), maxM>=s.motors?'ok':'bad');
+  ro('r_lat',us(busT)+(load>1?' (misses the cycle)':''), load>1?'bad':'');
+  drawTimeline(s,ft,T,nF,fb);
+  drawAnatomy(s,fb);
+  busMap(s);
+  updateNote(fb,ft,load,maxM);
+}
+function drawTimeline(s,ft,T,nF){
+  const W=640,x0=20,x1=620; const span=Math.max(T,nF*ft)*1.02; const sx=t=>x0+(x1-x0)*t/span;
+  let g=`<text x="${x0}" y="18" fill="#9aa7b4" font-size="12">One control cycle: ${us(T)} at ${s.hz} Hz · ${nF} frames packed back to back (best case: no reply delay, no errors)</text>`;
+  g+=`<rect x="${sx(0)}" y="40" width="${sx(T)-sx(0)}" height="60" fill="#121820" stroke="#2a3340"/>`;
+  g+=`<rect x="${sx(0)}" y="40" width="${sx(T*s.lim/100)-sx(0)}" height="60" fill="none" stroke="#4cc38a" stroke-dasharray="4 3"/>`;
+  g+=`<text x="${sx(T*s.lim/100)}" y="114" fill="#4cc38a" font-size="11" text-anchor="middle">${s.lim}% limit</text>`;
+  g+=`<text x="${sx(T)}" y="34" fill="#9aa7b4" font-size="11" text-anchor="end">cycle ends (next commands due)</text>`;
+  for(let i=0;i<nF;i++){
+    const t0=i*ft, t1=t0+ft; const over=t1>T*s.lim/100; const isCmd=(i%s.fpm)===0;
+    const fill= isCmd?'#4fb3ff':'#ffb454';
+    const w=Math.max(0.6,sx(t1)-sx(t0)-0.6);
+    g+=`<rect x="${sx(t0)}" y="48" width="${w}" height="44" fill="${fill}" opacity="${over?0.45:0.9}" ${over?'stroke="#ff6b6b" stroke-width="1.5"':''}/>`;
+    if(w>22) g+=`<text x="${sx(t0)+w/2}" y="74" fill="#0f1216" font-size="10" text-anchor="middle">${isCmd?'cmd':'rep'} ${Math.floor(i/s.fpm)+1}</text>`;
+  }
+  if(nF*ft>T){ g+=`<rect x="${sx(T)}" y="40" width="${sx(nF*ft)-sx(T)}" height="60" fill="#ff6b6b" opacity="0.15"/>`;
+    g+=`<text x="${(sx(T)+sx(nF*ft))/2}" y="132" fill="#ff6b6b" font-size="12" text-anchor="middle">overflows into the next cycle</text>`; }
+  // axis
+  const step=T>=0.01?0.002:T>=0.004?0.0005:0.0002;
+  for(let t=0;t<=span+1e-9;t+=step){ g+=`<line x1="${sx(t)}" x2="${sx(t)}" y1="100" y2="105" stroke="#56606c"/><text x="${sx(t)}" y="150" fill="#9aa7b4" font-size="10" text-anchor="middle">${Math.round(t*1e6)}</text>`; }
+  g+=`<text x="${x1}" y="166" fill="#9aa7b4" font-size="10" text-anchor="end">time in µs</text>`;
+  g+=`<text x="${x0}" y="192" fill="#e6edf3" font-size="12">Bus idle ${us(Math.max(0,T-nF*ft))} per cycle · a newly queued frame can wait up to ${us(ft)} behind a frame already on the wire</text>`;
+  $('tl').innerHTML=g;
+}
+function drawAnatomy(s,fb){
+  let g=`<text x="10" y="16" fill="#9aa7b4" font-size="12">One frame to scale (${+s.fdmode?'CAN FD; bright = nominal rate, darker = fast data phase, width in bits':'classic CAN; width in bit-times'})</text>`;
+  const tot=fb.fields.reduce((a,f)=>a+f[1],0); let x=10; const k=620/tot;
+  const col={SOF:'#9aa7b4',data:'#4cc38a',CRC:'#ff6b6b','SBC CRC':'#ff6b6b',stuff:'#b48cff',EOF:'#56606c',IFS:'#2a3340'};
+  fb.fields.forEach((f,i)=>{ const w=f[1]*k; if(w<=0) return; const c=col[f[0]]||'#4fb3ff'; const dim=(+s.fdmode&&f[2]===1);
+    g+=`<rect x="${x}" y="30" width="${Math.max(0.5,w-0.5)}" height="40" fill="${c}" opacity="${dim?0.45:0.85}"/>`;
+    if(w>26) g+=`<text x="${x+w/2}" y="${i%2?86:100}" fill="#cfd8e2" font-size="10" text-anchor="middle">${f[0]} ${Math.round(f[1]*10)/10}</text>`;
+    x+=w; });
+  g+=`<text x="630" y="116" fill="#9aa7b4" font-size="10" text-anchor="end">total ${Math.round(fb.total*10)/10} bits${fb.worst!==undefined?' · stuff '+(Math.round(fb.stuff*10)/10)+' of worst '+fb.worst:''}</text>`;
+  $('anat').innerHTML=g;
+}
+const BUSES=[['left_hip / right_hip','hip roll, hip pitch, hip yaw',3,500],['left_shank / right_shank','knee, two ankle motors',3,500],['left_arm','shoulder pitch, roll, yaw, elbow, wrist yaw',5,250],['right_arm','5 arm motors + waist',6,250],['all six leg motors (rejected)','one bus per leg',6,500]];
+function busMap(s){
+  const ex={...s,fdmode:0,ext:1,dbi:8}; const fb=frameBits(ex); const ft=frameTime(ex,fb);
+  let h=`<tr><th>Bus</th><th>Motors</th><th class="num">n</th><th class="num">Rate</th><th class="num">Load, 160 bits (repo)</th><th class="num">Load, ${Math.round(fb.total*10)/10} bits (stuffing ${s.stuff}%)</th></tr>`;
+  BUSES.forEach(b=>{ const lrepo=b[2]*2*b[3]*160/1e6, lx=b[2]*2*b[3]*ft; const c=v=>v<=0.6?'ok':v<1?'warn':'bad';
+    h+=`<tr><td>${b[0]}</td><td>${b[1]}</td><td class="num">${b[2]}</td><td class="num">${b[3]} Hz</td><td class="num ${c(lrepo)}">${(lrepo*100).toFixed(1)}%</td><td class="num ${c(lx)}">${(lx*100).toFixed(1)}%</td></tr>`; });
+  h+=`<tr><td>battery</td><td>BMS telemetry</td><td class="num">–</td><td class="num">10 Hz</td><td class="num ok" colspan="2">well under 1% (a few frames per cycle)</td></tr>`;
+  $('busmap').innerHTML=h;
+}
+function updateNote(fb,ft,load,maxM){
+  const s=state, parts=[];
+  for(const k of ['fdmode','rate','drate','ext','dbi','stuff','motors','fpm','hz','lim']){
+    if(k==='drate' && !+s.fdmode) continue;
+    if(String(s[k])!==String(DEFAULTS[k])) parts.push(`${({fdmode:'protocol',rate:'nominal bit rate',drate:'FD data rate',ext:'identifier',dbi:'payload',stuff:'stuffing',motors:'motors on the bus',fpm:'frames per motor per cycle',hz:'loop rate',lim:'load limit'})[k]} ${FMT[k](s[k])}`);
+  }
+  $('note').textContent = parts.length
+   ? `For Marvin Bot (1.44 m, 41 kg humanoid; RobStride motors on classic CAN 2.0B, 1 Mbit/s, 29-bit IDs, one command + one reply per motor per cycle; buses in description/robot.yaml), I explored a bus with ${parts.join(', ')}. Result: ${Math.round(fb.total*10)/10} bits per frame (${(ft*1e6).toFixed(1)} µs), ${s.motors*s.fpm} frames per ${(1e3/s.hz).toFixed(2)} ms cycle, bus load ${(load*100).toFixed(1)}% against a ${s.lim}% limit; at most ${maxM} motors fit at this rate. Exact worst-case classic frame (Davis et al. 2007) is 160 bits, the value robot.yaml budgets. Next step: confirm with the phase 2 bench timing test (measured reply turnaround and USB-CAN jitter).`
+   : 'Change a control above to build a note. (Defaults: Marvin Bot\'s hip bus, 3 RS04/RS03 motors at 500 Hz, exact worst-case stuffing: 48% load.)';
+}
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{ setState(PRESETS[b.dataset.preset]); document.querySelectorAll('[data-preset]').forEach(x=>x.classList.toggle('on',x===b)); }));
+['fdmode','rate','drate','ext','dbi','stuff','motors','fpm','hz','lim'].forEach(bind);
+render();
+</script>
+</body>
+</html>

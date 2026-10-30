@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balance: centre of mass, support polygon, ZMP and capture point · Marvin Bot guide</title>
+<meta name="description" content="Static and dynamic balance for a humanoid: CoM, support polygon, ZMP, the linear inverted pendulum and the capture point, with Marvin Bot's 30 N·s push requirement.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+.eq{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:14px/1.7 var(--mono);overflow-x:auto;max-width:86ch}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1 1 auto}
+#topview{touch-action:none;cursor:crosshair}
+.verdict{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-size:14px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 1 · Foundations</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 02</p>
+<h1>Balance: centre of mass, support polygon, ZMP and capture point</h1>
+<p class="lede">Why does a robot stay up, and when must it take a step? Four ideas answer that: where the centre of mass is, the area the feet cover, where the ground pushes back, and where the robot would have to step to stop. Marvin Bot's walking <a class="g" href="../glossary.html#policy">policy</a> (the learned controller that drives its joints) never computes them, yet they explain every fall and every recovery step it makes.</p>
+<div class="meta"><span class="chip">~35 min</span><span class="chip">Before this: <a href="01-dof-kinematics.html">01 Degrees of freedom</a></span><span class="chip">Maths: F = ma, an exponential</span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>Static balance: the <a class="g" href="../glossary.html#centre-of-mass">centre of mass</a> (CoM) projection must lie inside the <a class="g" href="../glossary.html#support-polygon">support polygon</a>.</li>
+<li>Dynamic balance: the <a class="g" href="../glossary.html#zero-moment-point">zero-moment point</a> (ZMP), the linear inverted pendulum and the cart-table model.</li>
+<li>The <a class="g" href="../glossary.html#capture-point">capture point</a>: how far a push carries the robot, and why Marvin Bot's 30 N·s push requirement needs a step.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>Stand still and lean forward slowly. Nothing happens until the point straight below your centre of mass passes your toes; then you must step. The <b>centre of mass</b> is the average position of all the robot's mass, weighted by mass. The <b>support polygon</b> is the smallest convex shape that contains every point where the feet touch the ground, like a rubber band stretched round the soles.<sup class="cite"><a href="#s2">[2]</a></sup> Standing still, the robot is balanced if the CoM's vertical projection (the point on the floor straight below it, where a plumb line from the CoM would touch) lies inside it.</p>
+<p>Moving changes the rule. Think of carrying a tall tray of drinks: walk off briskly and the glasses tip backwards. When the body speeds up or slows down, the point where the ground's push acts (the <a class="g" href="../glossary.html#centre-of-pressure">centre of pressure</a>, which on flat ground is the same point as the <b>zero-moment point</b>, ZMP) moves away from the point below the CoM. That point, not the CoM, must stay inside the feet. And a push gives the body speed that must be soaked up before the robot can stop, sometimes only by taking a step. Playground A shows the static and accelerating cases from above; Playground B shows a push from the side.</p>
+
+<h2 id="play">Playground A: feet from above</h2>
+<p>Top view, robot facing up the screen, its left on your left. Feet 0.24 × 0.11 m, hips 0.20 m apart, the ankle 0.09 m from the heel. Drag the CoM dot (or use the sliders). Origin: the point midway between the hip joints.</p>
+<p class="hint">How to read this picture: orange shapes are the feet on the ground, the green outline round them is the support polygon, the blue dot is the point below the CoM and the violet dot is the ZMP. Each "margin" readout is the distance from that dot to the nearest green edge: positive means inside (balanced), negative means outside (tipping).</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="today">Marvin Bot today (stance)</button>
+      <button data-preset="single">Single support, CoM shifted</button>
+      <button data-preset="walk">Mid-stride</button>
+      <button data-preset="narrow">Narrow stance</button>
+      <button data-preset="accel">Accelerating forward</button>
+    </div>
+    <h4>Feet</h4>
+    <div class="ctl"><label>Support</label>
+      <div class="seg" id="mode"><button data-m="both" class="on">Both feet</button><button data-m="left">Left only</button><button data-m="right">Right only</button></div></div>
+    <div class="ctl"><label>Step width (between foot centrelines) <output id="o_width"></output></label>
+      <input type="range" id="width" min="0.10" max="0.40" step="0.01" value="0.20">
+      <div class="hint">0.20 m = feet under the hips, Marvin Bot's stance.</div></div>
+    <div class="ctl"><label>Left foot ahead by <output id="o_stride"></output></label>
+      <input type="range" id="stride" min="-0.40" max="0.40" step="0.01" value="0">
+      <div class="hint">Step length; the right foot moves back by the same amount.</div></div>
+    <h4>Centre of mass</h4>
+    <div class="ctl"><label>CoM forward <output id="o_cx"></output></label>
+      <input type="range" id="cx" min="-0.30" max="0.30" step="0.001" value="0.004"></div>
+    <div class="ctl"><label>CoM to the left <output id="o_cy"></output></label>
+      <input type="range" id="cy" min="-0.30" max="0.30" step="0.001" value="0"></div>
+    <div class="ctl"><label>CoM acceleration forward <output id="o_ax"></output></label>
+      <input type="range" id="ax" min="-3" max="3" step="0.1" value="0">
+      <div class="hint">Speeding up forward moves the ZMP backward, towards the heels (the tray-of-drinks effect; formula below).</div></div>
+    <div class="ctl"><label>CoM acceleration to the left <output id="o_ay"></output></label>
+      <input type="range" id="ay" min="-3" max="3" step="0.1" value="0"></div>
+    <div class="ctl"><label>CoM height z <output id="o_zh"></output></label>
+      <input type="range" id="zh" min="0.40" max="1.00" step="0.01" value="0.71"></div>
+  </div>
+  <div class="preview">
+    <svg id="topview" viewBox="0 0 600 460" role="img" aria-label="Top view of two feet, their support polygon, the centre of mass projection and the zero-moment point"></svg>
+    <div class="readouts">
+      <div class="ro" id="r_m"><div class="k">CoM margin (static)</div><div class="v">–</div></div>
+      <div class="ro" id="r_zmp"><div class="k">ZMP position (fwd, left)</div><div class="v">–</div></div>
+      <div class="ro" id="r_zm"><div class="k">ZMP margin (dynamic)</div><div class="v">–</div></div>
+      <div class="ro" id="r_area"><div class="k">Support area</div><div class="v">–</div></div>
+    </div>
+    <div class="verdict" id="verdictA"></div>
+    <div class="legend"><span><i style="background:#ffb45455;border:1px solid var(--accent2)"></i>feet in contact</span><span><i style="background:#4cc38a33;border:1px solid var(--good)"></i>support polygon</span><span><i style="background:var(--accent)"></i>CoM projection</span><span><i style="background:var(--violet)"></i>ZMP</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <b>Marvin Bot today</b>. The CoM margin reads about 109 mm: the CoM is 109 mm in front of the heels, its closest edge. The repo's MuJoCo standing check computes the same distance (see "How Marvin Bot does it").</li>
+<li>Switch to <b>Left only</b> without moving the CoM. The margin goes negative: before lifting a foot the robot must shift its CoM about 0.1 m sideways over the other foot. That sway is in every step.</li>
+<li>Back on both feet, raise the forward acceleration to 2 m/s². The ZMP moves 0.14 m behind the CoM. At about 1.5 m/s² it reaches the heels: a harder start would tip the robot backwards even though the CoM is well inside.</li>
+</ol></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>Static balance</h3>
+<p>Gravity pulls down at the CoM with force m·g (m the mass in kg, g = 9.81 m/s²). The ground can only push up, and only where the feet touch. If the robot does not move, the ground's total push must act straight under the CoM, otherwise the two forces, equal but not in line, twist the robot over (a "couple"). The ground's push can act anywhere inside the support polygon but nowhere outside it, so: static balance ⇔ CoM projection inside the support polygon. The distance to the nearest edge is the static margin.</p>
+
+<h3>Centre of pressure and ZMP</h3>
+<p>The ground pushes on every square millimetre of the sole. Add those pushes up and they act like one force at one point, the centre of pressure (CoP). For a robot on flat ground the zero-moment point is the same point: the point on the ground about which the horizontal moments of gravity and inertia cancel.<sup class="cite"><a href="#s1">[1]</a></sup><sup class="cite"><a href="#s2">[2]</a></sup> The ZMP idea, from Vukobratović's work in the late 1960s, gives a balance rule for walking: if the ZMP computed from the planned motion stays strictly inside the support polygon, the feet will not tip over their edges.<sup class="cite"><a href="#s1">[1]</a></sup></p>
+
+<h3>The linear inverted pendulum and the cart-table</h3>
+<p>To get numbers, physicists shrink the robot to its simplest possible version: a ball balanced on a stick, like balancing a broom upright on your palm. Model the robot as all its mass at the CoM, on a massless telescopic leg from the CoP, with the CoM held at a constant height z. Then the horizontal motion obeys:<sup class="cite"><a href="#s3">[3]</a></sup><sup class="cite"><a href="#s2">[2]</a></sup></p>
+<div class="eq">ẍ = ω² (x − p),&nbsp;&nbsp;&nbsp; ω = √(g / z)<br>
+equivalently&nbsp; p = x − (z / g)·ẍ &nbsp;&nbsp;(cart-table form)</div>
+<p>x is the CoM's horizontal position (m), ẍ its acceleration (m/s²), p the CoP/ZMP position (m), z the CoM height (m) and ω the pendulum's natural rate (1/s). If the CoM is ahead of the CoP, it accelerates forward: the pendulum falls. To accelerate forward, the robot moves its CoP behind the CoM, by (z/g)·ẍ. Kajita and colleagues called this the linear inverted pendulum mode, and used the "cart on a table" picture to plan walking: choose a ZMP path inside the footprints, then compute a CoM path that produces it.<sup class="cite"><a href="#s3">[3]</a></sup><sup class="cite"><a href="#s4">[4]</a></sup> For Marvin Bot, z ≈ 0.71 m gives ω ≈ 3.7 s⁻¹ (per second): left alone, a lean grows by a factor of about 2.7 (the number e) every 0.27 s. That is why a tall robot has only a few tenths of a second to react. A lower CoM gives a larger ω: it tips faster (a short pencil is harder to balance on a fingertip than a long broom), but a given push also carries it less far before it can be stopped, as Playground B shows.</p>
+
+<h3>The capture point (divergent component of motion)</h3>
+<p>In plain words: if someone shoves you, there is one spot on the floor where, if you put your foot there, you come to a stop with no further steps. That spot is the capture point. A harder shove moves it further away; if it lands beyond your toes, you must step.</p>
+<p>The maths: split the pendulum's motion into a part that settles and a part that runs away. The runaway part is</p>
+<div class="eq">ξ = x + ẋ / ω &nbsp;&nbsp;&nbsp; and it moves as &nbsp; ξ̇ = ω (ξ − p)</div>
+<p>ẋ is the CoM's velocity (m/s). ξ is the capture point:<sup class="cite"><a href="#s5">[5]</a></sup> if the robot puts its CoP exactly on ξ (by stepping there or by shifting pressure within a foot), the CoM comes to rest above it. If ξ lies outside the reach of the CoP, it runs away from the CoP exponentially and the robot must step before it is too far.</p>
+<details><summary>Go deeper: the same idea under other names</summary>
+<p>Englsberger and colleagues call ξ the <a class="g" href="../glossary.html#divergent-component-of-motion">divergent component of motion</a> (DCM) and build walking controllers on it;<sup class="cite"><a href="#s6">[6]</a></sup> Koolen and colleagues turned it into "N-step capturability": can the robot stop in 0, 1 or 2 steps?<sup class="cite"><a href="#s7">[7]</a></sup> Biomechanics found the same quantity in human balance and called it the extrapolated centre of mass.<sup class="cite"><a href="#s8">[8]</a></sup></p></details>
+<p>A push is an impulse J (N·s): force times duration. By conservation of momentum it changes the CoM's velocity by Δv = J / m, whatever part of the body it hits (as long as it is short). The capture point then jumps ahead of the CoM by Δv / ω.</p>
+
+<h2 id="play2">Playground B: a push from the side view</h2>
+<p>"R14" is requirement 14 in the repo's list (<code>docs/requirements.md</code>): recover from a 30 N·s push while standing (N·s, newton-seconds, measures a push by force times how long it lasts: 300 N for 0.1 s is 30 N·s). The robot stands with its CoM over its feet; a short push gives it a velocity. The ankle can move the CoP anywhere on the sole (an idealised "ankle strategy"). If the capture point leaves the sole, the robot needs a step. Press a preset, then <b>▶ Replay</b> to watch it.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-p2="today">Marvin Bot today: R14 push, one step</button>
+      <button data-p2="ankle">R14 push, ankle only</button>
+      <button data-p2="max">Largest push without a step</button>
+      <button data-p2="train">Training push (0.5 m/s)</button>
+      <button data-p2="side">R14 push sideways</button>
+    </div>
+    <h4>Robot</h4>
+    <div class="ctl"><label>Mass <output id="o_mass"></output></label>
+      <input type="range" id="mass" min="25" max="55" step="0.05" value="41.3">
+      <div class="hint">41.30 kg with shells; 40.35 kg bare.</div></div>
+    <div class="ctl"><label>CoM height z <output id="o_z"></output></label>
+      <input type="range" id="z" min="0.40" max="1.00" step="0.01" value="0.71">
+      <div class="hint">0.706 m in the stance, from the URDF (see below).</div></div>
+    <h4>Push</h4>
+    <div class="ctl"><label>Impulse J <output id="o_J"></output></label>
+      <input type="range" id="J" min="0" max="60" step="0.5" value="30">
+      <div class="hint">R14: recover from 30 N·s while standing.</div></div>
+    <div class="ctl"><label>Direction</label>
+      <div class="seg" id="dir"><button data-d="fwd" class="on">Forward</button><button data-d="back">Backward</button><button data-d="side">Sideways</button></div>
+      <div class="hint" id="dirhint"></div></div>
+    <h4>Response</h4>
+    <div class="ctl"><label>Strategy</label>
+      <div class="seg" id="strat"><button data-s="ankle">Ankle only</button><button data-s="step" class="on">Ankle + one step</button></div></div>
+    <div class="ctl"><label>Step lands after <output id="o_ts"></output></label>
+      <input type="range" id="ts" min="0.10" max="0.70" step="0.01" value="0.30">
+      <div class="hint">Time from the push to the swing foot touching down.</div></div>
+    <div class="ctl"><label>Longest step allowed <output id="o_smax"></output></label>
+      <input type="range" id="smax" min="0.15" max="0.70" step="0.01" value="0.40">
+      <div class="hint">An assumption, not a repo number: foot-centre travel the leg can manage.</div></div>
+    <div style="margin-top:8px"><button id="play">▶ Replay</button></div>
+  </div>
+  <div class="preview">
+    <svg id="lipm" viewBox="0 0 600 430" role="img" aria-label="Side view of an inverted pendulum after a push, with the capture point and the foot, and a time plot of CoM and capture point"></svg>
+    <div class="readouts">
+      <div class="ro" id="r_dv"><div class="k">CoM velocity after push</div><div class="v">–</div></div>
+      <div class="ro" id="r_w"><div class="k">ω = √(g/z) · time constant</div><div class="v">–</div></div>
+      <div class="ro" id="r_cp"><div class="k">Capture point ahead of CoM</div><div class="v">–</div></div>
+      <div class="ro" id="r_edge"><div class="k">Sole edge ahead of CoM</div><div class="v">–</div></div>
+      <div class="ro" id="r_jmax"><div class="k">Largest push, no step</div><div class="v">–</div></div>
+      <div class="ro" id="r_step"><div class="k">Step needed at touchdown</div><div class="v">–</div></div>
+    </div>
+    <div class="verdict" id="verdictB"></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>CoM x(t)</span><span><i style="background:var(--accent2)"></i>capture point ξ(t)</span><span><i style="background:var(--violet)"></i>CoP p(t)</span><span><i style="background:#ffb45455;border:1px solid var(--accent2)"></i>sole</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <b>R14 push, ankle only</b>: 30 N·s on 41.3 kg is 0.73 m/s, the capture point lands 0.195 m ahead of the CoM, but the toes are only 0.131 m ahead. The robot falls. Switch to <b>Ankle + one step</b>: it recovers with a step of about 0.32 m (foot-centre travel).</li>
+<li>Now slide <b>Step lands after</b> from 0.30 to 0.60 s. The required step grows from ~0.32 m to ~0.72 m: the capture point runs away exponentially, so reacting fast matters more than stepping far.</li>
+<li>Lower the CoM height to 0.5 m. ω rises and the same push needs a shorter step: a crouch helps push recovery, but it costs knee torque (page <a href="05-leg-loads-stairs.html">05</a>).</li>
+</ol></div>
+
+<h3>Why the policy never computes any of this</h3>
+<p>Marvin Bot walks with a neural-network <a class="g" href="../glossary.html#policy">policy</a> trained by <a class="g" href="../glossary.html#reinforcement-learning">reinforcement learning</a> (trial and error in simulation, page 16), not with a ZMP planner. The policy sees joint angles, velocities, the pelvis's angular rate and gravity direction, and outputs joint targets; it is rewarded for following velocity commands and penalised for falling. It is trained with random pushes, a technique from massively parallel legged training.<sup class="cite"><a href="#s9">[9]</a></sup> Nothing in it computes a ZMP or a capture point. But physics does not change: a policy that survives a push must, implicitly, move its CoP to the toes and then step near the capture point. These models are how you read its behaviour, predict how hard a push it can survive, and choose training settings.</p>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b>
+<ul>
+<li><b>Requirement R14</b> (<code>docs/requirements.md</code>, "should"): recover from a 30 N·s push while standing. At 41.30 kg that is a CoM velocity of 30 / 41.3 = 0.73 m/s (0.74 m/s at 40.35 kg bare).</li>
+<li><b>CoM height.</b> We loaded the generated URDF in MuJoCo with the repo's own <code>check_standing.py</code> builder, placed the robot in <code>robot.yaml</code>'s stance and read the whole-body CoM: 0.706 m above the floor, 4 mm ahead of the hip line, for the 40.35 kg bare model. The shells (0.95 kg, mostly on the torso) raise it slightly, so this page uses 0.71 m. (<code>docs/decisions.md</code>, 2026-10-29, says the CoM rose 78 mm with the taller body.)</li>
+<li><b>Static margin.</b> <code>sim/mujoco/check_standing.py</code> reports the distance from the CoM projection to the edge of the feet's bounding box: 110 mm in our run of the stance; <code>robot.yaml</code>'s comment says 106 mm (from an earlier model). Playground A's default gives 109 mm.</li>
+<li><b>Pushes in training.</b> The walking environments push the robot every 5–10 s by setting the pelvis velocity to a random value up to ±0.5 m/s in x and y (<code>sim/isaaclab/marvin_bot/tasks/velocity_env_cfg.py</code>). At 41.3 kg, 0.5 m/s is about 21 N·s: two-thirds of R14.</li>
+<li><b>Step-up check.</b> <code>sim/mujoco/check_step_up.py</code> requires the CoM to lie at least 2 cm inside the supporting foot (1 cm sideways): a static-balance test exactly like Playground A.</li>
+</ul></div>
+<p>With R14's push, the numbers say: capture point 0.195 m ahead of the CoM against 0.131 m of foot ahead of it (forward) and 0.155 m to the outer edge of the far foot (sideways, both feet down). Neither direction can be saved by the ankles alone; forward needs one step of roughly 0.3 m if it lands 0.3 s after the push. Without a step, the idealised ankle strategy handles about 20 N·s forward and 24 N·s sideways. Real ankles do worse (finite torque, the foot rolls before the CoP reaches the edge), and swinging the arms and torso (the "hip strategy", modelled with a flywheel by Pratt et al.<sup class="cite"><a href="#s5">[5]</a></sup>) does a little better.</p>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<tr><th>Approach</th><th>How it balances</th><th>Strength</th><th>Weakness</th></tr>
+<tr><td>ZMP preview control<sup class="cite"><a href="#s4">[4]</a></sup></td><td>Plans a CoM path whose ZMP stays in the footprints</td><td>Predictable, well understood</td><td>Needs flat feet, accurate models; slow, careful gaits</td></tr>
+<tr><td>Capture point / DCM control<sup class="cite"><a href="#s6">[6]</a></sup></td><td>Controls ξ directly; steps where ξ goes</td><td>Push recovery built in</td><td>Still a simplified model; footstep planner needed</td></tr>
+<tr><td>RL policy (Marvin Bot)<sup class="cite"><a href="#s9">[9]</a></sup></td><td>Learned from millions of simulated falls and pushes</td><td>Handles rough ground and stairs with one network</td><td>No explicit guarantee; only as robust as its training pushes and randomisation</td></tr>
+</table></div>
+<p>Design levers that change balance: a lower CoM raises ω (faster recovery, but more knee torque); larger feet move the edges out (but catch on stairs; Marvin Bot's foot is 0.24 m, about the length of a 25 cm tread); wider stance helps sideways pushes; faster stepping (stronger hips, lighter legs) shortens the step needed.</p>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b> Not a disagreement with a source, but a gap inside the repo: R14 asks for 30 N·s (≈0.73 m/s), while the training pushes go up to 0.5 m/s (≈21 N·s). Our model says 30 N·s needs a reactive step, so a policy may need larger training pushes before R14 can be claimed. Also, <code>robot.yaml</code>'s stance comment gives a 106 mm margin and our run of the current URDF gives 110 mm; the comment predates the latest mass changes.</div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>Training push range: to meet R14, the training pushes probably need to reach ≥ 0.73 m/s (they stop at 0.5 m/s today) and the evaluation should measure recovery steps, not only falls. Trade: harder pushes make training slower and can make the walk stiffer and more cautious.</li>
+<li>CoM height and stance: a lower crouch needs a shorter recovery step, but the bent knee carries more torque and heats up sooner (page 05).</li>
+<li>Foot size and stance width: bigger feet and a wider stance give bigger margins, but a longer foot catches on stair edges and a wider stance makes each sideways weight shift longer.</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<p><b>Where this leads.</b> Balance is a job for the whole machine: sensors must notice the lean, the computer must decide, and the motors must react within a few tenths of a second. Page 03 follows that chain from battery to <a class="g" href="../glossary.html#policy">policy</a>; pages 04 and 05 ask whether the motors are strong enough.</p>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://underactuated.mit.edu/humanoids.html">Tedrake, Underactuated Robotics, "Humanoid robots"</a>: CoP, ZMP and the ZMP planner, derived carefully.</li>
+<li><a href="https://doi.org/10.1109/ICHR.2006.321385">Pratt et al., Capture Point (2006)</a>: short and readable; the flywheel model of the hip strategy.</li>
+<li><a href="https://doi.org/10.1177/0278364912452673">Koolen et al., Capturability, Part 1 (2012)</a>: the formal version: 0-, 1- and N-step capturability.</li>
+<li><a href="https://arxiv.org/abs/2109.11978">Rudin et al., Learning to walk in minutes (2021)</a>: the training recipe Isaac Lab's locomotion tasks grew from, pushes included.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://doi.org/10.1142/S0219843604000083">M. Vukobratović and B. Borovac, "Zero-moment point — thirty five years of its life", Int. J. Humanoid Robotics, 2004</a> <span class="used">— used for: ZMP definition, history and the balance condition.</span></li>
+  <li id="s2"><a href="https://underactuated.mit.edu/humanoids.html">R. Tedrake, Underactuated Robotics (MIT 6.832), "Humanoid robots"</a> <span class="used">— used for: CoP/ZMP equivalence on flat ground, support polygon, the constant-height pendulum equation.</span></li>
+  <li id="s3"><a href="https://doi.org/10.1109/IROS.2001.973365">S. Kajita, F. Kanehiro, K. Kaneko, K. Yokoi and H. Hirukawa, "The 3D linear inverted pendulum mode", IROS 2001</a> <span class="used">— used for: the linear inverted pendulum model.</span></li>
+  <li id="s4"><a href="https://doi.org/10.1109/ROBOT.2003.1241826">S. Kajita et al., "Biped walking pattern generation by using preview control of zero-moment point", ICRA 2003</a> <span class="used">— used for: the cart-table model and ZMP preview control.</span></li>
+  <li id="s5"><a href="https://doi.org/10.1109/ICHR.2006.321385">J. Pratt, J. Carff, S. Drakunov and A. Goswami, "Capture Point: a step toward humanoid push recovery", Humanoids 2006</a> <span class="used">— used for: capture point definition, flywheel (hip strategy) extension.</span></li>
+  <li id="s6"><a href="https://doi.org/10.1109/TRO.2015.2405592">J. Englsberger, C. Ott and A. Albu-Schäffer, "Three-dimensional bipedal walking control based on divergent component of motion", IEEE T-RO, 2015</a> <span class="used">— used for: DCM, ξ̇ = ω(ξ − p).</span></li>
+  <li id="s7"><a href="https://doi.org/10.1177/0278364912452673">T. Koolen, T. de Boer, J. Rebula, A. Goswami and J. Pratt, "Capturability-based analysis and control of legged locomotion, Part 1", IJRR, 2012</a> <span class="used">— used for: N-step capturability.</span></li>
+  <li id="s8"><a href="https://doi.org/10.1016/j.jbiomech.2004.03.025">A. L. Hof, M. G. J. Gazendam and W. E. Sinke, "The condition for dynamic stability", J. Biomechanics, 2005</a> <span class="used">— used for: the extrapolated centre of mass in human balance.</span></li>
+  <li id="s9"><a href="https://arxiv.org/abs/2109.11978">N. Rudin, D. Hoeller, P. Reist and M. Hutter, "Learning to walk in minutes using massively parallel deep reinforcement learning", CoRL 2021</a> <span class="used">— used for: RL locomotion training with random pushes.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="01-dof-kinematics.html"><span>← Previous</span>Degrees of freedom and kinematic chains</a>
+  <a class="next" href="03-architecture.html"><span>Next →</span>System architecture: from battery to policy</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const G=9.81, FL=0.24, FW=0.11, ANK2CEN=0.03, ANKX=-0.015; // foot centre = ankle + 0.03; ankle 15 mm behind the hip line in the stance
+// ---------- Playground A ----------
+const DA={mode:'both',width:0.20,stride:0,cx:0.004,cy:0,ax:0,ay:0,zh:0.71};
+const A={...DA};
+const PA={today:{...DA}, single:{mode:'left',width:0.20,stride:0,cx:0.01,cy:0.09,ax:0,ay:0,zh:0.71},
+  walk:{mode:'both',width:0.20,stride:0.15,cx:0.02,cy:0.0,ax:0,ay:0,zh:0.71}, narrow:{mode:'both',width:0.12,stride:0,cx:0.004,cy:0,ax:0,ay:0,zh:0.71},
+  accel:{mode:'both',width:0.20,stride:0,cx:0.004,cy:0,ax:2.0,ay:0,zh:0.71}};
+function feet(){ const c=ANKX+ANK2CEN, h=A.stride/2, out=[];
+  // world: f = forward, l = left
+  if(A.mode!=='right') out.push({side:'L',f:c+h,l:A.width/2});
+  if(A.mode!=='left') out.push({side:'R',f:c-h,l:-A.width/2});
+  return out; }
+function allFeet(){ const c=ANKX+ANK2CEN, h=A.stride/2; return [{side:'L',f:c+h,l:A.width/2,on:A.mode!=='right'},{side:'R',f:c-h,l:-A.width/2,on:A.mode!=='left'}]; }
+function corners(ft){ return [[ft.f+FL/2,ft.l+FW/2],[ft.f+FL/2,ft.l-FW/2],[ft.f-FL/2,ft.l-FW/2],[ft.f-FL/2,ft.l+FW/2]]; }
+function hull(pts){ pts=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]); const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  const lo=[],up=[]; for(const p of pts){ while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0) lo.pop(); lo.push(p);} for(const p of pts.slice().reverse()){ while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0) up.pop(); up.push(p);} up.pop(); lo.pop(); return lo.concat(up); }
+function segDist(p,a,b){ const dx=b[0]-a[0],dy=b[1]-a[1]; let t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy); t=Math.max(0,Math.min(1,t)); return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy); }
+function signedMargin(p,H){ let inside=true, d=Infinity; for(let i=0;i<H.length;i++){ const a=H[i],b=H[(i+1)%H.length];
+    const cr=(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]); if(cr<0) inside=false; d=Math.min(d,segDist(p,a,b)); } return inside?d:-d; }
+function area(H){ let s=0; for(let i=0;i<H.length;i++){const a=H[i],b=H[(i+1)%H.length]; s+=a[0]*b[1]-b[0]*a[1];} return Math.abs(s)/2; }
+const SA=620, AX0=300, AY0=230; // screen: left on screen-left => x_screen = AX0 - l*SA ; forward up => y = AY0 - f*SA
+const sx=l=>AX0-l*SA, sy=f=>AY0-f*SA;
+function renderA(){
+  const F=feet(); const H=hull(F.flatMap(corners));
+  const com=[A.cx,A.cy], zmp=[A.cx-A.zh/G*A.ax, A.cy-A.zh/G*A.ay];
+  const m=signedMargin(com,H), mz=signedMargin(zmp,H);
+  let s='';
+  for(let g=-0.5;g<=0.5001;g+=0.1){ s+=`<line x1="${sx(g)}" y1="0" x2="${sx(g)}" y2="460" stroke="#1a222b"/>`; }
+  for(let g=-0.3;g<=0.3801;g+=0.1){ s+=`<line x1="0" y1="${sy(g)}" x2="600" y2="${sy(g)}" stroke="#1a222b"/>`; }
+  s+=`<text x="8" y="16" fill="#6b7785" font-size="11">grid 0.1 m · forward ↑ · robot's left ←</text>`;
+  s+=`<polygon points="${H.map(p=>sx(p[1])+','+sy(p[0])).join(' ')}" fill="#4cc38a22" stroke="#4cc38a" stroke-width="1.5"/>`;
+  allFeet().forEach(ft=>{ const c=corners(ft); s+=`<polygon points="${c.map(p=>sx(p[1])+','+sy(p[0])).join(' ')}" fill="${ft.on?'#ffb45444':'none'}" stroke="${ft.on?'#ffb454':'#56606c'}" stroke-dasharray="${ft.on?'':'5 4'}" stroke-width="2"/>`;
+    s+=`<text x="${sx(ft.l)}" y="${sy(ft.f-FL/2)+14}" fill="#9aa7b4" font-size="11" text-anchor="middle">${ft.side}${ft.on?'':' (in the air)'}</text>`;
+    s+=`<circle cx="${sx(ft.l)}" cy="${sy(ft.f-ANK2CEN)}" r="3" fill="#9aa7b4"/>`; });
+  // hips
+  s+=`<line x1="${sx(0.1)}" y1="${sy(0)}" x2="${sx(-0.1)}" y2="${sy(0)}" stroke="#3a4552" stroke-width="3"/>`;
+  // zmp arrow
+  if(A.ax||A.ay) s+=`<line x1="${sx(com[1])}" y1="${sy(com[0])}" x2="${sx(zmp[1])}" y2="${sy(zmp[0])}" stroke="#b48cff" stroke-dasharray="4 3"/>`;
+  s+=`<rect x="${sx(zmp[1])-6}" y="${sy(zmp[0])-6}" width="12" height="12" transform="rotate(45 ${sx(zmp[1])} ${sy(zmp[0])})" fill="#b48cff"/>`;
+  s+=`<circle id="comdot" cx="${sx(com[1])}" cy="${sy(com[0])}" r="10" fill="${m>0?'#4fb3ff':'#ff6b6b'}" stroke="#0c1015" stroke-width="2" style="cursor:grab"/>`;
+  s+=`<text x="${sx(com[1])+14}" y="${sy(com[0])+4}" fill="#e6edf3" font-size="12">CoM</text>`;
+  $('topview').innerHTML=s;
+  const set=(id,txt,cls)=>{const e=$(id); e.querySelector('.v').textContent=txt; e.className='ro '+(cls||'');};
+  set('r_m',`${(m*1000).toFixed(0)} mm`, m>0.02?'ok':m>0?'warn':'bad');
+  set('r_zmp',`${zmp[0].toFixed(3)}, ${zmp[1].toFixed(3)} m`);
+  set('r_zm',`${(mz*1000).toFixed(0)} mm`, mz>0.02?'ok':mz>0?'warn':'bad');
+  set('r_area',`${(area(H)*1e4).toFixed(0)} cm²`);
+  let v;
+  if(m<=0) v=`<b style="color:var(--bad)">Not statically balanced.</b> The CoM projection is ${(-m*1000).toFixed(0)} mm outside the support polygon: standing still, the robot tips towards that side.`;
+  else if(mz<=0) v=`<b style="color:var(--warn)">Statically fine, dynamically not.</b> The CoM is inside, but this acceleration needs the ZMP ${(-mz*1000).toFixed(0)} mm outside the feet. The feet would roll over an edge; the robot must accelerate less or step.`;
+  else v=`<b style="color:var(--good)">Balanced.</b> Static margin ${(m*1000).toFixed(0)} mm${(A.ax||A.ay)?`, ZMP margin ${(mz*1000).toFixed(0)} mm`:''}.`;
+  $('verdictA').innerHTML=v; updateNote();
+}
+function syncA(){ for(const k of ['width','stride','cx','cy','ax','ay','zh']){ $(k).value=A[k]; outA(k);} document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===A.mode)); }
+function outA(k){ const v=A[k]; $('o_'+k).textContent = (k==='ax'||k==='ay')?`${(+v).toFixed(1)} m/s²`:`${(+v).toFixed(k==='cx'||k==='cy'?3:2)} m`; }
+for(const k of ['width','stride','cx','cy','ax','ay','zh']){ $(k).addEventListener('input',()=>{A[k]=parseFloat($(k).value); outA(k); renderA();}); outA(k); }
+document.querySelectorAll('#mode button').forEach(b=>b.addEventListener('click',()=>{A.mode=b.dataset.m; syncA(); renderA();}));
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{Object.assign(A,PA[b.dataset.preset]); syncA(); renderA();}));
+(function(){ const svg=$('topview'); let drag=false;
+  const toW=e=>{ const r=svg.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*600, y=(e.clientY-r.top)/r.height*460; return [(AY0-y)/SA,(AX0-x)/SA]; };
+  svg.addEventListener('pointerdown',e=>{ drag=true; svg.setPointerCapture(e.pointerId); mv(e); });
+  svg.addEventListener('pointermove',e=>{ if(drag) mv(e); });
+  svg.addEventListener('pointerup',()=>drag=false);
+  function mv(e){ const w=toW(e); A.cx=Math.max(-0.3,Math.min(0.3,+w[0].toFixed(3))); A.cy=Math.max(-0.3,Math.min(0.3,+w[1].toFixed(3))); $('cx').value=A.cx; $('cy').value=A.cy; outA('cx'); outA('cy'); renderA(); }
+})();
+
+// ---------- Playground B ----------
+const DB={mass:41.3,z:0.71,J:30,dir:'fwd',strat:'step',ts:0.30,smax:0.40};
+const B={...DB};
+const PB={today:{...DB}, ankle:{...DB,strat:'ankle'}, max:{...DB,J:20,strat:'ankle'}, train:{...DB,J:20.65,strat:'ankle'}, side:{...DB,dir:'side'}};
+// distances from the CoM (stance default) to the sole edges, in the push direction
+function edges(){ const comx=0.004, cen=ANKX+ANK2CEN;
+  if(B.dir==='fwd') return {front:cen+FL/2-comx, back:comx-(cen-FL/2), half:FL/2, label:'toes'};
+  if(B.dir==='back') return {front:comx-(cen-FL/2), back:cen+FL/2-comx, half:FL/2, label:'heels'};
+  return {front:0.10+FW/2, back:0.10+FW/2, half:FW/2, label:'outer edge of the far foot'}; }
+let traj=null;
+function simulate(){
+  const w=Math.sqrt(G/B.z), v0=B.J/B.mass, E=edges();
+  let x=0, v=v0, lo=-E.back, hi=E.front, t=0, dt=0.0005, stepped=false, out=[], status='', stepLen=null, stepNeeded=null;
+  const cen0=(hi+lo)/2; let footC=cen0, footHalf=(hi-lo)/2;
+  // in side mode, double support spans both feet; after a step the new single foot is only FW wide
+  while(t<2.5){
+    let xi=x+v/w;
+    if(B.strat==='step' && !stepped && t>=B.ts){
+      stepped=true;
+      if(xi>hi || xi<lo){ stepNeeded=xi-cen0; const wantC = B.dir==='side' ? xi : xi; // place sole centre on the capture point
+        let d=wantC-cen0; const dd=Math.sign(d)*Math.min(Math.abs(d),B.smax); stepLen=dd;
+        footC=cen0+dd; footHalf=E.half; lo=footC-footHalf; hi=footC+footHalf;
+        if(B.dir==='side'){ /* new foot replaces the polygon: sole centred where it landed */ }
+      } else { stepNeeded=0; stepLen=0; }
+    }
+    const p=Math.max(lo,Math.min(hi,xi));
+    out.push([t,x,xi,p,lo,hi]);
+    if(Math.abs(x-p)>0.45){ status='fell'; break; }
+    const a=w*w*(x-p); x+=v*dt+0.5*a*dt*dt; v+=a*dt; t+=dt;
+  }
+  if(!status){ const last=out[out.length-1]; status=(last[2]>=last[4]-1e-6&&last[2]<=last[5]+1e-6)?'captured':'fell'; }
+  traj={w,v0,E,out,status,stepLen,stepNeeded,cen0};
+}
+const LX=v=>300+v*560, GY=200; // scene
+function drawB(k){
+  const T=traj, row=T.out[Math.min(k,T.out.length-1)], [t,x,xi,p,lo,hi]=row;
+  const zpx=Math.min(170,B.z*190);
+  let s='';
+  s+=`<rect x="0" y="${GY}" width="600" height="6" fill="#2a3340"/>`;
+  s+=`<text x="8" y="16" fill="#6b7785" font-size="11">side view · push ${B.dir==='side'?'sideways (frontal plane)':B.dir==='back'?'backward (shown left to right)':'forward →'} · t = ${t.toFixed(2)} s</text>`;
+  // original foot (edges) and new foot
+  const E=T.E; s+=`<rect x="${LX(-E.back)}" y="${GY-8}" width="${(E.front+E.back)*560}" height="8" fill="${t<B.ts||B.strat==='ankle'||!T.stepLen?'#ffb45466':'#ffb45422'}" stroke="#ffb454"/>`;
+  if(B.strat==='step' && t>=B.ts && T.stepLen) s+=`<rect x="${LX(lo)}" y="${GY-8}" width="${(hi-lo)*560}" height="8" fill="#ffb45488" stroke="#ffb454"/><text x="${LX((lo+hi)/2)}" y="${GY+22}" fill="#ffb454" font-size="11" text-anchor="middle">step ${(T.stepLen*100).toFixed(0)} cm</text>`;
+  // capture point
+  s+=`<line x1="${LX(xi)}" y1="${GY-zpx-20}" x2="${LX(xi)}" y2="${GY}" stroke="#ffb454" stroke-dasharray="4 4"/><polygon points="${LX(xi)},${GY-1} ${LX(xi)-7},${GY+9} ${LX(xi)+7},${GY+9}" fill="#ffb454"/><text x="${LX(xi)+8}" y="${GY-zpx-8}" fill="#ffb454" font-size="11">capture point ξ</text>`;
+  // pendulum
+  const ang=Math.atan2(x-p,B.z); const fallen=T.status==='fell'&&k>=T.out.length-1;
+  const cx=fallen?LX(p)+Math.sin(Math.sign(x-p)*1.2)*zpx:LX(x), cy=fallen?GY-Math.cos(1.2)*zpx:GY-zpx;
+  s+=`<line x1="${LX(p)}" y1="${GY}" x2="${cx}" y2="${cy}" stroke="#cbd5df" stroke-width="5" stroke-linecap="round"/>`;
+  s+=`<circle cx="${cx}" cy="${cy}" r="14" fill="#4fb3ff" stroke="#0c1015" stroke-width="2"/><text x="${cx}" y="${cy+4}" fill="#0c1015" font-size="10" text-anchor="middle" font-weight="700">CoM</text>`;
+  s+=`<circle cx="${LX(p)}" cy="${GY}" r="5" fill="#b48cff"/>`;
+  if(k<12) s+=`<path d="M ${LX(x)-70} ${GY-zpx} l 45 0" stroke="#ff6b6b" stroke-width="4" marker-end="url(#ar)"/><text x="${LX(x)-74}" y="${GY-zpx-8}" fill="#ff6b6b" font-size="12">${B.J} N·s</text>`;
+  s+=`<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ff6b6b"/></marker></defs>`;
+  // plot
+  const P0=250, PH=160, tmax=2.5, X=t=>40+t/tmax*545, Yp=v=>P0+PH/2-v*PH/1.2;
+  s+=`<rect x="40" y="${P0}" width="545" height="${PH}" fill="#0f141a" stroke="#24303c"/>`;
+  for(const v of [-0.4,0,0.4]) s+=`<line x1="40" x2="585" y1="${Yp(v)}" y2="${Yp(v)}" stroke="#1e2731"/><text x="34" y="${Yp(v)+4}" fill="#6b7785" font-size="10" text-anchor="end">${v.toFixed(1)}</text>`;
+  s+=`<text x="44" y="${P0+12}" fill="#6b7785" font-size="10">position (m) vs time (0–2.5 s)</text>`;
+  const pathOf=(i,c,dash)=>{ let d=''; for(let j=0;j<T.out.length;j+=20){ const r=T.out[j]; const v=Math.max(-0.6,Math.min(0.6,r[i])); d+=(j?'L':'M')+X(r[0]).toFixed(1)+' '+Yp(v).toFixed(1); } return `<path d="${d}" fill="none" stroke="${c}" stroke-width="2" ${dash?'stroke-dasharray="4 3"':''}/>`; };
+  s+=pathOf(5,'#ffb45488',true)+pathOf(3,'#b48cff')+pathOf(2,'#ffb454')+pathOf(1,'#4fb3ff');
+  if(B.strat==='step') s+=`<line x1="${X(B.ts)}" x2="${X(B.ts)}" y1="${P0}" y2="${P0+PH}" stroke="#56606c" stroke-dasharray="3 3"/><text x="${X(B.ts)+3}" y="${P0+PH-4}" fill="#6b7785" font-size="10">touchdown</text>`;
+  s+=`<line x1="${X(t)}" x2="${X(t)}" y1="${P0}" y2="${P0+PH}" stroke="#e6edf3" opacity=".5"/>`;
+  $('lipm').innerHTML=s;
+}
+let anim=null;
+function play(){ if(anim) cancelAnimationFrame(anim); const n=traj.out.length, t0=performance.now(), dur=traj.out[n-1][0]*1000;
+  const f=now=>{ const fr=Math.min(1,(now-t0)/Math.max(dur,1)); drawB(Math.floor(fr*(n-1))); if(fr<1) anim=requestAnimationFrame(f); }; anim=requestAnimationFrame(f); }
+function renderB(animate){
+  simulate(); const T=traj, E=T.E;
+  const off=T.v0/T.w, jmax=B.mass*T.w*E.front;
+  const set=(id,txt,cls)=>{const e=$(id); e.querySelector('.v').textContent=txt; e.className='ro '+(cls||'');};
+  set('r_dv',`${T.v0.toFixed(2)} m/s`);
+  set('r_w',`${T.w.toFixed(2)} s⁻¹ · ${(1/T.w).toFixed(2)} s`);
+  set('r_cp',`${(off*1000).toFixed(0)} mm`, off<E.front?'ok':'bad');
+  set('r_edge',`${(E.front*1000).toFixed(0)} mm`);
+  set('r_jmax',`${jmax.toFixed(1)} N·s`);
+  // capture point at touchdown with CoP held at the edge
+  const xiT = off<=E.front ? off : E.front+(off-E.front)*Math.exp(T.w*B.ts);
+  const need = off<=E.front ? 0 : xiT-T.cen0;
+  set('r_step', off<=E.front?'none':`${(need*100).toFixed(0)} cm`, off<=E.front?'ok':need<=B.smax?'warn':'bad');
+  $('dirhint').textContent=`Distance from the CoM to the ${E.label}: ${(E.front*1000).toFixed(0)} mm (from the stance; ${B.dir==='side'?'both feet down, 0.20 m apart':'feet side by side'}).`;
+  let v;
+  if(T.status==='captured' && !T.stepLen) v=`<b style="color:var(--good)">Recovered without stepping.</b> The capture point stays on the sole; the ankle shifts the CoP onto it and the CoM settles above it.`;
+  else if(T.status==='captured') v=`<b style="color:var(--good)">Recovered with one step</b> of ${(T.stepLen*100).toFixed(0)} cm (foot-centre travel) landing at ${B.ts.toFixed(2)} s.`;
+  else if(B.strat==='ankle') v=`<b style="color:var(--bad)">Falls.</b> The capture point is ${((off-E.front)*1000).toFixed(0)} mm beyond the ${E.label}; no CoP on this foot can stop it. A step is needed.`;
+  else v=`<b style="color:var(--bad)">Falls.</b> By touchdown the capture point is ${(need*100).toFixed(0)} cm away, more than the ${(B.smax*100).toFixed(0)} cm step allowed. Step sooner, or take a second step.`;
+  $('verdictB').innerHTML=v+` <span style="color:var(--muted)">(Linear inverted pendulum: point mass, constant height, ideal ankle; real recovery is somewhat worse.)</span>`;
+  if(animate) play(); else drawB(traj.out.length-1);
+  updateNote();
+}
+function outB(k){ const v=B[k]; $('o_'+k).textContent = k==='mass'?`${(+v).toFixed(2)} kg`: k==='J'?`${(+v).toFixed(1)} N·s`: k==='ts'?`${(+v).toFixed(2)} s`:`${(+v).toFixed(2)} m`; }
+function syncB(){ for(const k of ['mass','z','J','ts','smax']){ $(k).value=B[k]; outB(k);} document.querySelectorAll('#dir button').forEach(b=>b.classList.toggle('on',b.dataset.d===B.dir)); document.querySelectorAll('#strat button').forEach(b=>b.classList.toggle('on',b.dataset.s===B.strat)); }
+for(const k of ['mass','z','J','ts','smax']){ $(k).addEventListener('input',()=>{B[k]=parseFloat($(k).value); outB(k); renderB(false);}); $(k).addEventListener('change',()=>renderB(true)); outB(k); }
+document.querySelectorAll('#dir button').forEach(b=>b.addEventListener('click',()=>{B.dir=b.dataset.d; syncB(); renderB(true);}));
+document.querySelectorAll('#strat button').forEach(b=>b.addEventListener('click',()=>{B.strat=b.dataset.s; syncB(); renderB(true);}));
+document.querySelectorAll('[data-p2]').forEach(b=>b.addEventListener('click',()=>{Object.assign(B,PB[b.dataset.p2]); syncB(); renderB(true);}));
+$('play').addEventListener('click',()=>play());
+
+function updateNote(){
+  const parts=[];
+  const chA=Object.keys(DA).filter(k=>A[k]!==DA[k]);
+  if(chA.length){ const F=feet(); const H=hull(F.flatMap(corners)); const m=signedMargin([A.cx,A.cy],H), mz=signedMargin([A.cx-A.zh/G*A.ax,A.cy-A.zh/G*A.ay],H);
+    parts.push(`Support check: ${A.mode==='both'?'both feet':A.mode+' foot only'}, step width ${A.width.toFixed(2)} m, left foot ${A.stride.toFixed(2)} m ahead, CoM at (${A.cx.toFixed(3)} fwd, ${A.cy.toFixed(3)} left) m from the hip midpoint${(A.ax||A.ay)?`, accelerating (${A.ax}, ${A.ay}) m/s² at CoM height ${A.zh} m`:''}: static margin ${(m*1000).toFixed(0)} mm${(A.ax||A.ay)?`, ZMP margin ${(mz*1000).toFixed(0)} mm`:''}.`); }
+  const chB=Object.keys(DB).filter(k=>B[k]!==DB[k]);
+  if(chB.length && traj){ const off=traj.v0/traj.w;
+    parts.push(`Push check (linear inverted pendulum): ${B.J} N·s ${B.dir==='side'?'sideways':B.dir==='back'?'backward':'forward'} on ${B.mass} kg with the CoM at ${B.z} m gives ${traj.v0.toFixed(2)} m/s and a capture point ${(off*1000).toFixed(0)} mm ahead of the CoM, against ${(traj.E.front*1000).toFixed(0)} mm to the sole edge. Strategy: ${B.strat==='ankle'?'ankle only':`one step landing after ${B.ts} s, at most ${B.smax} m`}. Result: ${traj.status==='captured'?'recovers':'falls'}${traj.stepLen?`, step ${(traj.stepLen*100).toFixed(0)} cm`:''}. For comparison, R14 asks for 30 N·s and training pushes reach 0.5 m/s (~21 N·s).`); }
+  $('note').textContent = parts.length ? `Marvin Bot balance (41.3 kg with shells, CoM ~0.71 m in the stance, feet 0.24 × 0.11 m, hips 0.20 m apart).\n`+parts.join('\n') : 'Change a control above to build a note.';
+}
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+renderA(); renderB(false);
+</script>
+</body>
+</html>

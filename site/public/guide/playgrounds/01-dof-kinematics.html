@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Degrees of freedom and kinematic chains · Marvin Bot guide</title>
+<meta name="description" content="What a degree of freedom is, how joints chain into a leg, forward kinematics, joint ranges and why Marvin Bot's hip is roll-first.">
+<style>
+/* ===== Shared guide style: copy this block unchanged into every page ===== */
+:root{
+  --bg:#0f1216; --panel:#161b22; --panel2:#1c232c; --line:#2a3340; --text:#e6edf3; --muted:#9aa7b4;
+  --accent:#4fb3ff; --accent2:#ffb454; --good:#4cc38a; --warn:#ffb454; --bad:#ff6b6b; --violet:#b48cff;
+  --code:#0b0e12; --radius:10px;
+  --font: system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--accent)} a:hover{color:#8fd0ff}
+code,kbd,.mono{font-family:var(--mono);font-size:.9em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:12px;overflow:auto;font:13px/1.5 var(--mono)}
+header.top{position:sticky;top:0;z-index:10;background:rgba(15,18,22,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.top .in{max-width:1180px;margin:0 auto;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:700;color:var(--text);text-decoration:none}
+header.top nav{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+header.top nav a{color:var(--muted);text-decoration:none} header.top nav a:hover{color:var(--text)}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:2rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.4rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:1.6em 0 .4em}
+p,li{max-width:78ch}
+.lede{font-size:1.1rem;color:var(--muted);max-width:78ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border:1px solid var(--line);border-radius:99px;color:var(--muted);background:var(--panel)}
+.chip.stage{color:var(--accent);border-color:#24527a}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.callout{border-left:4px solid var(--accent);background:var(--panel);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:1em 0;max-width:86ch}
+.callout.marvin{border-color:var(--accent2)} .callout.warn{border-color:var(--bad)} .callout.disagree{border-color:var(--violet)}
+.callout > b:first-child{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:1em 0}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+/* playground layout: controls left, live preview right */
+.pg{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:16px;margin:16px 0;align-items:start}
+@media (max-width:820px){.pg{grid-template-columns:minmax(0,1fr)}}
+.controls{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.controls h4{margin:.8em 0 .4em;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.controls h4:first-child{margin-top:0}
+.ctl{margin:8px 0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.ctl label output{font-family:var(--mono);color:var(--accent);font-size:13px}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px}
+.ctl .hint{font-size:12px;color:var(--muted);line-height:1.4}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+button,.btn{font:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)} button.on{border-color:var(--accent);color:var(--accent)}
+.preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-width:0}
+.preview svg,.preview canvas{width:100%;height:auto;display:block;background:#0c1015;border-radius:8px}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ro .k{font-size:12px;color:var(--muted)} .ro .v{font:600 18px/1.3 var(--mono)}
+.ro.ok .v{color:var(--good)} .ro.warn .v{color:var(--warn)} .ro.bad .v{color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* decision note (the playground's prompt output) */
+.note{overflow-wrap:anywhere;background:var(--code);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font:14px/1.55 var(--mono);white-space:pre-wrap;color:#cfe3f5}
+.notebar{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
+sup.cite a{text-decoration:none;font-size:.75em}
+ol.sources li{margin:.35em 0;font-size:14px}
+ol.sources .used{color:var(--muted)}
+.pagenav{display:flex;justify-content:space-between;gap:12px;margin-top:48px;flex-wrap:wrap}
+.pagenav a{flex:1 1 240px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;text-decoration:none}
+.pagenav a span{display:block;font-size:12px;color:var(--muted)}
+.pagenav a.next{text-align:right}
+dfn{font-style:normal;border-bottom:1px dotted var(--muted)}
+a.g{color:inherit;text-decoration:none;border-bottom:1px dotted var(--muted)} /* glossary link */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600}
+footer.foot{max-width:1180px;margin:0 auto;padding:16px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+/* ===== end shared style ===== */
+/* page-specific styles below */
+.eq{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:14px/1.7 var(--mono);overflow-x:auto;max-width:86ch}
+.tree{font-size:14px;line-height:1.5}
+.tree ul{list-style:none;margin:0;padding-left:16px;border-left:1px dashed var(--line)}
+.tree > ul{padding-left:0;border-left:0}
+.tree li{max-width:none;margin:2px 0}
+.tree .node{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.jbtn{font:12px/1.2 var(--mono);padding:3px 7px;margin:1px 0}
+.jbtn.sel{border-color:var(--accent2);color:var(--accent2)}
+.jbtn.locked{opacity:.45;text-decoration:line-through}
+.treegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.jinfo{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-top:10px}
+.jinfo h5{margin:0 0 4px;font-size:15px;color:var(--accent2)}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (max-width:820px){.three{grid-template-columns:1fr}}
+.three figure{margin:0;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px}
+.three figcaption{font-size:13px;text-align:center;color:var(--muted)}
+.three figcaption b{color:var(--text)}
+.count{font:700 28px/1.1 var(--mono);color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">Marvin Bot guide</a>
+  <span class="chip stage">Stage 1 · Foundations</span>
+  <nav><a href="../../">Project home</a><a href="../../overview/">Docs</a><a href="../index.html">Guide map</a><a href="../glossary.html">Glossary</a><a href="../sources.html">Sources</a></nav>
+</div></header>
+
+<main>
+<p class="chip">Playground 01</p>
+<h1>Degrees of freedom and kinematic chains</h1>
+<p class="lede">A humanoid is a tree of hinges. Before you can reason about balance, torque or learning, you need to know what each hinge can do, how hinges add up along a leg, and why Marvin Bot has exactly 27 of them in the order it does.</p>
+<div class="meta"><span class="chip">~30 min</span><span class="chip">Before this: nothing (start here, or see the <a href="../index.html">map</a>)</span><span class="chip">Maths: angles, sine and cosine</span></div>
+
+<div class="callout"><b>You will learn</b>
+<ul>
+<li>What a <a class="g" href="../glossary.html#degree-of-freedom">degree of freedom</a> is, and how revolute joints chain into a leg.</li>
+<li>How to compute where a foot ends up from the joint angles (<a class="g" href="../glossary.html#forward-kinematics">forward kinematics</a>), first in 2-D, then in 3-D.</li>
+<li>Why each leg needs six joints, what joint ranges cost and buy, and why Marvin Bot's hip goes roll, then pitch, then yaw.</li>
+</ul></div>
+
+<h2 id="idea">The idea in one picture</h2>
+<p>Hold your arm out and bend only the elbow: your hand moves along an arc. One number, the elbow angle, says where it is. That number is one <b>degree of freedom (DOF)</b>: one independent quantity you need to describe a configuration.<sup class="cite"><a href="#s1">[1]</a></sup> Each of Marvin Bot's motors turns one hinge, a <a class="g" href="../glossary.html#revolute-joint">revolute joint</a>, so each motor adds one DOF.</p>
+<p>Three words for turning come up on every page of this guide. Use your own head: nodding "yes" is <b>pitch</b> (about a side-to-side axis), shaking "no" is <b>yaw</b> (about a vertical axis), and tipping an ear towards a shoulder is <b>roll</b> (about a front-to-back axis). A hip pitch joint swings the thigh forwards and back; a hip roll joint swings it out to the side; a hip yaw joint turns the leg about its own length, so the toes point in or out.</p>
+<p>A leg is hinges in series: pelvis, hip, thigh, knee, shin, ankle, foot. That is a <a class="g" href="../glossary.html#kinematic-chain">serial kinematic chain</a>: each link is carried by the one before it, so turning the hip moves everything below it. The playground below is a side view of Marvin Bot's leg with its real lengths and its real joint limits.</p>
+<p><b>Why this comes first.</b> Every later page leans on it: balance (page 02) needs to know where the feet and body are, motor sizing (page 04) needs to know which joint carries which load, and the learned controller (page 16) outputs one target angle per joint, 27 of them.</p>
+
+<h2 id="play">Playground A: a planar leg</h2>
+<p><b>Start here:</b> press <b>Marvin Bot today</b>, then drag the three sliders one at a time and watch which parts of the leg move. Side view (the <a class="g" href="../glossary.html#sagittal-plane">sagittal plane</a>, the vertical front-to-back plane you see when looking at someone from the side): x forward, z up, the hip pitch axis at the origin. Thigh 0.325 m, shin 0.315 m, ankle axis 0.060 m above the sole, foot 0.24 m long with the ankle 0.09 m from the heel (<code>description/robot.yaml</code>, <code>description/skeleton.yaml</code>).</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-preset="stance">Marvin Bot today (stance)</button>
+      <button data-preset="straight">Straight</button>
+      <button data-preset="stair">Foot on an 18 cm stair</button>
+      <button data-preset="sit">Sitting</button>
+      <button data-preset="kick">Kick back</button>
+    </div>
+    <h4>Joint angles</h4>
+    <div class="ctl"><label>Hip pitch <output id="o_hip"></output></label>
+      <input type="range" id="hip" min="-30" max="120" step="1" value="6">
+      <div class="hint">+ = thigh forward (flexion). Range −30° to 120°.</div></div>
+    <div class="ctl"><label>Knee <output id="o_knee"></output></label>
+      <input type="range" id="knee" min="0" max="130" step="1" value="15">
+      <div class="hint">+ = bend. Range 0° to 130° (beyond it the upper ankle motor meets the thigh shell).</div></div>
+    <div class="ctl"><label>Ankle pitch <output id="o_ankle"></output></label>
+      <input type="range" id="ankle" min="-40" max="40" step="1" value="9">
+      <div class="hint">+ = toes up (dorsiflexion). Range ±40°.</div></div>
+    <h4>Show</h4>
+    <div class="ctl"><label><span><input type="checkbox" id="cloud" checked> Reachable ankle positions</span></label>
+      <div class="hint">Each dot is one place the ankle can reach (every hip and knee angle in range, 3° apart). Green: the ankle joint can still turn the foot flat on the floor. Grey: it would need more than ±40°.</div></div>
+    <div class="ctl"><label><span><input type="checkbox" id="flat"> Keep the foot flat (ankle follows)</span></label>
+      <div class="hint">Sets ankle = knee − hip, the rule for a flat foot under an upright pelvis.</div></div>
+  </div>
+  <div class="preview">
+    <svg id="legview" viewBox="0 0 600 470" role="img" aria-label="Side view of a three-link leg with hip, knee and ankle joints and a cloud of reachable ankle positions"></svg>
+    <div class="readouts">
+      <div class="ro" id="r_ank"><div class="k">Ankle from hip (x, z)</div><div class="v">–</div></div>
+      <div class="ro" id="r_h"><div class="k">Hip axis above sole</div><div class="v">–</div></div>
+      <div class="ro" id="r_pitch"><div class="k">Foot pitch (toe up +)</div><div class="v">–</div></div>
+      <div class="ro" id="r_reach"><div class="k">Hip–ankle distance</div><div class="v">–</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>thigh</span><span><i style="background:var(--violet)"></i>shin</span><span><i style="background:var(--accent2)"></i>foot</span><span><i style="background:var(--good)"></i>ankle can reach, foot flat possible</span><span><i style="background:#56606c"></i>ankle can reach, foot cannot lie flat</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b>
+<ol>
+<li>Press <b>Marvin Bot today</b>. The readout should say the hip is 0.694 m above the sole, the pelvis height in <code>robot.yaml</code>. Check it by hand: 0.325·cos 6° + 0.315·cos 9° + 0.060 = 0.694 m.</li>
+<li>Tick <b>Keep the foot flat</b> and push the hip to 60°. Where does the ankle run out of range? The grey part of the cloud is every place the ankle could reach but the foot could not lie flat there.</li>
+<li>Untick <b>Keep the foot flat</b>, set the knee to 0° and sweep the hip. The ankle draws a circle of radius 0.64 m: one DOF, one curve. Now free the knee: two DOF fill an area. The third joint (ankle) adds no new position, only the foot's angle.</li>
+</ol></div>
+
+<h2 id="principles">From first principles</h2>
+<h3>Degrees of freedom</h3>
+<p>A rigid body floating in space has 6 DOF: three to say where it is (x, y, z) and three to say which way it faces (roll, pitch, yaw). A revolute joint removes 5 of the 6 relative freedoms between two links and leaves 1, the rotation about its axis. So a chain of n revolute joints from a fixed base has n DOF.<sup class="cite"><a href="#s1">[1]</a></sup> Counting joints this way is the simplest case of a general counting rule (Grübler's formula); it only becomes subtle for closed loops, such as Marvin Bot's ankle, where two motors and two push rods together still give the foot 2 DOF (see <a href="06-ankle-linkage.html">06 The parallel-linkage ankle</a>).</p>
+<p>A walking robot is not bolted down. Its pelvis is a <a class="g" href="../glossary.html#floating-base">floating base</a> with 6 DOF of its own that no motor drives directly: the robot moves its pelvis only by pushing on the ground. That is why legged robots are called <a class="g" href="../glossary.html#underactuation">underactuated</a>: there are more DOF (27 + 6 = 33 for Marvin Bot's body) than motors (27).<sup class="cite"><a href="#s2">[2]</a></sup></p>
+
+<h3>Forward kinematics in 2-D</h3>
+<p>Forward kinematics answers: given the joint angles, where is the foot? The equations below are just the playground's picture written as sums of sines and cosines; you can skip them and come back. In the side view, measure each link's angle from straight down, positive when its lower end swings forward. With hip pitch q<sub>h</sub>, knee q<sub>k</sub> (bend positive) and ankle q<sub>a</sub> (toes up positive):</p>
+<div class="eq">φ<sub>thigh</sub> = q<sub>h</sub> &nbsp;&nbsp; φ<sub>shin</sub> = q<sub>h</sub> − q<sub>k</sub> &nbsp;&nbsp; φ<sub>foot</sub> = q<sub>h</sub> − q<sub>k</sub> + q<sub>a</sub><br>
+knee = hip + L<sub>1</sub>·(sin φ<sub>thigh</sub>, −cos φ<sub>thigh</sub>)<br>
+ankle = knee + L<sub>2</sub>·(sin φ<sub>shin</sub>, −cos φ<sub>shin</sub>)<br>
+sole point = ankle + R(φ<sub>foot</sub>)·(0, −h<sub>a</sub>)</div>
+<p>φ (phi) is each link's tilt from vertical, so (sin φ, −cos φ) is a step of length 1 along that link: forward by sin φ, down by cos φ. L<sub>1</sub> = 0.325 m (thigh), L<sub>2</sub> = 0.315 m (shin), h<sub>a</sub> = 0.060 m (ankle axis to sole), R(φ) turns a point by φ in the plane, and φ<sub>foot</sub> is the foot's pitch (toe up positive). Angles add along the chain because each joint turns everything after it. The foot is flat when φ<sub>foot</sub> = 0, so with an upright pelvis a flat foot needs q<sub>a</sub> = q<sub>k</sub> − q<sub>h</sub>. At the stance (6°, 15°, 9°) that holds exactly: 15 − 6 = 9.</p>
+
+<h3>Forward kinematics in 3-D</h3>
+<p>In 3-D the idea is the same, done one joint at a time from the pelvis down: turn by the first joint's angle, step along to the next joint, turn by its angle, step again, and so on to the sole. Order matters, because turns about different axes do not commute: try it with a book. Tip it forwards 90° then turn it 90° to the left, and compare with doing the two turns the other way round; it ends up facing a different way. The same is true of a leg: rolling then pitching leaves the foot somewhere different from pitching then rolling.</p>
+<details><summary>Go deeper: the matrix form</summary>
+<p>Each joint's turn is written as a 3 × 3 rotation matrix (or a 4 × 4 transform that also carries the offset to the next joint). The foot's pose is the product of all the transforms from the pelvis down: T<sub>foot</sub> = T<sub>1</sub>(q<sub>1</sub>) T<sub>2</sub>(q<sub>2</sub>) … T<sub>6</sub>(q<sub>6</sub>) T<sub>sole</sub>, where q<sub>1</sub> … q<sub>6</sub> are the six joint angles. Matrix products, like turns, depend on order. Robotics texts write the same product either with Denavit–Hartenberg parameters<sup class="cite"><a href="#s4">[4]</a></sup> or as a product of matrix exponentials; Modern Robotics uses the latter.<sup class="cite"><a href="#s1">[1]</a></sup></p></details>
+<p>Marvin Bot's description lists each joint's axis and offset (<code>description/skeleton.yaml</code>), and a generator script turns them into a <a class="g" href="../glossary.html#urdf">URDF</a> (Unified Robot Description Format) file, the standard file simulators read, which holds exactly this chain (page 13).</p>
+
+<h3>Why six joints per leg</h3>
+<p>A foot on the ground has a full 3-D pose: 3 positions and 3 angles. To place a foot anywhere within reach, at any heading and tilt, the leg needs at least 6 independent DOF between pelvis and sole. Marvin Bot uses 3 at the hip (roll, pitch, yaw), 1 at the knee and 2 at the ankle (pitch, roll). With fewer, some foot poses become impossible: drop the hip yaw and the robot can only turn by scuffing; drop the ankle roll and the foot cannot sit flat on a sideways slope. <a class="g" href="../glossary.html#inverse-kinematics">Inverse kinematics</a> (from a desired foot pose back to joint angles) has a finite set of answers when there are exactly 6 joints, and none outside the <a class="g" href="../glossary.html#workspace">workspace</a> or the joint ranges.</p>
+
+<h3>Joint ranges</h3>
+<p>A real joint stops where parts collide or a cable runs out. Ranges are design decisions: Marvin Bot's knee stops at 130° because the upper ankle motor then meets the thigh shell, hip extension stops at −30° because the thigh yoke meets the hip roll motor, and the ankle got 40° of dorsiflexion (toes up) because a stair check (a calculation of the robot standing still on a step) could not climb 17 cm with 35° (<code>docs/decisions.md</code>, 2026-10-26). In the playground, the grey part of the cloud is the price of the ankle's ±40°: places the ankle reaches but where the foot cannot lie flat.</p>
+
+<h3>Singularities and the order of the hip joints</h3>
+<p>Three hip joints whose axes meet near one point act like a ball joint built from three hinges: a gimbal (like the rings that hold a ship's compass level). When two of the three axes line up, the gimbal loses a direction it can turn in. That is a <a class="g" href="../glossary.html#singularity">singularity</a> (gimbal lock): one motor's rotation duplicates another's, and small turns in the lost direction need huge joint speeds.<sup class="cite"><a href="#s1">[1]</a></sup> Which pose is singular depends on the order of the axes:</p>
+<ul>
+<li><b>Roll, pitch, yaw</b> (Marvin Bot): singular at hip pitch ±90°, when the yaw axis along the thigh points forward, parallel to the roll axis. Reached when sitting or on a very high step.</li>
+<li><b>Pitch, roll, yaw</b>: singular at hip roll ±90°, far outside any useful range.</li>
+<li><b>Yaw, roll, pitch</b>: singular at hip roll ±90°, also far outside the range.</li>
+</ul>
+<p>The singularity analysis above is ours, derived from the axis order; the repo chose the order for mechanical reasons (next section). Playground C shows it.</p>
+
+<h2 id="joints">Playground B: Marvin Bot's 27 joints</h2>
+<p>The tree lists every joint from the pelvis outwards: each joint is carried by the one above it. Click a joint to see its axis, range, <a class="g" href="../glossary.html#actuator">actuator</a> (motor) and bus (the shared data cable its motor talks over; page 10). Shift-click (or use the lock button) to lock a joint, as if it were welded solid, and watch the DOF count, and whether each foot can still be placed at any position and any angle within reach ("posed in 6-D": 3 positions plus 3 angles).</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Degrees of freedom</h4>
+    <div class="count" id="dofcount">27</div>
+    <div class="hint" id="dofsplit"></div>
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-tp="all">Marvin Bot today (27)</button>
+      <button data-tp="legs">Legs only (12)</button>
+      <button data-tp="noyaw">No hip yaw</button>
+      <button data-tp="fixed">Fixed-base arm view</button>
+    </div>
+    <div class="jinfo" id="jinfo">Select a joint.</div>
+    <div style="margin-top:8px"><button id="lockbtn">Lock / unlock selected</button></div>
+  </div>
+  <div class="preview">
+    <div class="treegrid tree" id="tree"></div>
+    <svg id="body" viewBox="0 0 400 300" role="img" aria-label="Front view stick figure of Marvin Bot with the selected joint highlighted" style="margin-top:10px;max-height:340px"></svg>
+  </div>
+</div>
+<div class="callout"><b>Try this</b> Click <b>hip_yaw</b> under the left leg, then <b>Lock / unlock selected</b>: the count drops to 26 and the left foot can no longer be posed in all 6 directions. Lock both wrist yaws: the legs still pose fine, but each hand loses a way to turn. Press <b>Fixed-base arm view</b> to see how a bolted-down robot would be counted.</div>
+
+<h2 id="hiporder">Playground C: the same three angles, three hip orders</h2>
+<p>Three hips side by side, each given the same roll, pitch and yaw angles, but stacked in a different order from the pelvis. The thick line is the straight leg (hip to sole), the short orange line is the toe direction, and the coloured lines are the three joint axes (red roll, green pitch, blue yaw) where they sit in this pose. "Axis spread" says how well the three axes still point in three different directions: 1 when they are all at right angles to each other (good), 0 when two have lined up (gimbal lock, bad). For the mathematically minded it is |det[a<sub>1</sub> a<sub>2</sub> a<sub>3</sub>]|, the volume of the box the three unit axes span.</p>
+<p class="hint">How to read this picture: each panel is a 3-D sketch seen from the front-left, pelvis at the top, the grey square is the floor. Compare where the orange toe line points in the three panels.</p>
+<div class="pg">
+  <div class="controls">
+    <h4>Presets</h4>
+    <div class="presets">
+      <button data-hp="zero">Standing</button>
+      <button data-hp="step">Step and turn</button>
+      <button data-hp="sit">Sitting (90° pitch)</button>
+      <button data-hp="splay">Wide stance</button>
+    </div>
+    <h4>Hip angles</h4>
+    <div class="ctl"><label>Roll <output id="o_hr"></output></label><input type="range" id="hr" min="-30" max="45" step="1" value="0"><div class="hint">+ = leg away from the midline (left leg shown).</div></div>
+    <div class="ctl"><label>Pitch <output id="o_hpch"></output></label><input type="range" id="hpch" min="-30" max="120" step="1" value="0"><div class="hint">+ = thigh forward.</div></div>
+    <div class="ctl"><label>Yaw <output id="o_hy"></output></label><input type="range" id="hy" min="-90" max="90" step="1" value="0"><div class="hint">+ = toes turn in.</div></div>
+  </div>
+  <div class="preview">
+    <div class="three" id="three"></div>
+    <div class="legend"><span><i style="background:#ff6b6b"></i>roll axis</span><span><i style="background:#4cc38a"></i>pitch axis</span><span><i style="background:#4fb3ff"></i>yaw axis</span><span><i style="background:var(--accent2)"></i>toe direction</span></div>
+  </div>
+</div>
+<div class="callout"><b>Try this</b> Press <b>Sitting</b>: the roll-first hip's axis spread falls to 0 (red and blue axes parallel), the others stay at 1. Then add 20° of yaw and compare where each toe points: same numbers, different feet, because rotations do not commute.</div>
+
+<h2 id="marvin">How Marvin Bot does it</h2>
+<div class="callout marvin"><b>In the repo</b>
+<ul>
+<li>27 powered joints (<code>description/robot.yaml</code>): 6 per leg, waist yaw, neck yaw and pitch, 6 per arm. Plus two bought 8-servo four-finger hands (AmazingHand kits), counted separately.</li>
+<li>Per leg: hip pitch −30…120°, hip roll −30…45°, hip yaw ±90°, knee 0…130°, ankle pitch ±40°, ankle roll ±20°. The ankle's two joints are driven together by two RS03 motors through push rods.<sup class="cite"><a href="#s3">[3]</a></sup></li>
+<li>Hip order from the pelvis: roll, then pitch, then yaw (<code>description/skeleton.yaml</code>, decision "roll-first hip", 2026-10-26).</li>
+<li>Leg geometry: hip axis to sole 0.700 m, thigh 0.325 m, shin 0.315 m, ankle 0.060 m, foot 0.240 × 0.110 m, hips 0.200 m apart. Default stance hip 6°, knee 15°, ankle 9°: pelvis 0.694 m.</li>
+<li>One shoulder limit depends on another joint: shoulder roll may go below 0° only with the arm swung forward (a piecewise-linear "coupled limit" in <code>robot.yaml</code>).</li>
+</ul></div>
+<p><b>Why roll first.</b> The hip used to be pitch, roll, yaw. Then the hip roll motor (an RS04, 1.42 kg) rode on the leg behind the hip and swung with every step; it also stopped the knee at 125°. With roll first, both roll motors are fixed in the pelvis behind the hips, so 1.4 kg per leg stops swinging, and the knee now reaches 130° (<code>docs/decisions.md</code>, 2026-10-26). Less moving mass in a leg means less torque to swing it and a lighter-feeling leg for the <a class="g" href="../glossary.html#policy">policy</a> (the learned controller that walks the robot, page 16).</p>
+<p><b>Why not yaw first.</b> A yaw-roll-pitch stack with the yaw motor in the pelvis was ruled out because it needs about 60 mm more height above the hips, which at the time pushed past the height limit or below the leg length the stairs need (same entry).</p>
+
+<h2 id="tradeoffs">Trade-offs and alternatives</h2>
+<div class="tablewrap"><table>
+<tr><th>Hip order (from pelvis)</th><th>What stays still</th><th>Singular at</th><th>Notes</th></tr>
+<tr><td>Roll, pitch, yaw (Marvin Bot)</td><td>Both roll motors in the pelvis</td><td>Hip pitch ±90° (sitting)</td><td>1.4 kg less swinging per leg; knee to 130°; the singularity is inside the hip pitch range, so sitting poses lose one way to turn the thigh</td></tr>
+<tr><td>Pitch, roll, yaw (Marvin Bot until 2026-10-26)</td><td>Pitch motors</td><td>Hip roll ±90° (unused)</td><td>Deep flexion is clean; the roll motor swings with the leg</td></tr>
+<tr><td>Yaw, roll, pitch</td><td>Yaw motors in the pelvis</td><td>Hip roll ±90° (unused)</td><td>Common in open humanoids; ~60 mm more stack height above the hip</td></tr>
+</table></div>
+<p>Other DOF choices the repo records: a knee motor near the hip with a linkage (lower leg inertia, more parts; deferred), serial ankle pitch and roll motors (heavier shin; rejected in favour of the parallel linkage), and the arm's wrist pitch on a small servo to carry the bought hands (<code>docs/decisions.md</code>).</p>
+
+<div class="callout disagree"><b>Where sources and the repo disagree</b> No disagreement with the sources on the kinematics. Two notes: the repo's decision text does not mention the roll-first hip's singularity at 90° hip pitch (it is a mechanical decision); and older entries in <code>docs/decisions.md</code> still describe pitch-roll-yaw and 0.65–0.69 m legs, superseded by later entries.</div>
+
+<h2 id="decisions">Decisions you can make here</h2>
+<ul>
+<li>Joint ranges: each extra degree of range may need a different bracket, and each lost degree may make a task (stairs, sitting, getting up) impossible. Check the green and grey regions before cutting a range.</li>
+<li>Hip order: roll-first keeps mass off the leg but has a singularity at 90° hip pitch; check that tasks like sitting or climbing very high steps do not need to turn the thigh about its long axis at that pose.</li>
+<li>DOF count: removing a joint saves an actuator (~$140–255 and 0.3–1.4 kg) but removes a direction of motion; the 6-per-leg minimum is not negotiable for full foot placement.</li>
+</ul>
+<div class="notebar"><b>Your decision note</b><button id="copy">Copy</button></div>
+<div class="note" id="note"></div>
+<p class="hint" style="color:var(--muted);font-size:13px">Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.</p>
+
+<p><b>Where this leads.</b> You now know where the feet are for given joint angles. Page 02 asks the next question: with the feet there, where must the body's weight be so the robot does not fall over? Page 06 returns to the ankle's two-motor linkage.</p>
+
+<h2 id="reading">Further reading</h2>
+<ul>
+<li><a href="https://hades.mech.northwestern.edu/index.php/Modern_Robotics">Lynch &amp; Park, Modern Robotics</a>: chapters 2 (configuration space and DOF), 4 (forward kinematics) and 5 (Jacobians and singularities); free preprint and videos.</li>
+<li><a href="https://underactuated.mit.edu/humanoids.html">Tedrake, Underactuated Robotics, "Humanoid robots"</a>: why a floating base makes walking robots underactuated.</li>
+<li><code>description/skeleton.yaml</code> in the repo: every joint's parent, offset and axis, in a form you can read.</li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+<ol class="sources">
+  <li id="s1"><a href="https://hades.mech.northwestern.edu/images/2/25/MR-v2.pdf">K. M. Lynch and F. C. Park, Modern Robotics: Mechanics, Planning, and Control, Cambridge University Press, 2017 (preprint)</a> <span class="used">— used for: DOF definition and Grübler's formula (ch. 2), forward kinematics as a product of transforms (ch. 4), singularities (ch. 5).</span></li>
+  <li id="s2"><a href="https://underactuated.mit.edu/humanoids.html">R. Tedrake, Underactuated Robotics, MIT 6.832 course notes, chapter "Humanoid robots"</a> <span class="used">— used for: floating base and why legged robots are underactuated.</span></li>
+  <li id="s3"><a href="https://github.com/RobStride/Product_Information">RobStride, Product_Information (actuator manuals)</a> <span class="used">— used for: actuator models named in the joint tree.</span></li>
+  <li id="s4"><a href="https://doi.org/10.1115/1.4011045">J. Denavit and R. S. Hartenberg, "A kinematic notation for lower-pair mechanisms based on matrices", J. Applied Mechanics, 1955</a> <span class="used">— used for: the classic joint-parameter convention for serial chains.</span></li>
+</ol>
+
+<nav class="pagenav">
+  <a class="prev" href="00-3d-model.html"><span>← Previous</span>00 Marvin Bot in 3-D</a>
+  <a class="next" href="02-balance.html"><span>Next →</span>Balance: centre of mass, support polygon, ZMP and capture point</a>
+</nav>
+</main>
+<footer class="foot">Marvin Bot guide · part of the <a href="../../">Marvin Bot documentation</a> · Apache-2.0 · simulation-stage project; numbers from the project repository as of 2026-10-29 · <a href="../sources.html">all sources</a></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const D2R = Math.PI/180;
+const L1=0.325, L2=0.315, HA=0.060, TOE=0.15, HEEL=0.09;
+// ---------- Playground A ----------
+const DEFAULTS = {hip:6, knee:15, ankle:9, cloud:true, flat:false};
+const state = {...DEFAULTS};
+const PRESETS = {
+  stance:{hip:6,knee:15,ankle:9,flat:false},
+  straight:{hip:0,knee:0,ankle:0,flat:false},
+  stair:{hip:52,knee:66,ankle:14,flat:false},
+  sit:{hip:90,knee:90,ankle:0,flat:false},
+  kick:{hip:-25,knee:100,ankle:-30,flat:false}
+};
+function fk(h,k,a){
+  const t=h*D2R, s=(h-k)*D2R, f=(h-k+a)*D2R;
+  const knee=[L1*Math.sin(t), -L1*Math.cos(t)];
+  const ank=[knee[0]+L2*Math.sin(s), knee[1]-L2*Math.cos(s)];
+  const R=(p)=>[ank[0]+p[0]*Math.cos(f)-p[1]*Math.sin(f), ank[1]+p[0]*Math.sin(f)+p[1]*Math.cos(f)];
+  return {knee, ank, sole:R([0,-HA]), toe:R([TOE,-HA]), heel:R([-HEEL,-HA]), f:h-k+a};
+}
+const SC=300, OX=300, OY=200;
+const X=x=>OX+x*SC, Y=z=>OY-z*SC;
+let cloudSvg='';
+(function(){ const pts=[];
+  for(let h=-30;h<=120;h+=3) for(let k=0;k<=130;k+=3){ const p=fk(h,k,0).ank; const ok=Math.abs(k-h)<=40;
+    pts.push(`<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="1.6" fill="${ok?'#4cc38a':'#56606c'}" opacity="${ok?0.55:0.5}"/>`); }
+  cloudSvg=pts.join(''); })();
+function renderLeg(){
+  if(state.flat){ const a=Math.max(-40,Math.min(40,state.knee-state.hip)); state.ankle=a; $('ankle').value=a; $('o_ankle').textContent=a+'°'; }
+  const r=fk(state.hip,state.knee,state.ankle);
+  let s='';
+  // grid
+  for(let gx=-0.6;gx<=0.61;gx+=0.2) s+=`<line x1="${X(gx)}" y1="20" x2="${X(gx)}" y2="460" stroke="#1d252f"/>`;
+  for(let gz=-0.8;gz<=0.61;gz+=0.2) s+=`<line x1="10" y1="${Y(gz)}" x2="590" y2="${Y(gz)}" stroke="#1d252f"/>`;
+  s+=`<text x="${X(0.6)-4}" y="${Y(0)-4}" fill="#6b7785" font-size="11" text-anchor="end">x forward →</text><text x="${X(0)+4}" y="30" fill="#6b7785" font-size="11">z up</text>`;
+  // standing floor (stance sole)
+  s+=`<line x1="10" y1="${Y(-0.694)}" x2="590" y2="${Y(-0.694)}" stroke="#3a4552" stroke-dasharray="6 5"/><text x="14" y="${Y(-0.694)-5}" fill="#6b7785" font-size="11">floor in the stance (0.694 m below the hip)</text>`;
+  if(state.cloud) s+=cloudSvg;
+  // pelvis
+  s+=`<rect x="${X(-0.07)}" y="${Y(0.09)}" width="${0.14*SC}" height="${0.12*SC}" rx="8" fill="#232c37" stroke="#3a4552"/>`;
+  const seg=(a,b,c,w)=>`<line x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+  s+=seg([0,0],r.knee,'#4fb3ff',10)+seg(r.knee,r.ank,'#b48cff',9);
+  s+=`<polygon points="${[r.ank,r.toe,r.heel].map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="#ffb45433" stroke="#ffb454" stroke-width="2"/>`;
+  s+=seg(r.heel,r.toe,'#ffb454',5);
+  for(const [p,n] of [[[0,0],'hip'],[r.knee,'knee'],[r.ank,'ankle']]) s+=`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="6" fill="#0c1015" stroke="#e6edf3" stroke-width="2"/><text x="${X(p[0])+10}" y="${Y(p[1])-8}" fill="#e6edf3" font-size="12">${n}</text>`;
+  s+=`<circle cx="${X(r.sole[0])}" cy="${Y(r.sole[1])}" r="3" fill="#ffb454"/>`;
+  $('legview').innerHTML=s;
+  $('r_ank').querySelector('.v').textContent=`${r.ank[0].toFixed(3)}, ${r.ank[1].toFixed(3)} m`;
+  $('r_h').querySelector('.v').textContent=`${(-r.sole[1]).toFixed(3)} m`;
+  const pr=$('r_pitch'); pr.querySelector('.v').textContent=`${r.f.toFixed(0)}°`; pr.className='ro '+(Math.abs(r.f)<1?'ok':Math.abs(r.f)<10?'warn':'');
+  $('r_reach').querySelector('.v').textContent=`${Math.hypot(r.ank[0],r.ank[1]).toFixed(3)} m`;
+}
+function bind(id){ const el=$(id), out=$('o_'+id);
+  el.addEventListener('input',()=>{ state[id]=parseFloat(el.value); if(id==='ankle') {state.flat=false;$('flat').checked=false;} if(out) out.textContent=el.value+'°'; renderAll(); });
+  if(out) out.textContent=el.value+'°'; }
+['hip','knee','ankle'].forEach(bind);
+$('cloud').addEventListener('change',e=>{state.cloud=e.target.checked;renderAll();});
+$('flat').addEventListener('change',e=>{state.flat=e.target.checked;renderAll();});
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{ const p=PRESETS[b.dataset.preset]; Object.assign(state,p);
+  for(const k of ['hip','knee','ankle']){ $(k).value=p[k]; $('o_'+k).textContent=p[k]+'°'; } $('flat').checked=p.flat; renderAll(); }));
+
+// ---------- Playground B ----------
+const BUS_NOTE={hip:'CAN, 500 Hz', shank:'CAN, 500 Hz', arm:'CAN, 250 Hz', servo:'Feetech serial bus, 12 V'};
+const J=[]; // name, group, axis, range, actuator, bus, pos (front view x,z)
+function addLeg(side,sx){ const S=side[0].toUpperCase()+side.slice(1);
+  J.push({n:`${side}_hip_roll`,g:`${S} leg`,ax:'roll (x)',r:'−30° … 45°',act:'RS04',bus:`${side}_hip`,p:[sx*0.1,0.70],d:'First hip joint; motor fixed in the pelvis behind the hip.'});
+  J.push({n:`${side}_hip_pitch`,g:`${S} leg`,ax:'pitch (y)',r:'−30° … 120°',act:'RS04',bus:`${side}_hip`,p:[sx*0.1,0.70],d:'Carried by the roll bracket; the thigh hangs from it.'});
+  J.push({n:`${side}_hip_yaw`,g:`${S} leg`,ax:'yaw (along thigh)',r:'−90° … 90°',act:'RS03',bus:`${side}_hip`,p:[sx*0.1,0.53],d:'Motor at the top of the thigh; turns the leg about its long axis.'});
+  J.push({n:`${side}_knee`,g:`${S} leg`,ax:'pitch (y)',r:'0° … 130°',act:'RS04',bus:`${side}_shank`,p:[sx*0.1,0.375],d:'Motor at the knee. The joint that heats up on slow stairs (page 05).'});
+  J.push({n:`${side}_ankle_pitch`,g:`${S} leg`,ax:'pitch (y)',r:'−40° … 40°',act:'2 × RS03 via push rods (shared with ankle roll)',bus:`${side}_shank`,p:[sx*0.1,0.06],d:'Parallel linkage: both calf motors move together for pitch.'});
+  J.push({n:`${side}_ankle_roll`,g:`${S} leg`,ax:'roll (x)',r:'−20° … 20°',act:'2 × RS03 via push rods (shared with ankle pitch)',bus:`${side}_shank`,p:[sx*0.1,0.06],d:'Parallel linkage: the two calf motors move in opposite directions for roll.'});
+}
+function addArm(side,sx){ const S=side[0].toUpperCase()+side.slice(1);
+  J.push({n:`${side}_shoulder_pitch`,g:`${S} arm`,ax:'pitch (y)',r:'−60° … 180°',act:'RS03',bus:`${side}_arm`,p:[sx*0.11,1.165],d:'Swings the arm forward and back.'});
+  J.push({n:`${side}_shoulder_roll`,g:`${S} arm`,ax:'roll (x)',r:'−20° … 120° (below 0° only with the arm forward)',act:'RS03',bus:`${side}_arm`,p:[sx*0.158,1.14],d:'Coupled limit: its minimum depends on shoulder pitch.'});
+  J.push({n:`${side}_shoulder_yaw`,g:`${S} arm`,ax:'yaw (along upper arm)',r:'−150° … 150°',act:'RS06',bus:`${side}_arm`,p:[sx*0.158,1.055],d:''});
+  J.push({n:`${side}_elbow`,g:`${S} arm`,ax:'pitch (y)',r:'0° … 135°',act:'RS06',bus:`${side}_arm`,p:[sx*0.158,0.94],d:''});
+  J.push({n:`${side}_wrist_yaw`,g:`${S} arm`,ax:'yaw (along forearm)',r:'−90° … 90°',act:'RS00',bus:`${side}_arm`,p:[sx*0.158,0.815],d:''});
+  J.push({n:`${side}_wrist_pitch`,g:`${S} arm`,ax:'pitch (y)',r:'−60° … 60°',act:'STS3250 servo',bus:'servo',p:[sx*0.158,0.752],d:'Carries the bought four-finger hand (its 8 finger servos are not counted in the 27).'});
+}
+addLeg('left',1); addLeg('right',-1);
+J.push({n:'waist_yaw',g:'Torso and head',ax:'yaw (z)',r:'−150° … 150°',act:'RS03',bus:'right_arm',p:[0,0.815],d:'Shares the right arm bus (5 + 1 motors, 48% load in the repo’s estimate).'});
+J.push({n:'neck_yaw',g:'Torso and head',ax:'yaw (z)',r:'−60° … 60°',act:'STS3250 servo',bus:'servo',p:[0,1.225],d:''});
+J.push({n:'neck_pitch',g:'Torso and head',ax:'pitch (y)',r:'−20° … 40° (+ = look down)',act:'STS3250 servo',bus:'servo',p:[0,1.26],d:''});
+addArm('left',1); addArm('right',-1);
+const tstate={sel:'left_knee', locked:new Set()};
+const TP={all:[], legs:J.filter(j=>!/(hip|knee|ankle)/.test(j.n)).map(j=>j.n), noyaw:['left_hip_yaw','right_hip_yaw'], fixed:J.filter(j=>/(hip|knee|ankle)/.test(j.n)).map(j=>j.n)};
+let tpName='all';
+function renderTree(){
+  const groups={}; J.forEach(j=>(groups[j.g]=groups[j.g]||[]).push(j));
+  let h='';
+  for(const g of ['Left leg','Right leg','Torso and head','Left arm','Right arm']){
+    h+=`<div><div class="node">pelvis → ${g.toLowerCase()}</div><ul>`;
+    // render as nested chain
+    let open=0;
+    groups[g].forEach((j,i)=>{ if(g==='Torso and head' && i===1){ h+='<li><span class="node">torso → neck</span><ul>'; open++; }
+      h+=`<li><button class="btn jbtn ${tstate.sel===j.n?'sel':''} ${tstate.locked.has(j.n)?'locked':''}" data-j="${j.n}">${j.n.replace(/^(left|right)_/,'')}</button>`;
+      if(g!=='Torso and head' && i<groups[g].length-1){ h+='<ul>'; open++; } else h+='</li>'; });
+    h+='</li></ul>'.repeat(open)+'</ul></div>';
+  }
+  $('tree').innerHTML=h;
+  $('tree').querySelectorAll('[data-j]').forEach(b=>b.addEventListener('click',e=>{ const n=b.dataset.j; if(e.shiftKey){ toggleLock(n);} tstate.sel=n; renderTree(); }));
+  const j=J.find(x=>x.n===tstate.sel);
+  $('jinfo').innerHTML=`<h5>${j.n}</h5><div>Axis: <b>${j.ax}</b></div><div>Range: <b>${j.r}</b></div><div>Actuator: <b>${j.act}</b></div><div>Bus: <b>${j.bus}</b> (${BUS_NOTE[j.bus.replace(/^(left|right)_/,'')]||'CAN'})</div>${j.d?`<div class="hint" style="margin-top:4px">${j.d}</div>`:''}${tstate.locked.has(j.n)?'<div style="color:var(--bad)">Locked in this what-if.</div>':''}`;
+  const n=J.length-tstate.locked.size;
+  $('dofcount').textContent=n;
+  const legOK=s=>J.filter(j=>j.n.startsWith(s+'_')&&/(hip|knee|ankle)/.test(j.n)).every(j=>!tstate.locked.has(j.n));
+  const fixed=tpName==='fixed';
+  $('dofsplit').innerHTML=`of 27 body joints${fixed?'':`<br>+ 6 floating base = <b>${n+6}</b> DOF in all`}<br>+ 16 finger servos in the two hands = ${n+(fixed?0:6)+16}<br>Left foot posable in 6-D: <b style="color:${legOK('left')?'var(--good)':'var(--bad)'}">${legOK('left')?'yes':'no'}</b> · right: <b style="color:${legOK('right')?'var(--good)':'var(--bad)'}">${legOK('right')?'yes':'no'}</b>`;
+  // body figure
+  const bx=x=>200+x*230, bz=z=>290-z*200;
+  let s='';
+  const line=(a,b)=>`<line x1="${bx(a[0])}" y1="${bz(a[1])}" x2="${bx(b[0])}" y2="${bz(b[1])}" stroke="#3a4552" stroke-width="5" stroke-linecap="round"/>`;
+  for(const sx of [1,-1]){ s+=line([sx*0.1,0.70],[sx*0.1,0.06])+line([sx*0.1,0.06],[sx*0.1,0.0])+line([sx*0.158,1.165],[sx*0.158,0.75])+line([sx*0.158,0.75],[sx*0.158,0.57]); }
+  s+=line([-0.1,0.70],[0.1,0.70])+line([0,0.70],[0,1.225])+line([-0.158,1.165],[0.158,1.165]);
+  s+=`<rect x="${bx(-0.08)}" y="${bz(1.43)}" width="${0.16*230}" height="${0.17*200}" rx="12" fill="#232c37" stroke="#3a4552"/>`;
+  s+=`<text x="10" y="18" fill="#6b7785" font-size="11">front view: the robot's left is on your right</text>`;
+  // joints: offset duplicates
+  const seen={};
+  J.forEach(j=>{ const key=j.p.join(','); const k=seen[key]=(seen[key]||0)+1; const dx=(k-1)*9*(j.p[0]>=0?1:-1);
+    const sel=tstate.sel===j.n, lk=tstate.locked.has(j.n);
+    s+=`<circle data-j="${j.n}" cx="${bx(j.p[0])+dx}" cy="${bz(j.p[1])}" r="${sel?7:5}" fill="${lk?'#ff6b6b':sel?'#ffb454':'#4fb3ff'}" stroke="#0c1015" style="cursor:pointer"><title>${j.n}</title></circle>`; });
+  $('body').innerHTML=s;
+  $('body').querySelectorAll('[data-j]').forEach(c=>c.addEventListener('click',e=>{ if(e.shiftKey) toggleLock(c.dataset.j); tstate.sel=c.dataset.j; renderTree(); }));
+  updateNote();
+}
+function toggleLock(n){ tstate.locked.has(n)?tstate.locked.delete(n):tstate.locked.add(n); tpName='custom'; }
+$('lockbtn').addEventListener('click',()=>{ toggleLock(tstate.sel); renderTree(); });
+document.querySelectorAll('[data-tp]').forEach(b=>b.addEventListener('click',()=>{ tpName=b.dataset.tp; tstate.locked=new Set(TP[tpName]); renderTree(); }));
+
+// ---------- Playground C ----------
+const hstate={hr:0,hpch:0,hy:0};
+const HP={zero:{hr:0,hpch:0,hy:0},step:{hr:5,hpch:35,hy:25},sit:{hr:0,hpch:90,hy:0},splay:{hr:30,hpch:10,hy:-20}};
+const Rx=a=>{const c=Math.cos(a),s=Math.sin(a);return [[1,0,0],[0,c,-s],[0,s,c]];};
+const Ry=a=>{const c=Math.cos(a),s=Math.sin(a);return [[c,0,s],[0,1,0],[-s,0,c]];};
+const Rz=a=>{const c=Math.cos(a),s=Math.sin(a);return [[c,-s,0],[s,c,0],[0,0,1]];};
+const mm=(A,B)=>A.map((r,i)=>B[0].map((_,j)=>r.reduce((t,_,k)=>t+A[i][k]*B[k][j],0)));
+const mv=(A,v)=>A.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]);
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+// joint definitions (left leg): rotation matrix and local axis, with the page's sign convention
+const JD={roll:{R:a=>Rx(a),ax:[1,0,0],c:'#ff6b6b'}, pitch:{R:a=>Ry(-a),ax:[0,1,0],c:'#4cc38a'}, yaw:{R:a=>Rz(-a),ax:[0,0,1],c:'#4fb3ff'}};
+const ORDERS=[['roll','pitch','yaw','Roll, pitch, yaw','Marvin Bot'],['pitch','roll','yaw','Pitch, roll, yaw','Marvin Bot until 2026-10-26'],['yaw','roll','pitch','Yaw, roll, pitch','yaw first']];
+function proj(v){ // isometric-ish: x forward to lower-left, y left to the right, z up
+  return [ -v[0]*0.62 + v[1]*0.95 , -v[2] + v[0]*0.32 + v[1]*0.12 ]; }
+function renderHip(){
+  const ang={roll:hstate.hr*D2R,pitch:hstate.hpch*D2R,yaw:hstate.hy*D2R};
+  let html='';
+  ORDERS.forEach(o=>{
+    let R=[[1,0,0],[0,1,0],[0,0,1]]; const axes=[];
+    o.slice(0,3).forEach(n=>{ axes.push({n,v:mv(R,JD[n].ax),c:JD[n].c}); R=mm(R,JD[n].R(ang[n])); });
+    const leg=mv(R,[0,0,-1]), toe=mv(R,[1,0,0]);
+    const det=Math.abs(dot(axes[0].v,cross(axes[1].v,axes[2].v)));
+    const S=90, cx=130, cy=70;
+    const P=v=>{const p=proj(v);return [cx+p[0]*S, cy+p[1]*S];};
+    let s=`<svg viewBox="0 0 260 230" role="img" aria-label="${o[3]} hip in perspective">`;
+    // ground ref and pelvis
+    const g=[[-0.6,-0.6,-1.15],[0.6,-0.6,-1.15],[0.6,0.6,-1.15],[-0.6,0.6,-1.15]].map(P);
+    s+=`<polygon points="${g.map(p=>p.join(',')).join(' ')}" fill="#121820" stroke="#24303c"/>`;
+    s+=`<polygon points="${[[0.25,-0.5,0.12],[0.25,0.1,0.12],[-0.25,0.1,0.12],[-0.25,-0.5,0.12]].map(P).map(p=>p.join(',')).join(' ')}" fill="#232c37" stroke="#3a4552"/>`;
+    const O=P([0,0,0]), F=P(leg.map(x=>x*1.0));
+    s+=`<line x1="${O[0]}" y1="${O[1]}" x2="${F[0]}" y2="${F[1]}" stroke="#cbd5df" stroke-width="7" stroke-linecap="round"/>`;
+    const T=P(leg.map((x,i)=>x+toe[i]*0.3));
+    s+=`<line x1="${F[0]}" y1="${F[1]}" x2="${T[0]}" y2="${T[1]}" stroke="#ffb454" stroke-width="5" stroke-linecap="round"/>`;
+    axes.forEach((a,i)=>{ const A=P(a.v.map(x=>x*0.45)), B=P(a.v.map(x=>-x*0.45));
+      s+=`<line x1="${B[0]}" y1="${B[1]}" x2="${A[0]}" y2="${A[1]}" stroke="${a.c}" stroke-width="${4-i}" opacity=".95"/><circle cx="${A[0]}" cy="${A[1]}" r="3.5" fill="${a.c}"/>`; });
+    s+=`<circle cx="${O[0]}" cy="${O[1]}" r="5" fill="#0c1015" stroke="#e6edf3" stroke-width="2"/></svg>`;
+    const cls=det<0.15?'var(--bad)':det<0.5?'var(--warn)':'var(--good)';
+    html+=`<figure>${s}<figcaption><b>${o[3]}</b> (${o[4]})<br>axis spread <b style="color:${cls}">${det.toFixed(2)}</b>${det<0.15?' · gimbal lock':''}<br>sole ${['x','y','z'].map((k,i)=>(leg[i]*0.70).toFixed(2)).join(', ')} m</figcaption></figure>`;
+  });
+  $('three').innerHTML=html;
+}
+[['hr'],['hpch'],['hy']].forEach(([id])=>{ const el=$(id); el.addEventListener('input',()=>{hstate[id]=+el.value;$('o_'+id).textContent=el.value+'°';renderAll();}); $('o_'+id).textContent=el.value+'°'; });
+document.querySelectorAll('[data-hp]').forEach(b=>b.addEventListener('click',()=>{ Object.assign(hstate,HP[b.dataset.hp]); for(const k in hstate){ $(k).value=hstate[k]; $('o_'+k).textContent=hstate[k]+'°'; } renderAll(); }));
+
+// ---------- note ----------
+function updateNote(){
+  const parts=[];
+  const r=fk(state.hip,state.knee,state.ankle);
+  if(state.hip!==DEFAULTS.hip||state.knee!==DEFAULTS.knee||state.ankle!==DEFAULTS.ankle)
+    parts.push(`In the planar leg I set hip pitch ${state.hip}°, knee ${state.knee}°, ankle pitch ${state.ankle}° (stance is 6/15/9°): the ankle sits ${r.ank[0].toFixed(3)} m ahead of and ${(-r.ank[1]).toFixed(3)} m below the hip axis, the foot is pitched ${r.f.toFixed(0)}° (toe up +), and the hip is ${(-r.sole[1]).toFixed(3)} m above the sole point.${Math.abs(state.knee-state.hip)>40?' A flat foot is impossible here: it would need ankle pitch '+(state.knee-state.hip)+'°, outside ±40°.':''}`);
+  if(tstate.locked.size) parts.push(`In the joint tree I locked ${[...tstate.locked].join(', ')}, leaving ${J.length-tstate.locked.size} of 27 body DOF.`+([...tstate.locked].some(n=>/(hip|knee|ankle)/.test(n))?' At least one foot can then no longer be posed in all 6 directions (3 position, 3 orientation).':''));
+  if(hstate.hr||hstate.hpch||hstate.hy){
+    const sing=Math.abs(Math.abs(hstate.hpch)-90)<15;
+    parts.push(`For the hip-order comparison I used roll ${hstate.hr}°, pitch ${hstate.hpch}°, yaw ${hstate.hy}°.${sing?' Near 90° hip pitch, Marvin Bot\'s roll-pitch-yaw hip is close to gimbal lock (roll and yaw axes parallel), so a controller or IK solver must avoid needing thigh rotation there.':''}`);
+  }
+  $('note').textContent = parts.length ? `Marvin Bot (1.44 m, 41 kg, 27-DOF humanoid; legs 0.325 m thigh, 0.315 m shin, 0.060 m ankle; hip order roll-pitch-yaw; ranges from description/robot.yaml).\n`+parts.join('\n')+`\nQuestion to resolve: does any planned task (stairs, sitting, getting up) need a pose outside these ranges or near the hip singularity?`
+    : 'Change a control above to build a note.';
+}
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+function renderAll(){ renderLeg(); renderHip(); updateNote(); }
+renderTree(); renderAll();
+</script>
+</body>
+</html>

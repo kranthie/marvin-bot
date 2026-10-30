@@ -6,6 +6,8 @@ An open humanoid robot, about 1.44 m tall and 41 kg, with 27 powered joints and 
 
 **Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo (the stair policy falls in 1 of 15 runs on 15–20 cm stairs over five noise seeds); a motion-tracking policy follows 25 generated human motions (walking, turning, jogging, kicking, squatting, gestures; see the [skills page](docs/skills.md)), not yet replayed in MuJoCo. See [docs/roadmap.md](docs/roadmap.md).
 
+**Website:** <https://kranthie.github.io/marvin-bot/>, with the robot in 3-D, these docs and an [interactive guide](https://kranthie.github.io/marvin-bot/guide/) that teaches humanoid robotics through Marvin Bot.
+
 **Start here:** this README, then [docs/plan.md](docs/plan.md) (phases), [docs/roadmap.md](docs/roadmap.md) (where things stand), [docs/decisions.md](docs/decisions.md) (why things are the way they are) and the [glossary](docs/README.md#glossary). To try it: `pip install -e ".[dev]" && python tools/check_description.py`.
 
 > [!WARNING]
@@ -90,6 +92,8 @@ sim/motion/    motion pipeline: human motion retargeted to Marvin Bot, tracking 
 robot/         onboard software (RobStride CAN driver so far; untested on hardware)
 bench/         actuator bench tests (phase 2)
 tests/         unit tests
+site/          the documentation website (Astro Starlight): 3-D home page, docs synced from this
+               repository's Markdown, and the interactive guide (site/README.md)
 ```
 
 More folders (for example build guides) are added as later phases reach them.
@@ -141,7 +145,8 @@ Copyright 2026 The Marvin Bot contributors.
 | Path | Licence |
 |---|---|
 | `cad/` (part generators), `description/` (robot description, URDFs, meshes), `electrical/`, `bom/`, `docs/design/*.svg` | [CERN-OHL-S-2.0](LICENSES/CERN-OHL-S-2.0.txt) (hardware) |
-| Everything else: `tools/`, `sim/`, `robot/`, `bench/`, `tests/`, the documentation and media | [Apache-2.0](LICENSE) |
+| Everything else: `tools/`, `sim/`, `robot/`, `bench/`, `tests/`, `site/` (the website and interactive guide), the documentation and media | [Apache-2.0](LICENSE) |
+| The website's 3-D model data (generated from `description/` and `cad/` when the site is built) | [CERN-OHL-S-2.0](LICENSES/CERN-OHL-S-2.0.txt) |
 | `description/third_party/amazing_hand/` | CC-BY-4.0 and Apache-2.0, © Pollen Robotics ([details](description/third_party/amazing_hand/README.md)) |
 | Portions of `sim/isaaclab/` marked in their headers | also BSD-3-Clause, © The Isaac Lab Project Developers ([text](LICENSES/BSD-3-Clause-IsaacLab.txt)) |
 

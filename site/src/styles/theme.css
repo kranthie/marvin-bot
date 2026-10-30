@@ -1,0 +1,21 @@
+/* Marvin Bot colours on top of Starlight's defaults: an amber accent and, in the dark theme, a
+   near-black background, matching the home page and the interactive guide. Starlight keeps its own
+   styles in cascade layers, so these unlayered rules win; each is scoped to one theme. */
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #3a2a0e;
+  --sl-color-accent: #ffb454;
+  --sl-color-accent-high: #ffe0b3;
+  --sl-color-white: #eef3f8;
+  --sl-color-gray-1: #e6edf3;
+  --sl-color-gray-2: #c3ccd6;
+  --sl-color-gray-3: #9aa7b4;
+  --sl-color-gray-4: #5d6b7a;
+  --sl-color-gray-5: #2a3340;
+  --sl-color-gray-6: #161b22;
+  --sl-color-black: #0f1216;
+}
+:root[data-theme='light'] {
+  --sl-color-accent-low: #ffe8c7;
+  --sl-color-accent: #a55a00;
+  --sl-color-accent-high: #4d2a00;
+}
