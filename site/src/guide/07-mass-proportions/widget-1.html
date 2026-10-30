@@ -1,0 +1,32 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today</button>
+<button data-preset="repo">Repo's two savings</button>
+<button data-preset="target">Towards 35 kg</button>
+<button data-preset="waist">Add a 2-DOF waist</button>
+<button data-preset="knee">Knee stage</button>
+</div>
+<h4>Reduction ideas</h4>
+<div class="toggles" id="toggles"></div>
+<h4>Stair consequence</h4>
+<div class="ctl"><label>Knee torque at 41.3 kg <output id="o_kneeRef"></output></label>
+<input id="kneeRef" max="50" min="40" step="0.5" type="range" value="47"/>
+<div class="hint">The repo's static 18 cm step check: 47 N·m on the stance knee. Scaled in proportion to mass below.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Treemap of Marvin Bot's mass items, coloured by group, with a bar showing the total against the 35 kg target and 42 kg limit" id="tree" role="img" viewbox="0 0 640 330"></svg>
+<svg aria-label="Total mass bar with target and limit markers" id="bar" role="img" style="margin-top:8px" viewbox="0 0 640 86"></svg>
+<div class="readouts">
+<div class="ro" id="r_bare"><div class="k">Bare robot (target 35 kg)</div><div class="v">–</div></div>
+<div class="ro" id="r_full"><div class="k">With shells (limit 42 kg)</div><div class="v">–</div></div>
+<div class="ro" id="r_knee"><div class="k">Stair knee, % of rated</div><div class="v">–</div></div>
+<div class="ro" id="r_hip"><div class="k">Stair hip roll, % of rated</div><div class="v">–</div></div>
+<div class="ro" id="r_heat"><div class="k">Knee heat vs today</div><div class="v">–</div></div>
+</div>
+<div class="legend" id="legend"></div>
+<p class="small"><b>How to read this picture:</b> each coloured block is one item, its area proportional to its mass; colours are groups (legend above). The bar underneath stacks the groups into the total, with the 35 kg target (green dashes, bare robot) and the 42 kg hard limit (red dashes, with shells). Readout colours: green = within target or rating, amber = over target or slightly over rating, red = over the limit or well over rating.</p>
+<ul class="itemlist" id="items"></ul>
+</div>
+</div>

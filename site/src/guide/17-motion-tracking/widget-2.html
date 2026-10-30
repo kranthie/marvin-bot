@@ -1,0 +1,60 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today</button>
+<button data-preset="uniform">Uniform by height</button>
+<button data-preset="none">No scaling</button>
+<button data-preset="small">Too small</button>
+<button data-preset="wave2">Two-hand wave</button>
+<button data-preset="squat">Deep squat</button>
+</div>
+<h4>Motion</h4>
+<div class="ctl"><select aria-label="Motion" id="motion">
+<option value="reach">Reach forward</option>
+<option value="clap">Clap in front of the chest</option>
+<option value="squat">Squat with arms forward (two squats)</option>
+<option value="wave">Wave (right hand)</option>
+<option value="wave2">Wave both hands above the head</option>
+<option value="march">March in place</option>
+</select></div>
+<div class="ctl"><label>View</label>
+<div class="seg"><button class="on" id="v_side">Side</button><button id="v_front">Front</button></div></div>
+<h4>Scaling</h4>
+<div class="seg"><button id="m_uni">Uniform</button><button class="on" id="m_sep">Per body part</button></div>
+<div id="uniBox">
+<div class="ctl"><label>Uniform scale <output id="o_su"></output></label>
+<input id="su" max="1.05" min="0.55" step="0.005" type="range" value="0.822"/>
+<div class="hint">Every human keypoint × this, about a point on the floor. 1.438/1.75 = 0.822 matches heights.</div></div>
+</div>
+<div id="sepBox">
+<div class="ctl"><label>Leg scale <output id="o_sl"></output></label>
+<input id="sl" max="1.0" min="0.55" step="0.005" type="range" value="0.75"/>
+<div class="hint">Pelvis and legs. Repo: robot straight leg 0.640 m ÷ source 0.853 m = 0.750.</div></div>
+<div class="ctl"><label>Arm scale <output id="o_sa"></output></label>
+<input id="sa" max="1.0" min="0.55" step="0.005" type="range" value="0.745"/>
+<div class="hint">Each arm about its shoulder. Repo formula: 0.418 m reach ÷ 0.56 m = 0.746 (the README says 0.79).</div></div>
+<div class="ctl"><label>Shoulder height scale <output id="o_st"></output></label>
+<input id="st" max="1.2" min="0.6" step="0.005" type="range" value="0.955"/>
+<div class="hint">Shoulders above the hips. Repo: 0.75 × 0.465/0.365 = 0.955.</div></div>
+</div>
+<h4>Fixes</h4>
+<label class="chk"><input checked="" id="fixSole" type="checkbox"/><span>Foot-on-floor fix: lift or lower the whole clip so the stance foot is on the floor (<code>fix_sole_height.py</code>)</span></label>
+<label class="chk"><input checked="" id="fixTorso" type="checkbox"/><span>Shoulders 6.5 cm forward, 0.62 as wide; knees 1.5 cm and feet 3 cm further apart (<code>retarget_marvin_bot.py</code>)</span></label>
+</div>
+<div class="preview">
+<svg aria-label="Human source and Marvin Bot skeleton side by side, with target keypoints and errors" id="view" role="img" viewbox="0 0 760 420"></svg>
+<div class="transport"><button id="play">Pause</button><span>time</span><input aria-label="Time in clip" id="time" max="99" min="0" type="range" value="0"/><output class="mono" id="o_time">0.0 s</output></div>
+<div class="readouts">
+<div class="ro" id="r_hand"><div class="k">Hand error, mean / max</div><div class="v">–</div></div>
+<div class="ro" id="r_sole"><div class="k">Stance sole height</div><div class="v">–</div></div>
+<div class="ro" id="r_slide"><div class="k">Foot sliding in contact</div><div class="v">–</div></div>
+<div class="ro" id="r_knee"><div class="k">Standing knee bend</div><div class="v">–</div></div>
+<div class="ro" id="r_pel"><div class="k">Pelvis target height</div><div class="v">–</div></div>
+<div class="ro" id="r_lim"><div class="k">Joint-limit hits (frames)</div><div class="v">–</div></div>
+</div>
+<div class="viol" id="viol"></div>
+<svg aria-label="Shoulder pitch against shoulder roll, with the coupled limit shaded" id="coupled" role="img" style="margin-top:10px" viewbox="0 0 760 230"></svg>
+<div class="legend"><span><i style="background:#cfd8e3"></i>human</span><span><i style="background:var(--accent2)"></i>Marvin Bot</span><span><i style="background:transparent;border:1px solid var(--accent)"></i>scaled target keypoint</span><span><i style="background:var(--bad)"></i>error / limit hit</span><span><i style="background:var(--violet)"></i>shoulder path over the clip</span></div>
+</div>
+</div>

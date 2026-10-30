@@ -1,0 +1,191 @@
+---
+title: "Simulation: MuJoCo, Isaac Lab, Newton and PhysX"
+description: "Marvin Bot exists today only in simulation."
+sidebar:
+  label: "14 · Simulation: MuJoCo, Isaac Lab, Newton and PhysX"
+  order: 15
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/14-simulation/widget-1.html?raw';
+import widget2 from '../../../guide/14-simulation/widget-2.html?raw';
+import widget3 from '../../../guide/14-simulation/widget-3.html?raw';
+import script from '../../../guide/14-simulation/script.js?raw';
+import '../../../guide/14-simulation/style.css';
+
+<div class="guide-meta">
+
+**Stage 4 · Model and simulation** · \~35 min · Before this: [02 Balance](../02-balance/), [13 The robot description](../13-description/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Marvin Bot exists today only in simulation. Every policy it has learned was trained in one physics engine and checked in another. This page opens the box: what a simulator computes every few milliseconds, how it fakes the contact between a foot and the floor, and why two simulators can disagree about the same robot.
+
+A simulator is a video game engine with honest physics: you give it the robot (the description from [page 13](../13-description/)) and the motor torques, and it tells you where every part of the robot will be a moment later, and the moment after that. A humanoid needs one because learning to walk takes millions of falls. Falling in a computer costs nothing; falling in real life can break a robot whose parts cost about $17,500 ([page 21](../21-bom-costs/)). The catch is that a simulator is only an approximation, so the robot can learn habits that only work in the game.
+
+:::note[You will learn]
+- What a physics simulator does each step: integrate, detect contacts, solve constraints, and why the timestep and the integrator decide whether it stays stable.
+- How contact is modelled: penalty springs, MuJoCo's soft constraints, hard constraints with impulses, and friction cones.
+- What MuJoCo, PhysX, Newton and Isaac Lab are, what is open source and what runs on a GPU, and why training uses thousands of robots at once.
+- Why a second simulator is a cheap proxy for the real world, and which checks Marvin Bot runs in MuJoCo.
+:::
+
+## The idea in one picture
+
+A <a class="g" href="../glossary/#physics-engine">physics engine</a> moves a model forward in time in small fixed steps. Each step it (1) finds which shapes touch, (2) works out the forces that stop them passing through each other and that resist sliding, and (3) uses Newton's laws to update every velocity and position by one <a class="g" href="../glossary/#timestep">timestep</a>. Marvin Bot's MuJoCo checks step every 2 ms; its Isaac Lab training steps every 5 ms. Everything a <a class="g" href="../glossary/#policy">policy</a> (the trained neural-network controller, [page 16](../16-rl-walking/)) learns, it learns from the numbers this loop produces, including its mistakes.
+
+The hard part is contact. A real foot and floor deform by fractions of a millimetre in a few milliseconds; resolving that exactly would need microsecond steps. Every simulator approximates it differently, and a policy trained against one approximation can learn to rely on it. The two playgrounds show both halves of that problem.
+
+## Playground A: a mass hitting the floor
+
+One body falls onto the ground. Choose how contact is modelled and how time is stepped, then watch the penetration, the bounce and the energy. With no damping, total energy should stay at 100% until contact; anything above 100% is energy the numerics invented (a bug in the maths, not physics).
+
+<b>Start here:</b> press the presets from left to right and watch the three plots. How to read them: <span style={{color:"#4fb3ff"}}>blue</span> (top) is how high the body is; <span style={{color:"#ff6b6b"}}>red</span> (middle) is how far it sinks *into* the floor, which a real floor would not allow (a few millimetres is fine, centimetres is bad); <span style={{color:"#4cc38a"}}>green</span> (bottom) is the total energy, which should never rise above 100%. In the readouts, *contact ω·dt* compares how fast the contact "springs" with the timestep: below about 2 is stable, above 2 the simulation blows up. *Steps per contact* is how many timesteps the bounce lasts; more is more accurate.
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+- Press *Explicit Euler drifts*. Even in free fall the energy creeps up, and every bounce gains energy: explicit Euler uses the old velocity to move and the old position to accelerate, which pumps energy into any oscillator. Switch to semi-implicit Euler (what MuJoCo calls "Euler") and it stops.
+- Press *Stiff spring, 5 ms*. ω·dt is above 2, so semi-implicit Euler goes unstable and the mass is flung away. Halve the timestep a few times until it behaves. This is why stiff contact needs small steps, and why simulators prefer soft contact.
+- On *Marvin Bot today*, change the mass from 41 kg to 4 kg. The penetration barely changes: MuJoCo's soft constraint is defined by a time constant, not a spring stiffness, so it behaves the same for light and heavy bodies.
+- Set the soft model's timeconst below 0.004 s at a 2 ms step. MuJoCo recommends a time constant of at least twice the timestep, and by default clamps it there.
+:::
+
+## From first principles
+
+### Integration: turning forces into motion
+
+A computer cannot let time flow smoothly; it can only jump forward by a small amount Δ<i>t</i> (the timestep, "delta t") and recompute. Like a flip-book, the smaller the jumps, the closer it looks to real motion. For a body of mass *m* at height *z* with velocity *v*, Newton's second law gives the acceleration *a* = *F*/*m*. A simulator cannot solve this exactly, so it steps: given the state now, estimate the state Δ<i>t</i> later. Three common ways:
+
+- **Explicit Euler**: *z* ← *z* + Δ<i>t</i>·*v*, *v* ← *v* + Δ<i>t</i>·*a*(*z*, *v*), both from the old state. Simple, but it adds energy to anything that oscillates, at any step size.
+- **Semi-implicit (symplectic) Euler**: update the velocity first, then move with the new velocity. Same cost, no systematic energy drift, stable for a spring of natural frequency ω while ω·Δ<i>t</i> &lt; 2. MuJoCo's default integrator, called "Euler", is of this kind (with implicit joint damping); its recommended `implicitfast` integrator also treats velocity-dependent forces implicitly.<sup class="cite">[\[1\]](#s1)</sup>
+- **Runge-Kutta 4**: four evaluations per step, blended. Much more accurate per step for smooth motion, but four times the cost, and a contact switching on mid-step spoils its accuracy. MuJoCo offers it for nearly energy-conserving systems.<sup class="cite">[\[1\]](#s1)</sup>
+
+### Contact: three ways to stop a foot passing through the floor
+
+<b>Penalty springs.</b> Let the bodies overlap by a depth *p* and push back with *F* = *k p* − *c v* (only while pushing). Easy and explicit, but a spring stiff enough to keep penetration small has a high natural frequency ω = √(*k*/*m*), which needs a small timestep. A 41 kg robot on *k* = 10⁵ N/m rests 41 × 9.81 / 10⁵ = 4 mm deep, with ω = 49 rad/s.
+
+<b>Soft constraints (MuJoCo).</b> Instead of a spring with a stiffness, MuJoCo says "get the foot back out of the floor in about this much time, with this much bounce". Because those settings are a time and a ratio, not a stiffness, a 4 kg arm and a 41 kg robot sink about equally. The price: bodies always sink in a little, and objects can creep under a steady sideways push.
+
+<details>
+<summary>Go deeper: how MuJoCo's soft contact is defined</summary>
+
+MuJoCo treats contact as a constraint solved together with all others each step, but deliberately softened: it asks the constraint violation *r* to follow a reference acceleration *a*<sub>ref</sub> = −*b v* − *k r*, where *b* and *k* come from `solref` = (time constant, damping ratio), default (0.02 s, 1), and an impedance *d* between 0 and 1 from `solimp` (default 0.9 rising to 0.95 over 1 mm) blends that reference with the unconstrained motion.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[2\]](#s2)</sup> Because the parameters are a time and a ratio, not a stiffness, the contact behaves the same for any mass, and softness makes the problem convex and smooth, which helps both the solver and gradient-based tools. The price: bodies always sink in a little, and objects can creep under steady sideways load. MuJoCo recommends the time constant be at least twice the timestep (and clamps it there unless told otherwise).<sup class="cite">[\[2\]](#s2)</sup>
+
+</details>
+
+<b>Hard constraints with impulses.</b> Forbid penetration outright: when a contact would close, apply an instantaneous impulse that sets the approaching velocity to −*e* times itself (*e* the <a class="g" href="../glossary/#coefficient-of-restitution">coefficient of restitution</a>) and project the position back. This is closest to a rigid floor, but it is harder to compute: the solver has to juggle many contacts at once and only gets an approximate answer in a fixed number of rounds.
+
+<details>
+<summary>Go deeper: LCP, PGS and TGS</summary>
+
+Many contacts at once form a linear complementarity problem (LCP), solved iteratively. PhysX, the engine inside Isaac Sim, works this way, with a projected Gauss-Seidel (PGS) or a temporal Gauss-Seidel (TGS) solver; TGS sub-steps the iterations and converges better for stiff articulated robots, and is Isaac Lab's default for PhysX.<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[4\]](#s4)</sup>
+
+</details>
+
+### Friction cones
+
+Coulomb friction says the sideways force *F*<sub>t</sub> at a contact can be anything up to μ times the normal force *F*<sub>n</sub>: |*F*<sub>t</sub>| ≤ μ *F*<sub>n</sub>. In 3-D the allowed forces form a cone around the contact normal, the <a class="g" href="../glossary/#friction-cone">friction cone</a>. Solvers either use the exact (elliptic) cone or approximate it with a pyramid of a few planes; MuJoCo supports both, pyramidal by default.<sup class="cite">[\[1\]](#s1)</sup> With μ = 1 (Marvin Bot's floor in MuJoCo) a foot can push sideways with up to its own normal load before slipping.
+
+### Massively parallel simulation
+
+<a class="g" href="../glossary/#reinforcement-learning">Reinforcement learning</a> (learning by trial and error, [page 16](../16-rl-walking/)) needs billions of steps of experience. A GPU (graphics processing unit, the chip that draws video-game graphics) can do thousands of small, identical sums at the same time, which is exactly what simulating thousands of identical robots needs. Rudin et al. showed in 2021 that running thousands of robots in one GPU simulation, each a separate environment, trains a quadruped to walk on flat ground in minutes and on rough terrain in about twenty.<sup class="cite">[\[5\]](#s5)</sup> The GPU computes the same physics for every robot in parallel; the policy network also runs on the GPU, so no data crosses to the CPU. Marvin Bot's walking runs use 4,096 robots at once, its motion tracker 16,384.
+
+### Sim-to-sim: a cheap stand-in for reality
+
+A policy only ever sees its training simulator. It will exploit any quirk there, a contact that is a little too sticky, a joint with no friction, if that earns reward. A second simulator with a different contact model, solver and integrator has different quirks. A policy that still walks there has probably learned to walk, not to exploit; one that falls has found something to fix before any hardware is at risk. This "sim-to-sim" transfer is not proof of <a class="g" href="../glossary/#sim-to-real-gap">sim-to-real</a> transfer, but it is free and catches a large class of failures.<sup class="cite">[\[6\]](#s6)</sup> Playground B shows how much a contact model alone can change.
+
+## Playground B: the same robot, two contact models
+
+Same robot, two different floors: does the outcome change? A sagittal (side-view) model of a standing robot: a foot 0.24 m long touching the floor at heel and toe, and a body (39 kg, centre of mass 0.75 m above the ankle) on an ankle joint held upright by a <a class="g" href="../glossary/#pd-control">PD controller</a> (a spring-and-damper pull towards upright, explained on [page 15](../15-pd-control/); torque limited to 238 N·m, two RS03 pairs through the linkage). After one second, a push acts on the body for 0.15 s. The same robot runs twice, under <span class="mA">model A</span> and <span class="mB">model B</span>.
+
+<b>Start here:</b> press *150 N: one model falls*, then compare the blue and orange lines. How to read the plots: solid lines are how far the body leans (degrees), dashed lines how far the heel lifts off the floor (mm), dotted lines how far the foot slides (mm). Blue and orange lines that stay together mean the two simulators agree; lines that split mean a policy could be fooled.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+- On *Marvin Bot today* (60 N) the push is handled by the ankle alone and both models recover, but A sways about twice as far (4° against 2°). Before the push, model A is already tilted about 1.5° back and still settling: the ankle sits nearer the heel than the toe, so the heel carries more weight and sinks about 5 mm into A's soft floor, tipping foot and body back together.
+- *Bigger push* (140 N): the ankle torque needed exceeds what the foot can resist (body weight × 15 cm to the toe, about 60 N·m), so the heel lifts and the foot rocks on its toe. Both recover, but A leans an extra 12° with the heel 19 mm up, B 7° and 12 mm: the soft toe sinks, shortening the foot's lever.
+- *150 N*: model A falls, model B recovers. Nothing about the robot changed, only the floor model. A policy that learned to rely on one would be surprised by the other.
+- *Slippery floor*: with μ = 0.15 the regularised law (A) lets the foot creep about 11 mm under the push; stick-slip (B) holds. Switch both to the same law to see how much of the gap is friction and how much is stiffness.
+:::
+
+## The simulators
+
+| Engine / framework | Licence | Runs on | Contact model | Role for Marvin Bot |
+|---|---|---|---|---|
+| MuJoCo<sup class="cite">[\[1\]](#s1)</sup> | Apache-2.0 (open source) | CPU; GPU through MJX (JAX) and MuJoCo Warp | Soft constraints, convex optimisation (Newton solver by default; CG, PGS); pyramidal or elliptic cones | Every cross-check: standing, step-up, symmetry, policies |
+| Newton<sup class="cite">[\[7\]](#s7)</sup><sup class="cite">[\[8\]](#s8)</sup> | Apache-2.0, a Linux Foundation project (NVIDIA, Google DeepMind, Disney Research) | NVIDIA GPU, built on Warp | Several solvers: MuJoCo Warp (MuJoCo's soft contacts on the GPU; its own package, versioned with MuJoCo, is still labelled alpha<sup class="cite">[\[11\]](#s11)</sup>), Featherstone, XPBD, VBD and others; Kamino experimental | Isaac Lab's backend for Marvin Bot's training (MuJoCo Warp solver) |
+| PhysX 5<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[9\]](#s9)</sup> | BSD-3-Clause; GPU source opened in April 2025 | CPU and NVIDIA GPU | Rigid constraints, PGS or TGS iterative solver, contact offsets | Isaac Lab's second backend; <code>check\_robot.py</code> compares it with Newton |
+| Isaac Sim<sup class="cite">[\[12\]](#s12)</sup> | Source on GitHub under Apache-2.0; a build downloads the Omniverse Kit SDK under NVIDIA's Omniverse licence | NVIDIA RTX GPU | PhysX | Optional since Isaac Lab 3.0; needed for PhysX through Isaac Sim (Isaac Lab can also run PhysX standalone as OVPhysX) and for the URDF importer |
+| Isaac Lab 3.0<sup class="cite">[\[4\]](#s4)</sup> | BSD-3-Clause framework | NVIDIA GPU | Whatever the backend uses: Newton or PhysX | Training framework (tasks, rewards, motor models, thousands of robots) |
+| Drake<sup class="cite">[\[10\]](#s10)</sup> | BSD-3-Clause | CPU | Point contact or hydroelastic (pressure-field) contact | Not used; an accurate, slower alternative for analysis |
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- <b>Training:</b> Isaac Lab 3.0 with rsl\_rl's PPO (proximal policy optimisation, the learning algorithm of [page 16](../16-rl-walking/)), on the Newton backend with the MuJoCo Warp solver (`sim/isaaclab/marvin_bot/tasks/velocity_env_cfg.py`: `self.sim.physics.default = newton_mjwarp`), 5 ms physics step, policy at 50 Hz, 4,096 robots, about 2.2-2.3 s per iteration on one RTX PRO 6000 Blackwell (2,000 iterations ≈ 1.3 h). The motor models run in Isaac Lab's Python actuator path rather than Newton's kernels, because Newton's own actuators take no command delay, at about 2.5× the cost per iteration (`sim/isaaclab/README.md`).
+- <b>Two backends, one robot:</b> `sim/isaaclab/check_robot.py` loads the same USD on Newton and on PhysX: joint order, ranges and limits match the description, link positions match MuJoCo to 0.25 mm (Newton) and 0.17 mm (PhysX), the default stance holds (Newton: pelvis 0.644 m, tilt 0.0°, worst joint 4% of peak). PhysX is configured with 8 position and 4 velocity solver iterations and self-collision on (`robot_cfg.py`).
+- **MuJoCo checks** (plain MuJoCo, 2 ms, `implicitfast`, floor friction 1.0):
+  - `sim/mujoco/check_standing.py`: holds the crouch, straight or stance pose for a few seconds with stiff position servos; passes if the robot stays up, average holding torque is within each joint's rated torque, and no joint peaks above 70% of peak.
+  - `sim/mujoco/check_step_up.py`: static feasibility of stepping up a stair (CI runs 18 cm): searches pelvis positions for three poses of a slow step with the feet flat and the centre of mass over the supporting foot; reports stance-leg torques (knee 47 N·m = 118% of rated on the 1.44 m model).
+  - `sim/mujoco/check_symmetry.py`: the left-right mirror rule, 20 random poses, 1 µm tolerance.
+  - `sim/mujoco/check_policy.py`: runs an exported ONNX policy (ONNX: a standard file format for a trained network) through stand, walk, turn, stop (or 5 stairs up and down), with the same DC motor model and gains as training, and sensor noise at half the training level (IMU gyro 0.2 rad/s, gravity 0.05, joint angle 0.01 rad, joint speed 0.5 rad/s, uniform), because "without any, a mirror-symmetric policy standing in a mirror-symmetric pose has nothing to pick the first foot with". Fails on a fall, poor command tracking, sliding feet, or any joint's RMS torque (root-mean-square, a kind of average that tracks motor heating) above its continuous rating.
+- **What the cross-check has caught** (`sim/isaaclab/README.md`): flat v2 trained fine but only stood and turned in MuJoCo (the clearance reward paid planted feet); rough v4 collapsed in training (an uncapped progress reward). Flat v8, retrained on the 1.44 m, 40.35 kg model, passes: walk 0.53 m/s for 0.5 commanded, turn 0.83 for 0.8 rad/s, fast walk 0.95 for 1.0 m/s, symmetric within 2%, hottest joint a knee at 68% of rated. The stair policy is still rough v9 (trained on the 1.29 m body); on the 1.44 m model it passes 14 of 15 stair runs (15, 18 and 20 cm, five noise seeds). A retrain on the new body, rough v10, passed only 6 of 15 and is not used: the cross-check, not the training curve, decided that.
+:::
+
+## Trade-offs and alternatives
+
+- <b>Train in MuJoCo (CPU) instead of on a GPU:</b> simpler, the reference contact model, but thousands of times fewer steps per second for the same hardware; MuJoCo Warp, used through Newton, brings the same contact model to the GPU.
+- <b>Train on PhysX instead of Newton:</b> mature and fast; Isaac Lab 3.0's quick-start uses Newton with the MuJoCo Warp solver, and Newton runs without Isaac Sim. Marvin Bot keeps PhysX working as a second backend so a policy can be trained or checked on either.<sup class="cite">[\[4\]](#s4)</sup>
+- <b>Cross-check in PhysX instead of MuJoCo:</b> MuJoCo is free, runs on any CPU (including CI), and its contact model differs from the training contacts in solver and implementation even with MuJoCo Warp in training: the CPU and GPU versions use different collision code paths and settings. A cross-check engine with a different family of contact model (PhysX, Drake) would be a stronger test; that has not been done.
+- <b>Smaller timestep:</b> more accurate contacts, proportionally slower training. 5 ms with a soft, implicit solver is a common choice for legged robots of this size.
+
+:::caution[Where sources and the repo disagree]
+- The fact sheet and `docs/decisions.md` describe the second simulator as "MuJoCo", and training as "Isaac Lab". Since training runs on Newton's MuJoCo Warp solver, the training and cross-check simulators share the same contact formulation (soft constraints with solref/solimp), so the cross-check tests implementation and setting differences more than contact-model differences. Not a contradiction in the repo, but it weakens the "different contact model" argument; this page says so.
+- The Isaac Lab README's check table (2026-10-26) predates the hands and the 1.44 m body (39.13 kg on Newton vs 40.35 kg today) and has not been rerun.
+:::
+
+## Decisions you can make here
+
+- Which backend to train on (Newton MuJoCo Warp or PhysX), and whether to cross-check in a simulator with a different contact family. The trade: adding a PhysX or Drake cross-check is a stronger test, but it is another setup to maintain and run on every policy.
+- Physics timestep and contact softness (solref, solimp) for training, and whether to randomise them as part of <a class="g" href="../glossary/#domain-randomisation">domain randomisation</a> (varying the simulator's settings so the policy cannot rely on any one of them). Halving the timestep roughly doubles training time; randomising contact makes the policy sturdier but can make training slower to converge.
+- Which checks a policy must pass in the second simulator before it goes near hardware: noise level, pushes, stairs, seeds. Stricter checks reject more policies (rough v10 failed and was dropped) but each rejection is a fall that did not happen on hardware.
+
+<RawHtml html={widget3} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+:::note[Where this leads]
+The simulator moves the robot when given torques; [page 15](../15-pd-control/) explains how those torques are made from target angles (PD control), and [page 16](../16-rl-walking/) how thousands of simulated robots teach a policy to walk. The gap between any simulator and the real robot is the subject of [page 20](../20-sim-to-real/).
+:::
+
+## Further reading
+
+- [MuJoCo documentation: Computation](https://mujoco.readthedocs.io/en/stable/computation/index.html): the clearest public explanation of soft contact, solver choices and integrators.
+- [Rudin et al., Learning to Walk in Minutes](https://arxiv.org/abs/2109.11978): the paper behind the "thousands of robots on one GPU" recipe that Isaac Lab's locomotion tasks follow.
+- [Newton on GitHub](https://github.com/newton-physics/newton): solvers, examples and release notes.
+- [Isaac Lab documentation](https://isaac-sim.github.io/IsaacLab/main/): physics backends, actuators and the locomotion tasks.
+- [R. Tedrake, Underactuated Robotics](https://underactuated.mit.edu/): simulation and contact from a control point of view.
+
+## Sources
+
+1. <span id="s1"></span>[MuJoCo documentation, Computation](https://mujoco.readthedocs.io/en/stable/computation/index.html) <span class="used">— used for: soft contact, solvers (Newton default), integrators (Euler as semi-implicit, implicitfast recommended, RK4), friction cones and condim.</span>
+2. <span id="s2"></span>[MuJoCo documentation, Modeling (solver parameters)](https://mujoco.readthedocs.io/en/stable/modeling.html) <span class="used">— used for: solref and solimp meaning and defaults, the time-constant ≥ 2 × timestep recommendation.</span>
+3. <span id="s3"></span>[NVIDIA PhysX 5 SDK documentation, Rigid Body Dynamics](https://nvidia-omniverse.github.io/PhysX/physx/5.6.0/docs/RigidBodyDynamics.html) <span class="used">— used for: PGS and TGS solvers, contact offsets.</span>
+4. <span id="s4"></span>[Isaac Lab v3.0.0 release notes (2026-10-20)](https://github.com/isaac-sim/IsaacLab/releases/tag/v3.0.0) <span class="used">— used for: Newton and PhysX backends, MuJoCo Warp, Kamino experimental, Isaac Sim optional.</span>
+5. <span id="s5"></span>[N. Rudin, D. Hoeller, P. Reist, M. Hutter, Learning to Walk in Minutes Using Massively Parallel Deep Reinforcement Learning, CoRL 2021](https://arxiv.org/abs/2109.11978) <span class="used">— used for: thousands of parallel robots on one GPU, minutes of training.</span>
+6. <span id="s6"></span>[X. Gu, Y.-J. Wang, J. Chen, Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer, arXiv 2404.05695, 2024](https://arxiv.org/abs/2404.05695) <span class="used">— used for: sim-to-sim validation (training in Isaac Gym, checking in MuJoCo) before hardware.</span>
+7. <span id="s7"></span>[Newton physics engine, GitHub (releases to v1.7.0, 2026-10-14)](https://github.com/newton-physics/newton) <span class="used">— used for: licence, Warp, solvers, release status.</span>
+8. <span id="s8"></span>[Linux Foundation, contribution of Newton (2025)](https://www.linuxfoundation.org/press/linux-foundation-announces-contribution-of-newton-by-disney-research-google-deepmind-and-nvidia-to-accelerate-open-robot-learning) <span class="used">— used for: governance and co-developers.</span>
+9. <span id="s9"></span>[NVIDIA PhysX SDK on GitHub](https://github.com/NVIDIA-Omniverse/PhysX) <span class="used">— used for: BSD-3-Clause licence, GPU source in 5.6.</span>
+10. <span id="s10"></span>[Drake](https://drake.mit.edu/) <span class="used">— used for: hydroelastic contact, licence.</span>
+11. <span id="s11"></span>[mujoco-warp on PyPI (3.17.0, 2026-10-22)](https://pypi.org/project/mujoco-warp/) <span class="used">— used for: MuJoCo Warp's release status (development status "3 - Alpha"), Apache-2.0.</span>
+12. <span id="s12"></span>[Isaac Sim on GitHub](https://github.com/isaac-sim/IsaacSim) <span class="used">— used for: Isaac Sim source licence (Apache-2.0) and the Omniverse Kit SDK it downloads.</span>
+
+<PageScript code={script} />

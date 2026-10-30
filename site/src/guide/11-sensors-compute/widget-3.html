@@ -1,0 +1,41 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-cp="today">Marvin Bot today (walking)</button>
+<button data-cp="stairs">Stairs from depth</button>
+<button data-cp="vla">VLA onboard at 2 Hz</button>
+<button data-cp="low">30 W power mode</button>
+</div>
+<h4>Power mode</h4>
+<div class="ctl"><select id="pm"><option value="maxn">MAXN (up to 60 W): 12 cores, GPU 1301 MHz</option><option value="50">50 W: 12 cores at 1.5 GHz, GPU 816 MHz</option><option value="30">30 W (default): 8 cores, GPU 612 MHz</option><option value="15">15 W: 4 cores, GPU 408 MHz</option></select></div>
+<h4>Workloads</h4>
+<div class="wl">
+<input checked="" id="w_rt" type="checkbox"/><label for="w_rt">Real-time process: CAN I/O on 7 buses, IMU, safety <span class="est">est.</span></label>
+<input checked="" id="w_pol" type="checkbox"/><label for="w_pol">Policy MLP</label>
+<input checked="" id="w_cam" type="checkbox"/><label for="w_cam">Depth camera stream (depth on the camera) <span class="est">est.</span></label>
+<input id="w_map" type="checkbox"/><label for="w_map">Terrain height map from depth (GPU) <span class="est">est.</span></label>
+<input checked="" id="w_log" type="checkbox"/><label for="w_log">ROS 2 logging <span class="est">est.</span></label>
+<input id="w_tel" type="checkbox"/><label for="w_tel">Teleoperation video stream <span class="est">est.</span></label>
+<input id="w_vla" type="checkbox"/><label for="w_vla">VLA (GR00T N1.7, TensorRT)</label>
+</div>
+<div class="ctl"><label>Policy rate <output id="o_pr"></output></label><input id="pr" max="200" min="25" step="25" type="range" value="50"/></div>
+<div class="ctl"><label>Policy network</label><select id="net"><option value="flat">Flat: 256-128-128, ~75 inputs</option><option value="rough">Rough: 512-256-128, ~210 inputs</option><option value="big">Bigger: 1024-1024-512, 64-step history (hypothetical)</option></select></div>
+<div class="ctl"><label>Logging rate <output id="o_lg"></output></label><input id="lg" max="80" min="1" step="1" type="range" value="10"/>
+<div class="hint">MB/s written (full-resolution depth at 30 fps is about 61 MB/s).</div></div>
+<div class="ctl"><label>VLA chunk rate <output id="o_vh"></output></label><input id="vh" max="6" min="0.5" step="0.1" type="range" value="2"/>
+<div class="hint">Action chunks per second. One chunk ≈ 0.28 s of GPU at full clocks (one report).</div></div>
+</div>
+<div class="preview">
+<div class="barlab"><span>CPU (core-equivalents at 2.2 GHz)</span><b id="cpuv"></b></div><div class="bar" id="cpubar"></div>
+<div class="barlab"><span>GPU (fraction of MAXN throughput)</span><b id="gpuv"></b></div><div class="bar" id="gpubar"></div>
+<div class="barlab"><span>Memory (GB of 64, shared CPU/GPU)</span><b id="memv"></b></div><div class="bar" id="membar"></div>
+<div class="legend" id="clegend"></div>
+<div class="readouts">
+<div class="ro" id="c_pol"><div class="k">Policy inference</div><div class="v">–</div></div>
+<div class="ro" id="c_vmax"><div class="k">Max VLA rate left</div><div class="v">–</div></div>
+<div class="ro" id="c_head"><div class="k">CPU headroom</div><div class="v">–</div></div>
+<div class="ro" id="c_ghead"><div class="k">GPU headroom</div><div class="v">–</div></div>
+</div>
+</div>
+</div>

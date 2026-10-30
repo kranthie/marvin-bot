@@ -1,0 +1,177 @@
+---
+title: "Balance: centre of mass, support polygon, ZMP and capture point"
+description: "Why does a robot stay up, and when must it take a step?"
+sidebar:
+  label: "02 · Balance: centre of mass, support polygon, ZMP and capture point"
+  order: 3
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/02-balance/widget-1.html?raw';
+import widget2 from '../../../guide/02-balance/widget-2.html?raw';
+import widget3 from '../../../guide/02-balance/widget-3.html?raw';
+import script from '../../../guide/02-balance/script.js?raw';
+import '../../../guide/02-balance/style.css';
+
+<div class="guide-meta">
+
+**Stage 1 · Foundations** · \~35 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/) · Maths: F = ma, an exponential · numbers from the repository as of 2026-10-29
+
+</div>
+
+Why does a robot stay up, and when must it take a step? Four ideas answer that: where the centre of mass is, the area the feet cover, where the ground pushes back, and where the robot would have to step to stop. Marvin Bot's walking <a class="g" href="../glossary/#policy">policy</a> (the learned controller that drives its joints) never computes them, yet they explain every fall and every recovery step it makes.
+
+:::note[You will learn]
+- Static balance: the <a class="g" href="../glossary/#centre-of-mass">centre of mass</a> (CoM) projection must lie inside the <a class="g" href="../glossary/#support-polygon">support polygon</a>.
+- Dynamic balance: the <a class="g" href="../glossary/#zero-moment-point">zero-moment point</a> (ZMP), the linear inverted pendulum and the cart-table model.
+- The <a class="g" href="../glossary/#capture-point">capture point</a>: how far a push carries the robot, and why Marvin Bot's 30 N·s push requirement needs a step.
+:::
+
+## The idea in one picture
+
+Stand still and lean forward slowly. Nothing happens until the point straight below your centre of mass passes your toes; then you must step. The **centre of mass** is the average position of all the robot's mass, weighted by mass. The **support polygon** is the smallest convex shape that contains every point where the feet touch the ground, like a rubber band stretched round the soles.<sup class="cite">[\[2\]](#s2)</sup> Standing still, the robot is balanced if the CoM's vertical projection (the point on the floor straight below it, where a plumb line from the CoM would touch) lies inside it.
+
+Moving changes the rule. Think of carrying a tall tray of drinks: walk off briskly and the glasses tip backwards. When the body speeds up or slows down, the point where the ground's push acts (the <a class="g" href="../glossary/#centre-of-pressure">centre of pressure</a>, which on flat ground is the same point as the **zero-moment point**, ZMP) moves away from the point below the CoM. That point, not the CoM, must stay inside the feet. And a push gives the body speed that must be soaked up before the robot can stop, sometimes only by taking a step. Playground A shows the static and accelerating cases from above; Playground B shows a push from the side.
+
+## Playground A: feet from above
+
+Top view, robot facing up the screen, its left on your left. Feet 0.24 × 0.11 m, hips 0.20 m apart, the ankle 0.09 m from the heel. Drag the CoM dot (or use the sliders). Origin: the point midway between the hip joints.
+
+<div class="hint">
+
+How to read this picture: orange shapes are the feet on the ground, the green outline round them is the support polygon, the blue dot is the point below the CoM and the violet dot is the ZMP. Each "margin" readout is the distance from that dot to the nearest green edge: positive means inside (balanced), negative means outside (tipping).
+
+</div>
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Press **Marvin Bot today**. The CoM margin reads about 109 mm: the CoM is 109 mm in front of the heels, its closest edge. The repo's MuJoCo standing check computes the same distance (see "How Marvin Bot does it").
+2. Switch to **Left only** without moving the CoM. The margin goes negative: before lifting a foot the robot must shift its CoM about 0.1 m sideways over the other foot. That sway is in every step.
+3. Back on both feet, raise the forward acceleration to 2 m/s². The ZMP moves 0.14 m behind the CoM. At about 1.5 m/s² it reaches the heels: a harder start would tip the robot backwards even though the CoM is well inside.
+:::
+
+## From first principles
+
+### Static balance
+
+Gravity pulls down at the CoM with force m·g (m the mass in kg, g = 9.81 m/s²). The ground can only push up, and only where the feet touch. If the robot does not move, the ground's total push must act straight under the CoM, otherwise the two forces, equal but not in line, twist the robot over (a "couple"). The ground's push can act anywhere inside the support polygon but nowhere outside it, so: static balance ⇔ CoM projection inside the support polygon. The distance to the nearest edge is the static margin.
+
+### Centre of pressure and ZMP
+
+The ground pushes on every square millimetre of the sole. Add those pushes up and they act like one force at one point, the centre of pressure (CoP). For a robot on flat ground the zero-moment point is the same point: the point on the ground about which the horizontal moments of gravity and inertia cancel.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[2\]](#s2)</sup> The ZMP idea, from Vukobratović's work in the late 1960s, gives a balance rule for walking: if the ZMP computed from the planned motion stays strictly inside the support polygon, the feet will not tip over their edges.<sup class="cite">[\[1\]](#s1)</sup>
+
+### The linear inverted pendulum and the cart-table
+
+To get numbers, physicists shrink the robot to its simplest possible version: a ball balanced on a stick, like balancing a broom upright on your palm. Model the robot as all its mass at the CoM, on a massless telescopic leg from the CoP, with the CoM held at a constant height z. Then the horizontal motion obeys:<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[2\]](#s2)</sup>
+
+<div class="eq">
+
+ẍ = ω² (x − p), ω = √(g / z)<br /> equivalently p = x − (z / g)·ẍ (cart-table form)
+
+</div>
+
+x is the CoM's horizontal position (m), ẍ its acceleration (m/s²), p the CoP/ZMP position (m), z the CoM height (m) and ω the pendulum's natural rate (1/s). If the CoM is ahead of the CoP, it accelerates forward: the pendulum falls. To accelerate forward, the robot moves its CoP behind the CoM, by (z/g)·ẍ. Kajita and colleagues called this the linear inverted pendulum mode, and used the "cart on a table" picture to plan walking: choose a ZMP path inside the footprints, then compute a CoM path that produces it.<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[4\]](#s4)</sup> For Marvin Bot, z ≈ 0.71 m gives ω ≈ 3.7 s⁻¹ (per second): left alone, a lean grows by a factor of about 2.7 (the number e) every 0.27 s. That is why a tall robot has only a few tenths of a second to react. A lower CoM gives a larger ω: it tips faster (a short pencil is harder to balance on a fingertip than a long broom), but a given push also carries it less far before it can be stopped, as Playground B shows.
+
+### The capture point (divergent component of motion)
+
+In plain words: if someone shoves you, there is one spot on the floor where, if you put your foot there, you come to a stop with no further steps. That spot is the capture point. A harder shove moves it further away; if it lands beyond your toes, you must step.
+
+The maths: split the pendulum's motion into a part that settles and a part that runs away. The runaway part is
+
+<div class="eq">
+
+ξ = x + ẋ / ω and it moves as ξ̇ = ω (ξ − p)
+
+</div>
+
+ẋ is the CoM's velocity (m/s). ξ is the capture point:<sup class="cite">[\[5\]](#s5)</sup> if the robot puts its CoP exactly on ξ (by stepping there or by shifting pressure within a foot), the CoM comes to rest above it. If ξ lies outside the reach of the CoP, it runs away from the CoP exponentially and the robot must step before it is too far.
+
+<details>
+<summary>Go deeper: the same idea under other names</summary>
+
+Englsberger and colleagues call ξ the <a class="g" href="../glossary/#divergent-component-of-motion">divergent component of motion</a> (DCM) and build walking controllers on it;<sup class="cite">[\[6\]](#s6)</sup> Koolen and colleagues turned it into "N-step capturability": can the robot stop in 0, 1 or 2 steps?<sup class="cite">[\[7\]](#s7)</sup> Biomechanics found the same quantity in human balance and called it the extrapolated centre of mass.<sup class="cite">[\[8\]](#s8)</sup>
+
+</details>
+
+A push is an impulse J (N·s): force times duration. By conservation of momentum it changes the CoM's velocity by Δv = J / m, whatever part of the body it hits (as long as it is short). The capture point then jumps ahead of the CoM by Δv / ω.
+
+## Playground B: a push from the side view
+
+"R14" is requirement 14 in the repo's list (`docs/requirements.md`): recover from a 30 N·s push while standing (N·s, newton-seconds, measures a push by force times how long it lasts: 300 N for 0.1 s is 30 N·s). The robot stands with its CoM over its feet; a short push gives it a velocity. The ankle can move the CoP anywhere on the sole (an idealised "ankle strategy"). If the capture point leaves the sole, the robot needs a step. Press a preset, then <b>▶ Replay</b> to watch it.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. Press **R14 push, ankle only**: 30 N·s on 41.3 kg is 0.73 m/s, the capture point lands 0.195 m ahead of the CoM, but the toes are only 0.131 m ahead. The robot falls. Switch to **Ankle + one step**: it recovers with a step of about 0.32 m (foot-centre travel).
+2. Now slide **Step lands after** from 0.30 to 0.60 s. The required step grows from \~0.32 m to \~0.72 m: the capture point runs away exponentially, so reacting fast matters more than stepping far.
+3. Lower the CoM height to 0.5 m. ω rises and the same push needs a shorter step: a crouch helps push recovery, but it costs knee torque (page [05](../05-leg-loads-stairs/)).
+:::
+
+### Why the policy never computes any of this
+
+Marvin Bot walks with a neural-network <a class="g" href="../glossary/#policy">policy</a> trained by <a class="g" href="../glossary/#reinforcement-learning">reinforcement learning</a> (trial and error in simulation, page 16), not with a ZMP planner. The policy sees joint angles, velocities, the pelvis's angular rate and gravity direction, and outputs joint targets; it is rewarded for following velocity commands and penalised for falling. It is trained with random pushes, a technique from massively parallel legged training.<sup class="cite">[\[9\]](#s9)</sup> Nothing in it computes a ZMP or a capture point. But physics does not change: a policy that survives a push must, implicitly, move its CoP to the toes and then step near the capture point. These models are how you read its behaviour, predict how hard a push it can survive, and choose training settings.
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- **Requirement R14** (`docs/requirements.md`, "should"): recover from a 30 N·s push while standing. At 41.30 kg that is a CoM velocity of 30 / 41.3 = 0.73 m/s (0.74 m/s at 40.35 kg bare).
+- <b>CoM height.</b> We loaded the generated URDF in MuJoCo with the repo's own `check_standing.py` builder, placed the robot in `robot.yaml`'s stance and read the whole-body CoM: 0.706 m above the floor, 4 mm ahead of the hip line, for the 40.35 kg bare model. The shells (0.95 kg, mostly on the torso) raise it slightly, so this page uses 0.71 m. (`docs/decisions.md`, 2026-10-29, says the CoM rose 78 mm with the taller body.)
+- <b>Static margin.</b> `sim/mujoco/check_standing.py` reports the distance from the CoM projection to the edge of the feet's bounding box: 110 mm in our run of the stance; `robot.yaml`'s comment says 106 mm (from an earlier model). Playground A's default gives 109 mm.
+- <b>Pushes in training.</b> The walking environments push the robot every 5–10 s by setting the pelvis velocity to a random value up to ±0.5 m/s in x and y (`sim/isaaclab/marvin_bot/tasks/velocity_env_cfg.py`). At 41.3 kg, 0.5 m/s is about 21 N·s: two-thirds of R14.
+- <b>Step-up check.</b> `sim/mujoco/check_step_up.py` requires the CoM to lie at least 2 cm inside the supporting foot (1 cm sideways): a static-balance test exactly like Playground A.
+:::
+
+With R14's push, the numbers say: capture point 0.195 m ahead of the CoM against 0.131 m of foot ahead of it (forward) and 0.155 m to the outer edge of the far foot (sideways, both feet down). Neither direction can be saved by the ankles alone; forward needs one step of roughly 0.3 m if it lands 0.3 s after the push. Without a step, the idealised ankle strategy handles about 20 N·s forward and 24 N·s sideways. Real ankles do worse (finite torque, the foot rolls before the CoP reaches the edge), and swinging the arms and torso (the "hip strategy", modelled with a flywheel by Pratt et al.<sup class="cite">[\[5\]](#s5)</sup>) does a little better.
+
+## Trade-offs and alternatives
+
+| Approach | How it balances | Strength | Weakness |
+|---|---|---|---|
+| ZMP preview control<sup class="cite">[\[4\]](#s4)</sup> | Plans a CoM path whose ZMP stays in the footprints | Predictable, well understood | Needs flat feet, accurate models; slow, careful gaits |
+| Capture point / DCM control<sup class="cite">[\[6\]](#s6)</sup> | Controls ξ directly; steps where ξ goes | Push recovery built in | Still a simplified model; footstep planner needed |
+| RL policy (Marvin Bot)<sup class="cite">[\[9\]](#s9)</sup> | Learned from millions of simulated falls and pushes | Handles rough ground and stairs with one network | No explicit guarantee; only as robust as its training pushes and randomisation |
+
+Design levers that change balance: a lower CoM raises ω (faster recovery, but more knee torque); larger feet move the edges out (but catch on stairs; Marvin Bot's foot is 0.24 m, about the length of a 25 cm tread); wider stance helps sideways pushes; faster stepping (stronger hips, lighter legs) shortens the step needed.
+
+:::caution[Where sources and the repo disagree]
+Not a disagreement with a source, but a gap inside the repo: R14 asks for 30 N·s (≈0.73 m/s), while the training pushes go up to 0.5 m/s (≈21 N·s). Our model says 30 N·s needs a reactive step, so a policy may need larger training pushes before R14 can be claimed. Also, `robot.yaml`'s stance comment gives a 106 mm margin and our run of the current URDF gives 110 mm; the comment predates the latest mass changes.
+:::
+
+## Decisions you can make here
+
+- Training push range: to meet R14, the training pushes probably need to reach ≥ 0.73 m/s (they stop at 0.5 m/s today) and the evaluation should measure recovery steps, not only falls. Trade: harder pushes make training slower and can make the walk stiffer and more cautious.
+- CoM height and stance: a lower crouch needs a shorter recovery step, but the bent knee carries more torque and heats up sooner (page 05).
+- Foot size and stance width: bigger feet and a wider stance give bigger margins, but a longer foot catches on stair edges and a wider stance makes each sideways weight shift longer.
+
+<RawHtml html={widget3} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+<b>Where this leads.</b> Balance is a job for the whole machine: sensors must notice the lean, the computer must decide, and the motors must react within a few tenths of a second. Page 03 follows that chain from battery to <a class="g" href="../glossary/#policy">policy</a>; pages 04 and 05 ask whether the motors are strong enough.
+
+## Further reading
+
+- [Tedrake, Underactuated Robotics, "Humanoid robots"](https://underactuated.mit.edu/humanoids.html): CoP, ZMP and the ZMP planner, derived carefully.
+- [Pratt et al., Capture Point (2006)](https://doi.org/10.1109/ICHR.2006.321385): short and readable; the flywheel model of the hip strategy.
+- [Koolen et al., Capturability, Part 1 (2012)](https://doi.org/10.1177/0278364912452673): the formal version: 0-, 1- and N-step capturability.
+- [Rudin et al., Learning to walk in minutes (2021)](https://arxiv.org/abs/2109.11978): the training recipe Isaac Lab's locomotion tasks grew from, pushes included.
+
+## Sources
+
+1. <span id="s1"></span>[M. Vukobratović and B. Borovac, "Zero-moment point — thirty five years of its life", Int. J. Humanoid Robotics, 2004](https://doi.org/10.1142/S0219843604000083) <span class="used">— used for: ZMP definition, history and the balance condition.</span>
+2. <span id="s2"></span>[R. Tedrake, Underactuated Robotics (MIT 6.832), "Humanoid robots"](https://underactuated.mit.edu/humanoids.html) <span class="used">— used for: CoP/ZMP equivalence on flat ground, support polygon, the constant-height pendulum equation.</span>
+3. <span id="s3"></span>[S. Kajita, F. Kanehiro, K. Kaneko, K. Yokoi and H. Hirukawa, "The 3D linear inverted pendulum mode", IROS 2001](https://doi.org/10.1109/IROS.2001.973365) <span class="used">— used for: the linear inverted pendulum model.</span>
+4. <span id="s4"></span>[S. Kajita et al., "Biped walking pattern generation by using preview control of zero-moment point", ICRA 2003](https://doi.org/10.1109/ROBOT.2003.1241826) <span class="used">— used for: the cart-table model and ZMP preview control.</span>
+5. <span id="s5"></span>[J. Pratt, J. Carff, S. Drakunov and A. Goswami, "Capture Point: a step toward humanoid push recovery", Humanoids 2006](https://doi.org/10.1109/ICHR.2006.321385) <span class="used">— used for: capture point definition, flywheel (hip strategy) extension.</span>
+6. <span id="s6"></span>[J. Englsberger, C. Ott and A. Albu-Schäffer, "Three-dimensional bipedal walking control based on divergent component of motion", IEEE T-RO, 2015](https://doi.org/10.1109/TRO.2015.2405592) <span class="used">— used for: DCM, ξ̇ = ω(ξ − p).</span>
+7. <span id="s7"></span>[T. Koolen, T. de Boer, J. Rebula, A. Goswami and J. Pratt, "Capturability-based analysis and control of legged locomotion, Part 1", IJRR, 2012](https://doi.org/10.1177/0278364912452673) <span class="used">— used for: N-step capturability.</span>
+8. <span id="s8"></span>[A. L. Hof, M. G. J. Gazendam and W. E. Sinke, "The condition for dynamic stability", J. Biomechanics, 2005](https://doi.org/10.1016/j.jbiomech.2004.03.025) <span class="used">— used for: the extrapolated centre of mass in human balance.</span>
+9. <span id="s9"></span>[N. Rudin, D. Hoeller, P. Reist and M. Hutter, "Learning to walk in minutes using massively parallel deep reinforcement learning", CoRL 2021](https://arxiv.org/abs/2109.11978) <span class="used">— used for: RL locomotion training with random pushes.</span>
+
+<PageScript code={script} />

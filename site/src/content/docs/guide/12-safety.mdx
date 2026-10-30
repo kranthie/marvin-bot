@@ -1,0 +1,199 @@
+---
+title: "Safety"
+description: "A 40 kg robot with a 48 V battery and 120 N·m joints can break bones, crush fingers and start a fire."
+sidebar:
+  label: "12 · Safety"
+  order: 13
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/12-safety/widget-1.html?raw';
+import widget2 from '../../../guide/12-safety/widget-2.html?raw';
+import widget3 from '../../../guide/12-safety/widget-3.html?raw';
+import widget4 from '../../../guide/12-safety/widget-4.html?raw';
+import script from '../../../guide/12-safety/script.js?raw';
+import '../../../guide/12-safety/style.css';
+
+<div class="guide-meta">
+
+**Stage 3 · Electrical, sensing and safety** · \~30 min · Before this: [09 Power and battery](../09-power-battery/), [10 CAN buses](../10-can-bus/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+A 40 kg robot with a 48 V battery and 120 N·m joints can break bones, crush fingers and start a fire. This page puts numbers on those hazards and walks through the layers that are meant to stop each fault, so you can see what each layer is for and what happens when one is missing.
+
+<RawHtml html={widget1} />
+
+:::note[You will learn]
+- How much energy a falling or swinging humanoid carries, and how that compares with the force thresholds used for collaborative robots.
+- Why a robot needs <a class="g" href="../glossary/#defence-in-depth">several independent safety layers</a>, from software clamps to a hardware <a class="g" href="../glossary/#e-stop">e-stop</a> that opens the main <a class="g" href="../glossary/#contactor">contactor</a>.
+- What a <a class="g" href="../glossary/#watchdog">watchdog</a>, a command timeout and a <a class="g" href="../glossary/#damping-mode">damping mode</a> each catch.
+- How to test safely (gantry, harness, clearance, two people) and handle lithium-ion packs.
+- Which standards to read, and what they do and do not say about a hobby humanoid.
+:::
+
+## The idea in one picture
+
+A car keeps you safe with several things at once: brakes, a seatbelt, airbags, crumple zones. None is perfect, but a crash has to get past all of them to hurt you. Robot safety works the same way, and it is called **defence in depth**. This page asks two questions: how much harm can Marvin Bot do, in numbers; and which layer stops each kind of fault.
+
+Three kinds of energy make a humanoid dangerous: **potential energy** (40 kg with its centre of mass about 0.8 m up: m g h ≈ 41 × 9.81 × 0.8 ≈ 320 J, released in a fall), **kinetic energy and force from the actuators** (a 120 N·m knee squeezes a finger 5 cm from its axis with 120 / 0.05 = 2,400 N), and **chemical energy** in the battery (630 Wh is 2.3 MJ, 2.3 million joules, released as heat if cells go into <a class="g" href="../glossary/#thermal-runaway">thermal runaway</a>, a self-feeding overheating). No single measure covers all three, so safety comes in layers: each catches some faults, and the layers behind it catch what it misses.
+
+## Playground 1: hazard energy explorer
+
+How hard can a robot hit before it hurts? The best published numbers come from **ISO/TS 15066**, a technical specification for *collaborative robots* (cobots: industrial robot arms designed to work beside people). It lists, for each part of the body, the force at which pressing or bumping starts to hurt. We borrow those numbers as a yardstick.
+
+<b>Start here:</b> pick a preset and compare the top bar and the **Estimated peak force** readout with the limits: red means above the body region's threshold, green below it. Then choose your own scenario and body region. The model treats the contact as two masses meeting through a spring (the body region's stiffness), the model ISO/TS 15066 uses for transient contact.<sup class="cite">[\[1\]](#s1)[\[2\]](#s2)</sup>
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. **Marvin Bot today: arm swing at the chest**: a 3 kg arm at 5 rad/s hits the chest with roughly 450 N, well over the transient threshold. Drag the joint speed down until the bar turns green, or press **Arm slowed to the chest limit**. Now switch the region to "skull and forehead": the head is stiffer, so the same swing produces about twice the force (about 1,000 N), and the threshold is less than half the chest's, because the head and face get no factor of two for impacts (130 N). Keep heads furthest away.
+2. **Finger in the knee**: 2,400 N at 5 cm, about 17 times the hand's quasi-static limit. Even a 20% software torque limit leaves it over. Then try **Finger in a wrist servo**: the smallest actuator on the robot still exceeds the limit at 2 cm. Every powered joint is a pinch point.
+3. **Robot falls on a lower leg**: 20 kg from 0.6 m is about 120 J and several kilonewtons. Nothing in software changes this number; only distance (clearance), the gantry and padding do.
+:::
+
+## From first principles
+
+### Energy, speed and force
+
+<div class="eq">
+
+fall: v = √(2 g h) E = m g h<br /> swing: v = ω r J = m L² / 3 (uniform rod about one end) m<sub>R</sub> = J / r²<br /> contact: μ = (1/m<sub>H</sub> + 1/m<sub>R</sub>)⁻¹ F<sub>peak</sub> = v √(μ k) E<sub>max</sub> = F<sub>max</sub>² / (2k)<br /> pinch: F = τ / r
+
+</div>
+
+- *v*: contact speed (m/s); *g* = 9.81 m/s²; *h*: drop height (m); *ω*: joint speed (rad/s); *r*: distance from the joint to the contact (m).
+- *J*: the limb's moment of inertia about the joint (kg·m²). <i>m<sub>R</sub></i>: the robot's <a class="g" href="../glossary/#effective-mass">effective mass</a> at the contact: how heavy the limb "feels" at that point. A long arm swung from the shoulder feels about a third of its mass at the fingertip.
+- <i>m<sub>H</sub></i>, *k*: the body region's effective mass and stiffness (how many newtons it takes to squash it by a millimetre) from ISO/TS 15066 (for example chest 40 kg and 25 N/mm; hand 0.6 kg and 75 N/mm).<sup class="cite">[\[2\]](#s2)</sup> *μ*: the reduced mass of the two-body collision (a combined mass, always smaller than the lighter of the two).
+- The force formula comes from energy: the relative kinetic energy ½μv² is stored in the spring as ½kx², and F = kx. ISO/TS 15066 uses the same relation, solved for speed, to set the highest permitted relative speed *v*<sub>max</sub> = F<sub>max</sub> / √(μk).<sup class="cite">[\[1\]](#s1)[\[2\]](#s2)</sup>
+
+<b>What the thresholds mean.</b> ISO/TS 15066 lists, for each body region, a maximum <a class="g" href="../glossary/#quasi-static-contact">quasi-static</a> force (the body is clamped and pressed) and allows transient contact (a brief impact where the body can move away) at higher values, commonly applied as twice the quasi-static figure, except for the skull, forehead and face, where no factor is applied.<sup class="cite">[\[1\]](#s1)[\[12\]](#s12)</sup> The figures used here come from a published reproduction of the standard's tables, not from the standard's own text.
+
+These values come from studies of the onset of *pain* in adult volunteers, for industrial robots working beside trained workers; they are not injury thresholds and they do not cover falls. The playground uses them only to give a sense of scale: almost every Marvin Bot scenario exceeds them by a wide margin, which is the point. The robot is not a collaborative robot, and people must stay out of its reach while it is powered.
+
+<b>Fire.</b> A lithium-ion cell that is overcharged, shorted, crushed or overheated can enter thermal runaway: it heats itself, vents flammable gas and can ignite its neighbours.<sup class="cite">[\[9\]](#s9)</sup> The BMS, the Class-T fuse and the charging rules are there to keep cells far from those conditions; once a pack is burning, getting people away is the response, not fighting it.
+
+## Playground 2: e-stop chain and fault tree
+
+Now the layers themselves. A <a class="g" href="../glossary/#watchdog">watchdog</a> is a timer that must be reset regularly by the control program; if the program freezes and stops resetting it, the watchdog cuts motor power. A <a class="g" href="../glossary/#gantry">gantry</a> is an overhead frame with a harness that catches the robot if it falls during testing.
+
+<b>Start here:</b> choose a fault. The diagram shows each safety layer in the order it would act; a layer either does not see this kind of fault (faded), catches it (green), or has been removed by you (struck through). Remove layers to see what the next one down must do, and what state the robot ends in.
+
+<RawHtml html={widget3} />
+
+:::note[Try this]
+1. Select **Control process hangs**. The watchdog relay opens the contactor. Now press **No watchdog relay**: only the person holding the e-stop is left, and they must notice first. This is why the watchdog is a hardware relay, not more software.
+2. Select **Robot is pushed and falls** with <b>Free walking (no gantry)</b>: fall detection switches to damping, but the robot still hits the floor. Padding (R53) and clearance are what protect people and parts.
+3. Press **Software layers only** and try **Short circuit in a leg harness**. No software layer can stop a short: fuses and the BMS must be hardware.
+:::
+
+### Stop categories
+
+IEC 60204-1, the standard for the electrical equipment of machines, names three ways to stop a machine:<sup class="cite">[\[4\]](#s4)[\[5\]](#s5)</sup>
+
+- **Category 0**: remove power from the actuators at once (an uncontrolled stop).
+- **Category 1**: a controlled stop with power still available, then remove power once stopped.
+- **Category 2**: a controlled stop that leaves power on.
+
+For a walking robot the choice is not obvious: cutting power (category 0) makes it fall, while a controlled stop (category 1) needs a working controller. Marvin Bot's design uses both: software faults lead to damping or sitting down, then cutting power; the hardware e-stop and watchdog cut power immediately, and the gantry catches the robot in early testing.
+
+ISO 13850 covers the design of the e-stop function itself (a latching red actuator on a yellow background, category 0 or 1, reset only by deliberate action).<sup class="cite">[\[3\]](#s3)</sup>
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+`docs/safety.md` (with its warning that nothing has been built or tested) and requirements R50-R53 in `docs/requirements.md` ("must" = required, "should" = strongly wanted):
+
+- **R50, hardware e-stop**, wired and wireless, cuts actuator power without rebooting the computer (must). <i>Why:</i> a stop must work even if all software has failed, and the logs that explain the fault must survive.
+- <b>R51, software safety:</b> command watchdog, joint and torque limits, fall detection with <a class="g" href="../glossary/#damping-mode">damping mode</a> (motors resist motion like thick oil instead of pushing) (must). <i>Why:</i> catches most faults gently, before the hardware has to cut power.
+- **R52, gantry and harness** for all early walking (must). <i>Why:</i> nothing in software can stop a 41 kg fall.
+- **R53, padding** at likely impact points (should).
+- **Power path** ([09 Power and battery](../09-power-battery/), `docs/design/assembly_wiring.md`): Class-T fuse, precharge and contactor, branch fuses, computer DC-DC ahead of the contactor.
+- <b>BOM safety group, $470:</b> fall padding, gantry with harness and hoist, latching e-stop and contactor driver, wireless e-stop with receiver and watchdog relay.
+:::
+
+### Testing practice (from `docs/safety.md`)
+
+- First actuator tests with the actuator or limb clamped to the bench, hands out of its range whenever the driver is enabled; low torque limits and gains first, raised only after the motion is checked. The CAN driver is untested: check every command at low limits.
+- Test the e-stop before each session. Lift the robot with two people or a hoist.
+- All early standing and walking on a gantry with a harness that catches the robot before its knees touch the floor; free walking only after phase 4's gantry tests, in a clear area with padding and nobody within 2 m.
+- One person operates; one person holds the e-stop and does nothing else.
+- Policies run first in simulation (Isaac Lab and the MuJoCo cross-check) with the same limits, rates and latency as the robot.
+
+### Battery handling
+
+- Charge on a non-flammable surface, attended, at 4.1 V per cell for everyday use (4.2 V only when range is needed). Lower charge voltage also slows ageing.<sup class="cite">[\[10\]](#s10)</sup>
+- Store at about half charge in a fire-resistant container away from exits. `docs/safety.md` says about 50%; Battery University suggests about 40% for storage.<sup class="cite">[\[11\]](#s11)</sup>
+- Do not use a pack that is swollen, damaged, or has been in a hard fall until it has been inspected.
+- If a pack swells, smokes or hisses: cut power only if that is safe, move away, keep others out and call emergency services. A lithium-ion fire cannot be put out reliably with a small extinguisher.
+- The BMS reports to the computer, and the robot sits down and cuts actuator power at about 15% charge.
+
+## Standards worth reading (and what they do not say)
+
+| Standard | What it covers | Relevance to Marvin Bot |
+|---|---|---|
+| ISO 13850:2015<sup class="cite">[\[3\]](#s3)</sup> | design principles of the emergency stop function | directly useful for the e-stop button, latching and reset |
+| IEC 60204-1:2016<sup class="cite">[\[4\]](#s4)</sup> | electrical equipment of machines; stop categories 0, 1, 2 | vocabulary for stops; much of it is for mains-powered machinery |
+| ISO 10218-1 and -2 (2025 editions)<sup class="cite">[\[6\]](#s6)</sup> | safety of industrial robots and their applications | a reference for safety functions; scope is industrial robots, not humanoids among the public |
+| ISO/TS 15066:2016<sup class="cite">[\[1\]](#s1)</sup> | collaborative industrial robots; body-region force and pressure thresholds | source of the thresholds in Playground 1; written for fixed-base cobots |
+| ISO 13482:2014<sup class="cite">[\[7\]](#s7)</sup> | safety of personal care robots, including mobile and person-carrier robots | closer to a robot moving among people than the industrial standards |
+| IEC 62133-2:2017<sup class="cite">[\[8\]](#s8)</sup> | safety requirements and tests for portable lithium cells and batteries | what to look for on cells and packs you buy; a self-built pack is untested |
+
+Standards for legged and humanoid robots working near people are still being developed; check the current state with ISO's robotics committee (TC 299) before relying on any of the above. Reading these documents helps you think about hazards in a structured way. It does not make a robot compliant, and a self-built research robot will not be.
+
+## Trade-offs and alternatives
+
+| Choice | For | Against |
+|---|---|---|
+| <b>E-stop opens a contactor; computer stays up (chosen)</b> | logs and state survive; restart is quick | the robot falls when actuator power goes: needs the gantry and padding |
+| E-stop cuts everything | simplest; nothing stays energised | every stop reboots the computer; the cause of the stop may be lost |
+| E-stop commands damping first (category 1) | softer fall | depends on a working controller and CAN; must still be backed by a category 0 cut |
+| <b>Watchdog relay in hardware (chosen)</b> | catches a hung controller without relying on it | needs a heartbeat output and tuning of its timeout |
+| Software watchdog only | no extra part | cannot act if the process or computer that runs it has hung |
+
+:::caution[Where sources and the repo disagree]
+Storage charge: `docs/safety.md` says store at about 50%; Battery University's BU-702 recommends about 40%.<sup class="cite">[\[11\]](#s11)</sup> Both are "partly charged, not full"; the difference is small.
+:::
+
+## Decisions you can make here
+
+- <b>Software torque and speed limits for each test phase.</b> Trade: low limits make early tests gentler (Playground 1 shows the speed at which an arm reaches a body-region threshold), but too low and the robot cannot stand or catch itself, so limits rise phase by phase.
+- **Watchdog and command timeout values** (to be set on the bench). Trade: a short timeout cuts power sooner after a hang, but a normal hiccup in timing may trip it and drop the robot.
+- **Stop behaviour**: what a software fault does (hold, damp, sit, cut), and in which order. Trade: a controlled stop falls more softly but relies on working software; an immediate cut always works but the robot drops.
+- <b>Padding, clear area and leaving the gantry.</b> Trade: more padding and a bigger clear area cost mass and space; leaving the gantry early speeds up testing but removes the one layer that stops falls.
+- <b>Battery charging and storage routine.</b> Trade: charging to 4.1 V and storing partly charged cost a little range and convenience, for a slower-ageing and safer pack.
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+Next: [13 The robot description](../13-description/) starts the simulation stage: the single set of files that describes the robot's joints, limits and masses, from which the simulators and the limits on this page are built.
+
+## Further reading
+
+- [Ghanbarzadeh and Najafi, Safe physical human-robot interaction through variable impedance control based on ISO/TS 15066](https://arxiv.org/abs/2311.13814): a readable account of the body model, the speed limit formula and effective mass.
+- [Machinery Safety 101, emergency stop series](https://machinerysafety101.com/series/emergency-stop/): practical explanations of ISO 13850 and IEC 60204-1 stop categories.
+- [Battery University, BU-304a: Safety concerns with Li-ion](https://batteryuniversity.com/article/bu-304a-safety-concerns-with-li-ion): thermal runaway and what protection circuits do.
+- [09 Power and battery](../09-power-battery/): the fuse, precharge, contactor and keep-alive path that the e-stop acts on.
+
+## Sources
+
+1. <span id="s1"></span>[ISO/TS 15066:2016 Robots and robotic devices: Collaborative robots (catalogue page; standard text not reviewed)](https://www.iso.org/standard/62996.html) <span class="used">— used for: body-region force thresholds, transient vs quasi-static contact, the speed-limit model.</span>
+2. <span id="s2"></span>[A. Ghanbarzadeh, E. Najafi, Safe physical human-robot interaction through variable impedance control based on ISO/TS 15066, arXiv:2311.13814, 2023](https://arxiv.org/abs/2311.13814) <span class="used">— used for: table of ISO/TS 15066 maximum permissible force, effective spring constant and effective mass per body region; v<sub>max</sub> = F/√(μk); reduced mass.</span>
+3. <span id="s3"></span>[ISO 13850:2015 Safety of machinery: Emergency stop function, principles for design (catalogue page)](https://www.iso.org/standard/59970.html) <span class="used">— used for: what the e-stop standard covers.</span>
+4. <span id="s4"></span>[IEC 60204-1:2016 Safety of machinery: Electrical equipment of machines (catalogue page)](https://webstore.iec.ch/en/publication/26037) <span class="used">— used for: stop categories 0, 1 and 2.</span>
+5. <span id="s5"></span>[Machinery Safety 101, Emergency stop series](https://machinerysafety101.com/series/emergency-stop/) <span class="used">— used for: plain-language definitions of the stop categories and the e-stop function.</span>
+6. <span id="s6"></span>[ISO 10218-1:2025 Robotics: Safety requirements, Part 1: Industrial robots (catalogue page)](https://www.iso.org/standard/73933.html) <span class="used">— used for: scope of the industrial robot safety standard.</span>
+7. <span id="s7"></span>[ISO 13482:2014 Robots and robotic devices: Safety requirements for personal care robots (catalogue page)](https://www.iso.org/standard/53820.html) <span class="used">— used for: existence and scope of a personal-care robot standard.</span>
+8. <span id="s8"></span>[IEC 62133-2:2017 Safety requirements for portable sealed secondary lithium cells and batteries (catalogue page)](https://webstore.iec.ch/en/publication/32662) <span class="used">— used for: the battery safety standard to look for on bought cells.</span>
+9. <span id="s9"></span>[Battery University, BU-304a Safety concerns with Li-ion](https://batteryuniversity.com/article/bu-304a-safety-concerns-with-li-ion) <span class="used">— used for: thermal runaway causes.</span>
+10. <span id="s10"></span>[Battery University, BU-808 How to prolong lithium-based batteries](https://batteryuniversity.com/article/bu-808-how-to-prolong-lithium-based-batteries) <span class="used">— used for: lower charge voltage extends cycle life.</span>
+11. <span id="s11"></span>[Battery University, BU-702 How to store batteries](https://batteryuniversity.com/article/bu-702-how-to-store-batteries) <span class="used">— used for: storage at about 40% state of charge.</span>
+12. <span id="s12"></span>[R. Zanella, F. Califano, S. Stramigioli, Physical human-robot interaction: a critical review of safety constraints, arXiv:2601.19462, 2026](https://arxiv.org/abs/2601.19462) <span class="used">— used for: transient limits taken as twice the quasi-static values except for the skull, forehead and face (no factor).</span>
+
+<PageScript code={script} />

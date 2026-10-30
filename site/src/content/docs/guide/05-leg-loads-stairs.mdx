@@ -1,0 +1,194 @@
+---
+title: "Leg loads and stairs"
+description: "How much torque does a knee need to carry a 41 kg robot up an 18 cm stair, and why is Marvin Bot's knee motor fine for walking but warm on slow stairs?"
+sidebar:
+  label: "05 · Leg loads and stairs"
+  order: 6
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/05-leg-loads-stairs/widget-1.html?raw';
+import widget2 from '../../../guide/05-leg-loads-stairs/widget-2.html?raw';
+import widget3 from '../../../guide/05-leg-loads-stairs/widget-3.html?raw';
+import script from '../../../guide/05-leg-loads-stairs/script.js?raw';
+import '../../../guide/05-leg-loads-stairs/style.css';
+
+<div class="guide-meta">
+
+**Stage 2 · Mechanics** · \~35 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [02 Balance](../02-balance/), [04 Actuators](../04-actuators/) · Maths: torque = force × distance · numbers from the repository as of 2026-10-29
+
+</div>
+
+How much torque does a knee need to carry a 41 kg robot up an 18 cm stair, and why is Marvin Bot's knee motor fine for walking but warm on slow stairs? This page builds the answer from a lever and a weight, then checks it against the repo's own numbers. It matters because climbing ordinary household stairs is one of Marvin Bot's requirements, and stairs, not walking, decide how big the knee motor must be.
+
+:::note[You will learn]
+- How to find a joint's <a class="g" href="../glossary/#torque">torque</a> from the body's weight and a <a class="g" href="../glossary/#lever-arm">lever arm</a>, and what the <a class="g" href="../glossary/#jacobian">Jacobian</a> transpose has to do with it.
+- Why a bent knee costs torque, and why stairs load the knee more than walking.
+- Peak versus continuous (rated) torque, the 70%-of-peak rule, <a class="g" href="../glossary/#rms-torque">RMS torque</a> and duty cycle, and what a 1.5:1 knee stage would change.
+:::
+
+## The idea in one picture
+
+Stand on one leg with a slightly bent knee. Your body weight pushes down through your foot; the ground pushes back up with the same force. That upward force passes some distance behind your knee, and that distance is the lever arm. The knee's muscles must produce a torque equal to force × lever arm, or the knee folds. Bend the knee more and the knee moves forward while your weight stays over your foot: the lever arm grows, and so does the torque. That is all of leg statics (statics: the forces in something that is standing still). You can feel it: a shallow knee bend is easy to hold, a deep squat on one leg is very hard.
+
+## Playground A: a leg on a stair
+
+Side view of the stance leg standing on a stair tread (the foot flat, its heel 1 cm past the edge, the pelvis upright: the same rules as the repo's step-up check). The ground force is drawn as a violet arrow; dotted lines show each joint's lever arm. <b>Start here:</b> press **Marvin Bot today**, then drag the knee slider and watch the knee bar grow as the dotted knee lever arm gets longer.
+
+<div class="hint">
+
+How to read this: the bars under the picture compare each joint's torque with its motor's continuous (for-ever) rating. Green is comfortable, amber is warm, red means the motor would overheat if it held this pose for long. The violet tick on each bar is the project's limit for brief peaks (70% of the peak rating).
+
+</div>
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Press **Marvin Bot today**: knee 47 N·m, 118% of the RS04's 40 N·m continuous rating, 39% of its 120 N·m peak; ankle pitch about 24 N·m and hip pitch about 2 N·m. These match the repo's static 18 cm check (47, 24.4 and 2.3 N·m) to within a few per cent.
+2. Switch to **Auto** and slide the CoM from −0.06 m to +0.03 m (over the middle of the foot). The leg leans forward with the body, the knee lever arm shrinks and the knee torque drops by about a third. Where the CoM sits over the foot matters as much as how much the knee bends.
+3. Press **Start of an 18 cm step-up**: the front knee is bent 84°. With half the weight on it the knee needs about 34 N·m; slide the share to 1 and it needs about 69 N·m. Then press **Halfway up**: 75 N·m on one leg, 63% of peak and nearly twice the continuous rating. Fine for a moment, too hot to hold: this is why real climbers keep weight on the back leg and use momentum while the front knee is deeply bent.
+4. Drop the continuous rating to 32 N·m: the knee is at nearly 150%. Then tick the 1.5:1 stage.
+:::
+
+## From first principles
+
+### Torque is force times lever arm
+
+Torque τ (N·m) is the turning effect of a force F (N) about an axis: τ = F × d, where d (m) is the perpendicular distance from the axis to the force's line of action, the lever arm. A 400 N load 0.12 m from a knee axis needs 48 N·m to hold.
+
+For a leg standing still, the ground pushes up on the sole with a force equal to the weight it carries, at the centre of pressure (page [02](../02-balance/)). If the robot stands still on one foot, that point is directly below the whole-body CoM. Every joint between the sole and the body must resist the moment of this force about its own axis, minus the weight of the leg parts below the joint:
+
+<div class="eq">
+
+τ<sub>j</sub> = F · (x<sub>p</sub> − x<sub>j</sub>) − Σ<sub>below j</sub> m<sub>s</sub> g · (x<sub>s</sub> − x<sub>j</sub>)
+
+</div>
+
+F = share × m × g (N), x<sub>p</sub> the CoP's forward position, x<sub>j</sub> the joint's, and m<sub>s</sub>, x<sub>s</sub> the mass and position of each leg segment below the joint (thigh, shin, foot). With the whole robot on one foot and the CoP under the CoM, this is identical to "the weight of everything above the joint times its horizontal distance", which is how `sim/mujoco/check_step_up.py` computes it (`stance_torques`).
+
+### The Jacobian transpose view
+
+Plain version: a joint carries a lot of torque when the ground's push passes far from it, and almost none when the push passes right through it. At a straight knee the push passes almost through the knee axis, so the knee needs almost nothing; that is why standing straight is cheap and crouching is expensive.
+
+<details>
+<summary>Go deeper: the same result in robotics language</summary>
+
+The Jacobian J maps joint speeds to the foot's velocity, and its transpose maps a force at the foot to the joint torques that balance it, τ = Jᵀ F.<sup class="cite">[\[1\]](#s1)[\[2\]](#s2)</sup> For a vertical force on a planar leg, the Jacobian's entries for each joint are just the horizontal distances from that joint to the contact point, so Jᵀ F gives F × lever arm at each joint. The intuition carries to 3-D: a joint whose axis lies close to the force's line of action carries little torque (the hip pitch here, about 2 N·m), one far from it carries a lot (the knee).
+
+</details>
+
+### Why a bent knee costs torque
+
+With the foot flat and the CoM held over the foot, bending the knee by angle q<sub>k</sub> pushes the knee forward of the force line by roughly L·sin(q<sub>k</sub>/2) for equal thigh and shin lengths L. At Marvin Bot's standing stance (knee 15°) the lever arm is about 4 cm; at 35° about 10 cm (12 cm in the repo's worst pose, where the CoM also sits 6 cm behind the ankle); at 90°, about 23 cm. Human stair ascent shows the same thing: knee extensor moments are several times those of level walking.<sup class="cite">[\[7\]](#s7)</sup>
+
+### Stairs
+
+Household stairs are tall relative to a 0.70 m leg. Residential building codes in the US cap risers at 196 mm with treads of at least 254 mm;<sup class="cite">[\[6\]](#s6)</sup> Marvin Bot's requirement R12 is 17–18 cm risers and 25 cm treads. To climb one, the front leg must start the lift with its foot one riser higher than the back foot, so its knee is deeply bent exactly when it begins to take weight. A slow, static climb therefore spends time with the full weight on a bent knee. A dynamic climb shares the load with the back leg and uses momentum, so the peak lasts only a fraction of each step.
+
+### Peak, continuous and RMS
+
+An electric motor's torque is limited by two different things. **Peak torque** is how much it can produce for a moment (current limits, magnet saturation, gear strength). **Continuous (rated) torque** is how much it can hold indefinitely without overheating, and it depends on cooling: the RS04's 40 N·m assumes a 345 × 345 mm aluminium heat sink (35 N·m on 220 × 200 mm).<sup class="cite">[\[3\]](#s3)</sup> Copper losses grow with current squared, and torque is proportional to current, so heat grows with torque squared. That is why heating is judged by the **root-mean-square** torque over a cycle,
+
+<div class="eq">
+
+τ<sub>RMS</sub> = √( (1/T) ∫ τ(t)² dt )
+
+</div>
+
+In words: square the torque at every moment, average those squares over one cycle of length T (the ∫ … dt sign just means "add up over time"), then take the square root. The result is the steady torque that would produce the same heat.<sup class="cite">[\[4\]](#s4)</sup><sup class="cite">[\[5\]](#s5)</sup> Two checks follow: RMS within the continuous rating, and the peak within a margin of the peak rating. Marvin Bot's project rule: peak torques at or below 70% of the peak rating, continuous (RMS) within the rating (`docs/plan.md` phase 1 pass check, `sim/mujoco/check_standing.py`). RMS works when the cycle is short compared with the motor's thermal time constant; a long hold above rating heats the winding even if the long-run average is fine.<sup class="cite">[\[4\]](#s4)</sup>
+
+### What a gear stage does
+
+An extra reduction of ratio N between motor and joint multiplies output torque by N (minus friction), divides speed by N, and multiplies the motor's rotor inertia as seen from the joint (the <a class="g" href="../glossary/#reflected-inertia">reflected inertia</a>) by N².<sup class="cite">[\[8\]](#s8)</sup> For the parked 1.5:1 knee stage: 60 N·m continuous and 180 N·m peak, about 14 rad/s instead of 21, and 2.25 × the reflected inertia, which makes the knee less back-drivable (harder to push round from outside, so it gives less on impact) and harder for the policy to swing fast. Page [04 Actuators](../04-actuators/) covers quasi-direct drives and why designers avoid extra stages.
+
+## Playground B: duty cycle and RMS
+
+A knee torque profile over one stair step: a hump while the leg is in stance (foot on the ground, carrying weight), a small torque while it swings through the air. Change the shape and see how RMS, not the peak, decides heating.
+
+<div class="hint">
+
+How to read this picture: time across one step, torque upwards. The blue curve is the knee torque, the orange line its RMS, the white line the continuous rating and the violet line the brief-peak limit. Heat is fine while the orange line stays below the white one.
+
+</div>
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+Press **Static hold** (118%), then **stair policy-like**: the peak is higher (54 N·m) but the RMS is about 74% of rated, the range the repo measured for its stair policy. The profile shape here is illustrative, chosen to match that measured RMS; the repo does not publish the time trace. Then press **Slow climb** and see how a long, loaded stance pushes the RMS back over the rating.
+:::
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- **Static step-up check** (`sim/mujoco/check_step_up.py`): three poses of a slow step, pelvis upright, feet flat, CoM at least 2 cm inside the supporting foot; stance torques from the weight of everything above each joint. On the 1.44 m model, 10–20 cm stairs are all possible; the worst stance knee is **47 N·m = 39% of peak, 118% of continuous**, hip roll 42 N·m = 105% (`docs/design/stairs.md`; `docs/decisions.md`, 2026-10-29).
+- We ran the check read-only: the worst pose is pose 3 (standing on the stair, rear toe over the edge) with the stance knee at 35°, hip pitch 24°, ankle pitch 11°, the CoM 0.122 m behind the knee and 0.062 m behind the ankle. It is the same for every riser from 10 to 20 cm, because that pose is set by the walking crouch and the reach of the rear foot, not by the riser.
+- **Trained stair policies** (policies are named by the ground they were trained on, "flat" or "rough", plus a version number; MuJoCo cross-check, `sim/mujoco/check_policy.py`): rough v5 on the earlier 1.29 m model measured the knees at <b>73–75% of continuous (RMS)</b> on 10–20 cm stairs, hip roll \~60%. The stair policy in use today, rough v9 (also trained on the 1.29 m body), passes 14 of 15 stair runs (15, 18 and 20 cm, five noise seeds) on the 1.44 m model; a retrained rough v10 did worse (6 of 15) and is not used. The repo does not yet give v9's knee RMS on the new body (`sim/isaaclab/README.md`).
+- **Flat walking on the 1.44 m model** (flat v8, retrained): knees bent about 38–40° on average through the stride (15° standing); hottest joint a knee at 68% of continuous in the 1.0 m/s fast walk.
+- <b>Rule:</b> peak ≤ 70% of the peak rating; continuous (RMS) within the rating. Each extra kilogram adds about 1.1 N·m at the knee in the worst pose.
+- <b>Open question:</b> the RS04's real continuous rating on a thigh-sized plate. If it is 30–35 N·m, stair RMS would be about 85–100% (`docs/design/stairs.md`). A phase 2 bench test (`bench/actuator/bench_robstride.py thermal`) will measure it.
+- <b>Parked option:</b> a 1.5:1 belt or linkage stage at the knee: 60 N·m continuous, 180 N·m peak, \~14 rad/s, \~0.2 kg, some backlash, thigh redesign. Added only if the measured stair RMS exceeds the measured rating by more than better cooling can cover.
+:::
+
+### Where this 2-D model differs from the repo's check
+
+- <b>Sagittal plane only.</b> It cannot see hip roll (105% of rated in the repo's check), which comes from holding the body sideways over one foot. Hip roll is the second-hottest joint on slow stairs.
+- **Leg segment masses** are lumped from the URDF (shin 2.78 kg, foot 0.64 kg, thigh 2.0 kg, hip pitch link 1.51 kg) at fixed fractions of each link; the rest of the body is a point at the CoM. The repo uses every body's real mass and position.
+- <b>Pose.</b> The repo searches pelvis positions for one that balances and places both feet; the hip roll (−6.6°) and yaw (18°) it finds tilt the leg slightly out of the plane. Here you set the pose.
+- <b>The lift itself.</b> The repo reports stance torques only in its two single-support poses (before and after the lift). Its middle pose, weight moving onto the stair, is double support and has no torque readout. If the front leg took all the weight halfway up, this model gives about 75 N·m at the knee: within the 70%-of-peak rule, but well above continuous, so the lift must be quick or shared with the rear leg.
+- <b>Double support.</b> The repo reports torques only on one foot. The share slider here assumes this foot's CoP stays under the CoM where possible, which is a simplification.
+
+## Trade-offs and alternatives
+
+| Option for the knee | Effect | Cost |
+|---|---|---|
+| Keep the RS04 (today) | 118% static; 73–75% RMS in a trained policy on the 1.29 m model | Depends on the bench-measured rating |
+| Better heat path (thigh plate as heat sink, paste, small fan) | +10–20% continuous (to be confirmed) | Cheap, no redesign |
+| Heat penalty in training | Lower knee RMS on stairs | Free; may slow the climb |
+| 1.5:1 knee stage | 60 / 180 N·m, \~14 rad/s, 2.25 × reflected inertia | \~0.2 kg, backlash, thigh redesign |
+| Larger actuator from another vendor | Maybe 55 N·m continuous or more | Second protocol, cost, mass |
+| Shorter or less bent legs | Shorter lever arms | Stairs need ≥0.65 m hip height (R3); a straighter walk needs retraining |
+| Less mass | \~1.1 N·m per kg at the knee | Shoulder RS03 → RS06 saves \~1.1 kg but halves shoulder peak |
+
+The repo's decision (`docs/decisions.md`, 2026-10-26, kept on 2026-10-29): keep the RS04 knee with no stage, and settle it from the trained stair policy's knee RMS (done on the 1.29 m model: 73–75%; to be repeated on the 1.44 m body), the bench thermal test, and the final mass. Making the legs 90 mm longer instead of 50 mm was rejected partly because the knee would reach 127% of rated and need the stage.
+
+:::caution[Where sources and the repo disagree]
+No source disagreement; two repo notes. (1) The 73–75% stair RMS was measured on the 1.29 m model (rough v5); the 1.44 m body's static figure rose from 109% to 118%, and the stair policy now used (rough v9, 14 of 15 runs passed on the 1.44 m model) has no published knee RMS on the new body, so the stair RMS on today's robot is not yet known. `docs/design/stairs.md` still quotes the rough v5 figure and the flat v3 walk. (2) The rated torque is quoted on the manual's large heat sink; the repo itself flags that the real figure in the leg may be 30–35 N·m.
+:::
+
+## Decisions you can make here
+
+- Whether the knee needs the 1.5:1 stage: measure the stair policy's knee RMS on the 1.44 m body (not yet reported for rough v9) and compare it with the bench-measured continuous rating.
+- Walking height and stance: flat v8 walks with its knees bent \~38–40° on average, not the 15° stance; a straighter gait shortens lever arms at the cost of push robustness (page [02](../02-balance/)) and stair reach.
+- Mass: every kilogram saved is about 1.1 N·m less at the knee on stairs; the price is usually a smaller part somewhere else (for example lighter shoulder motors, which save about 1.1 kg but halve the shoulder's peak torque).
+- Cooling before gearing: a better heat path is cheap and changes nothing else, so try it before the 1.5:1 stage, which costs speed, mass and a thigh redesign.
+
+<RawHtml html={widget3} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+<b>Where this leads.</b> The knee carries one motor; the ankle needs two working through push rods. Page 06 shows how that linkage shares the ankle's pitch and roll torque between them.
+
+## Further reading
+
+- `docs/design/stairs.md` in the repo: the full stair story, issues, options and how the knee question will be settled.
+- [Lynch &amp; Park, Modern Robotics, section 5.2 "Statics of open chains"](https://hades.mech.northwestern.edu/images/2/25/MR-v2.pdf): τ = Jᵀ F derived from power conservation.
+- [Design World, continuous and peak torque for servo applications](https://www.designworldonline.com/how-to-calculate-continuous-and-peak-torque-values-for-servo-applications/): a worked RMS sizing example.
+- [Wensing et al., proprioceptive actuator design (2017)](https://doi.org/10.1109/TRO.2016.2640183): why legged robots keep gear ratios low.
+
+## Sources
+
+1. <span id="s1"></span>[K. M. Lynch and F. C. Park, Modern Robotics, Cambridge University Press, 2017 (preprint), §5.2](https://hades.mech.northwestern.edu/images/2/25/MR-v2.pdf) <span class="used">— used for: statics of open chains, τ = Jᵀ F.</span>
+2. <span id="s2"></span>[Lynch and Park, Modern Robotics lecture slides, chapter 5 (statics)](https://hades.mech.northwestern.edu/images/d/d5/MRslides-ch05b.pdf) <span class="used">— used for: interpretation of the Jacobian transpose for joint torques.</span>
+3. <span id="s3"></span>[RobStride, Product\_Information (RS04 / RS03 manuals)](https://github.com/RobStride/Product_Information) <span class="used">— used for: peak and rated torque, no-load speed, rating's heat-sink condition.</span>
+4. <span id="s4"></span>[Kollmorgen, Brushless servo motor sizing (application note)](https://kollmorgen.com/sites/default/files/public_downloads/Brushless_Servo_Motor_Sizing_en-US.pdf) <span class="used">— used for: RMS torque against continuous rating, limits when peaks are long against the thermal time constant.</span>
+5. <span id="s5"></span>[Design World, "How to calculate continuous and peak torque values for servo applications"](https://www.designworldonline.com/how-to-calculate-continuous-and-peak-torque-values-for-servo-applications/) <span class="used">— used for: RMS as the steady torque with the same heating; peak and RMS as separate checks.</span>
+6. <span id="s6"></span>[International Residential Code R311.7.5.1 as adopted (Cornell LII copy)](https://www.law.cornell.edu/regulations/south-carolina/R-8-1210) <span class="used">— used for: maximum riser height 196 mm (and the 254 mm minimum tread in R311.7.5.2).</span>
+7. <span id="s7"></span>[R. Riener, M. Rabuffetti and C. Frigo, "Stair ascent and descent at different inclinations", Gait &amp; Posture, 2002](<https://doi.org/10.1016/S0966-6362(01)00141-4>) <span class="used">— used for: human knee moments on stairs much larger than in level walking.</span>
+8. <span id="s8"></span>[P. M. Wensing, A. Wang, S. Seok, D. Otten, J. Lang and S. Kim, "Proprioceptive actuator design in the MIT Cheetah", IEEE T-RO, 2017](https://doi.org/10.1109/TRO.2016.2640183) <span class="used">— used for: reflected inertia scaling with the square of the gear ratio; low-ratio actuators for legs.</span>
+
+<PageScript code={script} />

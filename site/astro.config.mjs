@@ -1,18 +1,20 @@
 // Marvin Bot documentation site: Astro Starlight, published to GitHub Pages by
 // .github/workflows/pages.yml. The docs pages are copied from the repository's Markdown
 // (scripts/sync-docs.mjs), the home page is src/pages/index.astro, and the interactive guide is
-// static HTML under public/guide/.
+// in src/content/docs/guide/, with its playgrounds' HTML and scripts in src/guide/.
 import starlight from '@astrojs/starlight';
 import { defineConfig } from 'astro/config';
 
 const repo = 'https://github.com/kranthie/marvin-bot';
+// one collapsible sidebar group per stage of the guide's learning path
+const stage = (label, pages) => ({ label, collapsed: true, items: pages.map((p) => `guide/${p}`) });
 
 export default defineConfig({
   site: 'https://kranthie.github.io',
   base: '/marvin-bot',
   trailingSlash: 'always',
-  // three.js is one large module, loaded only by the home page
-  vite: { build: { chunkSizeWarningLimit: 1500 } },
+  // three.js is one large module, loaded only by the 3-D viewers; keep its licence header
+  vite: { build: { chunkSizeWarningLimit: 1500, rolldownOptions: { output: { comments: { legal: true } } } } },
   integrations: [
     starlight({
       title: 'Marvin Bot',
@@ -23,7 +25,7 @@ export default defineConfig({
       social: [{ icon: 'github', label: 'GitHub', href: repo }],
       editLink: { baseUrl: `${repo}/edit/main/` },
       lastUpdated: false,
-      customCss: ['./src/styles/theme.css'],
+      customCss: ['./src/styles/theme.css', './src/styles/guide.css'],
       sidebar: [
         {
           label: 'Start here',
@@ -50,8 +52,16 @@ export default defineConfig({
           label: 'Tutorials',
           items: [
             'tutorials',
-            { label: 'Marvin Bot in 3-D', link: '/guide/3d/', attrs: { target: '_self' } },
-            { label: 'The interactive guide (map)', link: '/guide/', attrs: { target: '_self' } },
+            'guide',
+            'guide/00-3d-model',
+            stage('Stage 1 · Foundations', ['01-dof-kinematics', '02-balance', '03-architecture']),
+            stage('Stage 2 · Mechanics', ['04-actuators', '05-leg-loads-stairs', '06-ankle-linkage', '07-mass-proportions', '08-structure-cad']),
+            stage('Stage 3 · Electrical, sensing and safety', ['09-power-battery', '10-can-bus', '11-sensors-compute', '12-safety']),
+            stage('Stage 4 · Model and simulation', ['13-description', '14-simulation', '15-pd-control']),
+            stage('Stage 5 · Learning', ['16-rl-walking', '17-motion-tracking', '18-wbc-vla', '19-hands']),
+            stage('Stage 6 · Toward hardware', ['20-sim-to-real', '21-bom-costs', '22-roadmap']),
+            'guide/glossary',
+            'guide/sources',
           ],
         },
         {

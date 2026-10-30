@@ -1,0 +1,124 @@
+---
+title: "Marvin Bot in 3-D"
+description: "The whole robot, part by part, in your browser."
+sidebar:
+  label: "00 · Marvin Bot in 3-D"
+  order: 1
+tableOfContents: false
+---
+
+import Viewer from '../../../guide/00-3d-model/Viewer.astro';
+import RawHtml from '../../../components/RawHtml.astro';
+import widget1 from '../../../guide/00-3d-model/widget-1.html?raw';
+import widget2 from '../../../guide/00-3d-model/widget-2.html?raw';
+import '../../../guide/00-3d-model/style.css';
+
+<div class="guide-meta">
+
+**Start here · Meet the robot** · \~20 min · No prerequisites: a good first page · Needs 3-D graphics (WebGL) in your browser · numbers from the repository as of 2026-10-29
+
+</div>
+
+The whole robot, part by part, in your browser. Turn it around, peel off the shells, see through the frame to the motors, computer and battery, put it together in the order it would be built, and play simple movements while every motor's load is shown live.
+
+:::note[You will learn]
+- What Marvin Bot is physically made of: which parts are machined aluminium, which are 3-D printed, which are bought, and where the 23 motors, 4 servos, computer and battery sit.
+- How the robot comes apart into seven modules, and the order it would be assembled in.
+- How the joints move together in everyday movements (standing, squatting, slow walking, stepping up a stair, waving), and which motors work hardest.
+:::
+
+## What you are looking at
+
+This model is not a drawing someone made by hand. Marvin Bot's design lives in code: one text file (`description/robot.yaml`) lists every joint and motor, Python programs generate every part's shape ([08 Structure and code-CAD](../08-structure-cad/)), and a generator turns all of it into a robot model file that the simulators read ([13 The robot description](../13-description/)). This page loads that same generated model: 241 visual pieces on 28 rigid bodies (<a class="g" href="../glossary/#link">links</a>) joined by 27 motorised <a class="g" href="../glossary/#joint">joints</a>. The meshes are simplified to load quickly, so small details look rounder than the real parts.
+
+Three ways to use it, one per tab on the left: **Layers** (what is it made of?), **Assembly** (how is it built?) and **Skills** (how does it move?). A fourth tab, **Joints**, lets you pose every joint by hand.
+
+## Playground
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. <b>Layers:</b> press *X-ray: motors*. Count the motors in one leg (five: three at the hip, the knee, and two for the ankle up on the shin). Why do you think the ankle motors sit high on the shin rather than at the ankle? ([06](../06-ankle-linkage/) answers it.)
+2. <b>Layers:</b> press *Made vs bought*, then click *Battery packs* and *Jetson AGX Orin* in the list and raise the X-ray. Notice how the heaviest bought items sit high in the chest, which is why the torso narrows to the waist ([07](../07-mass-proportions/)).
+3. <b>Skills:</b> play *Step up 18 cm* and watch the knee of the leg on the stair turn amber and then red as it lifts the whole body. In this script it peaks near 60 N·m, about 150% of the RS04's continuous rating, just as the trailing foot pushes off and leaves the ground. The project's own static stair check finds 47 N·m (118%) in its worst pose (`docs/decisions.md`, 2026-10-29): the difference is posture, as this script keeps the knee more bent at that moment. Try it yourself: the more upright and further forward the body is when the back foot leaves, the less the knee has to do. That one moment is why the knee is the joint the project worries about most ([05](../05-leg-loads-stairs/)).
+4. <b>Skills:</b> play *Slow walk* and look at the table: the hip roll motors, which hold the body up sideways while one foot is in the air, work almost as hard as the knees. The project's stair check finds the same: hip roll at 105% of rated.
+5. <b>Joints:</b> press *Arms forward*, then slowly lower *shoulder pitch* while shoulder roll is below 0°. With the coupled limit on, roll is pushed back to 0° as the arm comes down; untick it and watch the upper arm sink into the chest.
+:::
+
+## The layers: what the robot is made of
+
+Every visible piece belongs to one layer. The numbers beside each layer in the playground are the drawn parts' masses from the code-CAD (`description/cad_model.yaml`) and the motor datasheets.
+
+| Layer | What it is | Why it is made that way |
+|---|---|---|
+| Machined aluminium | Plates, rings and flanges in 6061 aluminium (7075 for the most loaded flanges and the ankle cranks), cut on a desktop CNC mill. | Metal carries the big loads: landing, falling, motor torque. Every machined part fits a mill of about 200 × 150 mm ([08](../08-structure-cad/)). |
+| Cut by a service | Twelve flat parts too long for the desktop mill (shin side plates, foot base plates, pelvis and torso frames), cut by an online laser or water-jet service. | About $1,200 in the bill of materials (not yet quoted; [21](../21-bom-costs/)). |
+| Printed structure | Carbon-fibre-filled nylon (PA-CF) shells on the thighs, arms and chest, the head, the hand mounts; a rubbery TPU sole. | Light parts that carry little load and have curved shapes are cheaper and lighter printed. |
+| Body shells | 24 clip-on covers (0.95 kg) that give the robot a finished body. | Optional: the bare robot is meant to look finished too, and the walking policies are trained without them. |
+| Motors | 23 RobStride <a class="g" href="../glossary/#actuator">actuators</a> (RS04, RS03, RS06, RS00) and 4 small Feetech servos (neck and wrist pitch). | About 22 kg, more than half the robot. Each model sits where its torque fits ([04](../04-actuators/)). |
+| Electronics, sensors, computer, battery | The contactor, precharge, power boards, e-stop relay, three USB-CAN adapters, DC-DC converters, IMU, depth camera, the Jetson AGX Orin and the battery packs. | Drawn at typical outlines for their class until the real parts are chosen ([09](../09-power-battery/), [11](../11-sensors-compute/)). |
+
+Not drawn: about 0.4 kg of fasteners, 0.5 kg of limb wiring and the bearing seats, which are still to be modelled (`docs/roadmap.md`). That is why the drawn parts weigh a little less than the robot's 40.35 kg.
+
+## Modules and assembly order
+
+Marvin Bot is designed to come apart into seven modules: the torso core, the pelvis, two legs, two arms and the head, plus the battery and the optional shells. Each limb's first motor stays on its parent module (the hip roll motors on the pelvis, the shoulder pitch motors on the torso), so a whole leg or arm comes off by undoing one output flange and unplugging one power and one signal connector. That is requirement R63: any motor can be changed with only one limb off the robot.
+
+The **Assembly** tab follows the six steps in `docs/design/assembly_wiring.md`. Each module is built and tested on its own before it joins the rest: three pelvis motors on a short CAN cable, each leg on a single-leg test jig, the torso core powered up without limbs. That way a wiring mistake costs one module, not the robot.
+
+## How the skills are animated, and what the loads mean
+
+The movements in the **Skills** tab are **scripted for this page**, not played by Marvin Bot's trained <a class="g" href="../glossary/#policy">policies</a> (those live in the simulators: [16](../16-rl-walking/), [17](../17-motion-tracking/)). Each skill sets the pelvis position and where each foot should be; a small <a class="g" href="../glossary/#inverse-kinematics">inverse-kinematics</a> solver then finds the six leg angles that put each foot there, respecting every joint's range. The arms, waist and neck follow hand-written curves.
+
+The load on each motor is a **quasi-static** estimate: the torque needed to hold the pose still against gravity, as if the movement were very slow. For every joint the page adds up the weight of everything beyond that joint (and the push of the floor, if a foot beyond it is on the ground) times its lever arm about the joint's axis. When both feet are down, the weight is shared between them by how close the centre of mass is to each foot. This is the same idea as the 2-D leg on [05](../05-leg-loads-stairs/), done for the whole 3-D robot.
+
+:::caution[What this estimate leaves out]
+Accelerations, impacts and friction. Real walking needs more torque than this (the swinging leg must be accelerated, and each foot lands with a jolt), so treat green as "fine when slow", not "fine". The ankle's limits shown are the two-motor linkage's capacity at its worst pose (32 N·m pitch, 25 N·m roll continuous; [06](../06-ankle-linkage/)). The trained flat-ground policy's hottest joint, measured in simulation with all of these effects, is a knee at 68% of rated in the fast walk (`sim/isaaclab/README.md`).
+:::
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- The model comes from `description/urdf/marvin_bot_covers.urdf` (the robot with its shells), generated by `tools/build_urdf.py` from `description/robot.yaml`, `skeleton.yaml` and the code-CAD's `cad_model.yaml`. The meshes are the code-CAD's output, simplified to about a quarter of their triangles for this page.
+- Layers come from each part's *process* in `cad_model.yaml` (cnc, service, print, cover, bought); the motors from the URDF's actuator outlines; the computer and battery from the outline boxes in `skeleton.yaml`.
+- The masses used for the loads are the bare robot's (`marvin_bot.urdf`, 40.35 kg with the hands), as the policies are trained.
+- The hand meshes are the AmazingHand's (Pollen Robotics, CC-BY-4.0), simplified by the project.
+:::
+
+## Trade-offs and alternatives
+
+- **A modular robot** costs a few connectors and bolted flanges (mass and failure points) but makes every motor replaceable without stripping the robot. The alternative, one continuous harness, is lighter but turns every motor swap into a rebuild.
+- **Shells as an add-on** keep the training model simple and the robot serviceable, at the cost of designing a bare robot that still looks finished.
+- <b>Motors high, mass high:</b> putting the ankle motors on the shin and the battery high in the chest keeps the legs light (easier to swing) but raises the centre of mass (harder to balance; [02](../02-balance/)).
+
+## Decisions you can make here
+
+- Which joints deserve a stronger motor or a gear stage: play the skills you care about and see which motors go amber or red (more torque, but more mass and cost; [04](../04-actuators/)).
+- Where heavy parts should sit: X-ray the battery and computer and ask what moving them would do to the centre of mass and to the legs' loads ([07](../07-mass-proportions/)).
+- Whether the shells are worth their 0.95 kg: they add fall protection and a finished look, but every kilogram loads the knees on stairs.
+
+<RawHtml html={widget2} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+## Further reading
+
+- [three.js documentation](https://threejs.org/docs/): the open-source 3-D library this page uses to draw the model in the browser.
+- [The URDF format (ROS wiki)](https://wiki.ros.org/urdf/XML): the robot-model file format this page reads; [13](../13-description/) explains it from scratch.
+- K. M. Lynch and F. C. Park, [*Modern Robotics*](https://hades.mech.northwestern.edu/index.php/Modern_Robotics), chapters 4–6 (forward kinematics, the Jacobian, inverse kinematics) and 8.1 (statics): the maths behind the solver and the load estimate.
+
+## Sources
+
+1. <span id="s1"></span>Marvin Bot repository, as of 2026-10-29: `description/urdf/marvin_bot_covers.urdf`, `marvin_bot.urdf`, `description/cad_model.yaml`, `skeleton.yaml`, `robot.yaml`, `actuators.yaml` and the code-CAD meshes (`cad/`, CERN-OHL-S-2.0) <span class="used">— used for: the model, part categories, masses, joint ranges and motor ratings</span>
+2. <span id="s2"></span>Marvin Bot repository, `docs/design/assembly_wiring.md` <span class="used">— used for: the modules, the assembly order and the electronics layout</span>
+3. <span id="s3"></span>[Pollen Robotics, AmazingHand (CC-BY-4.0)](https://github.com/pollen-robotics/AmazingHand) <span class="used">— used for: the hand meshes (simplified by the Marvin Bot project)</span>
+4. <span id="s4"></span>[three.js (MIT licence)](https://github.com/mrdoob/three.js) <span class="used">— used for: rendering the model in the browser; the version pinned in the site's `package-lock.json` is served with the site</span>
+5. <span id="s5"></span>[ROS wiki, URDF joint and link elements](https://wiki.ros.org/urdf/XML/joint) <span class="used">— used for: reading joint origins, axes and visuals</span>
+6. <span id="s6"></span>[K. M. Lynch and F. C. Park, Modern Robotics: Mechanics, Planning, and Control, Cambridge University Press, 2017](https://hades.mech.northwestern.edu/index.php/Modern_Robotics) <span class="used">— used for: the Jacobian-based inverse kinematics (damped least squares) and the static joint-torque estimate</span>
+7. <span id="s7"></span>Marvin Bot repository, `sim/isaaclab/README.md` <span class="used">— used for: the trained flat policy's hottest joint (knee, 68% of rated in the fast walk)</span>
+
+<Viewer />

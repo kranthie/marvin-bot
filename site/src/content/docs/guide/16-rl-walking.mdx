@@ -1,0 +1,331 @@
+---
+title: "Reinforcement learning for walking"
+description: "Nobody writes Marvin Bot's walking controller by hand."
+sidebar:
+  label: "16 · Reinforcement learning for walking"
+  order: 17
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/16-rl-walking/widget-1.html?raw';
+import widget2 from '../../../guide/16-rl-walking/widget-2.html?raw';
+import widget3 from '../../../guide/16-rl-walking/widget-3.html?raw';
+import widget4 from '../../../guide/16-rl-walking/widget-4.html?raw';
+import script from '../../../guide/16-rl-walking/script.js?raw';
+import '../../../guide/16-rl-walking/style.css';
+
+<div class="guide-meta">
+
+**Stage 5 · Learning** · \~35 min · Before this: [02 Balance](../02-balance/), [14 Simulation](../14-simulation/), [15 PD control](../15-pd-control/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Nobody writes Marvin Bot's walking controller by hand. A neural network learns it by trial and error in thousands of simulated copies of the robot, steered only by a score called the reward. This page explains how that works, what the robot sees and does, and why getting the reward right is most of the job.
+
+:::note[You will learn]
+- The vocabulary of <a class="g" href="../glossary/#reinforcement-learning">reinforcement learning</a> (agent, environment, <a class="g" href="../glossary/#policy">policy</a>, observation, action, reward, <a class="g" href="../glossary/#return">return</a>, <a class="g" href="../glossary/#discount-factor">discount</a>) and how <a class="g" href="../glossary/#ppo">PPO</a> improves a policy safely.
+- Exactly what Marvin Bot's walking policy observes, outputs and is rewarded for, with the real term names and weights from the repo.
+- Why a reward is a specification that an optimiser will exploit (<a class="g" href="../glossary/#reward-hacking">reward hacking</a>), and how the project fixed a crouch, a waddle and toe-down swings by adding terms.
+- How curricula and <a class="g" href="../glossary/#domain-randomisation">domain randomisation</a> make a simulated policy survive stairs, pushes and delays.
+:::
+
+## The idea in one picture
+
+Think of training a dog with treats, except the dog is a neural network, the treats are numbers, and you can run 4,096 dogs at once inside a physics simulator. Every 20 ms (50 times a second) each simulated robot reads its sensors, the network outputs 12 numbers that move the leg joints, the simulator advances, and a reward function scores what happened: did it walk at the commanded speed, stay upright, keep its feet level, avoid overheating its knees? After a few seconds of experience from every robot, an algorithm nudges the network's weights so that actions which led to more reward than expected become more likely. Repeat a few thousand times and a walking gait emerges.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[6\]](#s6)</sup>
+
+:::note[What is a neural network?]
+For this page, think of it as a big formula with a lot of adjustable knobs, called **weights**. Numbers go in (here: the robot's sensor readings), get multiplied by the weights, added up and passed through simple bends, layer after layer, and numbers come out (here: 12 joint targets). With random weights the output is nonsense; "training" means turning the knobs, a tiny bit at a time, so the output gets better. Marvin Bot's walking network is an **MLP** (multi-layer perceptron, the plainest kind): three layers of 256, 128 and 128 units, tens of thousands of weights in all, and **ELU** is the name of the "bend" used between layers. Nothing about walking is written into it; everything comes from the reward.
+:::
+
+<RawHtml html={widget1} />
+
+<div class="hint">
+
+How to read this picture: The policy (blue) sends actions to the simulated robots (orange), which send back what the robot now senses and a reward score (green). Every 24 steps, the PPO box uses the collected experience to adjust the policy's weights (dashed arrow).
+
+</div>
+
+The catch: the network does not learn what you *meant*, it learns whatever earns the most reward. If crouching is stable and nothing penalises it, it crouches. The playground below lets you be the reward designer.
+
+## Playground: reward shaping sandbox
+
+Here you play the reward designer. Seven candidate gaits for one situation: **walk straight ahead at 0.5 m/s on flat ground**. Each gait is described by measurable features (speed error, pelvis height, roll, step width, air time, torque, foot tilt…). The sliders scale Marvin Bot's real reward terms, starting at the flat task's weights from `velocity_env_cfg.py`. The bar chart shows the expected return of a 20 s episode for each gait: the one with the tallest bar is what PPO would drift towards. **The gait feature values are illustrative**, chosen to resemble the policies recorded in `sim/isaaclab/README.md`, not measured.
+
+Two words first: an **episode** is one attempt, from the robot appearing in the simulator until it falls or 20 s pass; the **return** is the total reward collected over an episode. <b>Start here:</b> press *Marvin Bot today* and check that the upright walk has the tallest bar. Then press the other presets one by one and see which gait takes over. Click a gait's name under the chart to see its stick figure and, in the right-hand table, which reward terms earn (green) or cost (red) it most. A good reward set is one where the upright walk wins *by a clear margin* (see "Lead over runner-up").
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. <b>Recreate the crouch.</b> Set `pelvis_height` to ×0. The crouched shuffle wins: it tracks speed a little better and wobbles less, and nothing now says it is too low. This is what rough v6 did on stairs (knees at 95°, pelvis 19 cm low).
+2. <b>Recreate the waddle.</b> Press "Before v7": air time ×4 (2.0), no `pelvis_roll` or `feet_width`, weaker `joint_deviation_hip`. The waddle wins on air time, because Isaac Lab's biped air-time term pays single support, and a waddle is almost all single support.
+3. <b>Look for the hop.</b> Raise `feet_air_time` as far as it goes. The hop never benefits: the biped version pays only while exactly one foot is down, so flight phases earn nothing. A different formula would have made hopping the winner.
+4. <b>Make it lazy, then suicidal.</b> Press "Over-penalised": standing still wins (moving costs more than tracking pays). Now set the three task rewards (both tracking terms and `forward_progress`) to ×0 and the termination penalty to ×0: every gait's reward per second is negative, so "fall over at once" wins, because ending the episode stops the penalties. Positive tracking reward and a big termination penalty are what keep the robot alive.
+:::
+
+## From first principles
+
+### The words
+
+- **Agent**: the thing that decides; here the policy network. **Environment**: everything else, the simulated robot, ground and stairs.
+- **Step** *t*: one tick of the loop, here every 0.02 s. The little *t* under a symbol just says "at step *t*".
+- **Observation** <i>o<sub>t</sub></i>: the numbers the agent sees at step *t* (not the full state of the world: the robot cannot measure its own velocity directly, for example).
+- **Action** <i>a<sub>t</sub></i>: what the agent outputs, 12 numbers for the 12 leg joints.
+- **Policy** π<sub>θ</sub>(a|o): the network with weights θ. During training it outputs a mean and a spread (a Gaussian), so it tries slightly different actions each time; that randomness is how it explores.
+- **Reward** <i>r<sub>t</sub></i>: one number per step saying how good that step was, the sum of many weighted terms.
+- **Return** <i>G<sub>t</sub></i>: the reward from now on, with future rewards counted less by the **discount** γ (between 0 and 1).<sup class="cite">[\[1\]](#s1)</sup>
+
+<div class="eq">
+
+G<sub>t</sub> = r<sub>t</sub> + γ r<sub>t+1</sub> + γ² r<sub>t+2</sub> + … = Σ<sub>k≥0</sub> γ<sup>k</sup> r<sub>t+k</sub>
+
+</div>
+
+With γ = 0.99 and a step every 0.02 s, a reward 100 steps (2 s) ahead counts 0.99<sup>100</sup> ≈ 0.37 as much as one now. So the policy plans about two seconds ahead, enough for three or four footsteps. The goal of RL is to find θ that maximises the expected return.
+
+### Policy gradient: make good actions more likely
+
+The basic recipe: run the policy, then for each action ask "was this better or worse than I expected from this situation?" That difference is the <a class="g" href="../glossary/#advantage">advantage</a> Â<sub>t</sub>. Push up the probability of actions with positive advantage, push down the others. In symbols (∇<sub>θ</sub>, the gradient, means "which way to turn each knob θ to increase this", and the log is a mathematical convenience):<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[4\]](#s4)</sup>
+
+<div class="eq">
+
+∇<sub>θ</sub>J ≈ mean over samples of ∇<sub>θ</sub> log π<sub>θ</sub>(a<sub>t</sub>|o<sub>t</sub>) · Â<sub>t</sub>
+
+</div>
+
+"Expected" comes from a second network, the <a class="g" href="../glossary/#value-function">value function</a> or **critic** V(s), trained to predict the return from each state. This is an <a class="g" href="../glossary/#on-policy">on-policy</a> method: the data must come from the current policy, so each batch is used for a few updates and then thrown away. That is why massive parallel simulation matters so much: 4,096 robots × 24 steps = 98,304 fresh samples in about 2 s of GPU time.<sup class="cite">[\[6\]](#s6)</sup>
+
+### GAE: a low-noise advantage
+
+Generalised Advantage Estimation<sup class="cite">[\[3\]](#s3)</sup> builds the advantage from one-step surprises, the temporal-difference errors δ, and blends them with weight (γλ)<sup>k</sup>:
+
+<div class="eq">
+
+δ<sub>t</sub> = r<sub>t</sub> + γ V(s<sub>t+1</sub>) − V(s<sub>t</sub>) Â<sub>t</sub> = Σ<sub>k≥0</sub> (γλ)<sup>k</sup> δ<sub>t+k</sub>
+
+</div>
+
+λ = 0 trusts the critic completely (low noise, but biased if the critic is wrong); λ = 1 adds up real rewards (unbiased, noisy). Marvin Bot uses λ = 0.95, so the advantage looks about 1/(1−0.99×0.95) ≈ 17 steps (0.34 s) ahead before leaning on the critic.
+
+### PPO: change the policy, but not too much
+
+Plain policy gradients can take a step so large that the policy collapses and never recovers. Proximal Policy Optimisation (PPO)<sup class="cite">[\[2\]](#s2)</sup> keeps each update close to the data-collecting policy with the clipped surrogate objective, where r<sub>t</sub>(θ) = π<sub>θ</sub>(a<sub>t</sub>|o<sub>t</sub>) / π<sub>old</sub>(a<sub>t</sub>|o<sub>t</sub>):
+
+<div class="eq">
+
+L<sup>CLIP</sup>(θ) = mean\[ min( r<sub>t</sub>(θ) Â<sub>t</sub> , clip(r<sub>t</sub>(θ), 1−ε, 1+ε) Â<sub>t</sub> ) \]
+
+</div>
+
+Taking the minimum makes it a pessimistic bound: you get credit for making a good action up to 20% more likely (ε = 0.2), no more, but you always pay in full for making a bad action more likely. The full loss adds a value-function error term (weight 1.0 in Marvin Bot's config) and a small entropy bonus (0.008) that keeps the policy exploring. rsl\_rl also adapts the learning rate to hold the measured policy change (the KL divergence) near 0.01 per update.<sup class="cite">[\[9\]](#s9)</sup>
+
+### Mini playground: PPO's clipped objective and the discount
+
+Now that the words are defined, see the two knobs at work. PPO compares the new policy with the one that collected the data through the probability ratio *r* = π<sub>new</sub>(a|s) / π<sub>old</sub>(a|s). The clipped objective stops rewarding changes once *r* leaves \[1−ε, 1+ε\] in the direction the advantage pushes.<sup class="cite">[\[2\]](#s2)</sup>
+
+<RawHtml html={widget3} />
+
+:::note[Try this]
+Put the ratio at 1.3 with ε = 0.2: for a good action the curve is flat, so the gradient is zero; PPO has already made that action as much more likely as it allows this update. Move the ratio to 0.7: now the good action's gradient is live again (it was made less likely, and PPO pulls it back), while the bad action's is flat. Then drag γ to 0.9 and watch the horizon shrink to 10 steps (0.2 s), shorter than one footstep.
+:::
+
+### Why learn walking at all?
+
+A legged robot is underactuated (nothing bolts the pelvis to the world), contacts switch on and off, and the motors saturate. Classical controllers handle this with simplified models (see [02 Balance](../02-balance/)) and a lot of tuning. Learned policies have, since about 2019, outperformed hand-built controllers in robustness on rough ground: Hwangbo et al. trained a quadruped policy in simulation that transferred to hardware, helped by a learned actuator model<sup class="cite">[\[5\]](#s5)</sup>; Lee et al. extended it to challenging terrain with a teacher-student scheme<sup class="cite">[\[11\]](#s11)</sup>; Rudin et al. showed that thousands of GPU-parallel robots with a game-inspired terrain curriculum learn to walk in minutes<sup class="cite">[\[6\]](#s6)</sup>, the recipe behind Isaac Lab's locomotion tasks and rsl\_rl<sup class="cite">[\[8\]](#s8)</sup><sup class="cite">[\[9\]](#s9)</sup>. Radosavovic et al. carried it to a full-size humanoid outdoors with a transformer policy trained in simulation<sup class="cite">[\[7\]](#s7)</sup>, and open frameworks such as Humanoid-Gym<sup class="cite">[\[15\]](#s15)</sup> and mjlab<sup class="cite">[\[14\]](#s14)</sup> package humanoid recipes.
+
+### Observations: what the robot can actually sense
+
+| Term | What it is | Why | Noise in training |
+|---|---|---|---|
+| <code>base\_ang\_vel</code> | pelvis IMU (inertial measurement unit, [page 11](../11-sensors-compute/)) gyro: rotation speed, rad/s (3 numbers) | how fast it is tipping | ±0.2 rad/s |
+| <code>projected\_gravity</code> | gravity direction in the pelvis frame (3) | which way is down: tilt without needing yaw | ±0.05 |
+| <code>velocity\_commands</code> | wanted forward, sideways and turn speed (3) | the task | none |
+| <code>joint\_pos</code>, <code>joint\_vel</code> | joint angles relative to the stance, and their rates | where the body is | ±0.01 rad, ±0.5 rad/s |
+| <code>actions</code> | the last action (12) | memory of what it just commanded | none |
+| <code>height\_scan</code> (rough only) | terrain heights on a 1.4 × 0.8 m grid at 0.1 m | see the stairs coming | ±1 cm, ±2 cm drift, 10% holes, 10 Hz |
+
+Projected gravity deserves a word: if **g** = (0, 0, −1) in the world, rotating it into the pelvis frame gives a vector whose sideways component is −sin(roll)·cos(pitch). A level pelvis reads (0, 0, −1); it is how the policy "feels" tilt.
+
+### Actions: offsets around the stance, through a PD loop
+
+The policy does not output torques. It outputs one number per leg joint, which becomes a position target around the default stance, and the joint's PD controller (see [15 PD control](../15-pd-control/)) turns that into torque at 200 Hz:
+
+<div class="eq">
+
+q<sub>target</sub> = q<sub>stance</sub> + 0.5 · a τ = k<sub>p</sub> (q<sub>target</sub> − q) − k<sub>d</sub> q̇, clipped to the motor's torque-speed limits
+
+</div>
+
+With the hip and knee gains (k<sub>p</sub> = 150 N·m/rad, k<sub>d</sub> = 5 N·m·s/rad), an action of 0.2 shifts the target by 0.1 rad (5.7°) and asks for 15 N·m before the joint moves. The action scale (0.5 rad per unit) is a design choice: at 0.25 the robot "never found a stepping gait" (README, flat v2). Small actions near zero mean "stand in the stance", which gives the random initial policy a sensible starting point.
+
+### Rewards: a weighted sum
+
+Each term is a function of the state, multiplied by its weight; Isaac Lab also multiplies by the step time (0.02 s), so the weights read as "reward per second".<sup class="cite">[\[8\]](#s8)</sup> Tracking terms are bell curves of the error, for example
+
+<div class="eq">
+
+track\_lin\_vel\_xy\_exp = exp( −|v<sub>cmd</sub> − v|² / 0.25² ) (1.0 at perfect tracking, 0.37 at 0.25 m/s error)
+
+</div>
+
+Penalties are squared or clamped errors with negative weights. The full list is in "How Marvin Bot does it" below; the sandbox uses the main ones.
+
+### Reward hacking
+
+The optimiser has no idea what "walking nicely" means: it maximises the number. Any behaviour that scores well but is not what you intended will be found, a problem known as reward hacking or specification gaming.<sup class="cite">[\[12\]](#s12)</sup> On a walking robot it shows up as crouching, shuffling, waddling, vibrating feet, or standing still. The fix is iterative: train, watch, measure in an independent simulator, add or reweight a term, resume. Marvin Bot's README is a record of exactly that loop.
+
+### Curricula and domain randomisation
+
+A <a class="g" href="../glossary/#curriculum">curriculum</a> starts easy and gets harder as the policy improves: Rudin et al.'s terrain curriculum promotes robots that walk far on their tile to harder tiles and demotes the ones that fail.<sup class="cite">[\[6\]](#s6)</sup> Domain randomisation varies the physics (friction, masses, pushes, delays) from robot to robot so the policy cannot rely on any one value, which is what lets it survive the real robot's unknown values.<sup class="cite">[\[16\]](#s16)</sup><sup class="cite">[\[17\]](#s17)</sup> That topic continues on [20 Sim-to-real](../20-sim-to-real/).
+
+### Asymmetric actor-critic
+
+The critic is only used in training, so it may see things the real robot cannot: the true pelvis velocity, the exact terrain. A better-informed critic gives better advantages, while the actor stays limited to real sensors. This is the asymmetric actor-critic idea<sup class="cite">[\[10\]](#s10)</sup>, a lighter cousin of the privileged teacher-student training of Lee et al.<sup class="cite">[\[11\]](#s11)</sup>
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+Tasks `MarvinBot-Velocity-Flat` and `MarvinBot-Velocity-Rough` in `sim/isaaclab/marvin_bot/tasks/velocity_env_cfg.py` (after Isaac Lab's humanoid velocity tasks), custom terms in `tasks/rewards.py`, PPO settings in `tasks/agents.py`, terrain in `tasks/terrains.py`, curricula in `tasks/curriculums.py`, motors and delays in `robot_cfg.py`. Results and history in `sim/isaaclab/README.md`; reasoning in `docs/decisions.md`.
+:::
+
+### The set-up
+
+- <b>Decoupled whole-body control:</b> the policy drives only the 12 leg joints at 50 Hz. The waist and arm targets jump to random poses within half their range every 1–3 s, so the legs learn to balance whatever the upper body does.
+- <b>Commands:</b> forward −0.3 m/s up to a limit that starts at 0.5 and grows by 0.05 m/s to 1.2 m/s whenever the robots earn over 75% of the tracking reward; sideways ±0.3 m/s; turning ±1.0 rad/s; 20% of robots are told to stand still.
+- <b>Episodes:</b> 20 s; a fall is the pelvis below 0.35 m or tilted more than 1 rad.
+- **PPO** (rsl\_rl): 24 steps per robot per iteration, 5 epochs over 4 mini-batches, clip 0.2, entropy 0.008, learning rate 1e-3 adapted to KL 0.01, γ 0.99, λ 0.95, gradient-norm clip 1.0; actor and critic MLPs 256-128-128 (flat) or 512-256-128 (rough), ELU activations, observation normalisation, and left-right mirror data augmentation (without it, earlier policies limped).<sup class="cite">[\[13\]](#s13)</sup>
+- <b>Asymmetric critic:</b> the critic also gets the base linear velocity and the exact height map; the actor gets noisy, delayed sensors and the mapped height scan.
+- <b>Training cost:</b> about 2.2–2.3 s per iteration with 4,096 robots on one workstation GPU, \~1.3 h per 2,000 iterations; flat v8 accumulated about 8,000 iterations (flat v7's 6,000 plus 2,000 on the 1.44 m body) and rough v9 about 14,000, each run resuming the last after a reward change.
+
+### Reward terms and weights (flat / rough)
+
+| Term | Weight | What it does |
+|---|---|---|
+| <code>track\_lin\_vel\_xy\_exp</code> | +1.0 | exp(−err²/0.25²), forward and sideways speed |
+| <code>track\_ang\_vel\_z\_exp</code> | +1.5 | turn rate, width 0.5 rad/s |
+| <code>forward\_progress</code> | +1.0 | linear progress along the command, capped at the command (set for rough ground; the flat task inherits it) |
+| <code>feet\_air\_time</code> | +0.5 | single-support time up to 0.35 s (was 2.0) |
+| <code>foot\_clearance</code> | +1.0 | swinging feet 8 cm above the ground under them |
+| <code>termination\_penalty</code> | −200 / −50 | falling |
+| <code>pelvis\_height</code> | −10 | m below stance height minus 2 cm, above the lower foot |
+| <code>pelvis\_roll</code> | −10 | sin² of pelvis roll |
+| <code>feet\_width</code> | −5 | step width outside 16 ± 2 cm while walking |
+| <code>feet\_flat</code>, <code>swing\_feet\_level</code> | −2, −2 | sin² of foot tilt in stance, in swing |
+| <code>sustained\_torque</code> | −2 | \~1 s running mean of (τ/τ<sub>rated</sub>)² above 0.8 (heat) |
+| <code>flat\_orientation\_l2</code> | −1.0 | pelvis tilt |
+| <code>feet\_air\_time\_variance</code> | −1.0 | left-right timing difference (limping) |
+| <code>dof\_pos\_limits</code> | −1.0 | knees and ankles at their limits |
+| <code>stand\_pose</code> | −0.5 | L1 distance from stance while told to stand |
+| <code>joint\_deviation\_hip</code> | −0.3 | hip yaw, hip roll, ankle roll away from stance |
+| <code>torque\_limits</code> | −0.2 | torque lost to saturation |
+| <code>lin\_vel\_z\_l2</code> | −0.2 / 0 | bouncing (off on stairs) |
+| <code>feet\_slide</code> | −0.1 | planted feet sliding |
+| <code>action\_rate\_l2</code> | −0.05 / −0.01 | jerky actions |
+| <code>ang\_vel\_xy\_l2</code> | −0.05 | roll and pitch rates |
+| <code>joint\_vel\_legs</code> | −1e-3 / −5e-4 | fast joints |
+| <code>dof\_torques\_l2</code> | −2e-5 | Σ τ² on the legs |
+| <code>dof\_acc\_l2</code> | −1e-7 | hip and knee accelerations |
+| <code>undesired\_contacts</code> | −1.0 | thighs or shins touching anything |
+
+<div class="small">
+
+Weights as in the code on 2026-10-29; terms inherited from Isaac Lab's base config keep their base weights unless overridden. The flat task's config runs the rough task's settings first and then overrides a few, so terms it does not override (`forward_progress`, `sustained_torque`, `dof_acc_l2`, `dof_torques_l2`) carry the rough values.
+
+</div>
+
+### The history of fixes: reward hacking in practice
+
+| What the policy did | Why the reward allowed it | Fix | Result |
+|---|---|---|---|
+| flat v2 stood and turned, never walked | clearance term paid planted feet in full | only swinging feet earn it (tanh of foot speed); action scale 0.25 → 0.5 | flat v3 walks, up to 0.8 m/s |
+| rough v3 stopped in front of 10 cm stairs | a sharp exponential tracking term pays almost nothing for a slow climb | <code>forward\_progress</code>, linear | — |
+| rough v4 lunged and fell (99% of episodes) | progress reward had no cap | capped at the commanded speed | rough v5 climbs 10–20 cm |
+| rough v6 crouched: knees 95°, pelvis 19 cm low, knees 73–81% of rated | nothing asked for height; a crouch is stable | <code>pelvis\_height</code>, <code>stand\_pose</code>; heat ×2; steep stairs on a tenth of tiles | rough v7 stands at 63.6 cm, knees 24°, passes 5–20 cm |
+| feet swung 27–31° toe down | <code>feet\_flat</code> covered only feet in contact | <code>swing\_feet\_level</code>; stance knee 25° → 15° | flat v6 / rough v8 swing 11–16° |
+| waddle: pelvis roll 20–22° peak to peak, feet 21–24 cm apart, no double support | air time at 2.0 paid long single support; roll penalty only 0.02 at 8° | <code>pelvis\_roll</code> −10, <code>feet\_width</code> −5, hip/ankle roll held, air time 0.5, delays added | flat v7 / rough v9 roll 6°, step width 14.7–15.4 cm |
+
+### Curricula
+
+The rough terrain is a 10 × 20 grid of 8 m tiles, 10 difficulty rows: 45% stairs (4–20 cm risers in the code, 5–20 cm in the README; 28 cm treads, up and down), another 10% steep stairs (14–20 cm) on *every* row so hard stairs appear from the start, 10% boxes up to 10 cm, 15% rough ground to 5 cm, 10% slopes to 0.4 rad, 10% flat. Robots start on rows 0–2. Isaac Lab's default promotion (walk half a tile) failed at slow commanded speeds, so `terrain_levels_tracking` promotes a robot that survived, earned over 50% of the tracking reward and ended over 2 m from its spawn point, and demotes one that fell or earned under 40%. Rough v9 sits at terrain level 5.9 of 10.
+
+### Domain randomisation
+
+- Ground friction: static 0.4–1.0, dynamic 0.4–0.8.
+- Torso payload: mass × 1/1.15 to 1.15 (log-uniform), centre of mass ±3 cm forward and sideways, ±2 cm up.
+- Pushes: a sudden velocity change of up to ±0.5 m/s every 5–10 s; random start pose, velocity (±0.2) and joint angles (0.9–1.1 × stance).
+- Delays per episode: sensor observations 0 or 1 policy step (0 or 20 ms), motor commands 0, 1 or 2 physics steps (0, 5 or 10 ms) in `DelayedDCMotor`.
+- Motors: a DC-motor model (torque saturates at peak and falls linearly to zero at no-load speed); gains, armature and joint friction are fixed placeholders until the phase 2 bench.
+
+### Where the policies stand
+
+**Flat ground: flat v8**, flat v7 plus 2,000 iterations on the current 1.44 m, 40.35 kg model, passes the MuJoCo cross-check: walk 0.53 m/s for 0.5 commanded, turn 0.83 rad/s for 0.8, fast walk 0.95 for 1.0 m/s, symmetric within 2%, with the knees bent about 38° on average through the stride (15° standing) and the hottest joint a knee at 68% of rated in the fast walk (`sim/isaaclab/README.md`).
+
+**Stairs: still rough v9**, trained on the earlier 1.29 m body. In the cross-check on the 1.44 m model it passes 14 of 15 stair runs (15, 18 and 20 cm risers × five noise seeds; one fall on 15 cm). On its own, older body it failed 2 of 15. A retrain on the new body, rough v10 (3,000 more iterations), did worse, 6 of 15, and is not used; the stair policy is the one still to be retrained (`docs/roadmap.md`).
+
+## Trade-offs and alternatives
+
+| Choice | Marvin Bot | Alternative and why not (yet) |
+|---|---|---|
+| Algorithm | PPO (rsl\_rl) | Off-policy methods such as SAC reuse data better but parallelise less simply; PPO with thousands of robots is the established locomotion recipe.<sup class="cite">[\[6\]](#s6)</sup> |
+| Policy network | MLP, no memory beyond the last action | History or recurrent/transformer policies<sup class="cite">[\[7\]](#s7)</sup> can infer unobserved quantities (friction, payload) at a cost in training time; an option if the bench reveals large variations. |
+| Privileged information | asymmetric critic | Teacher-student distillation<sup class="cite">[\[11\]](#s11)</sup>: planned for a depth-camera stair student distilled from rough v9 (<code>docs/roadmap.md</code>). |
+| Simulator | Isaac Lab on Newton, MuJoCo cross-check | mjlab, whose humanoid velocity task suggested the waddle fix; not needed since Isaac Lab 3.0 on Newton runs the same physics (<code>docs/decisions.md</code>, 2026-10-27). |
+| Air-time reward | 0.5 | 2.0 gave long single support and a waddle; 0 risks a shuffle. |
+| Posture | pelvis-height and stand-pose terms | A straighter default stance only (kept as an option); a terrain-map height target (rejected: the map averages the stairs ahead). |
+| Training | resume after each reward change | From scratch with the final config: cleaner and reproducible, not yet tried. |
+
+:::caution[Where sources and the repo differ]
+- Rudin et al.'s terrain curriculum promotes robots that walk far enough on their tile<sup class="cite">[\[6\]](#s6)</sup>; Marvin Bot found that too few robots got far at slow speeds and added tracking and a 2 m minimum distance (`tasks/curriculums.py`).
+- The PPO paper's reference settings use a fixed or annealed learning rate<sup class="cite">[\[2\]](#s2)</sup>; rsl\_rl adapts it to a KL target (0.01), a common locomotion practice not in the original paper.
+- The README describes the delays as "0–20 ms" and "0–10 ms"; in the code they are discrete: 0 or 20 ms on observations and 0, 5 or 10 ms on commands, sampled per episode. Nothing between is simulated.
+:::
+
+## Decisions you can make here
+
+- Which behaviours your rewards must rule out explicitly (posture, roll, step width, swing foot tilt) and how strongly: check that the "good" gait wins with a margin, not by a hair. Every extra penalty closes a loophole but also makes the robot more cautious; pile on too many and standing still wins (try *Over-penalised*).
+- How much air-time reward to pay, and which formula: biped single-support time does not pay flight. More air time gives clear, lifted steps; too much (2.0) gave the waddle.
+- Whether rough v9's 1-in-15 stair failure rate on the 1.44 m body is acceptable for phase 3, or worth a better retrain (v10 was worse), more steep-stair tiles, history in the policy, or a teacher-student stage. Each option costs hours to days of GPU time, and none is guaranteed to beat v9.
+- PPO settings: clip range, γ (planning horizon) and λ (bias versus noise). A larger γ lets the robot plan further ahead but makes learning noisier and slower; the defaults (0.2, 0.99, 0.95) are the well-trodden choice.
+- Whether to retrain from scratch with the final reward set, to check the results do not depend on the resume history (flat v8 and rough v10 both resumed earlier runs). Several GPU-hours per policy (flat v8 took about 8,000 iterations), for confidence that the result can be reproduced.
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+:::note[Where this leads]
+This page built on the simulator ([page 14](../14-simulation/)) and the PD loop that turns actions into torque ([page 15](../15-pd-control/)). Next, [page 17](../17-motion-tracking/) uses the same PPO machinery with a different reward: copy a recorded motion instead of following a speed command. [Page 20](../20-sim-to-real/) covers what has to happen before a policy runs on real motors.
+:::
+
+## Further reading
+
+- [OpenAI Spinning Up: PPO](https://spinningup.openai.com/en/latest/algorithms/ppo.html): the clearest short explanation of the clipped objective, with pseudocode.
+- [Sutton and Barto, Reinforcement Learning: An Introduction](http://incompleteideas.net/book/the-book-2nd.html): chapters 3 and 13 for returns and policy gradients; free online.
+- [Rudin et al., Learning to Walk in Minutes](https://arxiv.org/abs/2109.11978): the parallel-simulation and terrain-curriculum recipe Marvin Bot's tasks descend from.
+- [Radosavovic et al., Real-World Humanoid Locomotion with RL](https://arxiv.org/abs/2303.03381): humanoid sim-to-real with a history-based transformer policy.
+- [mjlab](https://github.com/mujocolab/mjlab): an open Isaac Lab-style framework on MuJoCo Warp with readable humanoid velocity tasks.
+
+## Sources
+
+1. <span id="s1"></span>[R. S. Sutton, A. G. Barto, Reinforcement Learning: An Introduction, 2nd ed., MIT Press, 2018](http://incompleteideas.net/book/the-book-2nd.html) <span class="used">— used for: RL vocabulary, return and discount, policy gradient.</span>
+2. <span id="s2"></span>[J. Schulman et al., Proximal Policy Optimization Algorithms, arXiv 1707.06347, 2017](https://arxiv.org/abs/1707.06347) <span class="used">— used for: clipped surrogate objective, ε = 0.2, loss terms.</span>
+3. <span id="s3"></span>[J. Schulman et al., High-Dimensional Continuous Control Using Generalized Advantage Estimation, arXiv 1506.02438, 2015](https://arxiv.org/abs/1506.02438) <span class="used">— used for: GAE, the γ/λ trade-off.</span>
+4. <span id="s4"></span>[OpenAI Spinning Up, Proximal Policy Optimization](https://spinningup.openai.com/en/latest/algorithms/ppo.html) <span class="used">— used for: on-policy policy gradient explanation.</span>
+5. <span id="s5"></span>[J. Hwangbo et al., Learning agile and dynamic motor skills for legged robots, Science Robotics, 2019 (arXiv 1901.08652)](https://arxiv.org/abs/1901.08652) <span class="used">— used for: RL in simulation transferring to a legged robot.</span>
+6. <span id="s6"></span>[N. Rudin et al., Learning to Walk in Minutes Using Massively Parallel Deep Reinforcement Learning, CoRL 2021 (arXiv 2109.11978)](https://arxiv.org/abs/2109.11978) <span class="used">— used for: massively parallel PPO, terrain curriculum.</span>
+7. <span id="s7"></span>[I. Radosavovic et al., Real-World Humanoid Locomotion with Reinforcement Learning, Science Robotics, 2024 (arXiv 2303.03381)](https://arxiv.org/abs/2303.03381) <span class="used">— used for: humanoid RL locomotion, history-based policies.</span>
+8. <span id="s8"></span>[Isaac Lab documentation, isaaclab.envs.mdp (observation, reward and event terms)](https://isaac-sim.github.io/IsaacLab/main/source/api/lab/isaaclab.envs.mdp.html) <span class="used">— used for: term definitions, reward scaling by step time, base velocity task.</span>
+9. <span id="s9"></span>[rsl\_rl (Robotic Systems Lab, ETH Zurich), GitHub](https://github.com/leggedrobotics/rsl_rl) <span class="used">— used for: PPO implementation, adaptive learning rate, symmetry augmentation.</span>
+10. <span id="s10"></span>[L. Pinto et al., Asymmetric Actor Critic for Image-Based Robot Learning, arXiv 1710.06542, 2017](https://arxiv.org/abs/1710.06542) <span class="used">— used for: critic with privileged observations.</span>
+11. <span id="s11"></span>[J. Lee et al., Learning Quadrupedal Locomotion over Challenging Terrain, Science Robotics, 2020 (arXiv 2010.11251)](https://arxiv.org/abs/2010.11251) <span class="used">— used for: privileged teacher-student training.</span>
+12. <span id="s12"></span>[D. Amodei et al., Concrete Problems in AI Safety, arXiv 1606.06565, 2016](https://arxiv.org/abs/1606.06565) <span class="used">— used for: reward hacking as a general failure mode.</span>
+13. <span id="s13"></span>[M. Mittal et al., Symmetry Considerations for Learning Task Symmetric Robot Policies, ICRA 2024 (arXiv 2403.04359)](https://arxiv.org/abs/2403.04359) <span class="used">— used for: mirror data augmentation.</span>
+14. <span id="s14"></span>[mjlab, GitHub](https://github.com/mujocolab/mjlab) <span class="used">— used for: open humanoid velocity task reference.</span>
+15. <span id="s15"></span>[X. Gu et al., Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer, arXiv 2404.05695, 2024](https://arxiv.org/abs/2404.05695) <span class="used">— used for: open humanoid RL framework with sim-to-sim check.</span>
+16. <span id="s16"></span>[X. B. Peng et al., Sim-to-Real Transfer of Robotic Control with Dynamics Randomization, ICRA 2018 (arXiv 1710.06537)](https://arxiv.org/abs/1710.06537) <span class="used">— used for: dynamics randomisation.</span>
+17. <span id="s17"></span>[J. Tobin et al., Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World, IROS 2017 (arXiv 1703.06907)](https://arxiv.org/abs/1703.06907) <span class="used">— used for: domain randomisation idea.</span>
+
+<PageScript code={script} />

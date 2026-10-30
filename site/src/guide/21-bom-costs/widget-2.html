@@ -1,0 +1,12 @@
+<div class="filters">
+<select id="f_group"><option value="">All groups</option></select>
+<select id="f_phase"><option value="">All phases</option><option value="2">Phase 2</option><option value="3">Phase 3</option><option value="4">Phase 4</option><option value="5">Phase 5</option><option value="6">Phase 6</option></select>
+<select id="f_kind"><option value="">Any price basis</option><option value="est">Estimates only</option><option value="dated">Dated listings only</option><option value="cn">Ships from China</option></select>
+<input id="f_text" placeholder="Search items, notes…" type="search"/>
+<span class="mono" id="f_count" style="color:var(--muted);font-size:13px"></span>
+</div>
+<div class="tablewrap tall"><table id="bomtable">
+<thead><tr><th data-k="g">Group</th><th data-k="item">Item</th><th class="num" data-k="qty">Qty</th><th class="num" data-k="sp">Spares</th><th class="num" data-k="unit">Unit $</th><th class="num" data-k="line">Line $</th><th class="num" data-k="eff">This scenario $</th><th data-k="p">Phase</th><th data-k="basis">Price basis</th></tr></thead>
+<tbody></tbody>
+<tfoot><tr><th colspan="5">Shown lines</th><th class="num" id="t_line"></th><th class="num" id="t_eff"></th><th colspan="2"></th></tr></tfoot>
+</table></div>

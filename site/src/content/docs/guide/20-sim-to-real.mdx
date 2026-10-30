@@ -1,0 +1,228 @@
+---
+title: "Sim-to-real and system identification"
+description: "Marvin Bot's walking policies live in a simulator whose motors are educated guesses."
+sidebar:
+  label: "20 · Sim-to-real and system identification"
+  order: 21
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/20-sim-to-real/widget-1.html?raw';
+import widget2 from '../../../guide/20-sim-to-real/widget-2.html?raw';
+import widget3 from '../../../guide/20-sim-to-real/widget-3.html?raw';
+import widget4 from '../../../guide/20-sim-to-real/widget-4.html?raw';
+import script from '../../../guide/20-sim-to-real/script.js?raw';
+import '../../../guide/20-sim-to-real/style.css';
+
+<div class="guide-meta">
+
+**Stage 6 · Toward hardware** · \~35 min · Before this: [04 Actuators](../04-actuators/), [15 PD control](../15-pd-control/), [16 RL for walking](../16-rl-walking/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Marvin Bot's walking policies live in a simulator whose motors are educated guesses. Before they can run on metal, the guesses have to be measured, and the policy has to be trained to cope with whatever the measurements still get wrong. This page is about that gap and the two tools for closing it: system identification and domain randomisation.
+
+:::note[You will learn]
+- What the <a class="g" href="../glossary/#sim-to-real-gap">sim-to-real gap</a> is made of for a legged robot: actuator dynamics, <a class="g" href="../glossary/#latency">latency</a>, friction, contact, sensor noise, mass errors.
+- How <a class="g" href="../glossary/#system-identification">system identification</a> turns bench data into model parameters with least squares, and why the test signal matters.
+- How <a class="g" href="../glossary/#domain-randomisation">domain randomisation</a>, <a class="g" href="../glossary/#actuator-network">actuator networks</a> and privileged training cover what identification cannot.
+- What Marvin Bot's phase 2 bench will measure, and where each number goes back into the simulation.
+:::
+
+## The idea in one picture
+
+A simulator is a set of equations with numbers in them: masses, inertias, friction, motor strength, delays. A policy trained in it learns to exploit those exact numbers. If the real robot's numbers differ, the policy's actions have different effects than it expects, and a gait that was balanced becomes unbalanced. That difference is the reality gap.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[4\]](#s4)</sup> Two things shrink its effect: **measure** the real numbers and put them in the simulator (system identification), and **vary** the numbers in training so the policy works across a range that contains the real ones (domain randomisation).<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[3\]](#s3)</sup>
+
+An everyday comparison: a learner who has only ever driven one car stalls a different car with a heavier clutch. You fix that either by telling them exactly how this clutch feels (measure it), or by having them practise on many different cars, so no clutch surprises them (randomise). Real projects do both. This is the step between the simulation work of pages [14](../14-simulation/)–[17](../17-motion-tracking/) and building hardware ([page 22](../22-roadmap/), phase 2).
+
+<div class="hint">
+
+<b>How to read the picture below:</b> each panel is a range of values for one physical parameter (say, a motor's friction). The blue shape is the range of values the simulator trains on; the orange line is the real robot's value. Left: the guess misses reality. Middle: measuring moves the guess onto it. Right: a wider range covers it even if the measurement is a little off.
+
+</div>
+
+<RawHtml html={widget1} />
+
+## Playground: identify a motor, then deploy
+
+You play the engineer at the phase 2 test bench. Hidden inside the page is a "true" motor (one joint with a test arm bolted to its output), standing in for the real hardware. In three steps:
+
+1. <b>Test it.</b> The bench sends the motor a pattern of current (current makes torque) and records its speed, with sensor noise: the grey trace in the top chart. A <a class="g" href="../glossary/#chirp-signal">chirp</a> is a wiggle that gets faster and faster.
+2. <b>Match it.</b> Move the five model sliders until your model's speed (blue) lies on the measured one, or press **Fit** to let <a class="g" href="../glossary/#least-squares">least squares</a> do it (it also tries every delay from 0 to 20 ms and keeps the best). The red *residual* under the chart is the mismatch: you want it as small as the noise.
+3. <b>Use it.</b> The bottom chart runs a leg-like motion on the joint with a [PD controller](../15-pd-control/) that relies on your model to know how much torque to add. It compares what the simulator predicted with what the "real" joint does. A poor model shows up as a gap between the two.
+
+Model and bench are a teaching toy: one joint, no gravity, no backlash; the true values are illustrative, not RobStride measurements.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. Start from "Marvin Bot today": the speed residual is many times the noise floor, and in the deploy panel the real joint lags and overshoots what the simulator promised. Press **Fit**: the residual drops close to the noise floor (the fit is slightly biased by the smoothing, as real fits are) and the gap nearly vanishes.
+2. Choose "Current steps only" and press Fit, then "Chirp only" and Fit. Which test pins down the inertia better, and which the friction? (Steps reach steady speeds, where only friction balances the torque; the chirp keeps accelerating, which is where inertia shows.)
+3. After fitting, raise k<sub>p</sub> to 200 with k<sub>d</sub> at 2 and watch the mini playground below with "Marvin Bot today" ranges: the worst corner, with a 10 ms delay, jumps from about 2° to about 11° of tracking error while the true joint (4 ms) stays near 0.1°. Delay matters more the stiffer the controller.
+4. Raise the noise to 0.3 rad/s and fit several times with "New hidden motor": estimates scatter more. That scatter is a fair width for the randomisation ranges below.
+:::
+
+### Mini playground: does your randomisation cover reality?
+
+Pick a training range for each parameter. The bar shows the range, your model value (blue tick) and the hidden true value (orange; known only in this toy). If the truth lies outside, the policy has never trained on the real robot. The worst-case column runs the deploy controller on all 32 corners of the box.
+
+<RawHtml html={widget3} />
+
+:::note[Try this]
+Press "Marvin Bot today": only the delay is randomised (0–10 ms), so the four motor parameters are point values and the truth is outside all of them. Press "Model ±30%" with the placeholder model: friction is still not covered, because the placeholder has no viscous term at all. Now fit the model first and try "Model ±10%": everything is covered with a narrow box. Wider boxes cover more but cost performance (the worst corner gets worse): a randomised policy is a compromise across its whole range.
+:::
+
+## From first principles
+
+### Where the gap comes from
+
+| Source | What the simulator assumes | What reality does |
+|---|---|---|
+| Actuator dynamics | an ideal torque source, or a DC-motor curve with fixed armature and friction | current loop bandwidth, gear friction that changes with load and temperature, backlash, torque constant off the datasheet, and torque that drops as the windings heat<sup class="cite">[\[5\]](#s5)</sup> |
+| Latency | commands act instantly | inference time, CAN round trips and sensor filtering add milliseconds; a delay in a feedback loop removes phase margin<sup class="cite">[\[6\]](#s6)</sup> |
+| Contact and friction | rigid bodies, one friction coefficient | soft soles, varying floors, slip<sup class="cite">[\[4\]](#s4)</sup> |
+| Sensors | exact joint angles, exact orientation | noise, bias, IMU drift, encoder quantisation |
+| Mass and geometry | CAD masses and inertias | cables, fasteners, glue, battery position: the real robot is heavier in places the CAD forgot |
+
+Tan et al. traced most of the gap on a small quadruped to two items: the actuator model and latency. Identifying the motor and adding the measured latency to the simulator was what made their gaits transfer.<sup class="cite">[\[6\]](#s6)</sup> Hwangbo et al. found the actuator so hard to model analytically that they learned it instead.<sup class="cite">[\[5\]](#s5)</sup>
+
+### A model of one joint
+
+The playground's actuator obeys Newton's second law for rotation, the same model the bench step test fits:
+
+<div class="eq">
+
+J · dω/dt = K<sub>t</sub> · i(t − d) − b · ω − τ<sub>c</sub> · sign(ω)
+
+</div>
+
+- **J** (kg·m²): inertia at the output. A geared motor's rotor inertia appears multiplied by the gear ratio squared: this "reflected inertia" is what simulators call <a class="g" href="../glossary/#armature">armature</a>. For a 9:1 gearbox a rotor of 4×10⁻⁴ kg·m² looks like 0.032 kg·m² at the output, larger than many leg links.
+- <b>K<sub>t</sub></b> (N·m/A): <a class="g" href="../glossary/#torque-constant">torque constant</a> at the output; current i times K<sub>t</sub> is the motor torque.
+- **b** (N·m·s/rad): <a class="g" href="../glossary/#viscous-friction">viscous friction</a>, proportional to speed (oil, eddy currents, back-EMF in the current loop).
+- <b>τ<sub>c</sub></b> (N·m): <a class="g" href="../glossary/#coulomb-friction">Coulomb friction</a>, a constant drag opposing motion (gear teeth, seals). Units check: every term is N·m.
+- **d** (s): the delay between commanding a current and the torque appearing, including bus time.
+
+### System identification by least squares
+
+The idea in plain words: write down the motor equation once for every sample of bench data, then pick the values of J, b and τ<sub>c</sub> that make all those equations as nearly true as possible at once. That is what "least squares" means: the smallest total of squared mismatches.
+
+The model is *linear in its unknowns* once the delay is fixed: rearranged, each sample k gives one equation
+
+<div class="eq">
+
+K<sub>t</sub> i(t<sub>k</sub> − d) = J · α<sub>k</sub> + b · ω<sub>k</sub> + τ<sub>c</sub> · sign(ω<sub>k</sub>)
+
+</div>
+
+where α<sub>k</sub> is the acceleration estimated by differentiating the smoothed speed. Thousands of samples give thousands of equations in three unknowns; least squares picks the J, b, τ<sub>c</sub> that minimise the sum of squared equation errors, by solving the 3 × 3 "normal equations" (AᵀA)x = Aᵀy.<sup class="cite">[\[7\]](#s7)</sup> The delay enters non-linearly, so the Fit button repeats the solve for every delay from 0 to 20 ms in 0.5 ms steps and keeps the best. K<sub>t</sub> cannot be separated from J, b and τ<sub>c</sub> using speed data alone (doubling all four changes nothing), so it comes from a separate locked-output test: hold the output against a load cell, step the current, and fit the slope of torque against current.
+
+Two practical lessons. First, the test signal must *excite* every parameter: steps reach steady speeds (where torque balances friction), chirps sweep frequencies (where inertia dominates). Second, noise matters little if you have many samples, but bias matters a lot: if the model lacks a term that reality has (backlash, say), least squares will distort the other parameters to compensate.
+
+### Mitigations, from cheapest to most involved
+
+- <b>Observation noise and delay modelling:</b> add realistic noise and latency to the simulated sensors and commands.<sup class="cite">[\[6\]](#s6)</sup>
+- <b>Domain randomisation:</b> sample physics parameters per episode so the policy must work across all of them. Peng et al. randomised dynamics such as masses, friction, damping and latency and gave the policy memory so it could adapt within an episode<sup class="cite">[\[2\]](#s2)</sup>; Tobin et al. introduced the idea for camera images<sup class="cite">[\[3\]](#s3)</sup>. Wider is more robust but more conservative.<sup class="cite">[\[8\]](#s8)</sup>
+- <b>System identification:</b> measure, then centre the randomisation on the measurement.<sup class="cite">[\[6\]](#s6)</sup><sup class="cite">[\[7\]](#s7)</sup>
+- <b>Actuator networks:</b> record a real actuator's response to many commands and train a small network that predicts torque from the recent history of position error and velocity; use it inside the simulator in place of the ideal motor.<sup class="cite">[\[5\]](#s5)</sup>
+- <b>Privileged training and adaptation:</b> a teacher policy sees the true parameters in simulation; a student learns to act from sensor history alone, implicitly estimating them.<sup class="cite">[\[9\]](#s9)</sup><sup class="cite">[\[10\]](#s10)</sup> History-conditioned humanoid policies do this in context.<sup class="cite">[\[11\]](#s11)</sup>
+- <b>Learning the residual from real data:</b> for humanoids, ASAP trains a correction ("delta action") model on real-world rollouts and fine-tunes the policy in the corrected simulator.<sup class="cite">[\[12\]](#s12)</sup>
+- <b>Sim-to-sim checks:</b> run the trained policy in a second, independent simulator before hardware; Humanoid-Gym uses MuJoCo for this.<sup class="cite">[\[13\]](#s13)</sup> A bipedal stair policy trained with randomisation transferred to hardware blind in Siekmann et al.<sup class="cite">[\[14\]](#s14)</sup>
+
+## How Marvin Bot does it
+
+<b>In short:</b> today the simulator's motor numbers are educated guesses, softened by some randomisation and a second-simulator check. Phase 2 buys two real motors, measures them on a bench and puts the measured numbers back into the simulator, before most of the motors are bought. That order means a surprise costs two motors, not twenty-three.
+
+:::tip[In the repo]
+Phase 2 in `docs/plan.md`: "One RS04 and one RS03, CAN adapter, bench supply with regen clamp. Measure torque constant, speed, heating, CAN timing, built-in position control; fit actuator models and feed them back into simulation", pass check "manual figures confirmed; models match measurements; CAN at the planned rates works on the Orin", 2–3 weeks. Scripts in `bench/actuator/bench_robstride.py` (untested until the motors arrive), procedure in `bench/README.md`, driver in `robot/drivers/robstride.py`.
+:::
+
+### Today: placeholders, a cross-check and some randomisation
+
+- <b>Motor model:</b> `robot_cfg.py` uses a DC-motor model per joint (torque saturates at the peak rating and falls linearly to zero at no-load speed) with gains, armature and friction that its docstring calls "placeholders until the phase 2 bench test fits them": hip and knee k<sub>p</sub> 150, k<sub>d</sub> 5, armature 0.03 kg·m², friction 0.3 N·m; ankles 40, 2, 0.02, 0.2.
+- <b>Delay:</b> motor commands arrive 0, 5 or 10 ms late (`DelayedDCMotor`), sensor observations 0 or 20 ms late, sampled per episode.
+- <b>Noise:</b> gyro ±0.2 rad/s, gravity vector ±0.05, joint angles ±0.01 rad, joint speeds ±0.5 rad/s; the height map gets drift, holes and 10 Hz updates.
+- <b>Randomisation:</b> ground friction 0.4–1.0 (static), torso mass ±15% and centre of mass ±3 cm, pushes to 0.5 m/s, random upper-body motion. Joint armature, friction, gains and motor strength are *not* randomised.
+- <b>Asymmetric critic:</b> the critic sees the true velocity and terrain; the actor only real sensors (page [16](../16-rl-walking/)).
+- <b>Sim-to-sim:</b> every policy is exported to ONNX and replayed in MuJoCo (`sim/mujoco/check_policy.py`) on the current URDF, a different physics engine than training (Newton).
+
+### Phase 2: the bench tests and where each result goes
+
+| Test | Command (from <code>bench/README.md</code>) | Measures | Feeds back into |
+|---|---|---|---|
+| Scan | <code>bench\_robstride.py scan</code> | motor IDs, wiring | CAN map in <code>description/robot.yaml</code> |
+| Latency | <code>latency --id 1 --model RS04 --rate 500</code> | command-to-feedback round trip at 500 Hz on the Orin: median, p99 (the delay 99% of round trips beat) and max | the delay range in <code>robot\_cfg.py</code>; whether USB-CAN adapters suffice (roadmap items 4, 13) |
+| Step | <code>step --id 1 --model RS04 --kp 150 --kd 5</code> | position steps of ±0.3 rad with the training gains, logging position, speed, torque | armature, friction and effective k<sub>p</sub>/k<sub>d</sub> in <code>robot\_cfg.py</code> and the MuJoCo checks |
+| Thermal | <code>thermal --id 1 --model RS04 --torque 47 --minutes 10</code> | temperature holding 47 N·m (the slow 18 cm stair knee load, 118% of rated) against a locked output; stops at 90 °C | the knee decision (roadmap item 11), the heat penalty's time constant (<code>sustained\_torque</code>) |
+| By hand | dial indicator, scales, calipers | backlash, mass, flange dimensions | <code>description/actuators.yaml</code> (<code>verified: bench</code>) |
+
+The step test uses the motor's own position mode (operation control with k<sub>p</sub> and k<sub>d</sub>, `robstride.py` type 1 frames), which is how the robot will run, so it identifies the motor *and* its built-in controller together. The playground uses pure torque commands instead because the maths stays linear; the driver supports that too (the thermal test sends k<sub>p</sub> = k<sub>d</sub> = 0 with a feed-forward torque). One caution: the torque in RobStride's feedback frame is computed by the driver from current, so checking K<sub>t</sub> needs an external reference such as a load cell or a known weight on a lever.<sup class="cite">[\[15\]](#s15)</sup>
+
+### Open items that are sim-to-real questions
+
+- Roadmap item 2: output-bearing type, backlash and moment ratings.
+- Item 3: bus current and regen behaviour.
+- Item 4 and 13: real CAN timing with 3–5 motors per bus on the Orin, and whether a dual-channel adapter carries two 500 Hz buses.
+- Item 11: knee and hip-roll heating on slow stairs.
+- Stair robustness: the stair policy (rough v9, trained on the earlier 1.29 m body) falls in 1 of 15 runs on 15–20 cm stairs in simulation on the 1.44 m model, and a retrain on the new body did worse; the real robot will not do better than simulation ([page 16](../16-rl-walking/)).
+
+## Trade-offs and alternatives
+
+| Approach | For | Against | Marvin Bot |
+|---|---|---|---|
+| Analytic model + identification | few parameters, interpretable, cheap | misses effects the model lacks | phase 2 plan |
+| Actuator network<sup class="cite">[\[5\]](#s5)</sup> | captures what the model misses | needs lots of bench data over many conditions; harder to run in Newton's GPU kernels | not planned; an option if the fit leaves large residuals |
+| Wide randomisation only<sup class="cite">[\[2\]](#s2)</sup> | no bench needed | conservative gaits, and the truth may still be outside | partly (contact, mass, delay) |
+| Teacher-student / history<sup class="cite">[\[9\]](#s9)</sup><sup class="cite">[\[11\]](#s11)</sup> | adapts online | more training, more compute on the Orin | planned for a depth-camera stair student |
+| Real-data residual (ASAP)<sup class="cite">[\[12\]](#s12)</sup> | fixes what remains after transfer | needs a robot that already roughly works | later, after phase 4 |
+
+The bench also chose its own scope: one RS04 and one RS03 are bought singly, and the remaining RS03 are ordered only after the bench passes (`docs/decisions.md`, 2026-10-26), so the motor models are known before most of the money is spent. (An earlier decision named an RS06 as the second bench unit; it was later replaced by the RS03 when the ankles went back to RS03.)
+
+:::caution[Where sources and the repo disagree]
+- The README and decision log describe the delays as ranges (0–20 ms, 0–10 ms); the code samples discrete values (0 or 20 ms; 0, 5 or 10 ms). Published practice, for example Tan et al., models the measured latency itself<sup class="cite">[\[6\]](#s6)</sup>; the bench latency test will say which values matter.
+- Many published humanoid recipes randomise joint friction, armature or motor strength as well as contact and mass<sup class="cite">[\[13\]](#s13)</sup>; Marvin Bot does not yet, by choice, until the bench gives it a centre to randomise around.
+:::
+
+## Decisions you can make here
+
+- Which tests the bench must include to identify each parameter (a chirp for inertia, steady speeds for friction, a locked-output load cell for K<sub>t</sub>).
+- Whether the fitted motor model is good enough (residual near the noise floor) or an actuator network is needed.
+- How wide to randomise each motor parameter around the fit: the fit's scatter over repeated tests and over temperature is a reasonable minimum. Wider ranges make the policy more robust but more cautious (the worst-corner error in the mini playground grows).
+- Which delay range to train with once the latency test reports median and p99 round trips.
+- How stiff the deploy gains should be given the measured delay: stiffer joints track better when the delay is small, but a delay hurts a stiff joint more (Try this, step 3).
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+## Further reading
+
+- [MIT 6.832 Underactuated Robotics, System Identification chapter](https://underactuated.mit.edu/sysid.html): least squares on models linear in their parameters, and what goes wrong.
+- [Tan et al., Sim-to-Real: Learning Agile Locomotion for Quadruped Robots](https://arxiv.org/abs/1804.10332): the clearest account of which parts of the gap mattered.
+- [Hwangbo et al., Learning agile and dynamic motor skills](https://arxiv.org/abs/1901.08652): actuator networks, with the data collection described.
+- [Muratore et al., Robot Learning from Randomized Simulations: A Review](https://arxiv.org/abs/2111.00956): the design space of randomisation.
+- [He et al., ASAP](https://arxiv.org/abs/2502.01143): humanoid sim-to-real with a learned correction from real data.
+
+## Sources
+
+1. <span id="s1"></span>[W. Zhao, J. P. Queralta, T. Westerlund, Sim-to-Real Transfer in Deep Reinforcement Learning for Robotics: a Survey, arXiv 2009.13303, 2020](https://arxiv.org/abs/2009.13303) <span class="used">— used for: the reality gap and mitigation families.</span>
+2. <span id="s2"></span>[X. B. Peng et al., Sim-to-Real Transfer of Robotic Control with Dynamics Randomization, ICRA 2018 (arXiv 1710.06537)](https://arxiv.org/abs/1710.06537) <span class="used">— used for: dynamics randomisation with a memory policy.</span>
+3. <span id="s3"></span>[J. Tobin et al., Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World, IROS 2017 (arXiv 1703.06907)](https://arxiv.org/abs/1703.06907) <span class="used">— used for: origin of domain randomisation.</span>
+4. <span id="s4"></span>[N. Rudin et al., Learning to Walk in Minutes Using Massively Parallel Deep RL, CoRL 2021 (arXiv 2109.11978)](https://arxiv.org/abs/2109.11978) <span class="used">— used for: friction, push and noise randomisation in GPU-parallel locomotion training.</span>
+5. <span id="s5"></span>[J. Hwangbo et al., Learning agile and dynamic motor skills for legged robots, Science Robotics 2019 (arXiv 1901.08652)](https://arxiv.org/abs/1901.08652) <span class="used">— used for: actuator networks, actuator dynamics as a main gap.</span>
+6. <span id="s6"></span>[J. Tan et al., Sim-to-Real: Learning Agile Locomotion For Quadruped Robots, RSS 2018 (arXiv 1804.10332)](https://arxiv.org/abs/1804.10332) <span class="used">— used for: actuator identification, latency modelling, randomisation.</span>
+7. <span id="s7"></span>[R. Tedrake, Underactuated Robotics (MIT 6.832), chapter "System Identification"](https://underactuated.mit.edu/sysid.html) <span class="used">— used for: least-squares identification of models linear in parameters.</span>
+8. <span id="s8"></span>[F. Muratore et al., Robot Learning from Randomized Simulations: A Review, Frontiers in Robotics and AI 2022 (arXiv 2111.00956)](https://arxiv.org/abs/2111.00956) <span class="used">— used for: robustness versus conservatism of randomisation.</span>
+9. <span id="s9"></span>[J. Lee et al., Learning Quadrupedal Locomotion over Challenging Terrain, Science Robotics 2020 (arXiv 2010.11251)](https://arxiv.org/abs/2010.11251) <span class="used">— used for: privileged teacher-student training.</span>
+10. <span id="s10"></span>[A. Kumar et al., RMA: Rapid Motor Adaptation for Legged Robots, RSS 2021 (arXiv 2107.04034)](https://arxiv.org/abs/2107.04034) <span class="used">— used for: online adaptation from history.</span>
+11. <span id="s11"></span>[I. Radosavovic et al., Real-World Humanoid Locomotion with Reinforcement Learning, Science Robotics 2024 (arXiv 2303.03381)](https://arxiv.org/abs/2303.03381) <span class="used">— used for: humanoid sim-to-real with a history-conditioned policy.</span>
+12. <span id="s12"></span>[T. He et al., ASAP: Aligning Simulation and Real-World Physics for Learning Agile Humanoid Whole-Body Skills, arXiv 2502.01143, 2025](https://arxiv.org/abs/2502.01143) <span class="used">— used for: humanoid delta-action correction from real data.</span>
+13. <span id="s13"></span>[X. Gu et al., Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer, arXiv 2404.05695, 2024](https://arxiv.org/abs/2404.05695) <span class="used">— used for: sim-to-sim validation in MuJoCo, humanoid randomisation practice.</span>
+14. <span id="s14"></span>[J. Siekmann et al., Blind Bipedal Stair Traversal via Sim-to-Real Reinforcement Learning, RSS 2021 (arXiv 2105.08328)](https://arxiv.org/abs/2105.08328) <span class="used">— used for: biped stair policy transferred with randomisation.</span>
+15. <span id="s15"></span>[RobStride, Product\_Information (user manuals), GitHub](https://github.com/RobStride/Product_Information) <span class="used">— used for: torque constant, CAN protocol and feedback frame.</span>
+
+<PageScript code={script} />

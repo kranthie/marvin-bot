@@ -1,0 +1,13 @@
+/* Leg loads and stairs: styles for this page's playground */
+.eq{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:14px/1.7 var(--mono);overflow-x:auto;max-width:86ch}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1 1 auto}
+.bars{margin-top:10px;display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:96px 1fr 150px;gap:8px;align-items:center;font-size:13px}
+@media (max-width:560px){.bar{grid-template-columns:70px 1fr;}.bar .bv{grid-column:1/-1}}
+.track{position:relative;height:18px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px 0 0 4px}
+.track .mark{position:absolute;top:-2px;bottom:-2px;width:2px;background:#e6edf3;opacity:.75}
+.track .mark.p70{background:var(--violet)}
+.bv{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.ctl.dis{opacity:.4;pointer-events:none}

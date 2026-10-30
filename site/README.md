@@ -7,7 +7,7 @@ parts:
 |---|---|
 | Home page: the robot in 3-D | `src/pages/index.astro` and `src/scripts/marvin-viewer.js` |
 | Documentation | the repository's own Markdown (`README.md`, `docs/`, `sim/*/README.md`, `bom/README.md`, `bench/README.md`, `CONTRIBUTING.md`, …), copied in at build time by `scripts/sync-docs.mjs`; plus two pages written for the site (`src/content/docs/getting-started.md`, `tutorials.md`) |
-| The interactive guide (tutorials) | static HTML in `public/guide/`: a map, 23 playgrounds, a glossary and a sources page |
+| The interactive guide (tutorials) | Markdown pages in `src/content/docs/guide/` (a map, 23 playgrounds, a glossary and a sources page), with each playground's controls, plots and script in `src/guide/<page>/` |
 
 It is built with [Astro Starlight](https://starlight.astro.build) (MIT). Dependencies are pinned in
 `package.json` and `package-lock.json`.
@@ -19,14 +19,22 @@ It is built with [Astro Starlight](https://starlight.astro.build) (MIT). Depende
   synced files become site links; links to other repository files go to GitHub; images are copied.
   To add a document to the site, add it to `PAGES` in `scripts/sync-docs.mjs` and to the sidebar in
   `astro.config.mjs`.
-- **The guide:** each playground is one self-contained HTML file in `public/guide/playgrounds/`, with no
-  build step. Follow the guide's conventions: cite every non-obvious claim with a numbered source, say
-  where a source and the repository disagree, use SI units and British spelling, refer only to
-  open-source projects (bought parts are named as parts), and date the repository numbers. The guide's
-  glossary and sources pages are static too; update them when a playground adds a term or a source.
+- **The guide:** each page is an MDX file in `src/content/docs/guide/`. The prose is Markdown, with
+  Starlight asides for the "You will learn", "In the repo" and "Where sources and the repo disagree"
+  boxes. A playground's interactive parts are plain HTML in `src/guide/<page>/widget-N.html`
+  (rendered by `<RawHtml>`), its script in `script.js` (run at the end of the page by `<PageScript>`)
+  and any styles it needs in `style.css`; `src/styles/guide.css` maps the playgrounds' class names
+  onto Starlight's colours, so they follow the light and dark themes. The 3-D model page bundles its
+  viewer (`src/guide/00-3d-model/viewer.js`) with the site's three.js. Follow the guide's
+  conventions: cite every non-obvious claim with a numbered source, say where a source and the
+  repository disagree, use SI units and British spelling, refer only to open-source projects (bought
+  parts are named as parts), and date the repository numbers. Update the glossary and sources pages
+  when a playground adds a term or a source. The old `public/guide/*.html` addresses redirect to the
+  new pages.
 - **The 3-D model:** `scripts/build_model.py` packs the generated URDF, `description/cad_model.yaml` and
   the code-CAD meshes into `public/guide/model/marvin_model.js` (git-ignored), used by the home page and
-  playground 00. The Pages workflow rebuilds it on every deploy, so it always matches the design.
+  playground 00. Both viewers share `src/scripts/marvin-render.js`: smooth shading that keeps sharp
+  edges (crease-angle normals), image-based lighting and soft shadows. The Pages workflow rebuilds it on every deploy, so it always matches the design.
 
 ## Building and previewing locally
 
@@ -55,8 +63,8 @@ must be set to **GitHub Actions** once.
 
 The site's code and text, including the guide, are Apache-2.0 like the rest of the documentation. The
 3-D model data is derived from the hardware design files (CERN-OHL-S-2.0); the hand meshes from the
-AmazingHand by Pollen Robotics (CC-BY-4.0). three.js (MIT) is copied from `node_modules` into
-`public/guide/vendor/three/` at build time, with its licence. Every source the guide cites is listed on
+AmazingHand by Pollen Robotics (CC-BY-4.0). three.js (MIT) is bundled from `node_modules` at build
+time, keeping its licence header. Every source the guide cites is listed on
 its sources page.
 
 ## If the 3-D model does not appear

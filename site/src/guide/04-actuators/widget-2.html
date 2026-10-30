@@ -1,0 +1,42 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets" id="thPresets">
+<button data-th="today">Marvin Bot today: knee climbing stairs</button>
+<button data-th="static">Static 18 cm step hold</button>
+<button data-th="thigh">Same, thigh-sized heat sink</button>
+<button data-th="walk">Knee while walking</button>
+<button data-th="yaw">Hip yaw RS03 on one leg</button>
+</div>
+<h4>Actuator and mount</h4>
+<div class="ctl"><label for="thModel">Model</label>
+<select id="thModel"><option value="RS04">RS04 (rated 40 N·m)</option><option value="RS03">RS03 (rated 20 N·m)</option><option value="RS06">RS06 (rated 11 N·m)</option><option value="RS00">RS00 (rated 5 N·m)</option></select></div>
+<div class="ctl"><label for="thSink">Heat path vs manual's plate <output id="o_thSink"></output></label>
+<input id="thSink" max="120" min="60" step="1" type="range" value="100"/>
+<div class="hint">The continuous rating your mount achieves, as % of the manual's. RS04 on the manual's smaller 220 × 200 mm plate: 87.5% (35 of 40 N·m).</div></div>
+<div class="ctl"><label for="thAmb">Ambient temperature <output id="o_thAmb"></output></label>
+<input id="thAmb" max="45" min="10" step="1" type="range" value="25"/></div>
+<h4>Torque profile</h4>
+<div class="ctl"><label for="thProf">Profile</label>
+<select id="thProf"><option value="const">Constant</option><option value="walk">Walking: 60% stance at full, 40% swing at 20%</option><option value="stairs">Stairs: 40% of each 3 s step at full, 60% at 30%</option><option value="hold">Hold 30 s, rest 30 s</option></select></div>
+<div class="ctl"><label for="thT">Torque at the high part <output id="o_thT"></output></label>
+<input id="thT" max="120" min="0" step="0.5" type="range" value="44"/></div>
+<div class="ctl check"><label><input id="thStall" type="checkbox"/> Holding still (stall: hottest phase √2 × heat)</label></div>
+<div class="ctl"><label for="thDur">Duration <output id="o_thDur"></output></label>
+<input id="thDur" max="30" min="1" step="1" type="range" value="15"/></div>
+</div>
+<div class="preview">
+<p class="pgtitle">Winding and housing temperature over time</p>
+<svg aria-label="Winding temperature rising over minutes towards the 145 degree limit" id="thView" role="img" viewbox="0 0 640 360"></svg>
+<div class="statusline" id="thStatus">–</div>
+<div class="readouts">
+<div class="ro" id="thR1"><div class="k">RMS torque</div><div class="v">–</div></div>
+<div class="ro" id="thR2"><div class="k">RMS / rated in this mount</div><div class="v">–</div></div>
+<div class="ro" id="thR3"><div class="k">Winding at the end</div><div class="v">–</div></div>
+<div class="ro" id="thR4"><div class="k">Time to 145 °C</div><div class="v">–</div></div>
+<div class="ro" id="thR5"><div class="k">Steady-state winding</div><div class="v">–</div></div>
+<div class="ro" id="thR6"><div class="k">Rated torque in this mount</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--bad)"></i>winding</span><span><i style="background:var(--accent)"></i>housing</span><span><i style="background:var(--warn)"></i>145 °C protection limit</span></div>
+</div>
+</div>

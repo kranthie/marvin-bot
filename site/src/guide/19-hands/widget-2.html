@@ -1,0 +1,37 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-fp="today">Marvin Bot today (SCS0009, rated)</button>
+<button data-fp="stall">SCS0009 near stall</button>
+<button data-fp="pads">Compliant pads (μ 0.9)</button>
+<button data-fp="sts">STS3032 variant</button>
+</div>
+<div class="ctl"><label>Servo</label>
+<select id="sv"><option value="scs">Feetech SCS0009 (stall 0.23 N·m, rated 0.074 N·m)</option><option value="sts">Feetech STS3032 (stall 0.44 N·m, rated 0.15 N·m)</option></select></div>
+<div class="ctl"><label>Servo torque used <output id="o_tu"></output></label>
+<input id="tu" max="100" min="10" step="1" type="range" value="33"/>
+<div class="hint">% of stall. Rated (continuous) is about 33%; near stall the servo heats in seconds.</div></div>
+<div class="ctl"><label>Lever to the contact point <output id="o_L"></output></label>
+<input id="L" max="0.09" min="0.02" step="0.001" type="range" value="0.05"/>
+<div class="hint">Effective lever from servo torque to fingertip force (estimate for this hand).</div></div>
+<div class="ctl"><label>Linkage efficiency <output id="o_eta"></output></label>
+<input id="eta" max="1" min="0.4" step="0.05" type="range" value="0.8"/>
+<div class="hint">Share of the servo's torque that survives friction in the finger's joints and links (1 = no loss).</div></div>
+<div class="ctl"><label>Friction coefficient μ <output id="o_mu"></output></label>
+<input id="mu" max="1.2" min="0.1" step="0.05" type="range" value="0.5"/>
+<div class="hint">Hard printed plastic on a cup ~0.3–0.5; soft rubber pads ~0.8–1.</div></div>
+<div class="ctl"><label>Safety factor for motion <output id="o_sf"></output></label>
+<input id="sf" max="3" min="1" step="0.1" type="range" value="2"/>
+<div class="hint">Walking and arm swings add acceleration; 2 is a common margin.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="A thumb and finger pinching an object, with the squeeze force, friction forces and weight drawn as arrows" id="fing" role="img" viewbox="0 0 600 260"></svg>
+<div class="readouts">
+<div class="ro" id="f_tau"><div class="k">Finger torque (2 servos)</div><div class="v">–</div></div>
+<div class="ro" id="f_F"><div class="k">Fingertip force</div><div class="v">–</div></div>
+<div class="ro" id="f_m"><div class="k">Holdable mass (pinch)</div><div class="v">–</div></div>
+<div class="ro" id="f_ms"><div class="k">…with safety factor</div><div class="v">–</div></div>
+</div>
+</div>
+</div>

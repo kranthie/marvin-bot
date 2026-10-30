@@ -1,0 +1,45 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today (MuJoCo-style, 2 ms)</button>
+<button data-preset="stiffok">Stiff spring, small step</button>
+<button data-preset="blow">Stiff spring, 5 ms: blows up</button>
+<button data-preset="euler">Explicit Euler drifts</button>
+<button data-preset="hard">Hard constraint</button>
+</div>
+<h4>Contact model</h4>
+<div class="ctl"><select id="model"><option value="penalty">Penalty spring-damper</option><option value="soft">MuJoCo-style soft constraint</option><option value="hard">Hard constraint (impulse)</option></select></div>
+<div id="box_pen">
+<div class="ctl"><label>Stiffness k <output id="o_k"></output></label><input id="k" max="8" min="3" step="0.05" type="range" value="5"/><div class="hint">How hard the floor's spring pushes back per metre of sinking (log scale). Stiffer = less sinking, but needs smaller timesteps.</div></div>
+<div class="ctl"><label>Damping c <output id="o_c"></output></label><input id="c" max="20000" min="0" step="50" type="range" value="500"/><div class="hint">How much the floor soaks up the impact, like a shock absorber. 0 = perfectly bouncy.</div></div>
+</div>
+<div id="box_soft">
+<div class="ctl"><label>solref timeconst <output id="o_tc"></output></label><input id="tc" max="0.1" min="0.002" step="0.001" type="range" value="0.02"/><div class="hint">Roughly how long the floor takes to push the body back out. Shorter = harder floor.</div></div>
+<div class="ctl"><label>solref dampratio <output id="o_dr"></output></label><input id="dr" max="2" min="0.1" step="0.05" type="range" value="1"/><div class="hint">1 = settles without bouncing; below 1 bounces, above 1 is sluggish.</div></div>
+<div class="sub" style="font-size:12px;color:var(--muted)">Defaults 0.02 s and 1; impedance from solimp 0.9 → 0.95 over 1 mm (linear here).</div>
+</div>
+<div id="box_hard">
+<div class="ctl"><label>Restitution e <output id="o_e"></output></label><input id="e" max="1" min="0" step="0.05" type="range" value="0.3"/><div class="hint">Fraction of the impact speed kept in the bounce: 0 = lands dead, 1 = bounces back to full height.</div></div>
+</div>
+<h4>Time stepping</h4>
+<div class="ctl"><label>Timestep <output id="o_dt"></output></label><input id="dt" max="-1.7" min="-5" step="0.05" type="range" value="-2.699"/><div class="hint">How far time jumps each step (log scale). Smaller = more accurate but more steps to compute.</div></div>
+<div class="ctl"><label>Integrator <span style="font-weight:normal;color:var(--muted)">(the recipe for stepping forward; see below)</span></label><select id="integ"><option value="ee">Explicit Euler</option><option selected="" value="se">Semi-implicit Euler</option><option value="rk4">Runge-Kutta 4</option></select>
+<div class="hint">The hard constraint always uses semi-implicit Euler with an impulse.</div></div>
+<h4>Body</h4>
+<div class="ctl"><label>Mass <output id="o_m"></output></label><input id="m" max="80" min="1" step="1" type="range" value="41"/></div>
+<div class="ctl"><label>Drop height <output id="o_h0"></output></label><input id="h0" max="0.5" min="0" step="0.01" type="range" value="0.2"/></div>
+</div>
+<div class="preview">
+<canvas aria-label="Plots of height, penetration and energy against time for the falling mass" height="820" id="cvA" width="1200"></canvas>
+<div class="readouts">
+<div class="ro" id="a_pen"><div class="k">Max penetration</div><div class="v">–</div></div>
+<div class="ro" id="a_stat"><div class="k">Resting penetration</div><div class="v">–</div></div>
+<div class="ro" id="a_wdt"><div class="k">Contact ω·dt</div><div class="v">–</div></div>
+<div class="ro" id="a_spc"><div class="k">Steps per contact</div><div class="v">–</div></div>
+<div class="ro" id="a_e"><div class="k">First bounce e (sim / theory)</div><div class="v">–</div></div>
+<div class="ro" id="a_en"><div class="k">Peak energy / start</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:#4fb3ff"></i>height of the body's underside</span><span><i style="background:#ff6b6b"></i>penetration</span><span><i style="background:#4cc38a"></i>total energy / initial</span></div>
+</div>
+</div>

@@ -1,0 +1,65 @@
+<div class="pg">
+<div class="controls">
+<div class="tabs" role="tablist">
+<button class="on" data-tab="layers">Layers</button><button data-tab="assembly">Assembly</button><button data-tab="skills">Skills</button><button data-tab="joints">Joints</button>
+</div>
+<div class="tabpane on" id="tab-layers">
+<h4>Views</h4>
+<div class="presets">
+<button data-view="bare">Bare robot</button><button data-view="shells">With shells</button>
+<button data-view="xact">X-ray: motors</button><button data-view="xelec">X-ray: electronics</button>
+<button data-view="made">Made vs bought</button><button data-view="buy">Only bought parts</button>
+</div>
+<h4>Layers <span style="text-transform:none;letter-spacing:0">(tick to show, click a name to X-ray it)</span></h4>
+<div id="cats"></div>
+<div class="ctl"><label>X-ray strength <output id="o_xray"></output></label><input id="xray" max="1" min="0" step="0.05" type="range" value="0"/>
+<div class="hint">0 = everything solid. Higher values fade every layer except the ones whose names you clicked (highlighted in amber), so you can see inside.</div></div>
+<div class="ctl"><label>Colours</label><select id="colour"><option value="real">Real colours</option><option value="cat">By layer</option><option value="module">By module (how it comes apart)</option></select></div>
+<div class="ctl"><label>Exploded view <output id="o_explode"></output></label><input id="explode" max="1" min="0" step="0.02" type="range" value="0"/>
+<div class="hint">Pulls every joint apart along its own offset, so you can see which body each part rides on.</div></div>
+<div class="ctl"><label><span><input id="axes" type="checkbox"/> Show joint axes</span></label>
+<div class="hint">Arrows at each joint: <span style="color:#ff6b6b">red</span> = roll (tilting sideways), <span style="color:#4cc38a">green</span> = pitch (nodding forwards and back), <span style="color:#4fb3ff">blue</span> = yaw (turning). The arrow is the axis the joint turns about.</div></div>
+<div class="ctl"><label><span><input checked="" id="com" type="checkbox"/> Show centre of mass and feet outline</span></label></div>
+</div>
+<div class="tabpane" id="tab-assembly">
+<h4>Assembly order</h4>
+<p class="hint" style="font-size:12.5px;color:var(--muted);margin:0 0 6px">From the project's assembly notes (<code>docs/design/assembly_wiring.md</code>). Click a step; the new parts slide in, highlighted.</p>
+<ol class="steps" id="steps"></ol>
+<div class="presets" style="margin-top:8px"><button id="asmPrev">◀ Back</button><button id="asmNext">Next ▶</button><button id="asmReplay">Replay step</button></div>
+</div>
+<div class="tabpane" id="tab-skills">
+<h4>Skills (scripted, not the trained policy)</h4>
+<div class="skills" id="skills"></div>
+<div class="timeline"><button aria-label="Play or pause" id="playbtn">❚❚</button><input aria-label="Time in the movement" id="time" max="1" min="0" step="0.001" type="range" value="0"/><output class="mono" id="o_time" style="font-size:12px;color:var(--muted)"></output></div>
+<div class="ctl"><label>Speed <output id="o_speed"></output></label><input id="speed" max="1.5" min="0.25" step="0.05" type="range" value="1"/></div>
+<div class="ctl"><label>Colour the motors by</label><select id="motorcol">
+<option value="both">Load, and glow while moving</option><option value="load">Load only</option><option value="move">Movement only</option><option value="off">Their real colours</option></select>
+<div class="hint"><b>Load:</b> <span style="color:#4cc38a">green</span> below 70% of the motor's continuous (<a class="g" href="../glossary/#rated-torque">rated</a>) torque, <span style="color:#ffb454">amber</span> at 70–100%, <span style="color:#ff6b6b">red</span> above it: more than it can hold for long without overheating, fine for a few seconds (the peak rating is about 3× higher). <b>Movement:</b> a motor glows brighter the faster it turns (fully bright from about 90° per second); a motor that is holding still is drawn dark. The table below gives each joint's speed. Everything else fades so the motors stand out.</div></div>
+<div id="skillflag"></div>
+</div>
+<div class="tabpane" id="tab-joints">
+<h4>Pose by hand (robot hung on a gantry)</h4>
+<p class="hint" style="font-size:12.5px;color:var(--muted);margin:0 0 6px">Each slider spans the joint's real range from <code>robot.yaml</code>, in degrees. The pelvis is held still, as on the test gantry, so the loads shown are what each motor needs to hold its limb up against gravity.</p>
+<div class="presets"><button id="jStance">Stance</button><button id="jZero">All zero</button><button id="jArms">Arms forward</button><button id="jClap">Clap pose</button></div>
+<div class="ctl"><label><span><input checked="" id="couple" type="checkbox"/> Enforce the shoulder's coupled limit</span></label>
+<div class="hint">Shoulder roll may only go below 0° when the arm is swung forward (see <a href="../13-description/">13</a>). Untick it to see why: drag shoulder roll to −20° with the arm hanging.</div></div>
+<div id="jsliders"></div>
+</div>
+</div>
+<div class="preview">
+<div class="viewer" id="viewer">
+<div class="vbar"><button id="vFront">Front</button><button id="vSide">Side</button><button id="vBack">Back</button><button id="vIso">3/4</button></div>
+<div class="vmsg" id="vmsg">Loading the 3-D model…</div>
+<div class="vinfo" hidden="" id="vinfo"></div>
+</div>
+<div class="readouts" id="readouts">
+<div class="ro" id="r_mass"><div class="k">Parts shown</div><div class="v">–</div></div>
+<div class="ro" id="r_com"><div class="k">Centre of mass height</div><div class="v">–</div></div>
+<div class="ro" id="r_support"><div class="k">Balance (static)</div><div class="v">–</div></div>
+<div class="ro" id="r_worst"><div class="k">Hardest-working motor</div><div class="v">–</div></div>
+</div>
+<div class="legend" id="legend"></div>
+<p class="hint" style="font-size:12.5px;color:var(--muted);margin:8px 0 0"><b>How to use the picture:</b> drag to orbit, right-drag (or two fingers) to pan, scroll or pinch to zoom. Click any part to see what it is, what it is made of and what it weighs.</p>
+<div class="tablewrap" id="loadwrap"></div>
+</div>
+</div>

@@ -1,0 +1,294 @@
+const $ = id => document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+function el(tag, attrs, parent, text){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(text!==undefined) e.textContent=text; if(parent) parent.appendChild(e); return e; }
+const fmt=(v,d=2)=>Number(v).toFixed(d);
+
+/* ================= Playground 1: mass budget ================= */
+const GROUPS={motor:{c:'#4fb3ff',n:'Motors'},struct:{c:'#4cc38a',n:'Structure (CAD)'},bought:{c:'#b48cff',n:'Bought parts'},power:{c:'#ffb454',n:'Power'},wiring:{c:'#e07fb0',n:'Electronics, wiring, small parts'},shell:{c:'#8893a0',n:'Body shells (add-on)'}};
+const ITEMS0=[
+ {k:'rs03',n:'RS03 × 11 (hip yaw, ankles, waist, shoulders)',g:'motor',m:9.90},
+ {k:'rs04',n:'RS04 × 6 (hip pitch, hip roll, knee)',g:'motor',m:8.52},
+ {k:'rs06',n:'RS06 × 4 (shoulder yaw, elbow)',g:'motor',m:2.484},
+ {k:'rs00',n:'RS00 × 2 (wrist yaw)',g:'motor',m:0.62},
+ {k:'sts',n:'STS3250 servos × 4 (neck, wrist pitch)',g:'motor',m:0.298},
+ {k:'leg',n:'Leg structure (two legs)',g:'struct',m:4.6821},
+ {k:'torso',n:'Torso frame and chest shell',g:'struct',m:1.6125},
+ {k:'arm',n:'Arm structure (two arms)',g:'struct',m:1.5807},
+ {k:'feet',n:'Feet (two)',g:'struct',m:1.1082},
+ {k:'pelvis',n:'Pelvis',g:'struct',m:0.943},
+ {k:'head',n:'Head incl. depth camera',g:'struct',m:0.452},
+ {k:'compute',n:'Jetson AGX Orin dev kit (weighed)',g:'bought',m:0.877},
+ {k:'hands',n:'Two four-finger hands',g:'bought',m:0.80},
+ {k:'battery',n:'Battery 13S3P, ~630 Wh (estimate)',g:'power',m:3.4},
+ {k:'keep',n:'Keep-alive battery (estimate)',g:'power',m:0.4},
+ {k:'elec',n:'Electronics bays',g:'wiring',m:1.47},
+ {k:'harness',n:'Limb harness (estimate)',g:'wiring',m:0.5},
+ {k:'fast',n:'Fasteners (estimate)',g:'wiring',m:0.4},
+ {k:'pad',n:'Fall padding (estimate)',g:'wiring',m:0.3},
+ {k:'shells',n:'Body shells, 24 pieces',g:'shell',m:0.95464},
+];
+// reduction ideas: each a function that edits a copy of the items
+const IDEAS=[
+ {k:'carrier',n:'Orin module on a carrier board',d:'−0.40 kg',f:I=>{I.compute.m-=0.4; I.compute.n='Orin module on carrier board';}},
+ {k:'batt2p',n:'13S2P battery (~1 h runtime)',d:'≈ −1.1 kg',f:I=>{I.battery.m-=1.1; I.battery.n='Battery 13S2P, ~420 Wh (estimate)';}},
+ {k:'legcores',n:'Lighter leg cores',d:'−0.50 kg',f:I=>{I.leg.m-=0.5;}},
+ {k:'al7075',n:'7075 leg plates, thinned',d:'≈ −0.40 kg',f:I=>{I.leg.m-=0.4;}},
+ {k:'cftube',n:'Carbon-fibre tube thigh/shin cores',d:'≈ −0.50 kg',f:I=>{I.leg.m-=0.5;}},
+ {k:'shoulder',n:'Shoulder pitch and roll RS03 → RS06',d:'−1.12 kg',f:I=>{I.rs03.m-=4*0.9; I.rs03.n='RS03 × 7'; I.rs06.m+=4*0.621; I.rs06.n='RS06 × 8 (shoulders, elbows)';}},
+ {k:'shellsoff',n:'Body shells off',d:'−0.95 kg',f:I=>{I.shells.m=0;}},
+ {k:'waist',n:'Add waist roll + pitch (2-DOF)',d:'≈ +2.5 kg',f:I=>{I.waist2={k:'waist2',n:'Waist roll + pitch (2 RS03 + structure)',g:'motor',m:2.5};}},
+ {k:'kneestage',n:'1.5:1 knee stage (rated 40 → 60 N·m)',d:'≈ +0.4 kg',f:I=>{I.kstage={k:'kstage',n:'Knee reduction stages (two)',g:'struct',m:0.4};}},
+];
+const MDEF={kneeRef:47}; IDEAS.forEach(i=>MDEF[i.k]=false);
+const ms={...MDEF};
+const tg=$('toggles');
+IDEAS.forEach(i=>{ const l=document.createElement('label'); l.innerHTML=`<input type="checkbox" id="t_${i.k}"><span>${i.n}</span><span class="d">${i.d}</span>`; tg.appendChild(l);
+  l.querySelector('input').addEventListener('change',e=>{ms[i.k]=e.target.checked; renderMass();}); });
+const MPRESETS={
+ today:{},
+ repo:{carrier:true,legcores:true},
+ target:{carrier:true,batt2p:true,legcores:true,al7075:true,cftube:true,shoulder:true},
+ waist:{waist:true},
+ knee:{kneestage:true},
+};
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{
+  const p=MPRESETS[b.dataset.preset]; IDEAS.forEach(i=>{ms[i.k]=!!p[i.k]; $('t_'+i.k).checked=ms[i.k];}); renderMass(); }));
+$('kneeRef').addEventListener('input',e=>{ms.kneeRef=parseFloat(e.target.value); $('o_kneeRef').textContent=ms.kneeRef+' N·m'; renderMass();});
+$('o_kneeRef').textContent='47 N·m';
+
+function massItems(){
+  const I={}; ITEMS0.forEach(it=>I[it.k]={...it});
+  IDEAS.forEach(i=>{ if(ms[i.k]) i.f(I); });
+  return Object.values(I).filter(it=>it.m>0.0001);
+}
+// squarified treemap
+function squarify(items, x, y, w, h){
+  const total=items.reduce((a,b)=>a+b.m,0); const out=[];
+  let rest=items.slice().sort((a,b)=>b.m-a.m); const scale=w*h/total;
+  function worst(row, side){ const s=row.reduce((a,b)=>a+b.m*scale,0); let mx=0,mn=Infinity; row.forEach(r=>{const a=r.m*scale; mx=Math.max(mx,a); mn=Math.min(mn,a);}); return Math.max(side*side*mx/(s*s), s*s/(side*side*mn)); }
+  while(rest.length){
+    const side=Math.min(w,h); let row=[rest[0]]; let i=1;
+    while(i<rest.length && worst(row.concat(rest[i]),side)<=worst(row,side)){ row.push(rest[i]); i++; }
+    const s=row.reduce((a,b)=>a+b.m*scale,0);
+    if(w>=h){ const cw=s/h; let cy=y; row.forEach(r=>{const ch=r.m*scale/cw; out.push({...r,x,y:cy,w:cw,h:ch}); cy+=ch;}); x+=cw; w-=cw; }
+    else { const ch=s/w; let cx=x; row.forEach(r=>{const cw=r.m*scale/ch; out.push({...r,x:cx,y,w:cw,h:ch}); cx+=cw;}); y+=ch; h-=ch; }
+    rest=rest.slice(i);
+  }
+  return out;
+}
+let lastMass={};
+function renderMass(){
+  const items=massItems();
+  const base={}; ITEMS0.forEach(it=>base[it.k]=it.m);
+  const total=items.reduce((a,b)=>a+b.m,0);
+  const shells=(items.find(i=>i.k==='shells')||{m:0}).m;
+  const bare=total-shells;
+  // treemap scaled to the "limit" area so it shrinks/grows visibly
+  const svg=$('tree'); svg.innerHTML='';
+  const W=640,H=330, area=W*H*Math.min(1,total/44);
+  const hh=H, ww=area/hh;
+  el('rect',{x:0,y:0,width:W,height:H,fill:'#0c1015'},svg);
+  const rects=squarify(items,0,0,ww,hh);
+  rects.forEach(r=>{
+    el('rect',{x:r.x+1,y:r.y+1,width:Math.max(0,r.w-2),height:Math.max(0,r.h-2),rx:3,fill:GROUPS[r.g].c,'fill-opacity':0.82},svg);
+    if(r.w>46 && r.h>26){
+      const short=r.n.replace(/\s*\(.*\)/,'');
+      const maxc=Math.floor(r.w/6.6);
+      el('text',{x:r.x+6,y:r.y+16,'font-size':11.5,fill:'#0b0e12','font-weight':600},svg, short.length>maxc? short.slice(0,maxc-1)+'…':short);
+      el('text',{x:r.x+6,y:r.y+30,'font-size':11,fill:'#0b0e12'},svg, fmt(r.m)+' kg');
+    } else if(r.w>26 && r.h>14){ el('text',{x:r.x+3,y:r.y+12,'font-size':9.5,fill:'#0b0e12'},svg, fmt(r.m,1)); }
+  });
+  // bar
+  const b=$('bar'); b.innerHTML=''; const X=m=>20+m/46*600;
+  el('rect',{x:0,y:0,width:640,height:86,fill:'#0c1015'},b);
+  let x0=X(0); const gsum={}; items.forEach(it=>gsum[it.g]=(gsum[it.g]||0)+it.m);
+  Object.keys(GROUPS).forEach(g=>{ if(!gsum[g]) return; const w=X(gsum[g])-X(0); el('rect',{x:x0,y:22,width:w,height:24,fill:GROUPS[g].c,'fill-opacity':.85},b); x0+=w; });
+  [[35,'target 35 (bare)','#4cc38a','end',-4],[42,'limit 42 (with shells)','#ff6b6b','end',-4]].forEach(([m,t,c,a,dx],i)=>{ el('line',{x1:X(m),x2:X(m),y1:16,y2:i?80:68,stroke:c,'stroke-width':2,'stroke-dasharray':'4 3'},b); el('text',{x:X(m)+dx,y:i?80:68,'font-size':11,fill:c,'text-anchor':a},b,t); });
+  for(let m=0;m<=30;m+=5){ el('text',{x:X(m),y:60,'font-size':9,fill:'#6b7785','text-anchor':'middle'},b,m+(m===30?' kg':'')); }
+  el('line',{x1:X(bare),x2:X(bare),y1:16,y2:50,stroke:'#e6edf3','stroke-width':1.5},b);
+  el('text',{x:X(bare)-4,y:13,'font-size':11,fill:'#e6edf3','text-anchor':'end'},b,'bare '+fmt(bare)+' kg');
+  el('text',{x:X(total)+4,y:13,'font-size':11,fill:'#e6edf3'},b,'total '+fmt(total)+' kg');
+  // readouts
+  const setRo=(id,v,cls)=>{ const r=$(id); r.querySelector('.v').textContent=v; r.className='ro '+(cls||''); };
+  setRo('r_bare',fmt(bare)+' kg', bare<=35?'ok':(bare<=42?'warn':'bad'));
+  setRo('r_full',fmt(total)+' kg', total<=42?(total<=40?'ok':'warn'):'bad');
+  const rated=ms.kneestage?60:40;
+  const knee=ms.kneeRef*total/41.30, kp=knee/rated*100;
+  $('r_knee').querySelector('.k').textContent=`Stair knee ${fmt(knee,1)} N·m, % of rated`;
+  setRo('r_knee',`${fmt(kp,0)}%`, kp<=100?'ok':(kp<=115?'warn':'bad'));
+  const hip=42*total/41.30, hp=hip/40*100;
+  $('r_hip').querySelector('.k').textContent=`Stair hip roll ${fmt(hip,1)} N·m, % of rated`;
+  setRo('r_hip',`${fmt(hp,0)}%`, hp<=100?'ok':'warn');
+  const heat=Math.pow(knee/rated/(ms.kneeRef/40),2);
+  setRo('r_heat',`× ${fmt(heat,2)}`, heat<=1?'ok':'warn');
+  // legend and list
+  $('legend').innerHTML=Object.entries(GROUPS).map(([g,v])=>`<span><i style="background:${v.c}"></i>${v.n}: ${fmt(gsum[g]||0)} kg</span>`).join('');
+  $('items').innerHTML=items.slice().sort((a,b)=>b.m-a.m).map(it=>`<li class="${(base[it.k]===undefined||Math.abs(base[it.k]-it.m)>1e-6)?'chg':''}"><i style="background:${GROUPS[it.g].c}"></i><span>${it.n}</span><span class="m">${fmt(it.m)}</span></li>`).join('');
+  lastMass={bare,total,kp,knee,hp};
+  updateNote();
+}
+
+/* ================= distal mass widget ================= */
+const LDEF={rKnee:0.325,rAnk:0.575,mFoot:0.554,alpha:30};
+const ls={...LDEF};
+const LPRESETS={today:{...LDEF},kneeup:{...LDEF,rKnee:0.08},anklesup:{...LDEF,rAnk:0.40},both:{...LDEF,rKnee:0.08,rAnk:0.40}};
+function legMasses(){
+  const L=[
+    {n:'Hip pitch link structure',m:0.35,r:0.08,len:0.12},
+    {n:'Hip yaw RS03',m:0.9,r:0.17},
+    {n:'Thigh plate, flange, shell',m:0.55,r:0.25,len:0.155},
+    {n:'Knee RS04',m:1.42,r:ls.rKnee},
+  ];
+  if(ls.rKnee<0.32) L.push({n:'Knee linkage / belt',m:0.2,r:(ls.rKnee+0.325)/2,len:0.325-ls.rKnee});
+  L.push({n:'Shin plates',m:0.6,r:0.4825,len:0.315},{n:'Ankle RS03 (high)',m:0.9,r:0.385},{n:'Ankle RS03 (low)',m:0.9,r:ls.rAnk},
+    {n:'Ankle cross, cranks, rods',m:0.25,r:0.62},{n:'Foot',m:ls.mFoot,r:0.67});
+  L.forEach(p=>p.I=p.m*(p.r*p.r+(p.len?p.len*p.len/12:0)));
+  return L;
+}
+function renderLeg(){
+  const L=legMasses(); const I=L.reduce((a,b)=>a+b.I,0); const m=L.reduce((a,b)=>a+b.m,0);
+  const below=L.filter(p=>p.r>0.325).reduce((a,b)=>a+b.I,0);
+  const svg=$('legv'); svg.innerHTML=''; el('rect',{x:0,y:0,width:640,height:300,fill:'#0c1015'},svg);
+  const sc=380, x0=120, y0=24;
+  el('line',{x1:x0,y1:y0,x2:x0,y2:y0+0.70*sc,stroke:'#3a4654','stroke-width':10,'stroke-linecap':'round'},svg);
+  el('circle',{cx:x0,cy:y0,r:7,fill:'#e6edf3'},svg); el('text',{x:x0+12,y:y0+4,'font-size':11,fill:'#9aa7b4'},svg,'hip pitch axis');
+  el('line',{x1:x0-40,y1:y0+0.325*sc,x2:x0+40,y2:y0+0.325*sc,stroke:'#2a3340','stroke-dasharray':'3 3'},svg);
+  el('text',{x:x0-44,y:y0+0.325*sc+4,'font-size':10,fill:'#6b7785','text-anchor':'end'},svg,'knee');
+  L.forEach(p=>{ el('circle',{cx:x0,cy:y0+p.r*sc,r:4+9*Math.sqrt(p.m),fill:p.n.includes('RS0')?'#4fb3ff':'#4cc38a','fill-opacity':.55,stroke:'#e6edf3','stroke-width':.6},svg); });
+  // bar chart of contributions
+  const bx=250, bw=360; let y=22;
+  el('text',{x:bx,y:14,'font-size':11,fill:'#9aa7b4'},svg,'Share of leg inertia I = Σ m r²');
+  const maxI=Math.max(...L.map(p=>p.I));
+  L.forEach(p=>{ el('text',{x:bx,y:y+10,'font-size':10.5,fill:'#cfd8e2'},svg,p.n);
+    const w=(bw-150)*p.I/maxI; el('rect',{x:bx+150,y:y+1,width:w,height:11,fill:p.n.includes('RS0')?'#4fb3ff':'#4cc38a','fill-opacity':.8},svg);
+    el('text',{x:bx+154+w,y:y+10,'font-size':10,fill:'#9aa7b4'},svg,fmt(100*p.I/I,0)+'%'); y+=26; });
+  const set=(id,v,cls)=>{const r=$(id); r.querySelector('.v').textContent=v; r.className='ro '+(cls||'');};
+  set('r_I',fmt(I,3)+' kg·m²'); set('r_tau',fmt(I*ls.alpha,1)+' N·m'); set('r_below',fmt(100*below/I,0)+'%'); set('r_legm',fmt(m,2)+' kg');
+  ls.I=I; updateNote();
+}
+['rKnee','rAnk','mFoot','alpha'].forEach(k=>{ const e=$(k), o=$('o_'+k); const f=v=>k==='mFoot'?fmt(v,2)+' kg':k==='alpha'?v+' rad/s²':fmt(v,3)+' m';
+  e.addEventListener('input',()=>{ ls[k]=parseFloat(e.value); o.textContent=f(ls[k]); renderLeg(); }); o.textContent=f(e.value); });
+document.querySelectorAll('[data-lpreset]').forEach(b=>b.addEventListener('click',()=>{ const p=LPRESETS[b.dataset.lpreset]; Object.assign(ls,p); for(const k in p){ const e=$(k); if(e){ e.value=p[k]; e.dispatchEvent(new Event('input')); } } }));
+
+/* ================= Playground 2: proportions ================= */
+// Winter (2009) Fig. 4.1 fractions of height
+const HUM={chin:0.870,shoulder:0.818,elbow:0.630,wrist:0.485,tip:0.377,hip:0.530,knee:0.285,ankle:0.039,shW:0.259,hipW:0.191,chestW:0.174,footL:0.152};
+const DESIGNS={
+ today:{name:'Marvin Bot today',H:1.438,hip:0.700,thigh:0.325,shin:0.315,ankle:0.060,shoulder:1.165,rollDrop:0.025,upper:0.200,fore:0.188,hand:0.181,shW:0.416,mass:41.30,repoKnee:118,repoTip:0.556,repoElb:0.934},
+ old:{name:'Before 2026-10-29',H:1.288,hip:0.650,thigh:0.300,shin:0.290,ankle:0.060,shoulder:1.015,rollDrop:0.050,upper:0.200,fore:0.188,hand:0.181,shW:0.416,mass:40.66,repoKnee:109,repoTip:0.38,repoElb:null},
+ legs90:{name:'Alternative: legs +90 mm',H:1.478,hip:0.740,thigh:0.345,shin:0.335,ankle:0.060,shoulder:1.205,rollDrop:0.025,upper:0.200,fore:0.188,hand:0.181,shW:0.416,mass:41.6,repoKnee:127,repoTip:null,repoElb:null},
+};
+const FIXED=7.08; // kg that does not scale
+const PDEF={design:'today',H:1.438,motScale:0};
+const ps={...PDEF};
+const PPRESETS={today:{design:'today',H:1.438},old:{design:'old',H:1.288},legs90:{design:'legs90',H:1.478},small:{design:'today',H:1.20},adult:{design:'today',H:1.70}};
+$('H').addEventListener('input',e=>{ps.H=parseFloat(e.target.value); renderProp();});
+$('motScale').addEventListener('change',e=>{ps.motScale=+e.target.value; renderProp();});
+document.querySelectorAll('[data-ppreset]').forEach(b=>b.addEventListener('click',()=>{ Object.assign(ps,PPRESETS[b.dataset.ppreset]); $('H').value=ps.H; renderProp(); }));
+function robotNow(){
+  const D=DESIGNS[ps.design], s=ps.H/D.H; const R={};
+  ['hip','thigh','shin','ankle','shoulder','rollDrop','upper','fore','hand','shW'].forEach(k=>R[k]=D[k]*s);
+  R.H=ps.H; R.s=s; R.mass=FIXED+(D.mass-FIXED)*s*s*s;
+  R.knee=118*(R.mass/41.30)*(R.thigh/0.325);
+  if(ps.motScale) R.knee/=s*s*s;
+  R.elbow=R.shoulder-R.rollDrop-R.upper; R.wrist=R.elbow-R.fore; R.tip=R.wrist-R.hand; R.kneeH=R.ankle+R.shin;
+  return {D,R};
+}
+function renderProp(){
+  const {D,R}=robotNow(); const H=R.H;
+  $('o_H').textContent=fmt(H,3)+' m';
+  const svg=$('prop'); svg.innerHTML=''; el('rect',{x:0,y:0,width:640,height:560,fill:'#0c1015'},svg);
+  const sc=290, fy=530, Y=z=>fy-z*sc, cxR=175, cxP=470;
+  el('line',{x1:10,x2:630,y1:fy,y2:fy,stroke:'#3a4654'},svg);
+  for(let z=0.5;z<=1.8;z+=0.5){ el('text',{x:8,y:Y(z)+4,'font-size':10,fill:'#56616d'},svg,z.toFixed(1)+' m'); el('line',{x1:34,x2:40,y1:Y(z),y2:Y(z),stroke:'#56616d'},svg); }
+  // landmark lines
+  const lm=[['fingertips',R.tip,HUM.tip*H],['elbow',R.elbow,HUM.elbow*H],['hip',R.hip,HUM.hip*H],['knee',R.kneeH,HUM.knee*H],['shoulder',R.shoulder,HUM.shoulder*H]];
+  lm.forEach(([n,zr,zh])=>{ el('line',{x1:cxR+60,x2:cxP-70,y1:Y(zr),y2:Y(zh),stroke:'#3a4654','stroke-dasharray':'3 3'},svg);
+    el('text',{x:(cxR+cxP)/2,y:(Y(zr)+Y(zh))/2-4,'font-size':10.5,fill:'#9aa7b4','text-anchor':'middle'},svg,`${n} ${fmt(zr)} / ${fmt(zh)}`); });
+  // ---- robot (front view)
+  const g=el('g',{},svg); const ac='#4fb3ff';
+  const hx=0.1*R.s*sc/R.s; // hip spacing 0.2 m scaled
+  const hs=0.1*R.s*sc;
+  const pelvisTop=R.hip+0.07*R.s;
+  // legs
+  [-1,1].forEach(sd=>{ const x=cxR+sd*hs;
+    el('line',{x1:x,y1:Y(R.hip),x2:x,y2:Y(R.kneeH),stroke:ac,'stroke-width':14,'stroke-linecap':'round','stroke-opacity':.75},g);
+    el('line',{x1:x,y1:Y(R.kneeH),x2:x,y2:Y(R.ankle),stroke:ac,'stroke-width':12,'stroke-linecap':'round','stroke-opacity':.75},g);
+    el('rect',{x:x-0.055*sc*R.s,y:Y(R.ankle)-2,width:0.11*sc*R.s,height:R.ankle*sc+2,fill:ac,'fill-opacity':.5},g);
+    // fixed: knee motor Ø120 x 56 in front view
+    el('rect',{x:x-0.028*sc,y:Y(R.kneeH)-0.06*sc,width:0.056*sc,height:0.12*sc,fill:'none',stroke:'#8893a0','stroke-dasharray':'3 2'},g);
+    [R.hip,R.kneeH,R.ankle].forEach(z=>el('circle',{cx:x,cy:Y(z),r:3,fill:'#e6edf3'},g));
+  });
+  // pelvis and torso
+  el('rect',{x:cxR-0.15*R.s*sc,y:Y(pelvisTop),width:0.30*R.s*sc,height:0.11*R.s*sc,rx:6,fill:ac,'fill-opacity':.45},g);
+  const torsoTop=R.shoulder+0.05*R.s, torsoBot=pelvisTop+0.04*R.s;
+  el('path',{d:`M${cxR-0.08*R.s*sc},${Y(torsoBot)} L${cxR-0.11*R.s*sc},${Y(torsoTop)} L${cxR+0.11*R.s*sc},${Y(torsoTop)} L${cxR+0.08*R.s*sc},${Y(torsoBot)} Z`,fill:ac,'fill-opacity':.35},g);
+  // head: helmet 0.142 x 0.17, top at H
+  const headH=0.17*R.s, headW=0.142*R.s;
+  el('rect',{x:cxR-0.025*R.s*sc,y:Y(H-headH),width:0.05*R.s*sc,height:(H-headH-torsoTop)*sc+2,fill:ac,'fill-opacity':.35},g);
+  el('ellipse',{cx:cxR,cy:Y(H-headH/2),rx:headW/2*sc,ry:headH/2*sc,fill:ac,'fill-opacity':.45},g);
+  // fixed parts in torso/head
+  const camZ=H-headH*0.5;
+  el('rect',{x:cxR-0.062*sc,y:Y(camZ)-0.0145*sc,width:0.124*sc,height:0.029*sc,fill:'none',stroke:'#8893a0','stroke-dasharray':'3 2'},g);
+  const batZ=R.shoulder-0.125*R.s; el('rect',{x:cxR-0.07*sc,y:Y(batZ+0.085),width:0.14*sc,height:0.17*sc,fill:'none',stroke:'#8893a0','stroke-dasharray':'3 2'},g);
+  el('text',{x:cxR,y:Y(batZ)+3,'font-size':9,fill:'#8893a0','text-anchor':'middle'},g,'battery');
+  const compZ=Math.max(R.shoulder-0.23*R.s, pelvisTop+0.06); el('rect',{x:cxR-0.055*sc,y:Y(compZ+0.055),width:0.11*sc,height:0.11*sc,fill:'none',stroke:'#8893a0','stroke-dasharray':'3 2'},g);
+  el('text',{x:cxR,y:Y(compZ)+3,'font-size':9,fill:'#8893a0','text-anchor':'middle'},g,'Orin kit');
+  // arms
+  const ax=R.shW/2*sc-0.03*sc*R.s;
+  [-1,1].forEach(sd=>{ const x=cxR+sd*ax;
+    el('circle',{cx:x,cy:Y(R.shoulder),r:0.05*sc*R.s,fill:ac,'fill-opacity':.5},g);
+    el('line',{x1:x,y1:Y(R.shoulder-R.rollDrop),x2:x,y2:Y(R.elbow),stroke:ac,'stroke-width':10,'stroke-linecap':'round','stroke-opacity':.75},g);
+    el('line',{x1:x,y1:Y(R.elbow),x2:x,y2:Y(R.wrist),stroke:ac,'stroke-width':9,'stroke-linecap':'round','stroke-opacity':.75},g);
+    el('line',{x1:x,y1:Y(R.wrist),x2:x,y2:Y(R.tip),stroke:ac,'stroke-width':12,'stroke-linecap':'round','stroke-opacity':.5},g);
+    [R.elbow,R.wrist].forEach(z=>el('circle',{cx:x,cy:Y(z),r:2.5,fill:'#e6edf3'},g));
+  });
+  el('text',{x:cxR,y:fy+18,'font-size':12,fill:ac,'text-anchor':'middle'},svg,`Marvin Bot · ${fmt(H,3)} m`);
+  // ---- person
+  const pc='#ffb454', P=k=>HUM[k]*H;
+  const pg=el('g',{},svg);
+  const pHipX=0.09*H*sc/1, legX=0.045*H*sc;
+  [-1,1].forEach(sd=>{ const x=cxP+sd*legX;
+    el('line',{x1:x,y1:Y(P('hip')-0.03*H),x2:x,y2:Y(P('knee')),stroke:pc,'stroke-width':0.07*H*sc*0.5,'stroke-linecap':'round','stroke-opacity':.55},pg);
+    el('line',{x1:x,y1:Y(P('knee')),x2:x,y2:Y(P('ankle')),stroke:pc,'stroke-width':0.05*H*sc*0.5,'stroke-linecap':'round','stroke-opacity':.55},pg);
+    el('ellipse',{cx:x+sd*4,cy:Y(P('ankle')/2),rx:0.028*H*sc,ry:P('ankle')*sc/2+2,fill:pc,'fill-opacity':.45},pg);
+    const ex=cxP+sd*(HUM.shW*H/2-0.025*H)*sc;
+    el('line',{x1:ex,y1:Y(P('shoulder')),x2:ex+sd*3,y2:Y(P('elbow')),stroke:pc,'stroke-width':0.04*H*sc*0.5,'stroke-linecap':'round','stroke-opacity':.55},pg);
+    el('line',{x1:ex+sd*3,y1:Y(P('elbow')),x2:ex+sd*5,y2:Y(P('wrist')),stroke:pc,'stroke-width':0.035*H*sc*0.5,'stroke-linecap':'round','stroke-opacity':.55},pg);
+    el('line',{x1:ex+sd*5,y1:Y(P('wrist')),x2:ex+sd*5,y2:Y(P('tip')),stroke:pc,'stroke-width':0.03*H*sc*0.5,'stroke-linecap':'round','stroke-opacity':.45},pg);
+  });
+  el('path',{d:`M${cxP-HUM.hipW*H/2*sc},${Y(P('hip'))} L${cxP-HUM.shW*H/2*sc},${Y(P('shoulder'))} L${cxP+HUM.shW*H/2*sc},${Y(P('shoulder'))} L${cxP+HUM.hipW*H/2*sc},${Y(P('hip'))} Z`,fill:pc,'fill-opacity':.35},pg);
+  el('rect',{x:cxP-0.025*H*sc,y:Y(P('chin')),width:0.05*H*sc,height:(P('chin')-P('shoulder'))*sc,fill:pc,'fill-opacity':.35},pg);
+  el('ellipse',{cx:cxP,cy:Y((H+P('chin'))/2+0.01*H),rx:0.055*H*sc,ry:(H-P('chin'))/2*sc+2,fill:pc,'fill-opacity':.45},pg);
+  el('text',{x:cxP,y:fy+18,'font-size':12,fill:pc,'text-anchor':'middle'},svg,`Person · ${fmt(H,3)} m`);
+  // readouts
+  const set=(id,v,cls)=>{const r=$(id); r.querySelector('.v').textContent=v; r.className='ro '+(cls||'');};
+  const dTip=R.tip-P('tip'); set('r_tip',`${fmt(R.tip)} / ${fmt(P('tip'))} m`, Math.abs(dTip)<0.04?'ok':'warn');
+  set('r_elb',`${fmt(R.elbow)} / ${fmt(P('elbow'))} m`, Math.abs(R.elbow-P('elbow'))<0.05?'ok':'warn');
+  set('r_hipH',fmt(R.hip/H,3));
+  set('r_mass',fmt(R.mass,1)+' kg', R.mass<=42?'ok':'bad');
+  set('r_knee2',fmt(R.knee,0)+'%', R.knee<=100?'ok':(R.knee<=120?'warn':'bad'));
+  const kr=0.12/R.thigh; set('r_fix',fmt(kr,2), kr<0.45?'ok':'warn');
+  const s=R.s; let note='';
+  if(Math.abs(s-1)<0.002) note=`${D.name}: the repo's own model gives fingertips ${D.repoTip?D.repoTip.toFixed(3)+' m':'n/a'}${D.repoElb?', elbow '+D.repoElb.toFixed(3)+' m':''} and a static stair knee at ${D.repoKnee}% of rated.`;
+  else note=`${D.name} scaled by s = ${fmt(s,3)}: segments × ${fmt(s,3)}, mass ${fmt(FIXED,2)} kg fixed + ${fmt(D.mass-FIXED,2)} kg × s³. The 124 mm camera is ${fmt(124/(142*s)*100,0)}% of the head's width; the 140 mm battery is ${fmt(140/(176*s)*100,0)}% of the torso frame's width.`;
+  $('propnote').textContent=note;
+  ps.R=R; updateNote();
+}
+
+/* ================= decision note ================= */
+function updateNote(){
+  const parts=[];
+  const on=IDEAS.filter(i=>ms[i.k]);
+  if(on.length && lastMass.total!==undefined) parts.push(`Mass budget: applying ${on.map(i=>i.n+' ('+i.d+')').join('; ')} gives ${fmt(lastMass.bare)} kg bare (target 35) and ${fmt(lastMass.total)} kg with shells (limit 42), against 40.35 / 41.30 kg today. First-order stair consequence (repo's 47 N·m knee at 41.3 kg scaled by mass): knee ${fmt(lastMass.knee,1)} N·m = ${fmt(lastMass.kp,0)}% of ${ms.kneestage?'60 N·m (with 1.5:1 stage)':'the RS04\'s 40 N·m'} continuous rating.`);
+  if(ms.kneeRef!==MDEF.kneeRef) parts.push(`I assumed a reference stair knee torque of ${ms.kneeRef} N·m at 41.3 kg instead of the repo's 47 N·m.`);
+  const lch=['rKnee','rAnk','mFoot','alpha'].filter(k=>ls[k]!==LDEF[k]);
+  if(lch.length && ls.I) parts.push(`Leg inertia (point-mass estimate): knee motor ${fmt(ls.rKnee,3)} m from the hip pitch axis (today 0.325), low ankle motor at ${fmt(ls.rAnk,3)} m (today 0.575), foot ${fmt(ls.mFoot,2)} kg: I ≈ ${fmt(ls.I,3)} kg·m² about the hip (today ≈ 1.13), so a ${ls.alpha} rad/s² swing needs ≈ ${fmt(ls.I*ls.alpha,1)} N·m.`);
+  if(ps.R && (ps.design!=='today' || Math.abs(ps.H-1.438)>0.001 || ps.motScale)){
+    const R=ps.R; parts.push(`Proportions: ${DESIGNS[ps.design].name} at ${fmt(ps.H,3)} m${Math.abs(R.s-1)>0.002?' (uniformly scaled, fixed parts unchanged'+(ps.motScale?', motors imagined to scale as s³':'')+')':''}: hip axis ${fmt(R.hip/ps.H,3)} of height, fingertips ${fmt(R.tip)} m vs a person's ${fmt(0.377*ps.H)} m, estimated mass ${fmt(R.mass,1)} kg, static stair knee ≈ ${fmt(R.knee,0)}% of rated (model: 118% × mass/41.3 × thigh/0.325).`);
+  }
+  $('note').textContent = parts.length ? `For Marvin Bot (1.44 m, 41.3 kg with shells, 27-DOF humanoid; target 35 kg bare, limit 42 kg with shells; knee RS04 rated 40 N·m):\n\n${parts.join('\n\n')}\n\nThese are first-order estimates from the guide's playground; check against tools/check_description.py and sim/mujoco/check_step_up.py before deciding.`
+                                        : 'Change a control above to build a note.';
+}
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
+renderMass(); renderLeg(); renderProp();

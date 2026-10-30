@@ -1,0 +1,219 @@
+---
+title: "System architecture: from battery to policy"
+description: "A walking humanoid is a stack of machines inside one another: a battery feeds small motor controllers that correct each joint thousands of times a second, a computer runs a neural-network \"policy\" (the learned controller) fifty times a second, and a training computer elsewhere produced that policy in simulation."
+sidebar:
+  label: "03 · System architecture: from battery to policy"
+  order: 4
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/03-architecture/widget-1.html?raw';
+import widget2 from '../../../guide/03-architecture/widget-2.html?raw';
+import widget3 from '../../../guide/03-architecture/widget-3.html?raw';
+import script from '../../../guide/03-architecture/script.js?raw';
+import '../../../guide/03-architecture/style.css';
+
+<div class="guide-meta">
+
+**Stage 1 · Foundations** · \~30 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [02 Balance](../02-balance/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+A walking humanoid is a stack of machines inside one another: a battery feeds small motor controllers that correct each joint thousands of times a second, a computer runs a neural-network "policy" (the learned controller) fifty times a second, and a training computer elsewhere produced that policy in simulation. This page lays the whole stack out, then follows one control tick (one 20 ms round of sense, decide, act) from a gyro sample to motor torque and asks whether it fits.
+
+:::note[You will learn]
+- What each layer of Marvin Bot does, from the aluminium frame and the 48 V battery to the Jetson AGX Orin and the training desktop, and which page covers it in depth.
+- Why control is split into loops at very different rates (a vision-language-action model a few times a second, the policy 50 times a second, each motor's own joint controller thousands of times a second; 1 hertz, Hz, is once per second, 1 kHz a thousand) and why that split works.
+- How to add up a latency budget (the delays, added up, between something happening and the motors responding) for one control tick, and how it relates to the 0–20 ms sensor and 0–10 ms motor delays the policies were trained with.
+:::
+
+## The idea in one picture
+
+Think of the robot as a company with managers at different speeds. A slow, clever manager (a <a class="g" href="../glossary/#vision-language-action-model">vision-language-action model</a>, VLA: a large AI model that looks through the camera and reads an instruction, or a person with a gamepad) decides *what* to do: "walk to the table", "pick up the cup". A quick, practised supervisor (the <a class="g" href="../glossary/#policy">policy</a>, a small neural network) turns that into joint targets for every joint, 50 times a second, while keeping the robot balanced. Fast workers on the shop floor (the motor drivers) hold each joint at its target thousands of times a second by pushing current through the motor windings. Underneath it all is the plant: a battery, wires, a frame and 27 powered joints.
+
+Each level only works if the level below is much faster than itself. The policy can treat "set the knee to 20°" as almost instant because the motor driver's loop settles in a few milliseconds; the VLA can treat "walk forward" as instant because the policy handles every step. This is the classic <a class="g" href="../glossary/#control-hierarchy">control hierarchy</a>, and learned humanoids use it too: in an open research humanoid the policy runs at 50 Hz and the joint controller at 25 kHz on the motor driver.<sup class="cite">[\[12\]](#s12)</sup>
+
+<b>Why a newcomer should care.</b> When a robot wobbles or falls, the cause can sit in any layer: a weak motor, a slow sensor, an overloaded data cable, a badly trained policy. Knowing the layers tells you where to look, and which later page to read.
+
+<details>
+<summary>Words you will meet on this page</summary>
+
+- **PD control** (proportional-derivative): each motor pushes towards its target angle in proportion to how far off it is (P) and resists moving too fast (D), like a spring with a shock absorber. Page 15.
+- <b><a class="g" href="../glossary/#imu">IMU</a></b> (inertial measurement unit): a chip with a gyro (how fast the body is turning) and an accelerometer (which way is down). Marvin Bot's sits in the pelvis. An **AHRS** (attitude and heading reference system) is an IMU sold with its own filtering built in.
+- <b><a class="g" href="../glossary/#can-bus">CAN</a></b> (Controller Area Network): a shared two-wire data cable, invented for cars, that the computer uses to talk to a chain of motors. A **frame** is one message on it; a **bus** is one such cable with its motors.
+- **ROS 2** (Robot Operating System 2): not an operating system but a widely used set of software libraries that let robot programs pass messages to each other.
+- <b><a class="g" href="../glossary/#onnx">ONNX</a></b> (Open Neural Network Exchange): a standard file format for a trained neural network, so it can be run by software other than the one that trained it.
+- **ms** = millisecond (a thousandth of a second); **µs** = microsecond (a millionth). **Latency** = delay; **jitter** = how much that delay varies from one time to the next.
+
+</details>
+
+## Playground 1: the layered architecture
+
+Click any block for what it does, how fast it runs, the repository file or decision behind it, and the page that covers it. The buttons beside the diagram highlight one path through the stack; start with **One control tick**.
+
+<div class="hint">
+
+How to read this picture: each horizontal band is one layer, slowest and furthest from the hardware at the top (training) down to the metal frame at the bottom. Arrows show which way data or power flows. Bright blocks are on the highlighted path; dimmed ones are not. On a phone, swipe the diagram sideways.
+
+</div>
+
+<RawHtml html={widget1} />
+
+## Playground 2: follow one control tick
+
+A gyro notices the pelvis tipping. How long until a motor pushes back? Each stage below adds a delay. Press **Marvin Bot today** first, then change one slider at a time. "Average" uses half of each waiting period (an event lands at a random moment); "worst case" uses whole periods. The dot replays the chain in slow motion.
+
+<div class="hint">
+
+How to read this picture: time runs left to right in milliseconds; each coloured block is one delay, in order, and the vertical lines mark the start of each 20 ms policy tick. Readout values turn green when comfortably inside the range the policy was trained with (or the bus limit), amber near its edge and red outside it.
+
+</div>
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. Load "Marvin Bot today". The event-to-torque total is around 15 ms, and most of it is the wait for the next policy tick, not the electronics. That wait exists in simulation too, so it is not a <a class="g" href="../glossary/#sim-to-real-gap">sim-to-real gap</a>.
+2. Load "USB backup IMU (AHRS)" and switch **Case** to worst case. The sensor side approaches the top of the 0–20 ms range the policy was trained with. This is why the repo wants a 500 Hz, low-latency IMU as the primary.
+3. Load "Arm bus" (six motors at 250 Hz: load 0.48). Now raise the CAN rate to 500 Hz, as the legs need: load 0.96. Push the motors to 8 and the frames no longer fit in the 2 ms cycle. This is why each leg gets two buses.
+4. Load "Heavy policy on the CPU" and raise inference time to 12 ms. The policy still fits in the tick, but the action side leaves the trained 0–10 ms range: a policy trained with up to 10 ms of motor delay would now meet more lag than it ever saw.
+:::
+
+## From first principles
+
+### The plant: mechanical and electrical
+
+The body is a machined 6061 aluminium frame (7075 at the most loaded flanges) with printed shells, carrying 27 powered joints: 6 per leg, 6 per arm, waist yaw and two neck joints. Each big joint is a RobStride <a class="g" href="../glossary/#quasi-direct-drive">quasi-direct-drive</a> <a class="g" href="../glossary/#actuator">actuator</a>: a motor, a 9:1 or 10:1 planetary gearbox, an absolute encoder (14-bit on the RS04<sup class="cite">[\[10\]](#s10)</sup>) and a driver board in one housing. The small joints (neck, wrist pitch) and the fingers are serial-bus servos.
+
+Energy comes from a 48 V nominal 13S3P lithium-ion pack (about 630 Wh). It passes through a Class-T fuse, a precharge circuit and a contactor that the e-stop opens. DC-DC converters make 19–20 V for the computer (taken before the contactor, so an e-stop never reboots it), 12 V for the serial servos, and 5 V at each wrist for the hand servos. A small keep-alive battery holds the computer up during a pack swap.
+
+### Communication: CAN and serial buses
+
+<a class="g" href="../glossary/#can-bus">CAN</a> (Controller Area Network) is a two-wire bus (the two wires carry opposite signals, which cancels electrical noise) where every node hears every frame and a number at the start of each message, its identifier, decides which goes first when two talk at once.<sup class="cite">[\[11\]](#s11)</sup> RobStride actuators use classic CAN 2.0B at 1 Mbit/s with 29-bit identifiers.<sup class="cite">[\[10\]](#s10)</sup> A frame with 8 data bytes takes at most 160 bits on the wire (131 bits plus up to 29 extra "stuff" bits the hardware inserts to keep the receivers in step; `description/robot.yaml`), so 160 µs. Every motor needs a command and a reply each cycle, so the bus load is
+
+<div class="mono">
+
+load = n<sub>motors</sub> × 2 frames × 160 bits × f<sub>cycle</sub> ÷ 1 000 000 bit/s
+
+</div>
+
+where n is the number of motors on the bus and f the command rate. Three leg motors at 500 Hz give 3 × 2 × 160 × 500 / 10<sup>6</sup> = 0.48, which is the repo's 48%. A load of 0.48 means the wires are busy 48% of the time. Marvin Bot keeps every bus at or below 0.6 so that resent messages and timing wobble have room. Page [10](../10-can-bus/) goes deeper.
+
+### Sensors
+
+The policy only sees what the robot can measure: the pelvis <a class="g" href="../glossary/#imu">IMU</a> (gyro and accelerometer, giving angular velocity and the direction of gravity), every joint's position and velocity from the actuators' encoders, and, for perception, the head's Orbbec Gemini 335L depth camera. Page [11](../11-sensors-compute/) covers them.
+
+### Onboard compute and software
+
+The computer is a Jetson AGX Orin 64 GB developer kit, a palm-sized NVIDIA board built for robots: a 12-core Arm Cortex-A78AE CPU and a 2048-core Ampere GPU sharing 64 GB of memory, 15–60 W.<sup class="cite">[\[1\]](#s1)</sup> It runs JetPack 7.2, NVIDIA's Linux and driver bundle for Jetson.<sup class="cite">[\[2\]](#s2)</sup> On top of that the software splits in two:
+
+- <b>A real-time control process, outside ROS.</b> One program owns the CAN buses, reads the IMU, runs the policy at 50 Hz, applies the safety layer (joint, velocity and torque clamps, a command timeout, fall detection into a damping mode, where the motors only resist motion so the robot slumps instead of thrashing) and sends joint targets. Keeping it outside ROS keeps the hard-timed path short and easy to reason about.
+- **ROS 2 Jazzy around it** for everything that can tolerate a few milliseconds of jitter: the camera driver, logging, teleoperation and later the VLA bridge.<sup class="cite">[\[4\]](#s4)</sup> Isaac ROS 4.6 adds NVIDIA's GPU-accelerated ROS 2 packages; 4.6 is the release that brought JetPack 7.2 support to Orin.<sup class="cite">[\[3\]](#s3)</sup>
+
+The common ROS alternative is <a class="g" href="../glossary/#ros2-control">ros2\_control</a>, where a controller manager calls a hardware interface's read and write functions in a real-time loop and loads controllers as plugins.<sup class="cite">[\[5\]](#s5)</sup> It is a reasonable design; the repo chose a plain process first because the loop is small (read, infer, clamp, write) and the bench tests must show the CAN timing before anything else is layered on.
+
+### The control hierarchy
+
+1. <b>High level, about 1–4 Hz.</b> A vision-language-action model (GR00T N1.7, NVIDIA's open model: one part reasons slowly about images and words, a second part outputs short chunks of motion<sup class="cite">[\[15\]](#s15)</sup>) or a human teleoperator (a person steering it remotely) sets goals: a walking velocity, arm targets. On an AGX Orin with TensorRT (NVIDIA's tool for running networks fast on its chips), one 16-step action chunk took about 0.28 s in one published deployment,<sup class="cite">[\[16\]](#s16)</sup> so the VLA runs on the desktop GPU first.
+2. <b>Policy, 50 Hz.</b> A small multilayer perceptron, MLP, the simplest kind of neural network (layers of 256, 128 and 128 "hidden units" for flat walking, 512-256-128 with the terrain map) maps the observation (gyro, gravity direction, command, joint positions and velocities, last action, and on rough ground a height map) to joint position targets for the 12 leg joints. Its output is a target, not a torque.
+3. <b>Joint PD, in the motor driver.</b> PD stands for proportional-derivative. Each driver computes τ = k<sub>p</sub>(q<sub>target</sub> − q) + k<sub>d</sub>(0 − q̇) many times per millisecond, where q is joint angle, q̇ its velocity, and k<sub>p</sub>, k<sub>d</sub> the stiffness and damping gains sent with the command. Page [15](../15-pd-control/) explains the gains.
+4. <b>Current loop, tens of kHz.</b> The torque request becomes a current request (τ = K<sub>t</sub> × I × gear ratio, K<sub>t</sub> the torque constant), and <a class="g" href="../glossary/#field-oriented-control">field-oriented control</a> (FOC) switches the driver's transistors on and off thousands of times a second to hold that current. Open-source quasi-direct-drive drivers run this loop in the tens of kilohertz.<sup class="cite">[\[19\]](#s19)</sup>
+
+### Why the timing budget matters
+
+A policy trained in simulation learned to act on observations of a certain age. If the real robot's observations are older, the policy reacts to a pelvis tilt that has already grown; feedback with extra delay starts to overcorrect and oscillate, like adjusting a shower whose hot water takes too long to arrive. Latency was one of the first identified causes of the sim-to-real gap for legged robots, and modelling it in training fixed walking that otherwise failed.<sup class="cite">[\[14\]](#s14)</sup><sup class="cite">[\[13\]](#s13)</sup> Marvin Bot's walking tasks give every simulated robot a random delay of 0–20 ms on its IMU and joint readings and 0–10 ms on its motor commands, so the policy is robust across that range. Playground 2 checks whether the real chain stays inside it:
+
+<div class="mono">
+
+sensor side = IMU sample hold + transport delay<br />action side = inference + wait for CAN slot + frames on the bus + driver loop<br />event to torque = sensor side + wait for policy tick + action side
+
+</div>
+
+The "sensor side" is how old the reading is when the policy sees it; the "action side" is how long the policy's answer takes to become torque. In the average case each wait is half its period (½ × 1/f, where f is that loop's rate); in the worst case a whole period.
+
+### The training side and sim-to-real at a glance
+
+Policies are trained on a desktop graphics card (GPU), never on the Orin. The tools have many names; what matters at this stage is what each one does (pages 14, 16 and 17 explain them):
+
+- <b>Walking and stairs:</b> Isaac Lab 3.0, NVIDIA's robot-learning simulator (running on the Newton or PhysX physics engines), runs thousands of copies of the robot at once, and a learning method called <a class="g" href="../glossary/#ppo">PPO</a> (proximal policy optimisation, from the rsl\_rl library) improves the policy by trial and error.<sup class="cite">[\[6\]](#s6)</sup>
+- <b>Human-like motion:</b> ProtoMotions, on Newton, trains a motion-tracking policy to copy human movements, which are generated from text with Kimodo and fitted to Marvin Bot's body with PyRoki, following the BeyondMimic method.<sup class="cite">[\[7\]](#s7)</sup><sup class="cite">[\[18\]](#s18)</sup>
+- <b>Cross-check:</b> every exported policy is replayed in MuJoCo, a different physics engine, with sensor noise: if it only works in the simulator it was trained in, it has learned that simulator's quirks.<sup class="cite">[\[8\]](#s8)</sup>
+
+As of the latest repo update, flat-ground policy v8, retrained on the 1.44 m body, passes that cross-check, and the stair policy (rough v9, still trained on the earlier 1.29 m body) passes 14 of 15 stair runs; the motion tracker's next version is still training.
+
+The exported network is an ONNX file plus a JSON file describing joint order, default pose, action scale and observation layout; on the robot, ONNX Runtime or TensorRT runs it.<sup class="cite">[\[9\]](#s9)</sup> Sim-to-real is then a loop: measure the real actuators on the bench (phase 2), fit the simulated motor model, retrain, and repeat. Page [20](../20-sim-to-real/) covers it.
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- <b>Stack:</b> Jetson AGX Orin 64 GB developer kit, JetPack 7.2, Isaac ROS 4.6, ROS 2 Jazzy; "a real-time control process (CAN I/O, 50 Hz policy, safety) runs outside ROS" (`docs/decisions.md`, 2026-10-25, compute and software stack; `docs/plan.md`, workstreams).
+- <b>Rates:</b> policy 50 Hz, leg motor commands 500 Hz, arm ≥250 Hz, IMU ≥500 Hz (`docs/requirements.md` R42, R43).
+- <b>Buses:</b> 6 motor CAN buses (left and right hip, left and right shank at 500 Hz and 48% load; left arm 40%, right arm plus waist 48% at 250 Hz) and a battery bus at 10 Hz (`description/robot.yaml`). The Orin's two on-board CAN ports serve the arms, one dual-channel USB-CAN adapter serves each leg, one single-channel adapter the battery; a microcontroller bridge is the fallback if jitter is too high (roadmap open items 4 and 13).
+- <b>Driver:</b> `robot/drivers/robstride.py` encodes RobStride's CAN protocol from the manuals and is unit-tested but untested on hardware; `bench/actuator/bench_robstride.py latency` will measure command-to-feedback time on the Orin.
+- <b>Delays in training:</b> 0–20 ms on observations and 0–10 ms on commands, per robot per episode (`sim/isaaclab/marvin_bot/robot_cfg.py`, `DelayedDCMotor`; `docs/decisions.md` 2026-10-27).
+- <b>Export:</b> `sim/isaaclab/export_policy.py` writes `policy.onnx` and `policy.json`; `sim/mujoco/check_policy.py` is the cross-check.
+- <b>Power:</b> computer supply before the contactor; e-stop and watchdog relay open the contactor (`docs/design/assembly_wiring.md`, `docs/safety.md`).
+:::
+
+## Trade-offs and alternatives
+
+| Choice | Picked | Alternatives considered | Why |
+|---|---|---|---|
+| Onboard computer | Jetson AGX Orin 64 GB dev kit | Jetson Thor T4000 (same module price in 2026) | Already available; Thor is noted for a second robot (<code>docs/decisions.md</code>). |
+| Real-time loop | Own process outside ROS | ros2\_control hardware interface | Short, auditable timed path; ROS 2 kept for jitter-tolerant work. |
+| Isaac ROS version | 4.6 on Jazzy | 5.0 | 5.0 skipped for now because of reported regressions on Orin. |
+| CAN interfaces | On-board CAN plus isolated USB-CAN (<a class="g" href="../glossary/#gs-usb">gs\_usb</a>, <a class="g" href="../glossary/#socketcan">SocketCAN</a>) | Microcontroller bridge; five single-channel adapters | Cheapest path; the bench timing test decides. |
+| VLA placement | Desktop GPU first, Orin with TensorRT later | Onboard from the start | A few hertz on Orin at best; the policy must keep its 50 Hz regardless (open item 10). |
+| Whole-body control | RL lower body plus IK arms, then motion tracking | A large pretrained whole-body controller | Published checkpoints target another robot and need far more compute to retrain. |
+
+:::caution[Where sources and the repo disagree]
+NVIDIA's Isaac ROS release notes list 5.0 (September 2026) as the latest release, and it moves Isaac ROS to the ROS 2 Lyrical distribution;<sup class="cite">[\[3\]](#s3)</sup> the repo pins Isaac ROS 4.6 on ROS 2 Jazzy. This is a deliberate choice, not an error: 4.6 is the release that added Orin and JetPack 7.2 support, and staying on it keeps the whole stack on Jazzy. But a reader following NVIDIA's "latest" documentation will land on 5.0, so pin the 4.6 docs.
+:::
+
+## Decisions you can make here
+
+- IMU connection: a ready-made USB IMU is quicker to set up; a small microcontroller board reading the IMU chip directly (over serial or SPI) is more work but keeps the sensor side well inside 0–20 ms in the worst case, not just on average.
+- CAN adapters: plug-in USB-CAN adapters are cheap and simple; a microcontroller bridge costs design time but gives steadier timing. The bench latency test decides.
+- Policy rate: running faster than 50 Hz shortens the wait for the next tick, but the policy must be retrained at that rate and the computer works harder.
+- Policy size: a bigger network (a transformer that remembers recent history, for example) may walk better, but each extra millisecond of thinking time eats into the 0–10 ms action-side range the policy was trained with.
+
+<RawHtml html={widget3} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+<b>Where this leads.</b> This page is the map of the machine; the rest of the guide zooms in. Stage 2 starts at the bottom of the diagram with the motors (page 04) and the loads they carry (page 05); the buses, sensors and power get their own pages in stage 3.
+
+## Further reading
+
+- [Berkeley Humanoid (Liao et al., 2024)](https://arxiv.org/abs/2407.21781): a clear, open description of a learning-based humanoid's whole stack, with its rates and how it avoids modelling latency.
+- [Sim-to-Real: Learning Agile Locomotion for Quadruped Robots (Tan et al., 2018)](https://arxiv.org/abs/1804.10332): the paper that showed latency and actuator models matter for transfer.
+- [ros2\_control: getting started](https://control.ros.org/jazzy/doc/getting_started/getting_started.html): the standard ROS way of structuring a real-time hardware loop, worth knowing even if you do not use it.
+- [MIT 6.832 Underactuated Robotics (Tedrake)](https://underactuated.mit.edu/): course notes on why feedback rates and delays limit what a controller can do.
+
+## Sources
+
+1. <span id="s1"></span>[NVIDIA, Jetson AGX Orin product page and technical brief](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/) <span class="used">— used for: CPU, GPU, memory and 15–60 W power range.</span>
+2. <span id="s2"></span>[NVIDIA, JetPack SDK](https://developer.nvidia.com/embedded/jetpack) <span class="used">— used for: what JetPack is.</span>
+3. <span id="s3"></span>[NVIDIA, Isaac ROS release notes](https://nvidia-isaac-ros.github.io/releases/index.html) <span class="used">— used for: 4.6 (August 2026) added Jetson Orin and JetPack 7.2 support; 5.0 moves to ROS 2 Lyrical.</span>
+4. <span id="s4"></span>[Open Robotics, ROS 2 Jazzy documentation](https://docs.ros.org/en/jazzy/index.html) <span class="used">— used for: ROS 2 as the middleware for camera, logging and teleoperation.</span>
+5. <span id="s5"></span>[ros2\_control documentation (Jazzy)](https://control.ros.org/jazzy/doc/getting_started/getting_started.html) <span class="used">— used for: controller manager, hardware interface and real-time loop concepts.</span>
+6. <span id="s6"></span>[NVIDIA, Isaac Lab documentation](https://isaac-sim.github.io/IsaacLab/main/index.html) <span class="used">— used for: parallel simulation for training on the desktop.</span>
+7. <span id="s7"></span>[NVIDIA, ProtoMotions](https://github.com/NVlabs/ProtoMotions) <span class="used">— used for: the motion-tracking training framework.</span>
+8. <span id="s8"></span>[Google DeepMind, MuJoCo documentation](https://mujoco.readthedocs.io/en/stable/overview.html) <span class="used">— used for: the second physics engine used for cross-checks.</span>
+9. <span id="s9"></span>[ONNX Runtime documentation](https://onnxruntime.ai/docs/) <span class="used">— used for: running exported ONNX policies on the robot.</span>
+10. <span id="s10"></span>[RobStride, Product\_Information (RS04 user manual)](https://github.com/RobStride/Product_Information) <span class="used">— used for: CAN 2.0B at 1 Mbit/s, 29-bit identifiers, 14-bit absolute encoder.</span>
+11. <span id="s11"></span>[CAN in Automation, CAN knowledge](https://www.can-cia.org/can-knowledge/) <span class="used">— used for: how CAN arbitration and frames work.</span>
+12. <span id="s12"></span>[Liao et al., Berkeley Humanoid: A Research Platform for Learning-based Control, 2024](https://arxiv.org/abs/2407.21781) <span class="used">— used for: policy at 50 Hz, PD at 25 kHz on the motor driver.</span>
+13. <span id="s13"></span>[Hwangbo et al., Learning agile and dynamic motor skills for legged robots, Science Robotics 2019](https://arxiv.org/abs/1901.08652) <span class="used">— used for: modelling actuator dynamics and delays for transfer.</span>
+14. <span id="s14"></span>[Tan et al., Sim-to-Real: Learning Agile Locomotion For Quadruped Robots, RSS 2018](https://arxiv.org/abs/1804.10332) <span class="used">— used for: latency as a cause of the sim-to-real gap.</span>
+15. <span id="s15"></span>[NVIDIA, GR00T N1: An Open Foundation Model for Generalist Humanoid Robots, 2025](https://arxiv.org/abs/2503.14734) <span class="used">— used for: the dual-system VLA design.</span>
+16. <span id="s16"></span>[Seeed Studio wiki, GR00T N1.7 with TensorRT on AGX Orin (JetPack 7.2)](https://wiki.seeedstudio.com/deploy_full_weight_gr00t_n1.7_tensorrt_jetpack7.2_agx_orin/) <span class="used">— used for: about 0.28 s per 16-action chunk on AGX Orin.</span>
+17. <span id="s17"></span>[Radosavovic et al., Real-World Humanoid Locomotion with Reinforcement Learning, 2023](https://arxiv.org/abs/2303.03381) <span class="used">— used for: further reading on learned humanoid controllers (a transformer over observation history).</span>
+18. <span id="s18"></span>[Liao et al., BeyondMimic: From Motion Tracking to Versatile Humanoid Control via Guided Diffusion, 2025](https://arxiv.org/abs/2508.08241) <span class="used">— used for: the motion-tracking recipe the repo follows.</span>
+19. <span id="s19"></span>[Katz, A low cost modular actuator for dynamic robots, MIT thesis, 2018](https://dspace.mit.edu/handle/1721.1/118671) <span class="used">— used for: current and PD loops in an open-source quasi-direct-drive driver running at tens of kHz.</span>
+
+<PageScript code={script} />

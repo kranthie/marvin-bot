@@ -1,0 +1,24 @@
+/* Bill of materials and costs: styles for this page's playground */
+.chart-title{font-size:13px;color:var(--muted);margin:2px 0 6px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.ctl .chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:4px 0;justify-content:flex-start}
+.ctl .chk input{margin-top:4px;accent-color:var(--accent)}
+.radio{display:flex;flex-direction:column;gap:2px}
+.radio label{justify-content:flex-start;gap:8px}
+.radio input{accent-color:var(--accent)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.filters select,.filters input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px;font:inherit;font-size:13px}
+.filters input{min-width:180px;flex:1 1 180px}
+#bomtable th{cursor:pointer;white-space:nowrap;user-select:none}
+#bomtable th.sorted{color:var(--accent)}
+#bomtable td{font-size:13px}
+#bomtable td.basis{color:var(--muted);font-size:12px;max-width:34ch}
+#bomtable tr.owned td{opacity:.5}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:99px;border:1px solid var(--line);color:var(--muted);margin-right:3px;white-space:nowrap}
+.tag.est{border-color:#6b4f1d;color:var(--warn)}
+.tag.cn{border-color:#24527a;color:var(--accent)}
+.tablewrap.tall{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius)}
+.tablewrap.tall table{margin:0}
+.tablewrap.tall thead th{position:sticky;top:0;background:var(--panel)}
+.hypo{font-size:12px;color:var(--warn)}
+svg text{font-family:var(--font)}

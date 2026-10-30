@@ -3,13 +3,13 @@
 // animation. Needs window.MARVIN_MODEL, written by site/scripts/build_model.py.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { decodeBin, partGeometry, partMaterial, setupLighting, shadowFloor } from './marvin-render.js';
 
 export function mountMarvin(host, opts = {}) {
   const M = window.MARVIN_MODEL;
   if (!M) { host.insertAdjacentHTML('beforeend', '<div class="vmsg">The 3-D model data has not been built (see site/README.md).</div>'); return null; }
   const o = {look:'shells', rotate:true, animate:'idle', bg:null, camera:'iso', target:0.72, dist:3.0, ...opts};
-  const raw = atob(M.bin), buf = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i);
-  const AB = buf.buffer;
+  const AB = decodeBin(M);
   let renderer;
   try { renderer = new THREE.WebGLRenderer({antialias:true, alpha:!o.bg}); }
   catch (e) { host.insertAdjacentHTML('beforeend', '<div class="vmsg">3-D graphics (WebGL) are turned off in this browser, so the model cannot be shown. The guide\'s 3-D page explains how to turn them on.</div>'); return null; }
@@ -19,9 +19,7 @@ export function mountMarvin(host, opts = {}) {
   const camera = new THREE.PerspectiveCamera(30, 1, 0.02, 50); camera.up.set(0, 0, 1);
   const controls = new OrbitControls(camera, renderer.domElement); controls.target.set(0, 0, o.target); controls.enableDamping = true;
   controls.autoRotate = o.rotate; controls.autoRotateSpeed = 0.8; controls.enableZoom = o.zoom !== false;
-  scene.add(new THREE.HemisphereLight(0xdfe8f5, 0x1a1f26, 1.1));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.7); sun.position.set(2, -1.5, 3); scene.add(sun);
-  const rim = new THREE.DirectionalLight(0x7fb8ff, 0.9); rim.position.set(-2, 2, 2); scene.add(rim);
+  setupLighting(renderer, scene); scene.add(shadowFloor());
   if (o.grid !== false) { const g = new THREE.GridHelper(6, 24, 0x2a3340, 0x1b222b); g.rotation.x = Math.PI / 2; g.material.transparent = true; g.material.opacity = 0.6; scene.add(g); }
 
   const linkG = {}, J = {}, base = new THREE.Group(); scene.add(base);
@@ -35,17 +33,8 @@ export function mountMarvin(host, opts = {}) {
   const setDeg = (n, d) => { const j = J[n]; if (!j) return; const q = Math.min(j.upper, Math.max(j.lower, d * Math.PI / 180)); j.rot.quaternion.setFromAxisAngle(j.axis, q); };
   const meshes = [];
   for (const p of M.parts) {
-    let g;
-    if (p.kind === 'mesh') {
-      const nv = p.v[1], q = new Uint16Array(AB, p.v[0], nv * 3), pos = new Float32Array(nv * 3);
-      for (let i = 0; i < nv * 3; i++) pos[i] = p.lo[i % 3] + q[i] / 65535 * p.span[i % 3];
-      g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      g.setIndex(new THREE.BufferAttribute(p.i[2] === 4 ? new Uint32Array(AB, p.i[0], p.i[1]) : new Uint16Array(AB, p.i[0], p.i[1]), 1));
-    } else if (p.kind === 'box') g = new THREE.BoxGeometry(...p.size);
-    else { g = new THREE.CylinderGeometry(p.r, p.r, p.len, 32); g.rotateX(Math.PI / 2); }
-    const metal = /al60|al70/.test(p.material || '') || p.cat === 'actuator';
-    const mat = new THREE.MeshStandardMaterial({color:new THREE.Color(p.rgba[0], p.rgba[1], p.rgba[2]), flatShading:p.kind === 'mesh', metalness:metal ? 0.45 : 0.05, roughness:metal ? 0.45 : 0.65, transparent:true});
-    const m = new THREE.Mesh(g, mat); m.position.set(...p.xyz); m.rotation.set(p.rpy[0], p.rpy[1], p.rpy[2], 'ZYX');
+    const g = partGeometry(p, AB), mat = partMaterial(p);
+    const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; m.position.set(...p.xyz); m.rotation.set(p.rpy[0], p.rpy[1], p.rpy[2], 'ZYX');
     m.userData = {p, real:mat.color.clone()}; linkG[p.link].add(m); meshes.push(m);
   }
   const ST = M.stance, stance = {};
@@ -59,7 +48,7 @@ export function mountMarvin(host, opts = {}) {
     o.look = look;
     for (const m of meshes) {
       const p = m.userData.p, mat = m.material;
-      m.visible = p.cat !== 'cover' || look === 'shells';
+      m.visible = p.cat !== 'cover' || look === 'shells'; m.castShadow = !(XR[look] && !XR[look].includes(p.cat));
       const focus = XR[look] && XR[look].includes(p.cat), fade = XR[look] && !focus;
       mat.color.copy(m.userData.real); mat.opacity = fade ? 0.08 : 1; mat.depthWrite = !fade;
       mat.emissive.setHex(focus ? 0x2a1d05 : 0);

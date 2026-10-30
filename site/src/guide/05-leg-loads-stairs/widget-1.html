@@ -1,0 +1,57 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today: repo's worst pose</button>
+<button data-preset="start">Start of an 18 cm step-up</button>
+<button data-preset="mid">Halfway up</button>
+<button data-preset="stance">Stance on one leg</button>
+<button data-preset="stage">Today + 1.5:1 knee stage</button>
+</div>
+<h4>Pose</h4>
+<div class="ctl"><label>Mode</label>
+<div class="seg" id="mode"><button class="on" data-m="manual">Joint angles</button><button data-m="auto">Auto: CoM over foot (IK)</button></div>
+<div class="hint">Joint angles: you set the hip and knee. Auto: you set the stair and where the body is, and inverse kinematics (IK, working back from where the feet must be to the joint angles; page 01) finds the angles.</div></div>
+<div class="ctl m-man"><label>Hip pitch <output id="o_qh"></output></label>
+<input id="qh" max="120" min="-30" step="0.1" type="range" value="24.3"/>
+<div class="hint">+ = thigh swung forward.</div></div>
+<div class="ctl m-man"><label>Knee <output id="o_qk"></output></label>
+<input id="qk" max="130" min="0" step="0.1" type="range" value="35.3"/>
+<div class="hint">Ankle pitch follows (= knee − hip) to keep the foot flat under an upright pelvis.</div></div>
+<div class="ctl m-auto"><label>Riser height <output id="o_h"></output></label>
+<input id="h" max="0.24" min="0" step="0.005" type="range" value="0.18"/>
+<div class="hint">The height of one stair step. Requirement R12 in the repo: 17–18 cm risers, 25 cm treads (the part you stand on).</div></div>
+<div class="ctl m-auto"><label>Step-up progress <output id="o_prog"></output></label>
+<input id="prog" max="1" min="0" step="0.01" type="range" value="1"/>
+<div class="hint">0 = pelvis still at floor height, front foot just placed; 1 = standing on the stair.</div></div>
+<div class="ctl m-auto"><label>Hip height when walking <output id="o_hb"></output></label>
+<input id="hb" max="0.70" min="0.55" step="0.005" type="range" value="0.665"/>
+<div class="hint">Hip axis above the sole in the walking crouch; 0.694 m in the straight stance.</div></div>
+<div class="ctl m-auto"><label>CoM ahead of the stance ankle <output id="o_xc"></output></label>
+<input id="xc" max="0.13" min="-0.30" step="0.001" type="range" value="-0.062"/>
+<div class="hint">Sole runs from −0.09 m (heel) to +0.15 m (toe). The repo's worst pose has −0.062 m.</div></div>
+<h4>Load</h4>
+<div class="ctl"><label>Robot mass <output id="o_mass"></output></label>
+<input id="mass" max="50" min="30" step="0.05" type="range" value="40.35"/>
+<div class="hint">40.35 kg bare, 41.30 kg with shells.</div></div>
+<div class="ctl"><label>Share of weight on this leg <output id="o_share"></output></label>
+<input id="share" max="1" min="0.2" step="0.01" type="range" value="1"/>
+<div class="hint">1 = single support. In double support the other foot carries the rest.</div></div>
+<h4>Knee actuator</h4>
+<div class="ctl"><label><span><input id="stage" type="checkbox"/> Add the parked 1.5:1 knee stage</span></label></div>
+<div class="ctl"><label>RS04 continuous rating in the leg <output id="o_rate"></output></label>
+<input id="rate" max="40" min="28" step="0.5" type="range" value="40"/>
+<div class="hint">40 N·m on the manual's 345 × 345 mm heat sink; maybe 30–35 N·m on the thigh plate (to be measured on the bench).</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Side view of a leg standing on a stair with the ground reaction force and the lever arms to hip, knee and ankle" id="legview" role="img" viewbox="0 0 600 520"></svg>
+<div class="bars" id="bars"></div>
+<div class="readouts">
+<div class="ro" id="r_ang"><div class="k">Hip / knee / ankle pitch</div><div class="v">–</div></div>
+<div class="ro" id="r_lev"><div class="k">Knee lever arm</div><div class="v">–</div></div>
+<div class="ro" id="r_bal"><div class="k">CoM vs sole</div><div class="v">–</div></div>
+<div class="ro" id="r_kstage"><div class="k">Knee max speed · reflected inertia</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--good)"></i>&lt; 70% of continuous</span><span><i style="background:var(--warn)"></i>70–100% of continuous</span><span><i style="background:var(--bad)"></i>above continuous</span><span><i style="background:#e6edf3"></i>100% continuous</span><span><i style="background:var(--violet)"></i>70% of peak</span></div>
+</div>
+</div>

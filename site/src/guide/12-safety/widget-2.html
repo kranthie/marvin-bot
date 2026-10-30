@@ -1,0 +1,45 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="arm">Marvin Bot today: arm swing at the chest</button>
+<button data-preset="fall">Robot falls on a lower leg</button>
+<button data-preset="knee">Finger in the knee</button>
+<button data-preset="wrist">Finger in a wrist servo</button>
+<button data-preset="slow">Arm slowed to the chest limit</button>
+</div>
+<h4>Scenario</h4>
+<div class="ctl"><select id="sc"><option value="0">Swinging limb hits a person</option><option value="1">Robot falls onto a person</option><option value="2">Pinch at a joint (squeeze)</option></select></div>
+<div id="g_swing">
+<div class="ctl"><label>Limb mass <output id="o_lm"></output></label><input id="lm" max="10" min="0.5" step="0.1" type="range" value="3"/><div class="hint">Arm with hand ≈ 3 kg; leg ≈ 8 kg (estimates from the mass budget).</div></div>
+<div class="ctl"><label>Limb length <output id="o_ll"></output></label><input id="ll" max="0.8" min="0.2" step="0.01" type="range" value="0.57"/><div class="hint">Shoulder to fingertip ≈ 0.57 m; hip to sole 0.70 m.</div></div>
+<div class="ctl"><label>Joint speed <output id="o_w"></output></label><input id="w" max="20" min="0.2" step="0.1" type="range" value="5"/><div class="hint">RS03 no-load ≈ 20 rad/s at 48 V.</div></div>
+<div class="ctl"><label>Contact point from the joint <output id="o_r"></output></label><input id="r" max="0.8" min="0.05" step="0.01" type="range" value="0.57"/><div class="hint">Where along the limb it hits; further out moves faster.</div></div>
+</div>
+<div id="g_fall">
+<div class="ctl"><label>Mass coming down on the contact <output id="o_fm"></output></label><input id="fm" max="42" min="2" step="0.5" type="range" value="20"/><div class="hint">Whole robot 41.3 kg; a fall rarely lands all of it on one spot.</div></div>
+<div class="ctl"><label>Drop height of that mass <output id="o_h"></output></label><input id="h" max="1.2" min="0.05" step="0.05" type="range" value="0.6"/><div class="hint">Centre of mass ≈ 0.8 m up when standing (estimate).</div></div>
+</div>
+<div id="g_pinch">
+<div class="ctl"><label>Joint actuator <output id="o_act"></output></label>
+<select id="act"><option value="120">RS04, 120 N·m peak (hip, knee)</option><option value="60">RS03, 60 N·m peak (ankle, waist, shoulder)</option><option value="36">RS06, 36 N·m peak (elbow, shoulder yaw)</option><option value="14">RS00, 14 N·m peak (wrist yaw)</option><option value="4.9">STS3250 servo, 4.9 N·m stall (wrist pitch, neck)</option></select></div>
+<div class="ctl"><label>Torque limit set in software <output id="o_tl"></output></label><input id="tl" max="100" min="5" step="5" type="range" value="100"/><div class="hint">% of the actuator's peak torque that the software allows.</div></div>
+<div class="ctl"><label>Pinch point from the axis <output id="o_pr"></output></label><input id="pr" max="30" min="1" step="0.5" type="range" value="5"/><div class="hint">cm from the joint's axis; closer to the axis squeezes harder.</div></div>
+</div>
+<h4>Body region (ISO/TS 15066 model)</h4>
+<div class="ctl"><select id="reg"></select><div class="hint">Values as reproduced by Ghanbarzadeh and Najafi from ISO/TS 15066 Annex A.<sup class="cite"><a href="#s2">[2]</a></sup></div></div>
+</div>
+<div class="preview">
+<svg aria-label="Estimated contact force and energy against the body region's thresholds" id="hz" role="img" viewbox="0 0 640 330"></svg>
+<div class="readouts">
+<div class="ro" id="h_v"><div class="k">Contact speed</div><div class="v">–</div></div>
+<div class="ro" id="h_mr"><div class="k">Robot effective mass</div><div class="v">–</div></div>
+<div class="ro" id="h_E"><div class="k">Kinetic energy</div><div class="v">–</div></div>
+<div class="ro" id="h_F"><div class="k">Estimated peak force</div><div class="v">–</div></div>
+<div class="ro" id="h_L"><div class="k">Threshold used</div><div class="v">–</div></div>
+<div class="ro" id="h_vmax"><div class="k">Speed for the threshold</div><div class="v">–</div></div>
+</div>
+<p class="small"><b>How to read this picture:</b> three bars on a logarithmic scale (each grid step is about three times the last): the estimated force on top, then the body region's two limits. Red top bar = over the limit, green = under. "Quasi-static" means slow pressing or clamping (the body cannot move away); "transient" means a brief knock where the body can move. "Robot effective mass" is how heavy the limb feels at the contact point. "Speed for the threshold" is the highest speed that would stay under the limit.</p>
+<div class="legend"><span><i style="background:var(--bad)"></i>estimate above threshold</span><span><i style="background:var(--good)"></i>below threshold</span><span><i style="background:var(--accent2)"></i>quasi-static (pressing) limit</span><span><i style="background:var(--violet)"></i>transient (impact) limit: 2× quasi-static, 1× for skull and face</span></div>
+</div>
+</div>

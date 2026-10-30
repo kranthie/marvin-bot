@@ -1,0 +1,44 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today (stance)</button>
+<button data-preset="single">Single support, CoM shifted</button>
+<button data-preset="walk">Mid-stride</button>
+<button data-preset="narrow">Narrow stance</button>
+<button data-preset="accel">Accelerating forward</button>
+</div>
+<h4>Feet</h4>
+<div class="ctl"><label>Support</label>
+<div class="seg" id="mode"><button class="on" data-m="both">Both feet</button><button data-m="left">Left only</button><button data-m="right">Right only</button></div></div>
+<div class="ctl"><label>Step width (between foot centrelines) <output id="o_width"></output></label>
+<input id="width" max="0.40" min="0.10" step="0.01" type="range" value="0.20"/>
+<div class="hint">0.20 m = feet under the hips, Marvin Bot's stance.</div></div>
+<div class="ctl"><label>Left foot ahead by <output id="o_stride"></output></label>
+<input id="stride" max="0.40" min="-0.40" step="0.01" type="range" value="0"/>
+<div class="hint">Step length; the right foot moves back by the same amount.</div></div>
+<h4>Centre of mass</h4>
+<div class="ctl"><label>CoM forward <output id="o_cx"></output></label>
+<input id="cx" max="0.30" min="-0.30" step="0.001" type="range" value="0.004"/></div>
+<div class="ctl"><label>CoM to the left <output id="o_cy"></output></label>
+<input id="cy" max="0.30" min="-0.30" step="0.001" type="range" value="0"/></div>
+<div class="ctl"><label>CoM acceleration forward <output id="o_ax"></output></label>
+<input id="ax" max="3" min="-3" step="0.1" type="range" value="0"/>
+<div class="hint">Speeding up forward moves the ZMP backward, towards the heels (the tray-of-drinks effect; formula below).</div></div>
+<div class="ctl"><label>CoM acceleration to the left <output id="o_ay"></output></label>
+<input id="ay" max="3" min="-3" step="0.1" type="range" value="0"/></div>
+<div class="ctl"><label>CoM height z <output id="o_zh"></output></label>
+<input id="zh" max="1.00" min="0.40" step="0.01" type="range" value="0.71"/></div>
+</div>
+<div class="preview">
+<svg aria-label="Top view of two feet, their support polygon, the centre of mass projection and the zero-moment point" id="topview" role="img" viewbox="0 0 600 460"></svg>
+<div class="readouts">
+<div class="ro" id="r_m"><div class="k">CoM margin (static)</div><div class="v">–</div></div>
+<div class="ro" id="r_zmp"><div class="k">ZMP position (fwd, left)</div><div class="v">–</div></div>
+<div class="ro" id="r_zm"><div class="k">ZMP margin (dynamic)</div><div class="v">–</div></div>
+<div class="ro" id="r_area"><div class="k">Support area</div><div class="v">–</div></div>
+</div>
+<div class="verdict" id="verdictA"></div>
+<div class="legend"><span><i style="background:#ffb45455;border:1px solid var(--accent2)"></i>feet in contact</span><span><i style="background:#4cc38a33;border:1px solid var(--good)"></i>support polygon</span><span><i style="background:var(--accent)"></i>CoM projection</span><span><i style="background:var(--violet)"></i>ZMP</span></div>
+</div>
+</div>

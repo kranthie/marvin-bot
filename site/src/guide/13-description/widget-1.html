@@ -1,0 +1,6 @@
+<div class="pipe">
+<span class="box"><code>robot.yaml</code> joints, ranges, motors, buses</span><span class="box"><code>actuators.yaml</code> torque, speed, mass</span><span class="box"><code>mass_budget.yaml</code></span><span class="box"><code>skeleton.yaml</code> frames, axes, boxes</span><span class="box"><code>cad_model.yaml</code> from the code-CAD</span>
+<span class="arr">→ <code>tools/build_urdf.py</code> →</span><span class="box"><b>URDF</b></span>
+<span class="arr">→ MuJoCo loads it, adds motors →</span><span class="box"><b>MJCF</b> (in memory)</span>
+<span class="arr">→ <code>sim/isaaclab/convert_urdf.py</code> →</span><span class="box"><b>USD</b></span>
+</div>

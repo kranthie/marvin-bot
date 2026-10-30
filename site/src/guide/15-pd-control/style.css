@@ -1,0 +1,7 @@
+/* PD control, gains and armature: styles for this page's playground */
+p code,li code{overflow-wrap:anywhere}
+.ctl .row{display:flex;gap:6px}
+.ctl .row select{flex:1}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin:4px 0}
+.modebar{display:flex;gap:6px;margin:6px 0}
+.preview .ro .v{font-size:15px}

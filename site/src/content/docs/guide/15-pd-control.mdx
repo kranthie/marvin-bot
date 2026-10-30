@@ -1,0 +1,184 @@
+---
+title: "PD control, gains and armature"
+description: "A walking policy (the trained neural-network controller of page 16) does not command torques."
+sidebar:
+  label: "15 · PD control, gains and armature"
+  order: 16
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/15-pd-control/widget-1.html?raw';
+import widget2 from '../../../guide/15-pd-control/widget-2.html?raw';
+import script from '../../../guide/15-pd-control/script.js?raw';
+import '../../../guide/15-pd-control/style.css';
+
+<div class="guide-meta">
+
+**Stage 4 · Model and simulation** · \~30 min · Before this: [04 Actuators](../04-actuators/), [13 The robot description](../13-description/), [14 Simulation](../14-simulation/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+A walking <a class="g" href="../glossary/#policy">policy</a> (the trained neural-network controller of [page 16](../16-rl-walking/)) does not command torques. Fifty times a second it sends each joint a target angle, and a much faster proportional-derivative (PD) loop turns the gap between target and actual angle into torque. How stiff and how damped that loop is, and how much hidden motor inertia sits behind it, decides whether a policy trained in simulation moves the same way on the robot.
+
+Why a humanoid needs this: the "brain" (the policy) is too slow and too coarse to drive each motor's current directly, the same way you decide "put my foot there" without thinking about each muscle fibre. A small, fast reflex in every joint does the last step. This page is about tuning that reflex, and about one hidden number (the motor's spinning inertia) that simulators get wrong if nobody writes it down.
+
+:::note[You will learn]
+- How a joint behaves like a mass on a spring and damper (shock absorber) under PD control, and what natural frequency and damping ratio predict about its step response.
+- What armature (reflected rotor inertia, *I*<sub>rotor</sub> × <i>N</i>²) is, why it can outweigh a light link, and why leaving it out of a simulation breaks sim-to-real transfer.
+- Why the PD loop runs much faster than the policy, and what torque limits, the torque-speed line and delay do to it.
+- How Marvin Bot's gains are set today, which numbers are placeholders, and the BeyondMimic gain rule the motion tracker borrows from.
+:::
+
+## The idea in one picture
+
+Picture the knee as a heavy door on a hinge, with a spring that pulls it towards a chosen angle and a shock absorber that resists speed. The spring's stiffness is the proportional gain *k*<sub>p</sub>, the shock absorber is the derivative gain *k*<sub>d</sub>. Move the chosen angle and the door swings towards it. Too little spring and gravity wins; too much spring and too little damping and it overshoots and rings; damping matched to stiffness and inertia and it glides in. The "door's" inertia is not only the leg: the motor's rotor, spinning nine times faster than the joint through the gearbox, adds an inertia that the joint feels as if it were 81 times larger. That hidden inertia is called <a class="g" href="../glossary/#armature">armature</a>. (The 81 is the gear ratio squared, 9 × 9; the maths is below.)
+
+## Playground: a joint's step response
+
+One joint, one link, gravity, a motor with a torque limit and a torque-speed line, and a PD loop that runs at a chosen rate, possibly with a delay. At *t* = 0.05 s the target jumps. The simulation integrates the joint with 4th-order Runge-Kutta at 0.1 ms steps and holds the torque constant between controller updates, as a digital motor driver does.
+
+<b>Start here:</b> press *Marvin Bot knee*, then *Too stiff* and *Too soft*, and compare the curves. How to read the plot: the <span style={{color:"#4fb3ff"}}>blue</span> line is where the joint actually is, the <span style={{color:"#ffb454"}}>orange</span> line is where it was told to go; the closer and quicker blue settles on orange without swinging past it, the better. The <span style={{color:"#4cc38a"}}>green</span> line (lower plot) is the motor torque, which must stay inside the <span style={{color:"#ff6b6b"}}>red</span> limit. Good readouts: overshoot under about 20%, settling time a few tenths of a second, small steady-state error. Several sliders are on a log scale so they can span tiny wrists and heavy knees.
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+- Load *Marvin Bot knee*. ζ is about 0.44: the knee overshoots by about 18% (the linear formula predicts 21%; the torque limit and friction trim it) and rings for a few cycles. The purple trace is the same gains without armature: 14% less inertia, so it moves faster and a little more damped (ζ 0.48). Small here, but a policy trained on one knee meets a different knee on the other.
+- Load *Wrist yaw*. The hand's own inertia about the yaw axis is 0.0007 kg·m², the armature 0.005: seven times larger. Without armature (purple) the joint is 8 times lighter: at the 200 Hz update the damping term overcorrects every step (k<sub>d</sub>T/J = 0.8 × 0.005 / 0.00067 = 6, above the limit of 2 for a sampled damper) and the joint chatters and wanders far from its target. Armature is what keeps light joints numerically stable.
+- Load *Too stiff*, then set the PD update rate to 50 Hz: a loop that was merely jumpy becomes unstable. A stiff loop needs a fast update; that is why the PD runs in the motor driver, not in the 50 Hz policy.
+- Load *With 10 ms delay*: the delay sits inside the loop, and the overshoot rises from about 18% to 26%. Switch it to "on the target": the response is the undelayed one, simply 10 ms late. Back inside the loop, the phase lag eats the damping: at 20 ms the overshoot is about 40%, more than double, and at 25 ms the knee never settles.
+:::
+
+## From first principles
+
+### A joint is a rotating mass
+
+<div class="hint">
+
+Notation: *q* is the joint angle; a dot on top means "rate of change", so q̇ ("q-dot") is the joint's speed and q̈ ("q-double-dot") its acceleration. An equation that links a quantity to its own rates of change, like the one below, is called a differential equation; the simulator solves it by taking small time steps ([page 14](../14-simulation/)).
+
+</div>
+
+Newton's second law for rotation says *J* q̈ = τ<sub>total</sub>: the angular acceleration q̈ (rad/s²) equals the net torque (N·m) divided by the inertia *J* (kg·m²). For one joint carrying one link,
+
+<div class="eq">
+
+J q̈ = τ<sub>motor</sub> − m g r sin q − τ<sub>friction</sub>
+
+</div>
+
+where *m g r* is the gravity moment (mass × 9.81 m/s² × distance from the joint to the link's centre of mass) and *q* is measured from hanging straight down. This page holds every other joint still; in a real robot the inertia each joint feels changes with the pose of all the others.<sup class="cite">[\[1\]](#s1)</sup>
+
+### PD control
+
+A <a class="g" href="../glossary/#pd-control">PD controller</a> sets the motor torque from the position error and the velocity:
+
+<div class="eq">
+
+τ = k<sub>p</sub> (q\* − q) − k<sub>d</sub> q̇
+
+</div>
+
+*q*\* is the target angle, *k*<sub>p</sub> (N·m/rad) the <a class="g" href="../glossary/#stiffness">stiffness</a>, *k*<sub>d</sub> (N·m·s/rad) the <a class="g" href="../glossary/#damping">damping</a>. RobStride's MIT-style operation mode computes exactly this inside the motor driver, with an extra feed-forward torque term, from a target, a target velocity, *k*<sub>p</sub> and *k*<sub>d</sub> sent over CAN (`robot/drivers/robstride.py`; for the RS04 *k*<sub>p</sub> may be 0-5000 and *k*<sub>d</sub> 0-100).<sup class="cite">[\[4\]](#s4)</sup>
+
+Without gravity and friction, substituting gives *J* q̈ + *k*<sub>d</sub> q̇ + *k*<sub>p</sub> q = *k*<sub>p</sub> q\*, a mass-spring-damper. Its behaviour is set by two numbers:<sup class="cite">[\[2\]](#s2)</sup>
+
+<div class="eq">
+
+ω<sub>n</sub> = √(k<sub>p</sub> / J) ζ = k<sub>d</sub> / (2 √(k<sub>p</sub> J))
+
+</div>
+
+The <a class="g" href="../glossary/#natural-frequency">natural frequency</a> ω<sub>n</sub> (rad/s; divide by 2π for Hz) says how fast the joint responds; the <a class="g" href="../glossary/#damping-ratio">damping ratio</a> ζ says how it settles. Below ζ = 1 a step overshoots by e<sup>−πζ/√(1−ζ²)</sup> of the step size (ζ = 0.5: 16%; ζ = 0.7: 4.6%); at ζ = 1 it arrives as fast as possible without overshoot; above 1 it creeps in. With gravity the joint stops short of the target by the <a class="g" href="../glossary/#steady-state-error">steady-state error</a> *m g r* sin *q* / *k*<sub>p</sub>: a spring only pushes back when stretched. (A policy compensates by asking for a slightly higher target; an integral term would remove it but is rarely used under a learned policy.)
+
+### Armature: the inertia you cannot see
+
+The motor's rotor turns *N* times for each turn of the joint (*N* = 9 for the RS04). Its kinetic energy is ½ *I*<sub>rotor</sub> (*N* q̇)² = ½ (*I*<sub>rotor</sub> <i>N</i>²) q̇², so seen from the joint the rotor behaves like an extra inertia
+
+<div class="eq">
+
+I<sub>armature</sub> = I<sub>rotor</sub> × N²
+
+</div>
+
+that adds to the link's: *J* = *I*<sub>link</sub> + *I*<sub>armature</sub>. It does not depend on the pose and it is not part of any link's mass, so a URDF cannot hold it; MuJoCo and Isaac Lab add it to the joint directly (`armature`).<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[6\]](#s6)</sup> BeyondMimic reports that setting armature to zero in simulation gives excessive joint accelerations, overswinging and self-collisions.<sup class="cite">[\[5\]](#s5)</sup> It also matters numerically: a light link on a stiff PD loop has a very high ω<sub>n</sub>, which the simulator's timestep may not resolve; armature lowers ω<sub>n</sub> and keeps the joint stable.
+
+### Torque limits and the torque-speed line
+
+A real motor cannot deliver any torque at any speed. Isaac Lab's DC motor model (`DCMotor`) clips the PD torque to a line that falls from the peak torque at standstill to zero at the no-load speed: τ<sub>max</sub>(q̇) = τ<sub>peak</sub> (1 − q̇/ω<sub>0</sub>), and the mirror image for braking.<sup class="cite">[\[6\]](#s6)</sup> When the PD torque is clipped the joint stops behaving like a linear spring-damper: steps take longer and overshoot changes, which is why a large stiff step looks different from a small one.
+
+### Why a slow policy and a fast PD loop
+
+The policy is a neural network that sees the whole robot; running it costs milliseconds, and the walking dynamics it controls (steps, sway) happen at a few hertz, so 50 Hz is plenty. The joint's own spring-mass dynamics are faster (the knee here: about 4 Hz with today's gains, the wrist 8 Hz, and much faster for a stiffer loop), and a digital controller that updates its torque every *T* seconds adds a lag of about *T*/2. As ω<sub>n</sub>*T* approaches 1 the loop loses damping and at around 2 it goes unstable. So the policy outputs targets at 50 Hz, and the PD loop runs at the simulator's physics step (5 ms in Isaac Lab, 2 ms in MuJoCo) or, on the robot, inside each motor driver, fed new targets at 500 Hz on the legs and 250 Hz on the arms.<sup class="cite">[\[7\]](#s7)</sup>
+
+### Delay
+
+A delay of τ<sub>d</sub> seconds shifts the phase of a signal at frequency ω by ω τ<sub>d</sub> radians. Where the delay sits matters. A delay on the *target* (the policy's command arriving late over CAN) leaves the PD loop untouched and simply makes every response late: harmless for the joint, but it matters for the policy's balance loop, which is why training randomises it. A delay *inside* the loop (the torque computed from an old measurement, as if the PD ran on the main computer over CAN) eats phase margin (the loop's safety buffer against the correction arriving so late that it pushes the wrong way): for the knee at today's gains the loop crosses over near 30 rad/s, so 10 ms costs about 17° of a roughly 45° margin, and 25 ms nearly all of it.
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- **Training gains** (`sim/isaaclab/marvin_bot/robot_cfg.py`, `GAINS`, kp N·m/rad, kd N·m·s/rad, armature kg·m², friction N·m): hip pitch, hip roll, knee, waist 150 / 5 / 0.03 / 0.3 (waist armature 0.02, friction 0.2); hip yaw 100 / 3.3 / 0.02 / 0.2; ankles 40 / 2 / 0.02 / 0.2; shoulder pitch and roll 40 / 2 / 0.02 / 0.2; shoulder yaw and elbow 30 / 1.5 / 0.01 / 0.1; wrist yaw 15 / 0.8 / 0.005 / 0.05; neck and wrist pitch 10 / 0.5 / 0.002 / 0.02. The file says these are placeholders "until the phase 2 bench test fits them", chosen to follow comparable open humanoids (kp 100-150 on 120 N·m joints, about 40 on ankles).
+- <b>Motor model:</b> `DelayedDCMotor`, Isaac Lab's `DCMotor` (PD clipped by the torque-speed line through the motor's peak torque and no-load speed from `actuators.yaml`) with the position target arriving 0-10 ms late (0-2 physics steps of 5 ms, random per episode). The policy runs at 50 Hz (4 physics steps per action). The MuJoCo cross-check (`sim/mujoco/check_policy.py`) recomputes the same PD and the same torque-speed clip every 2 ms step.
+- **Standing check gains** (`sim/mujoco/check_standing.py`) are stiffer, per motor model (RS04 400 / 8, RS03 250 / 5, ankles 250 / 6), because that check holds a pose with no balance controller: standing still needs the two ankles' combined stiffness above *m g h* (the file's comment says about 210 N·m/rad, for 36 kg at 0.6 m; for today's 40.35 kg with the CoM about 0.65 m above the ankles it is about 255 N·m/rad, still well below the 2 × 250).
+- <b>Motion tracker:</b> `sim/motion/setup_protomotions.py` softens *k*<sub>p</sub> to at most 0.25 × peak torque / 0.4 rad (so BeyondMimic's action scale 0.25 τ<sub>max</sub>/*k*<sub>p</sub> is at least 0.4 rad; for the knee 75 N·m/rad) and sets *k*<sub>d</sub> = 2ζ<i>k</i><sub>p</sub>/ω with ζ = 2 at 10 Hz. That borrows BeyondMimic's ratio but not its rule *k*<sub>p</sub> = *I*<sub>arm</sub>ω², which `docs/decisions.md` lists as not yet tried.
+- <b>Hand check of the knee preset:</b> *J* = 0.184 + 0.03 = 0.214 kg·m²; ω<sub>n</sub> = √(150/0.214) = 26.5 rad/s (4.2 Hz); ζ = 5/(2√(150 × 0.214)) = 0.44; predicted overshoot 21%; sag under a horizontal shin 6.9/150 = 0.046 rad (2.6°), at 60° 6.9 sin 60°/150 = 2.3°. The playground's readouts agree (small differences come from the joint friction, the 200 Hz update and the nonlinear gravity).
+:::
+
+:::caution[What is not measured yet]
+Every armature value is a placeholder: the RS04's 0.03 kg·m² implies a rotor inertia of 0.03/81 = 3.7 × 10⁻⁴ kg·m², which has not been checked against RobStride data or a bench test. There are no measured torque-speed curves either: the straight line through peak torque and no-load speed is a simplification, real motors are limited by current and back-EMF and the curve depends on the bus voltage. The phase 2 actuator bench (`docs/plan.md`) is meant to measure both.
+:::
+
+## Trade-offs and alternatives
+
+| Choice | For | Against |
+|---|---|---|
+| Stiff gains (high *k*<sub>p</sub>) | Tracks targets closely, small gravity sag; a policy's actions map almost directly to angles | Amplifies sensor noise, hits torque limits, needs a fast loop, little passive compliance on impact; sim-to-real gaps in inertia show up as ringing |
+| Soft gains | Compliant on contact, robust to model error, gentle on gears | Large tracking error that the policy must learn to compensate; the action scale has to grow |
+| BeyondMimic rule: *k*<sub>p</sub> = *I*<sub>arm</sub>ω², *k*<sub>d</sub> = 2<i>I</i><sub>arm</sub>ζω, ω = 10 Hz, ζ = 2<sup class="cite">[\[5\]](#s5)</sup> | One principled rule for every joint, tied to the motor; ζ = 2 because armature alone underestimates the inertia | Needs real rotor inertias (Marvin Bot's are placeholders); light joints get very soft |
+| Torque control (policy outputs torque) | No hidden PD dynamics | The policy must run fast and stabilise every joint itself; much harder to train and transfer |
+| Learned actuator network<sup class="cite">[\[8\]](#s8)</sup> | Captures the real motor's dynamics, delay and friction from bench data | Needs a bench and data per motor type; a black box |
+
+The BeyondMimic rule applied to the knee: *I*<sub>arm</sub> = 0.03 kg·m², ω = 2π × 10 = 62.8 rad/s gives *k*<sub>p</sub> = 118 N·m/rad and *k*<sub>d</sub> = 7.5 N·m·s/rad, close to today's 150 / 5. Including the shin, the knee's true ζ is then 2 × √(0.03/0.214) = 0.75 and its true ω<sub>n</sub> 3.7 Hz, which is why the rule picks ζ = 2 rather than 1. Try the *BeyondMimic rule* preset.
+
+:::caution[Where sources and the repo disagree]
+- BeyondMimic's paper writes ω as "10 Hz" without saying whether it converts to rad/s before using it in *k*<sub>p</sub> = <i>I</i>ω²; `setup_protomotions.py` uses ω = 2π × 10 rad/s. This page follows the repo.
+:::
+
+## Decisions you can make here
+
+- Gain policy: keep the placeholder table, or adopt one rule (BeyondMimic's) for all joints once rotor inertias are measured. The trade: the table works today and matches other open humanoids; the rule is consistent and explainable, but is only as good as the rotor inertias you feed it, and it makes light joints such as the wrists very soft.
+- How much delay to randomise in training (today 0-10 ms on commands, 0-20 ms on observations), based on the bench's measured CAN round trip. More randomised delay makes the policy robust to a slow bus, but it learns to move more cautiously; too little and a real delay may surprise it.
+- What the bench must measure: rotor inertia (armature), friction, and the torque-speed curve at 48 V, per motor model. Each measurement costs bench time in phase 2 but replaces a placeholder that every trained policy currently depends on.
+
+<RawHtml html={widget2} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+:::note[Where this leads]
+The gains and armature on this page sit beside the description ([page 13](../13-description/)) and run inside every simulator ([page 14](../14-simulation/)). Next, [page 16](../16-rl-walking/) shows how a policy learns to choose the target angles this PD loop follows, and [page 20](../20-sim-to-real/) how bench measurements replace today's placeholders.
+:::
+
+## Further reading
+
+- [R. Tedrake, Underactuated Robotics (MIT 6.832)](https://underactuated.mit.edu/): the pendulum chapters build intuition for gravity, damping and stability.
+- [Lynch and Park, Modern Robotics](https://hades.mech.northwestern.edu/index.php/Modern_Robotics), chapter 11 (robot control) and section 8.9 (motors, gearing and reflected inertia).
+- [Liao et al., BeyondMimic](https://arxiv.org/abs/2508.08241): the supplementary material's gain and armature heuristic.
+- [Isaac Lab: Actuators](https://isaac-sim.github.io/IsaacLab/main/source/concepts/actuators.html): ideal PD, DC motor, delayed and learned actuator models.
+
+## Sources
+
+1. <span id="s1"></span>[K. M. Lynch and F. C. Park, Modern Robotics, Cambridge University Press 2017](https://hades.mech.northwestern.edu/index.php/Modern_Robotics) <span class="used">— used for: joint dynamics, configuration-dependent inertia, reflected rotor inertia through a gearbox.</span>
+2. <span id="s2"></span>[MIT OpenCourseWare 2.004 Dynamics and Control II](https://ocw.mit.edu/courses/2-004-dynamics-and-control-ii-spring-2008/) <span class="used">— used for: second-order system, natural frequency, damping ratio, overshoot formula.</span>
+3. <span id="s3"></span>[MuJoCo documentation, XML Reference (joint armature)](https://mujoco.readthedocs.io/en/stable/XMLreference.html) <span class="used">— used for: armature as rotor inertia added to a joint.</span>
+4. <span id="s4"></span>[RobStride, Product\_Information (manuals)](https://github.com/RobStride/Product_Information) <span class="used">— used for: operation-control (MIT) mode, peak torque, no-load speed, gear ratio.</span>
+5. <span id="s5"></span>[Q. Liao, T. E. Truong, X. Huang, Y. Gao, G. Tevet, K. Sreenath, C. K. Liu, BeyondMimic: From Motion Tracking to Versatile Humanoid Control via Guided Diffusion, arXiv 2508.08241, 2025](https://arxiv.org/abs/2508.08241) <span class="used">— used for: armature = rotor inertia × gear ratio², gain rule k<sub>p</sub> = Iω², k<sub>d</sub> = 2Iζω with ω = 10 Hz, ζ = 2, action scale 0.25 τ<sub>max</sub>/k<sub>p</sub>, effects of zero armature.</span>
+6. <span id="s6"></span>[Isaac Lab documentation, Actuators](https://isaac-sim.github.io/IsaacLab/main/source/concepts/actuators.html) <span class="used">— used for: DC motor model with torque-speed clipping, delayed actuators, armature.</span>
+7. <span id="s7"></span>[N. Rudin, D. Hoeller, P. Reist, M. Hutter, Learning to Walk in Minutes Using Massively Parallel Deep Reinforcement Learning, CoRL 2021](https://arxiv.org/abs/2109.11978) <span class="used">— used for: policies outputting joint position targets to PD controllers at a lower rate than the physics.</span>
+8. <span id="s8"></span>[J. Hwangbo et al., Learning agile and dynamic motor skills for legged robots, Science Robotics 2019](https://arxiv.org/abs/1901.08652) <span class="used">— used for: learned actuator networks as an alternative to analytic motor models.</span>
+
+<PageScript code={script} />

@@ -1,0 +1,34 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset2="today">Marvin Bot today (small push)</button>
+<button data-preset2="rock">Bigger push: the heel lifts</button>
+<button data-preset2="edge">150 N: one model falls</button>
+<button data-preset2="slip">Slippery floor (μ 0.15)</button>
+</div>
+<h4>Scenario</h4>
+<div class="ctl"><label>Push force <output id="o_push"></output></label><input id="push" max="400" min="0" step="5" type="range" value="60"/><div class="hint">A shove on the body for 0.15 s, after 1 s of standing. 60 N is a firm nudge.</div></div>
+<div class="ctl"><label>Ankle kp <output id="o_akp"></output></label><input id="akp" max="3000" min="200" step="10" type="range" value="800"/><div class="hint">Stiffness: ankle torque per radian of lean. Must exceed m·g·h = 39 × 9.81 × 0.75 = 287 N·m/rad to stand (otherwise gravity wins).</div></div>
+<div class="ctl"><label>Ankle kd <output id="o_akd"></output></label><input id="akd" max="300" min="0" step="5" type="range" value="80"/><div class="hint">Damping: resists the ankle moving fast, so the body does not wobble.</div></div>
+<h4><span class="mA">Model A</span> (MuJoCo-like: soft, smooth friction)</h4>
+<div class="ctl"><label>Contact stiffness <output id="o_kA"></output></label><input id="kA" max="6.5" min="3.5" step="0.05" type="range" value="4.7"/></div>
+<div class="ctl"><label>Friction μ <output id="o_muA"></output></label><input id="muA" max="1.5" min="0.1" step="0.05" type="range" value="1"/></div>
+<div class="ctl"><label>Friction law</label><select id="fA"><option value="reg">regularised (creeps)</option><option value="stick">stick-slip</option></select></div>
+<h4><span class="mB">Model B</span> (PhysX-like: stiff, stick-slip)</h4>
+<div class="ctl"><label>Contact stiffness <output id="o_kB"></output></label><input id="kB" max="6.5" min="3.5" step="0.05" type="range" value="6"/></div>
+<div class="ctl"><label>Friction μ <output id="o_muB"></output></label><input id="muB" max="1.5" min="0.1" step="0.05" type="range" value="1"/></div>
+<div class="ctl"><label>Friction law</label><select id="fB"><option value="reg">regularised (creeps)</option><option selected="" value="stick">stick-slip</option></select></div>
+</div>
+<div class="preview">
+<canvas aria-label="Side view of the robot model and plots of body lean, heel lift and foot slide for both contact models" height="760" id="cvB" width="1200"></canvas>
+<div class="readouts">
+<div class="ro" id="b_lean"><div class="k">Extra lean from the push A / B</div><div class="v">–</div></div>
+<div class="ro" id="b_lift"><div class="k">Max heel lift A / B</div><div class="v">–</div></div>
+<div class="ro" id="b_slide"><div class="k">Foot slide A / B</div><div class="v">–</div></div>
+<div class="ro" id="b_out"><div class="k">Outcome A / B</div><div class="v">–</div></div>
+<div class="ro" id="b_gap"><div class="k">Largest difference in that lean</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:#4fb3ff"></i>model A</span><span><i style="background:#ffb454"></i>model B</span><span>solid: body lean (°) · dashed: heel lift (mm) · dotted: foot slide (mm)</span></div>
+</div>
+</div>

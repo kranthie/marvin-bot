@@ -1,0 +1,34 @@
+<div class="pg">
+<div class="controls">
+<h4>Scenarios</h4>
+<div class="presets">
+<button data-rp="crouch">3 cm crouch</button>
+<button data-rp="arm">Arm left hanging</button>
+<button data-rp="hop">Hopping</button>
+<button data-rp="behind">Fell behind</button>
+<button data-rp="good">Good tracking</button>
+</div>
+<h4>One kernel</h4>
+<div class="ctl"><label>σ (tolerance) <output id="o_sig"></output></label>
+<input id="sig" max="0.8" min="0.02" step="0.01" type="range" value="0.3"/>
+<div class="hint">Body position term: 0.3 m in BeyondMimic and in Marvin Bot's tracker.</div></div>
+<div class="ctl"><label>Error of one body e <output id="o_err"></output></label>
+<input id="err" max="0.6" min="0" step="0.005" type="range" value="0.03"/>
+<div class="hint">How far one scored body is from its reference.</div></div>
+<div class="ctl"><label>Bodies scored N <output id="o_nb"></output></label>
+<input id="nb" max="28" min="1" step="1" type="range" value="15"/>
+<div class="hint">ē is a mean over N bodies. Marvin Bot scores 15 (BeyondMimic's 14 plus the head); upstream scored all 28.</div></div>
+<div class="ctl"><label>Bodies that are off <output id="o_noff"></output></label>
+<input id="noff" max="28" min="1" step="1" type="range" value="15"/>
+<div class="hint">The rest are exactly on target. 1 = a single hand that misses.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Reward kernel exp(-e squared over sigma squared) against error" id="kern" role="img" viewbox="0 0 760 300"></svg>
+<div class="readouts">
+<div class="ro" id="k_r"><div class="k">Term reward</div><div class="v">–</div></div>
+<div class="ro" id="k_lost"><div class="k">Reward lost</div><div class="v">–</div></div>
+<div class="ro" id="k_g"><div class="k">Slope dr/de</div><div class="v">–</div></div>
+<div class="ro" id="k_rms"><div class="k">RMS error over N</div><div class="v">–</div></div>
+</div>
+</div>
+</div>

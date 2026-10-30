@@ -1,0 +1,32 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-ppreset="today">Marvin Bot today (1.44 m)</button>
+<button data-ppreset="old">Before 2026-10-29 (1.29 m)</button>
+<button data-ppreset="legs90">Alternative: legs +90 mm</button>
+<button data-ppreset="small">Scaled to 1.20 m</button>
+<button data-ppreset="adult">Scaled to 1.70 m</button>
+</div>
+<h4>Controls</h4>
+<div class="ctl"><label>Standing height <output id="o_H"></output></label>
+<input id="H" max="1.8" min="1.0" step="0.005" type="range" value="1.438"/>
+<div class="hint">Scales every segment of the chosen design by s = H / design height. Fixed parts stay the same size.</div></div>
+<div class="ctl"><label>Scale motors too <output id="o_motScale"></output></label>
+<select id="motScale"><option value="0">No: keep the RS04 knee (real choice)</option><option value="1">Yes: imaginary motor that grows as s³</option></select>
+<div class="hint">RobStride's largest motor is the RS04, so in practice a taller robot keeps it.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Front view of Marvin Bot beside a person of the same height, with landmark heights compared" id="prop" role="img" viewbox="0 0 640 560"></svg>
+<div class="readouts">
+<div class="ro" id="r_tip"><div class="k">Fingertips: robot / person</div><div class="v">–</div></div>
+<div class="ro" id="r_elb"><div class="k">Elbow: robot / person</div><div class="v">–</div></div>
+<div class="ro" id="r_hipH"><div class="k">Hip axis / height</div><div class="v">–</div></div>
+<div class="ro" id="r_mass"><div class="k">Mass (with shells)</div><div class="v">–</div></div>
+<div class="ro" id="r_knee2"><div class="k">Stair knee, % of rated</div><div class="v">–</div></div>
+<div class="ro" id="r_fix"><div class="k">Knee motor Ø / thigh</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--accent)"></i>Marvin Bot (robot.yaml)</span><span><i style="background:var(--accent2)"></i>Person, Winter / Drillis &amp; Contini</span><span><i style="background:#8893a0"></i>Fixed-size parts</span></div>
+<p class="small" id="propnote"></p>
+</div>
+</div>

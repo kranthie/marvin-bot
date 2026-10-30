@@ -1,0 +1,227 @@
+---
+title: "Sensors and compute"
+description: "A walking policy is only as good as what it can feel."
+sidebar:
+  label: "11 · Sensors and compute"
+  order: 12
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/11-sensors-compute/widget-1.html?raw';
+import widget2 from '../../../guide/11-sensors-compute/widget-2.html?raw';
+import widget3 from '../../../guide/11-sensors-compute/widget-3.html?raw';
+import widget4 from '../../../guide/11-sensors-compute/widget-4.html?raw';
+import script from '../../../guide/11-sensors-compute/script.js?raw';
+import '../../../guide/11-sensors-compute/style.css';
+
+<div class="guide-meta">
+
+**Stage 3 · Electrical, sensing and safety** · \~35 min · Before this: [03 System architecture](../03-architecture/), [10 CAN buses](../10-can-bus/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+A walking policy is only as good as what it can feel. This page covers the three senses Marvin Bot has (a pelvis IMU, joint encoders and a head-mounted active-stereo depth camera) and the computer that turns them into actions, a Jetson AGX Orin 64 GB. Three playgrounds: how depth error grows with distance, what IMU noise and delay do to a tilt estimate, and what fits on the Orin.
+
+:::note[You will learn]
+- How a stereo camera measures depth from disparity, why its error grows with the square of distance, and what the Orbbec Gemini 335L's 95 mm baseline buys on stairs.
+- What a gyro and an accelerometer measure, how noise, bias, sample rate and delay corrupt them, and how a complementary filter combines them into the "projected gravity" the policy sees.
+- What the Jetson AGX Orin offers (CPU, GPU, memory, power modes), why the 50 Hz policy costs almost nothing, and why a vision-language-action model does not.
+:::
+
+## The idea in one picture
+
+Close one eye and hold a finger in front of your face, then switch eyes: the finger jumps, the far wall barely moves. That jump is <a class="g" href="../glossary/#disparity">disparity</a>, and it is how a stereo camera measures depth. Near things jump a lot, far things a little, so a one-pixel mistake matters little up close and a lot far away. For balance the robot uses a different sense: an <a class="g" href="../glossary/#imu">inertial measurement unit (IMU)</a>, like your inner ear, which feels rotation (a <a class="g" href="../glossary/#gyroscope">gyroscope</a>) and the pull of gravity plus any acceleration (an <a class="g" href="../glossary/#accelerometer">accelerometer</a>). Each sense is noisy in its own way, and each reading arrives a little late. The computer has to combine them fast enough for a 20 ms control tick (the walking <a class="g" href="../glossary/#policy">policy</a>, the trained neural-network controller, decides 50 times a second).
+
+In short, Marvin Bot has three senses and one brain:
+
+- <b>IMU in the pelvis:</b> "which way is down, and how fast am I tipping?" Essential for balance.
+- <b>Joint <a class="g" href="../glossary/#encoder">encoders</a></b> in every motor: "what angle is each joint at?"
+- <b>Depth camera in the head:</b> "how far away is each thing in front of me?" Needed to see stairs and obstacles.
+- **The computer**, an NVIDIA Jetson AGX Orin, which reads them all and runs the policy. Its commands reach the motors over the CAN buses of [10 CAN buses](../10-can-bus/).
+
+## Playground A: stereo depth error explorer
+
+<b>Start here:</b> click the presets and watch how the blue error curve moves; lower is better. The plot has distance from the camera along the bottom and the expected depth error up the side; the shaded "stairs ahead" area is the 0.5-2 m range where the robot looks for stairs, and the dotted line is your tolerance. Readouts turn amber when the error at that distance is larger than your tolerance.
+
+Depth from disparity is <span class="mono">z = f·B / d</span> (d is the disparity, in pixels). Differentiate it and a disparity error σ<sub>d</sub> becomes a depth error
+
+<div class="mono">
+
+σ<sub>z</sub> = z² · σ<sub>d</sub> / (f · B)
+
+</div>
+
+where z is the distance (m), B the <a class="g" href="../glossary/#baseline">baseline</a> between the two infrared cameras (m), f the focal length in pixels (f = (image width ÷ 2) ÷ tan(horizontal field of view ÷ 2)), and σ<sub>d</sub> how precisely the camera matches a point between its two images, in pixels (sub-pixel matching gives fractions of a pixel).<sup class="cite">[\[4\]](#s4)</sup>
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Load "Marvin Bot today": the curve passes through the green datasheet points at 2 m and 4 m. One σ<sub>d</sub> of 0.24 px fits both, which supports the z² law.
+2. Load "Gemini 335 (50 mm)". Same sensor, same σ<sub>d</sub>, about half the baseline: about twice the error, 1.5% at 2 m, again what Orbbec's datasheet gives for that model.
+3. Switch Marvin Bot's camera to 640 px wide. Error doubles, but at 2 m it is still about 3 cm, well under a 17 cm riser. Lower resolution may be fine for a 10 cm terrain map and saves bandwidth.
+4. Set the search range to 64 px: the minimum distance doubles. The robot's own feet, about 1.3 m below the camera, are still in range; anything closer than the minimum is a hole in the depth image.
+:::
+
+## Playground B: IMU noise, bias and latency
+
+A simulated pelvis rocks by a few degrees, as it does while walking. The gyro sees the rotation rate plus noise and a <a class="g" href="../glossary/#bias">bias</a>; the accelerometer sees gravity plus noise plus the body's own accelerations. A <a class="g" href="../glossary/#complementary-filter">complementary filter</a> integrates the gyro for fast changes and leans on the accelerometer's gravity direction for the slow average. The policy then gets the estimate a few milliseconds late.
+
+<b>How to read this picture:</b> four seconds of pelvis tilt, time along the bottom, tilt angle up the side. The white line is the truth; the aim is for the blue line (what the policy sees) to sit on it. Grey is what the accelerometer alone would say (jumpy with every footstep), violet what the gyro alone would say (smooth but drifting away). Preset names: an AHRS is an IMU with its own built-in orientation filter; BMI088 is a small, cheap IMU chip; "R42" is requirement 42 in `docs/requirements.md`.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. Load "Trusting the accelerometer" (τ = 0.02 s): the estimate follows the grey accelerometer line, footsteps and all. Raise τ to 0.5 s and the bumps disappear.
+2. Now set τ to 3 s and the bias to 1 °/s. The filter leans on the drifting gyro and the error creeps toward bias × τ = 3° (it gets there after a few τ). Then raise the walking bumps to 3 m/s² with τ back at 0.5 s. The time constant is a trade between bumps and bias.
+3. Load "Low-cost USB AHRS" and watch "of which from delay": at walking rates lateness is the largest part of the error, more than noise. Cutting delay is worth more than a quieter sensor.
+4. Compare "BMI088 on a microcontroller" and "Industrial AHRS": with a few milliseconds of delay, the remaining difference is mostly bias stability over temperature and time, which this toy only shows as a constant bias.
+:::
+
+## Playground C: what fits on the Orin
+
+Tick the workloads to stack them against the Jetson AGX Orin 64 GB's CPU (the general-purpose processor), GPU (the graphics processor, which does neural-network maths fast) and memory. Each bar fills as you add jobs; green headroom means room to spare, red means it does not fit. The workloads in plain words:
+
+- <b>Real-time process:</b> the fast loop that talks to the motors and IMU and runs the safety checks.
+- <b>Policy MLP:</b> the walking controller, a small neural network (MLP, multi-layer perceptron; "256-128-128" are the sizes of its layers).
+- <b>Terrain height map:</b> turning depth images into a grid of ground heights for stairs.
+- <b>ROS 2 logging and teleoperation:</b> recording data, and streaming video to a person driving the robot remotely (ROS 2 is the common robot software framework).
+- <b><a class="g" href="../glossary/#vla">VLA</a></b> (vision-language-action model, here NVIDIA's GR00T N1.7, compiled with NVIDIA's TensorRT for speed): a large model that turns camera images and spoken instructions into arm and hand motions, in "chunks" of several actions at once ([18 Whole-body control and VLA](../18-wbc-vla/)).
+
+<span class="est">estimate</span> marks rough figures: per-workload costs are order-of-magnitude guesses unless a source is given, to be replaced by measurements on the robot.
+
+<RawHtml html={widget3} />
+
+:::note[Try this]
+1. Load "Marvin Bot today": the policy is a sliver. A 256-128-128 network is about 70 000 multiply-adds, tens of microseconds of arithmetic; the cost is in the plumbing around it.
+2. Load "VLA onboard at 2 Hz", then drag the chunk rate up. Somewhere near 3.5 chunks per second the GPU is full. That is why GR00T N1.7 runs on the desktop GPU first.
+3. Load "30 W power mode" (the preset keeps the VLA on): the GPU clock drops to 47% and the same VLA no longer fits. Power mode is a design decision, paid for in battery runtime.
+:::
+
+## From first principles
+
+### The IMU: what it measures
+
+A MEMS (micro-electro-mechanical system: tiny moving structures etched into a silicon chip) gyroscope measures angular velocity ω (°/s or rad/s) about three axes; an accelerometer measures specific force: gravity's reaction plus the body's own acceleration (m/s²). Both have:
+
+- <b><a class="g" href="../glossary/#noise-density">Noise density</a></b>, the white noise per square root of bandwidth. RMS noise ≈ density × √bandwidth: the BMI088's 0.014 °/s/√Hz over a 100 Hz bandwidth is about 0.14 °/s RMS.<sup class="cite">[\[1\]](#s1)</sup>
+- **Bias**, a slowly wandering offset. Integrating a gyro bias b for t seconds gives an angle error b·t, which grows without limit; that is why a gyro alone cannot hold a tilt estimate.
+- <b>Sample rate and delay.</b> The reading is up to one sample period old when taken, plus filtering and transport time.
+
+Low-cost MEMS parts such as Bosch's BMI088 (gyro up to 2 kHz output, 0.014 °/s/√Hz, accelerometer 175 µg/√Hz, bias stability under 2 °/h in-run) are good enough on noise; the differences from an industrial <a class="g" href="../glossary/#ahrs">AHRS</a> (attitude and heading reference system: an IMU with its own calibrated orientation filter) are factory temperature calibration, bias stability over time, and a ready-made orientation output.<sup class="cite">[\[1\]](#s1)</sup>
+
+### Why at least 500 Hz, low latency, at the pelvis
+
+The policy runs at 50 Hz, so why sample ten times faster? Three reasons:
+
+- <b>Fresher data.</b> A faster IMU's newest sample is younger (a 200 Hz sensor's reading is on average 2.5 ms old, a 1 kHz one 0.5 ms).
+- <b>Less noise.</b> Averaging several samples per tick cuts noise and avoids <a class="g" href="../glossary/#aliasing">aliasing</a> of footstep vibration (fast shaking showing up as a false slow wobble).
+- <b>Less hidden delay.</b> Many budget USB modules that top out near 200 Hz also buffer and filter internally, which adds delay (the repo notes this as the reason a USB AHRS is only the backup).
+
+The pelvis is the right place because it is the root of the kinematic tree: the policy's observations are expressed in the pelvis frame, and the pelvis moves least with arm swings. In training, the IMU sits on the pelvis 6 cm above its origin.
+
+### Orientation estimation and what the policy observes
+
+The complementary filter in Playground B is the simplest fusion:
+
+<div class="mono">
+
+θ̂ ← α·(θ̂ + ω<sub>meas</sub>·Δt) + (1 − α)·θ<sub>accel</sub>, α = τ / (τ + Δt)
+
+</div>
+
+with θ̂ the tilt estimate, Δt the sample period, τ the time constant and θ<sub>accel</sub> = atan2(a<sub>x</sub>, a<sub>z</sub>) the tilt implied by the accelerometer. It is a high-pass filter on the gyro plus a low-pass filter on the accelerometer, which add up to one. A steady gyro bias leaves a steady error of about b·τ. Production AHRS filters (Mahony's nonlinear complementary filter on rotations, or a Kalman filter) do the same job in 3-D.<sup class="cite">[\[2\]](#s2)</sup>
+
+The walking policy does not see angles. It sees the gyro's angular velocity directly and the <a class="g" href="../glossary/#projected-gravity">projected gravity</a>: the unit gravity vector (0, 0, −1) rotated into the pelvis frame, g<sub>b</sub> = R<sup>T</sup>(0, 0, −1), where R is the pelvis orientation. Standing upright it is (0, 0, −1); tilted forward by θ its forward component is about sin θ. Projected gravity avoids the wrap-around and yaw drift of angles, because heading does not matter for balance.
+
+### Joint encoders
+
+Each RobStride actuator has an absolute magnetic encoder (14-bit, 16 384 counts per revolution, on the RS04<sup class="cite">[\[6\]](#s6)</sup>) and reports position, velocity, torque and temperature in its CAN reply. The STS3250 servos report position over their serial bus. Joint readings travel with the IMU into the observation and share its 0–20 ms randomised delay in training.
+
+### Active stereo and the Orbbec Gemini 335L
+
+Two global-shutter infrared cameras 95 mm apart see the scene; an infrared projector at 850 nm adds a dot pattern so that plain floors and painted risers, which have no texture of their own, still give something to match. Orbbec's MX6800 chip computes depth on the camera, up to 1280 × 800 at 30 fps over a 90 × 65° field of view, ideal range 0.25–6 m, under 3 W on average, 124 × 29 × 27 mm, 133 g.<sup class="cite">[\[3\]](#s3)</sup> On-camera depth leaves the Orin's GPU free. Its spatial precision is given as ≤0.8% at 2 m and ≤1.6% at 4 m, consistent with the z² law in Playground A.
+
+For stairs, the region that matters is 0.5–2 m ahead: one to three steps of 25 cm treads seen from about 1.3 m up. At 2 m the expected error is about 1.6 cm, a tenth of a riser.
+
+### The Jetson AGX Orin 64 GB
+
+In plain terms: a palm-sized computer with a phone-style processor and a capable graphics chip, designed to run neural networks on robots within a 15-60 W power budget.
+
+<details>
+<summary>Go deeper: the Orin's specifications</summary>
+
+From NVIDIA's technical brief: a 12-core Arm Cortex-A78AE CPU (up to 2.2 GHz), a 2048-core Ampere GPU with 64 Tensor Cores (up to 1.3 GHz, about 5.3 FP32 TFLOPS and 170 sparse INT8 TOPS), two deep-learning accelerators (105 sparse INT8 TOPS together), 64 GB of 256-bit LPDDR5 at 204.8 GB/s shared by CPU and GPU, and configurable power from 15 to 60 W. The headline 275 TOPS is the GPU and DLAs added together, at INT8 with 2:4 sparsity; dense figures are half.<sup class="cite">[\[5\]](#s5)</sup> Power modes cap cores and clocks: 15 W runs 4 cores and the GPU at 408 MHz, 30 W (the default) 8 cores at 612 MHz, 50 W 12 cores at 816 MHz, MAXN everything.<sup class="cite">[\[7\]](#s7)</sup> (TOPS: trillions of operations per second; INT8: 8-bit whole-number maths, the fast low-precision kind used for running trained networks.)
+
+</details>
+
+The developer kit (module, carrier board, heat sink and fan) weighed 0.877 kg in the repo's weight study and costs $3,499 since NVIDIA raised it from $1,999 in July 2026.<sup class="cite">[\[9\]](#s9)</sup> The module alone on a compact third-party <a class="g" href="../glossary/#carrier-board">carrier board</a> would save about 0.4 kg (`description/mass_budget.yaml`; older entries said 1.0 kg, from before the kit was weighed), at the cost of a custom cooling and I/O design.
+
+### What runs where
+
+A policy MLP is tiny: 256-128-128 hidden units with about 75 inputs and 12 outputs is roughly 2 × 70 000 = 0.14 million floating-point operations per step, 7 MFLOP/s at 50 Hz, a rounding error for any CPU. A vision-language-action model is the opposite. GR00T N1.7 is a multi-billion-parameter model; on an AGX Orin under JetPack 7.2 with TensorRT engines for all its parts, one published run took 0.2755 s per 16-action chunk, about 3.6 chunks per second with the GPU fully busy.<sup class="cite">[\[8\]](#s8)</sup> That leaves little room for anything else on the GPU, hence "desktop GPU first, the Orin later".
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- <b>IMU:</b> ≥500 Hz gyro and accelerometer at the pelvis (`docs/requirements.md` R42). Primary: an industrial AHRS or a BMI088 read by a microcontroller, decided after a bench test; a low-cost USB AHRS (about 200 Hz) is the backup (`docs/decisions.md` 2026-10-25, sensing; roadmap open item 6). BOM: $730 budgeted for the primary, $35 for the backup. Placed in the pelvis channel near the hip axes (`docs/design/assembly_wiring.md`); in simulation on the pelvis at +0.06 m (`sim/isaaclab/marvin_bot/robot_cfg.py`).
+- <b>Observations:</b> pelvis gyro, gravity from the IMU orientation, command, joint positions and velocities, last action; on rough ground a 1.4 × 0.8 m height map at 0.1 m with drift, holes, noise and 10 Hz updates; IMU and joint readings delayed 0–20 ms at random (`sim/isaaclab/marvin_bot/tasks/velocity_env_cfg.py`).
+- <b>Camera:</b> Orbbec Gemini 335L, chosen because it computes depth on the camera, its IR pattern works on plain floors and carpeted stairs, it uses USB-C, and Isaac Sim has a model of it; JetPack 7.2 driver support still to confirm (open item 5). $359 list.
+- <b>Camera placement:</b> a 20 mm window in the helmet let through only about a third of the depth view, so the camera now sits with its front level with the face in a light printed frame; a ray cast from both IR cameras and the colour camera clears 100% of the 90 × 65° view. The head is 0.452 kg; the camera's outline and lens positions come from Orbbec's own mesh and URDF (`docs/decisions.md` 2026-10-28).
+- <b>Compute:</b> Jetson AGX Orin 64 GB developer kit, JetPack 7.2, Isaac ROS 4.6, ROS 2 Jazzy (`docs/requirements.md` R40). Weighed 0.877 kg (`docs/decisions.md` 2026-10-28). Mounted on edge in the torso, fan forward. Policies: 256-128-128 (flat) and 512-256-128 (rough) MLPs (`sim/isaaclab/marvin_bot/tasks/agents.py`).
+:::
+
+## Trade-offs and alternatives
+
+| Item | Picked | Considered | Why |
+|---|---|---|---|
+| Depth camera | Gemini 335L (active stereo, depth on camera) | A GMSL stereo camera with depth on the GPU; another USB active-stereo camera | The first needs a capture card and GPU time; the second had USB stability reports on Jetson (<code>docs/decisions.md</code>). |
+| Camera mounting | Front flush with the face, in a printed frame | Window in the helmet; flat face plate; curved IR lens | The window cropped the view to about 33%; a formed lens adds distortion and reflections to stereo. |
+| IMU | Industrial AHRS or BMI088 + microcontroller | Low-cost USB AHRS | Rate and latency; the USB module tops out near 200 Hz. |
+| Computer | AGX Orin 64 GB developer kit | Module on a compact carrier (−0.4 kg); a newer Jetson Thor module | Already owned; the carrier option is a mass reduction held in reserve. |
+| VLA | Desktop GPU first | Onboard from the start | About 3.6 chunks/s fills the Orin's GPU (open item 10). |
+
+:::caution[Where sources and the repo disagree]
+- <b>Gemini 335L baseline.</b> The repo's open item 5 says sources disagree on the baseline. Orbbec's own datasheet (Gemini 330 series, V1.6) gives **95 mm** for the 335L and 336L, and 50 mm for the 335 and 336; Orbbec's product and shop pages also say 95 mm.<sup class="cite">[\[3\]](#s3)</sup> Lower figures found elsewhere probably mix up the 335 and the 335L. The datasheet's precision figures (0.8% at 2 m for 95 mm, 1.5% for 50 mm) agree with each other under the z² law at the same 0.24 px matching precision, which is a good cross-check of 95 mm.
+- <b>Depth range.</b> Orbbec's shop page lists 0.17–10 m with 0.5–6 m optimal; the datasheet lists 0.17–20 m+ with 0.25–6 m ideal. The near limit also depends on resolution and disparity search range (0.5 m at 1280 × 800 with a 128 px search).
+- <b>BMI088 accelerometer noise.</b> Bosch's product page says 175 µg/√Hz; its flyer and an older datasheet copy say 230 µg/√Hz.<sup class="cite">[\[1\]](#s1)</sup>
+- <b>Power-mode table.</b> The core counts and clocks above are from NVIDIA's Jetson Linux r36.4 (JetPack 6) guide; the JetPack 7.2 table was not checked.
+:::
+
+## Decisions you can make here
+
+- <b>What the IMU bench test measures.</b> It should measure end-to-end delay (motion to reading in the control process), not just noise; this toy says delay dominates. Trade: a microcontroller-read BMI088 is cheap and fast but needs firmware; an industrial AHRS is ready-made but costs about $730.
+- <b>Depth resolution for the terrain map.</b> Trade: 640 × 400 roughly doubles the depth error (about 3 cm at 2 m, still far below a 17 cm riser) but cuts the data to a quarter and brings the minimum distance closer.
+- <b>Power mode for walking.</b> Trade: 30 W leaves room for the policy and the terrain map and saves battery; the VLA needs MAXN (more runtime lost, see [09 Power](../09-power-battery/)) or the desktop GPU.
+- <b>Developer kit or module on a carrier board.</b> Trade: about 0.4 kg saved, against designing your own cooling and connectors.
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+Next: [12 Safety](../12-safety/) covers what happens when any of this goes wrong: how the robot stops, and how power to the motors is cut.
+
+## Further reading
+
+- [Orbbec Gemini 330 series datasheet V1.6](https://download.kamami.pl/p1203693-Gemini-330-series-Datasheet-V1.6.pdf): the full spec tables, field-of-view formulas and minimum-distance table for the 335L.
+- [Szeliski, Computer Vision: Algorithms and Applications](https://szeliski.org/Book/): the stereo chapter derives depth from disparity and explains matching.
+- [Mahony, Hamel and Pflimlin, Nonlinear complementary filters on the special orthogonal group (2008)](https://ieeexplore.ieee.org/document/4608934): the standard 3-D version of Playground B's filter.
+- [NVIDIA Jetson Linux guide: power and performance](https://docs.nvidia.com/jetson/archives/r36.4/DeveloperGuide/SD/PlatformPowerAndPerformance/JetsonOrinNanoSeriesJetsonOrinNxSeriesAndJetsonAgxOrinSeries.html): power modes, nvpmodel and clocks.
+
+## Sources
+
+1. <span id="s1"></span>[Bosch Sensortec, BMI088 product page and flyer](https://www.bosch-sensortec.com/products/motion-sensors/imus/bmi088/) <span class="used">— used for: gyro noise 0.014 °/s/√Hz, accel noise 175 (flyer 230) µg/√Hz, output rates to 2 kHz, bias stability &lt;2 °/h, ±1 °/s zero offset.</span>
+2. <span id="s2"></span>[Mahony, Hamel and Pflimlin, Nonlinear Complementary Filters on the Special Orthogonal Group, IEEE TAC 2008](https://ieeexplore.ieee.org/document/4608934) <span class="used">— used for: complementary filtering of gyro and accelerometer.</span>
+3. <span id="s3"></span>[Orbbec, Gemini 330 series datasheet V1.6](https://download.kamami.pl/p1203693-Gemini-330-series-Datasheet-V1.6.pdf) (and [product page](https://www.orbbec.com/products/stereo-vision-camera/gemini-335l/)) <span class="used">— used for: 95 mm baseline, 90 × 65° depth FOV, precision ≤0.8% at 2 m / ≤1.6% at 4 m, ranges, minimum-Z table, MX6800, power, size and mass.</span>
+4. <span id="s4"></span>[Szeliski, Computer Vision: Algorithms and Applications, 2nd ed., 2022](https://szeliski.org/Book/) <span class="used">— used for: depth from disparity and its error.</span>
+5. <span id="s5"></span>[NVIDIA, Jetson AGX Orin series technical brief](https://www.nvidia.com/content/dam/en-zz/Solutions/gtcf21/jetson-orin/nvidia-jetson-agx-orin-technical-brief.pdf) <span class="used">— used for: CPU, GPU, TOPS split, memory and power range.</span>
+6. <span id="s6"></span>[RobStride, Product\_Information (RS04 user manual)](https://github.com/RobStride/Product_Information) <span class="used">— used for: 14-bit absolute encoder, feedback contents.</span>
+7. <span id="s7"></span>[NVIDIA, Jetson Linux developer guide r36.4, platform power and performance](https://docs.nvidia.com/jetson/archives/r36.4/DeveloperGuide/SD/PlatformPowerAndPerformance/JetsonOrinNanoSeriesJetsonOrinNxSeriesAndJetsonAgxOrinSeries.html) <span class="used">— used for: AGX Orin 64 GB power modes, cores and clocks.</span>
+8. <span id="s8"></span>[Seeed Studio wiki, GR00T N1.7 with TensorRT on AGX Orin (JetPack 7.2)](https://wiki.seeedstudio.com/deploy_full_weight_gr00t_n1.7_tensorrt_jetpack7.2_agx_orin/) <span class="used">— used for: 0.2755 s per 16-action chunk.</span>
+9. <span id="s9"></span>[CNX Software, NVIDIA increases the price of Jetson modules and devkits, July 2026](https://www.cnx-software.com/2026/07/22/nvidia-increases-the-price-of-jetson-modules-and-devkits-by-up-to-101/) <span class="used">— used for: the $3,499 developer kit price.</span>
+
+<PageScript code={script} />

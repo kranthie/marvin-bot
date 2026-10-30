@@ -1,0 +1,8 @@
+/* Sources: styles for this page's playground */
+.az{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.az a{font:600 13px var(--mono);padding:2px 8px;border:1px solid var(--line);border-radius:6px;text-decoration:none}
+dl.gl dt{font-weight:700;margin-top:1.1em;scroll-margin-top:60px}
+dl.gl dt:target{color:var(--accent2)}
+dl.gl dd{margin:.2em 0 0 0;max-width:80ch}
+dl.gl dd .on{font-size:13px;color:var(--muted)}
+#q{width:100%;max-width:420px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px}

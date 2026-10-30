@@ -1,0 +1,11 @@
+/* Power and battery: styles for this page's playground */
+.eq{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:14px/1.7 var(--mono);overflow-x:auto;max-width:86ch}
+.ctl .row{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+.blk{cursor:pointer}
+.blk rect{transition:opacity .2s}
+.blk:hover rect{stroke:#8fd0ff}
+#topoInfo{min-height:120px}
+.toggles{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.est{color:var(--warn);font-size:12px}
+.topogrid{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:16px}
+@media (max-width:820px){.topogrid{grid-template-columns:1fr}}

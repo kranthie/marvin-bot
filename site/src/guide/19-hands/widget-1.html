@@ -1,0 +1,47 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today (0.5 kg, arm forward)</button>
+<button data-preset="r20">R20: 1 kg at full reach</button>
+<button data-preset="close">2 kg close to the body</button>
+<button data-preset="level">Hand level, empty</button>
+<button data-preset="tray">Tray at chest height</button>
+</div>
+<h4>Pose</h4>
+<div class="ctl"><label>Shoulder pitch <output id="o_sp"></output></label>
+<input id="sp" max="180" min="-60" step="1" type="range" value="90"/>
+<div class="hint">0° = arm hanging, 90° = straight forward, 180° = overhead.</div></div>
+<div class="ctl"><label>Elbow <output id="o_el"></output></label>
+<input id="el" max="135" min="0" step="1" type="range" value="0"/>
+<div class="hint">0° = straight; bending raises the forearm.</div></div>
+<div class="ctl"><label>Wrist pitch <output id="o_wp"></output></label>
+<input id="wp" max="60" min="-60" step="1" type="range" value="0"/>
+<div class="hint">±60° range; 0° = hand in line with the forearm.</div></div>
+<h4>Load</h4>
+<div class="ctl"><label>Payload <output id="o_pm"></output></label>
+<input id="pm" max="2" min="0" step="0.05" type="range" value="0.5"/>
+<div class="hint">Object in the hand.</div></div>
+<div class="ctl"><label>Payload distance from wrist axis <output id="o_pd"></output></label>
+<input id="pd" max="0.181" min="0.05" step="0.001" type="range" value="0.17"/>
+<div class="hint">Fingertips are 0.181 m from the wrist pitch axis.</div></div>
+<div class="ctl"><label>Hand + mount mass <output id="o_hm"></output></label>
+<input id="hm" max="1" min="0.1" step="0.001" type="range" value="0.418"/>
+<div class="hint">AmazingHand 0.40 kg as published, plus the printed mount (URDF palm link: 0.418 kg).</div></div>
+<div class="ctl"><label>Hand centre of mass from wrist axis <output id="o_hc"></output></label>
+<input id="hc" max="0.15" min="0.03" step="0.001" type="range" value="0.086"/>
+<div class="hint">URDF: 0.086 m.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Side view of the arm with joint positions, centres of mass, payload and the moment arm at the shoulder" id="arm" role="img" viewbox="0 0 600 500"></svg>
+<div id="meters"></div>
+<div class="readouts">
+<div class="ro" id="r_reach"><div class="k">Payload ahead of the shoulder</div><div class="v">–</div></div>
+<div class="ro" id="r_wr"><div class="k">Wrist pitch torque</div><div class="v">–</div></div>
+<div class="ro" id="r_elb"><div class="k">Elbow torque</div><div class="v">–</div></div>
+<div class="ro" id="r_sh"><div class="k">Shoulder pitch torque</div><div class="v">–</div></div>
+<div class="ro" id="r_max"><div class="k">Payload the wrist holds at rated</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--good)"></i>within continuous (rated) torque</span><span><i style="background:var(--warn)"></i>above rated, within 70% of peak (short holds only)</span><span><i style="background:var(--bad)"></i>above 70% of peak</span><span>white tick = rated torque</span></div>
+</div>
+</div>

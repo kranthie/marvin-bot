@@ -1,0 +1,22 @@
+<div class="pg">
+<div class="controls">
+<h4>Clipping</h4>
+<div class="ctl"><label>Clip range ε <output id="o_eps"></output></label><input id="eps" max="0.5" min="0.05" step="0.01" type="range" value="0.2"/><div class="hint">Marvin Bot: <code>clip_param=0.2</code>, PPO paper's default.</div></div>
+<div class="ctl"><label>Ratio r (a test point) <output id="o_ratio"></output></label><input id="ratio" max="2" min="0" step="0.01" type="range" value="1.3"/><div class="hint">How much more (r&gt;1) or less (r&lt;1) likely the new policy makes this action.</div></div>
+<div class="ctl"><label>Advantage |Â| <output id="o_adv"></output></label><input id="adv" max="2" min="0.2" step="0.1" type="range" value="1"/><div class="hint">How much better (or worse) than expected the action turned out.</div></div>
+<h4>Discounting</h4>
+<div class="ctl"><label>Discount γ <output id="o_gamma"></output></label><input id="gamma" max="0.999" min="0.9" step="0.001" type="range" value="0.99"/><div class="hint">Marvin Bot: 0.99.</div></div>
+<div class="ctl"><label>GAE λ <output id="o_lam"></output></label><input id="lam" max="1" min="0" step="0.01" type="range" value="0.95"/><div class="hint">Marvin Bot: 0.95. 0 = trust the critic's guess after one step (TD, temporal difference); 1 = add up the real rewards all the way (Monte Carlo).</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Plot of the PPO clipped objective against the probability ratio for positive and negative advantage." id="ppo" role="img" viewbox="0 0 640 260"></svg>
+<svg aria-label="Bars showing how much a reward k steps ahead counts in the return and in the GAE advantage." id="disc" role="img" style="margin-top:8px" viewbox="0 0 640 150"></svg>
+<div class="readouts">
+<div class="ro" id="r_gpos"><div class="k">Gradient wrt r, Â&gt;0</div><div class="v">–</div></div>
+<div class="ro" id="r_gneg"><div class="k">Gradient wrt r, Â&lt;0</div><div class="v">–</div></div>
+<div class="ro" id="r_hor"><div class="k">Horizon 1/(1−γ)</div><div class="v">–</div></div>
+<div class="ro" id="r_gae"><div class="k">GAE horizon 1/(1−γλ)</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--good)"></i>Â &gt; 0 (good action)</span><span><i style="background:var(--bad)"></i>Â &lt; 0 (bad action)</span><span>dashed: unclipped r·Â</span><span><i style="background:var(--accent)"></i>γ<sup>k</sup></span><span><i style="background:var(--violet)"></i>(γλ)<sup>k</sup></span></div>
+</div>
+</div>

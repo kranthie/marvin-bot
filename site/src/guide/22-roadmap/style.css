@@ -1,0 +1,20 @@
+/* Build phases and roadmap: styles for this page's playground */
+.gantt-wrap{position:relative}
+#gantt .ph{cursor:pointer}
+#gantt .ph:hover rect.bar{stroke:#8fd0ff;stroke-width:2}
+.detail{margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.detail h3{margin:.1em 0 .4em}
+.detail dl{display:grid;grid-template-columns:130px 1fr;gap:4px 12px;margin:0;font-size:14px}
+.detail dt{color:var(--muted)} .detail dd{margin:0}
+@media (max-width:620px){.detail dl{grid-template-columns:1fr}.detail dt{margin-top:6px}}
+.pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);margin:1px 3px 1px 0}
+.pill.done{color:var(--good);border-color:#256b4b}.pill.prog{color:var(--warn);border-color:#6b4f1d}.pill.todo{color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+#risktable tr.hl td{background:#1d2a38}
+#risktable td.ph{white-space:nowrap;font-family:var(--mono);font-size:13px}
+.ctl .chk{display:flex;gap:8px;align-items:flex-start;justify-content:flex-start;font-size:14px}
+.ctl .chk input{margin-top:4px;accent-color:var(--accent)}
+.checklist li{font-size:14px}
+.checklist li.done::marker{content:'✓  ';color:var(--good)}
+.checklist li.open::marker{content:'○  ';color:var(--warn)}
+svg text{font-family:var(--font)}

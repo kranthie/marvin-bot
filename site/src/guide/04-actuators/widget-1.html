@@ -1,0 +1,46 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets" id="tsPresets">
+<button data-ts="today">Marvin Bot today: knee on an 18 cm step</button>
+<button data-ts="swing">Knee swing while walking</button>
+<button data-ts="stage">Parked 1.5:1 knee stage</button>
+<button data-ts="hd">50:1 high-ratio knee</button>
+<button data-ts="lowbat">Nearly empty battery</button>
+</div>
+<h4>Actuator</h4>
+<div class="ctl"><label for="tsModel">RobStride model</label>
+<select id="tsModel"><option value="RS04">RS04 (120 N·m peak, hips and knee)</option><option value="RS03">RS03 (60 N·m, hip yaw, ankles, waist, shoulders)</option><option value="RS06">RS06 (36 N·m, shoulder yaw, elbow)</option><option value="RS00">RS00 (14 N·m, wrist yaw)</option></select></div>
+<div class="ctl"><label for="tsRatio">Total gear ratio <output id="o_tsRatio"></output></label>
+<input id="tsRatio" max="60" min="3" step="0.5" type="range" value="9"/>
+<div class="hint">Rescales the chosen motor as if it had a different gearbox (plus an extra stage). Native: 9:1 (RS00 10:1).</div></div>
+<div class="ctl"><label for="tsV">Bus voltage <output id="o_tsV"></output></label>
+<input id="tsV" max="60" min="24" step="0.5" type="range" value="48"/>
+<div class="hint">The 48 V curve is always drawn for comparison. The battery runs from about 42 V (nearly empty) to 54.6 V (full).</div></div>
+<h4>What the joint needs</h4>
+<div class="ctl"><label for="tsT">Joint torque <output id="o_tsT"></output></label>
+<input id="tsT" max="200" min="0" step="0.5" type="range" value="47"/>
+<div class="hint">How hard the joint must turn (N·m). 47 N·m = the knee holding the robot on an 18 cm step.</div></div>
+<div class="ctl"><label for="tsW">Joint speed <output id="o_tsW"></output></label>
+<input id="tsW" max="50" min="0" step="0.1" type="range" value="0.5"/>
+<div class="hint">How fast the joint must turn (rad/s; 1 rad/s ≈ 57° per second). A knee swinging in a walk reaches about 8 rad/s.</div></div>
+<div class="ctl check"><label><input checked="" id="tsDC" type="checkbox"/> Show the simulator's motor model</label>
+<div class="hint">Isaac Lab's DC-motor model as Marvin Bot configures it: peak torque falling in a straight line to zero at the no-load speed.</div></div>
+</div>
+<div class="preview">
+<p class="pgtitle">Torque at the joint versus joint speed</p>
+<svg aria-label="Torque-speed envelope of the chosen actuator with the operating point" id="tsView" role="img" viewbox="0 0 640 400"></svg>
+<div class="statusline" id="tsStatus">–</div>
+<div class="readouts">
+<div class="ro" id="tsR1"><div class="k">Peak / rated torque</div><div class="v">–</div></div>
+<div class="ro" id="tsR2"><div class="k">No-load speed at this voltage</div><div class="v">–</div></div>
+<div class="ro" id="tsR3"><div class="k">Torque available at this speed</div><div class="v">–</div></div>
+<div class="ro" id="tsR4"><div class="k">Motor current (rms)</div><div class="v">–</div></div>
+<div class="ro" id="tsR5"><div class="k">Heat vs rated</div><div class="v">–</div></div>
+<div class="ro" id="tsR6"><div class="k">Mechanical power</div><div class="v">–</div></div>
+<div class="ro" id="tsR7"><div class="k">Reflected inertia</div><div class="v">–</div></div>
+<div class="ro" id="tsR8"><div class="k">Felt at the sole (knee, 0.375 m)</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--accent)"></i>peak envelope, this voltage</span><span><i style="background:#5b6b7c"></i>peak envelope, 48 V</span><span><i style="background:var(--good)"></i>continuous (rated) region</span><span><i style="background:var(--violet)"></i>simulator's straight-line model</span><span><i style="background:var(--accent2)"></i>MIT-mode speed range</span></div>
+</div>
+</div>

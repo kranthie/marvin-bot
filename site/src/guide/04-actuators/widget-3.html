@@ -1,0 +1,22 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets" id="jaPresets">
+<button data-ja="today">Marvin Bot today</button>
+<button data-ja="target">35 kg target</button>
+<button data-ja="thigh">Real thigh heat sink</button>
+<button data-ja="stage">With 1.5:1 knee stage</button>
+</div>
+<div class="ctl"><label for="jaMass">Robot mass (bare) <output id="o_jaMass"></output></label>
+<input id="jaMass" max="46" min="33" step="0.05" type="range" value="40.35"/>
+<div class="hint">Leg demands scale with mass (about 1.2 N·m per kg at the knee in this pose; the repo rounds it to ~1.1).</div></div>
+<div class="ctl"><label for="jaSink">Heat path vs manual's plate <output id="o_jaSink"></output></label>
+<input id="jaSink" max="110" min="70" step="1" type="range" value="100"/></div>
+<div class="ctl check"><label><input id="jaStage" type="checkbox"/> Add the parked 1.5:1 knee stage</label>
+<div class="hint">Knee: 60 N·m rated, 180 N·m peak, 14 rad/s, about +0.2 kg per leg.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Bar chart of each joint's demand as a percentage of its actuator's rated torque" id="jaView" role="img" viewbox="0 0 640 430"></svg>
+<div class="legend"><span><i style="background:var(--good)"></i>demand ≤ 85% of rated</span><span><i style="background:var(--warn)"></i>85-100%</span><span><i style="background:var(--bad)"></i>over rated</span><span><i style="background:var(--violet)"></i>demand as % of peak (rule: ≤ 70%)</span></div>
+</div>
+</div>

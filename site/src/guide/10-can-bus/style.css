@@ -1,0 +1,7 @@
+/* CAN buses and bandwidth: styles for this page's playground */
+.fld{font:11px var(--mono)}
+.bmtable td.ok{color:var(--good)} .bmtable td.warn{color:var(--warn)} .bmtable td.bad{color:var(--bad)}
+.ctl .row{display:flex;gap:6px;flex-wrap:wrap}
+.ctl .row label{display:inline-flex;gap:4px;align-items:center;font-size:13px}
+.eq{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font:14px/1.7 var(--mono);overflow-x:auto;max-width:86ch}
+.small{font-size:13px;color:var(--muted)}

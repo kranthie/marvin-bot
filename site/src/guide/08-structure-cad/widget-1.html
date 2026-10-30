@@ -1,0 +1,48 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="thigh">Marvin Bot thigh plate today</button>
+<button data-preset="thigh8">Same, 8 mm stock</button>
+<button data-preset="drill6">Old 6 mm drilled plate</button>
+<button data-preset="al7075">7075, solid 6 mm</button>
+<button data-preset="pacf">Printed PA-CF, same shape</button>
+</div>
+<h4>Section</h4>
+<div class="ctl"><label>Cross-section</label>
+<select id="shape"><option value="solid">Solid rectangle</option><option value="drilled">Drilled (a hole through the cut)</option><option value="pocketed">Pocketed to a floor (channel / I-like)</option></select></div>
+<div class="ctl"><label>Width b <output id="o_b"></output></label><input id="b" max="120" min="20" step="1" type="range" value="59"/>
+<div class="hint">How wide the plate is, side to side.</div></div>
+<div class="ctl"><label>Thickness t <output id="o_t"></output></label><input id="t" max="20" min="2" step="0.5" type="range" value="9"/>
+<div class="hint">Stock thickness; the desktop mill takes up to 60 mm.</div></div>
+<div class="ctl" id="c_f"><label>Pocket floor <output id="o_f"></output></label><input id="f" max="8" min="1" step="0.5" type="range" value="2"/>
+<div class="hint">Thickness left at the bottom of each milled-out pocket.</div></div>
+<div class="ctl" id="c_rib"><label>Full-depth ribs (total width) <output id="o_rib"></output></label><input id="rib" max="80" min="6" step="1" type="range" value="26"/>
+<div class="hint">The rim and ribs left at full thickness between pockets.</div></div>
+<div class="ctl" id="c_d"><label>Hole diameter <output id="o_d"></output></label><input id="d" max="60" min="4" step="1" type="range" value="20"/></div>
+<h4>Material</h4>
+<div class="ctl"><select id="mat"></select><div class="hint" id="matHint"></div></div>
+<h4>Load</h4>
+<div class="ctl"><label>Load, multiple of body weight <output id="o_mult"></output></label><input id="mult" max="4" min="0.25" step="0.05" type="range" value="1"/>
+<div class="hint">Repo cases: landing 3 × up (with 0.5 fore-aft, 0.3 side), side fall 1 ×, hand catch 0.5 ×.</div></div>
+<div class="ctl"><label>Body mass <output id="o_mass"></output></label><input id="mass" max="60" min="20" step="0.1" type="range" value="40.3"/></div>
+<div class="ctl"><label>Lever arm L <output id="o_L"></output></label><input id="L" max="300" min="10" step="1" type="range" value="115"/>
+<div class="hint">Distance from the checked station to the load's line.</div></div>
+<div class="ctl"><label>Bending direction</label>
+<select id="bend"><option value="out">Out of plane (across the thickness: weak)</option><option value="in">In plane (across the width: strong)</option></select></div>
+<div class="ctl"><label>Stress concentration factor Kt <output id="o_Kt"></output></label><input id="Kt" max="3" min="1" step="0.05" type="range" value="1"/>
+<div class="hint">1 = plain hand calculation (what <code>cad/strength.py</code> does). Holes and sharp corners concentrate stress locally, like a tear starting at a nick in paper: 2-3 × higher.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Cantilevered plate with a load at the lever arm, and its cross-section with the bending stress distribution" id="beam" role="img" viewbox="0 0 640 360"></svg>
+<div class="readouts">
+<div class="ro" id="r_M"><div class="k">Bending moment M</div><div class="v">–</div></div>
+<div class="ro" id="r_I"><div class="k">Second moment I</div><div class="v">–</div></div>
+<div class="ro" id="r_s"><div class="k">Peak stress σ</div><div class="v">–</div></div>
+<div class="ro" id="r_sf"><div class="k">Safety factor (target 2)</div><div class="v">–</div></div>
+<div class="ro" id="r_def"><div class="k">Deflection at load</div><div class="v">–</div></div>
+<div class="ro" id="r_m"><div class="k">Mass per 100 mm</div><div class="v">–</div></div>
+</div>
+<p class="small" id="beamNote"></p>
+</div>
+</div>

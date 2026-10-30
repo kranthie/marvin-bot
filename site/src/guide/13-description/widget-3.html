@@ -1,0 +1,34 @@
+<div class="presets" id="jpresets">
+<button data-j="knee">Knee (RS04)</button><button data-j="hip_pitch">Hip pitch (RS04)</button><button data-j="shoulder_roll">Shoulder roll (RS03)</button><button data-j="elbow">Elbow (RS06)</button><button data-j="wrist_yaw">Wrist yaw (RS00)</button>
+<button data-j="broken">A broken one</button>
+</div>
+<div class="grid2">
+<div>
+<div class="yaml" id="yaml">
+<span class="c"># description/robot.yaml · joints</span><br/>
+- {name: "{side}_<input id="y_name" type="text"/>", axis: <select id="y_axis"><option>pitch</option><option>roll</option><option>yaw</option></select>, range: [<input id="y_lo" type="number"/>, <input id="y_hi" type="number"/>]}<br/>
+<span class="c"># description/robot.yaml · motors</span><br/>
+- {name: "{side}_…", model: <select id="y_model"><option>RS04</option><option>RS03</option><option>RS06</option><option>RS00</option><option>STS3250</option><option>RS05</option></select>, bus: <select id="y_bus"><option>{side}_hip</option><option>{side}_shank</option><option>{side}_arm</option><option>servo</option></select>, drives: [this joint]}<br/>
+<span class="c"># description/skeleton.yaml · joints (left side; right is mirrored)</span><br/>
+left_…: {parent: <span id="y_parent"></span>, xyz: <span id="y_xyz"></span>, axis: <select id="y_vec"><option>[1, 0, 0]</option><option>[-1, 0, 0]</option><option>[0, 1, 0]</option><option>[0, -1, 0]</option><option>[0, 0, 1]</option><option>[0, 0, -1]</option></select>}<br/>
+<span class="c"># sim/isaaclab/marvin_bot/robot_cfg.py · GAINS (kp, kd, armature, friction)</span><br/>
+"…": (<input id="y_kp" step="1" type="number"/>, <input id="y_kd" step="0.1" type="number"/>, <input id="y_arm" step="0.001" type="number"/>, <input id="y_fr" step="0.01" type="number"/>)<br/>
+<span class="c"># what-if: hand-edit the URDF effort (blank = generated)</span><br/>
+effort override: <input id="y_eff" placeholder="none" type="number"/> N·m<br/>
+<span class="c"># what-if: how the right side's axis is made</span><br/>
+right side: <select id="y_mir"><option value="mirror">mirror_axis() (as build_urdf.py)</option><option value="copy">copy the left axis unchanged</option></select>
+</div>
+<h4 style="margin:12px 0 4px">Checks</h4>
+<ul class="checks" id="checks"></ul>
+</div>
+<div class="out">
+<div class="tabs"><button class="on" data-tab="urdf">URDF</button><button data-tab="mjcf">MJCF (check_policy.py)</button><button data-tab="mjpos">MJCF (check_standing.py)</button><button data-tab="isaac">Isaac Lab</button></div>
+<pre id="code"></pre>
+<div class="readouts">
+<div class="ro" id="r_eff"><div class="k">effort (URDF)</div><div class="v">–</div></div>
+<div class="ro" id="r_vel"><div class="k">velocity (URDF)</div><div class="v">–</div></div>
+<div class="ro" id="r_rng"><div class="k">lower / upper (rad)</div><div class="v">–</div></div>
+<div class="ro" id="r_n"><div class="k">checks failing</div><div class="v">–</div></div>
+</div>
+</div>
+</div>

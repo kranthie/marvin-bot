@@ -1,0 +1,37 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="stance">Marvin Bot today (stance)</button>
+<button data-preset="straight">Straight</button>
+<button data-preset="stair">Foot on an 18 cm stair</button>
+<button data-preset="sit">Sitting</button>
+<button data-preset="kick">Kick back</button>
+</div>
+<h4>Joint angles</h4>
+<div class="ctl"><label>Hip pitch <output id="o_hip"></output></label>
+<input id="hip" max="120" min="-30" step="1" type="range" value="6"/>
+<div class="hint">+ = thigh forward (flexion). Range −30° to 120°.</div></div>
+<div class="ctl"><label>Knee <output id="o_knee"></output></label>
+<input id="knee" max="130" min="0" step="1" type="range" value="15"/>
+<div class="hint">+ = bend. Range 0° to 130° (beyond it the upper ankle motor meets the thigh shell).</div></div>
+<div class="ctl"><label>Ankle pitch <output id="o_ankle"></output></label>
+<input id="ankle" max="40" min="-40" step="1" type="range" value="9"/>
+<div class="hint">+ = toes up (dorsiflexion). Range ±40°.</div></div>
+<h4>Show</h4>
+<div class="ctl"><label><span><input checked="" id="cloud" type="checkbox"/> Reachable ankle positions</span></label>
+<div class="hint">Each dot is one place the ankle can reach (every hip and knee angle in range, 3° apart). Green: the ankle joint can still turn the foot flat on the floor. Grey: it would need more than ±40°.</div></div>
+<div class="ctl"><label><span><input id="flat" type="checkbox"/> Keep the foot flat (ankle follows)</span></label>
+<div class="hint">Sets ankle = knee − hip, the rule for a flat foot under an upright pelvis.</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Side view of a three-link leg with hip, knee and ankle joints and a cloud of reachable ankle positions" id="legview" role="img" viewbox="0 0 600 470"></svg>
+<div class="readouts">
+<div class="ro" id="r_ank"><div class="k">Ankle from hip (x, z)</div><div class="v">–</div></div>
+<div class="ro" id="r_h"><div class="k">Hip axis above sole</div><div class="v">–</div></div>
+<div class="ro" id="r_pitch"><div class="k">Foot pitch (toe up +)</div><div class="v">–</div></div>
+<div class="ro" id="r_reach"><div class="k">Hip–ankle distance</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:var(--accent)"></i>thigh</span><span><i style="background:var(--violet)"></i>shin</span><span><i style="background:var(--accent2)"></i>foot</span><span><i style="background:var(--good)"></i>ankle can reach, foot flat possible</span><span><i style="background:#56606c"></i>ankle can reach, foot cannot lie flat</span></div>
+</div>
+</div>

@@ -1,0 +1,217 @@
+---
+title: "Power and battery"
+description: "A walking humanoid carries its whole power station on its back."
+sidebar:
+  label: "09 · Power and battery"
+  order: 10
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/09-power-battery/widget-1.html?raw';
+import widget2 from '../../../guide/09-power-battery/widget-2.html?raw';
+import widget3 from '../../../guide/09-power-battery/widget-3.html?raw';
+import widget4 from '../../../guide/09-power-battery/widget-4.html?raw';
+import script from '../../../guide/09-power-battery/script.js?raw';
+import '../../../guide/09-power-battery/style.css';
+
+<div class="guide-meta">
+
+**Stage 3 · Electrical, sensing and safety** · \~35 min · Before this: [03 System architecture](../03-architecture/), [04 Actuators](../04-actuators/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+A walking humanoid carries its whole power station on its back. This page builds Marvin Bot's 48 V battery from single cells, estimates how long it lasts, follows the current from the pack through fuse, precharge and contactor to the motors, and shows why energy flowing *back* from braking joints can push the bus towards the actuators' 60 V limit.
+
+:::note[You will learn]
+- How lithium-ion cells combine in series and parallel into a pack, and what volts, amp-hours, watt-hours and <a class="g" href="../glossary/#c-rate">C-rate</a> mean.
+- Where a humanoid's power goes (computer, electronics, motor heating, mechanical work) and how to estimate runtime against the ≥1 h requirement.
+- What each block of the power path does: <a class="g" href="../glossary/#bms">BMS</a>, <a class="g" href="../glossary/#class-t-fuse">Class-T fuse</a>, <a class="g" href="../glossary/#precharge">precharge</a>, <a class="g" href="../glossary/#contactor">contactor</a>, branch fuses, DC-DC converters and the keep-alive battery.
+- Why <a class="g" href="../glossary/#regenerative-braking">regenerative braking</a> into a full 54.6 V pack is a real risk for 60 V actuators, and what a clamp does.
+:::
+
+:::caution[Nothing here is built or measured yet]
+Marvin Bot is in its simulation phase. The pack, BMS, fuses and clamp are design choices from the repo, and every power figure on this page is an estimate from first principles. The phase 2 bench test measures the real currents.
+:::
+
+## The idea in one picture
+
+A robot that walks around cannot trail a power cable, so it carries a battery, like a cordless drill or an electric scooter. That battery must hold enough energy for a useful session (Marvin Bot's requirement is at least an hour), deliver big bursts of current when the legs push hard, and be wired so that a fault or an emergency stop is always safe.
+
+Three words do most of the work. Think of water in a pipe: **voltage** (V, volts) is the pressure, **current** (A, amps) is the flow, and **power** (W, watts) is pressure × flow. **Energy** (Wh, watt-hours) is power kept up for a time: a 600 Wh battery can supply 600 W for one hour, or 300 W for two.
+
+A lithium-ion cell is a small chemical energy store whose voltage depends on how full it is: about 4.2 V when full and about 3.0 V when empty, averaging 3.6 V (its "nominal" voltage).<sup class="cite">[\[1\]](#s1)</sup> One cell is far too low a voltage for 48 V motors, so cells are wired in **series** (voltages add): 13 in series (13S) give 13 × 3.6 = 46.8 V nominal and 13 × 4.2 = 54.6 V full. Each series position can hold several cells in **parallel** (capacities and current limits add): 3 in parallel (3P) of 4.5 Ah cells give 13.5 Ah. The energy is volts times amp-hours:
+
+<div class="eq">
+
+E = (S × V<sub>cell</sub>) × (P × Q<sub>cell</sub>) = 46.8 V × 13.5 Ah ≈ 632 Wh (13S3P of 3.6 V, 4.5 Ah cells)<br /> runtime ≈ usable energy / average power
+
+</div>
+
+The rest of the page is about the two numbers that are hard: how much of the energy you may use, and what the average power is.
+
+## Playground 1: battery runtime calculator
+
+<b>Start here:</b> click the presets and watch the **Runtime** readout (green = meets the 1 h requirement, amber = only just). The top controls build the pack from cells; the "Day's mix" sliders say how the robot spends its time; the load assumptions are estimates you can test. Terms such as copper loss, RMS and C-rate are explained in [From first principles](#from-first-principles) below. The Orin is the robot's on-board computer (an NVIDIA Jetson AGX Orin, see [11 Sensors and compute](../11-sensors-compute/)).
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Press <b>13S2P (lighter)</b>. Runtime falls to about 1.1 h, just above the 1 h requirement, for about 1.1 kg less. The peak current is now close to the two-cell limit: the pack is lighter, but each cell works harder.
+2. Back on **Marvin Bot today**, drag the stairs share from 10% to 40%. Copper loss grows with the *square* of torque, so a few minutes of stairs cost as much as many minutes of walking.
+3. Switch the Orin between 15 W and MAXN. The computer is a noticeable but not dominant share while walking; while standing it is the largest single item.
+4. Compare **charged to 4.2 V** with the default: about 20% more runtime (the 15% reserve is fixed, so the extra energy all counts), against roughly half the cycle life and less headroom for regenerative braking (Playground 2).
+:::
+
+## From first principles
+
+### Cells, packs and the words for them
+
+- **Capacity** (Ah, amp-hours): the charge a cell delivers from full to empty. 4.5 Ah means 4.5 A for an hour, or 45 A for six minutes.
+- **Energy** (Wh, watt-hours) = average voltage × capacity. Molicel lists the P45B at 3.6 V, 4.5 Ah, 16.2 Wh.<sup class="cite">[\[1\]](#s1)</sup> 39 cells × 16.2 Wh = 632 Wh.
+- <b><a class="g" href="../glossary/#c-rate">C-rate</a></b>: current divided by capacity. 1C empties a cell in an hour; 10C in six minutes. The P45B is rated for 45 A continuous, 10C.<sup class="cite">[\[1\]](#s1)[\[3\]](#s3)</sup> In a 3P pack the cells share the current, so the pack can supply 135 A.
+- <b><a class="g" href="../glossary/#state-of-charge">State of charge</a> (SoC)</b>: how full the pack is, 0-100%. <b><a class="g" href="../glossary/#depth-of-discharge">Depth of discharge</a></b> is the share you actually use.
+- <b><a class="g" href="../glossary/#internal-resistance">Internal resistance</a></b>: every cell behaves like an ideal voltage source with a small resistor in series. Molicel gives at most 13.8 mΩ for the P45B.<sup class="cite">[\[1\]](#s1)</sup> A 13S3P pack is about 13 × 13.8 / 3 ≈ 60 mΩ before wiring: at 80 A the pack voltage sags by about 5 V.
+
+<b>Why 21700 high-discharge cells?</b> "21700" is the size (21 mm diameter, 70 mm long). High-discharge cells such as the P45B trade a little energy density for low internal resistance, so they can deliver the short bursts of current a robot's legs draw without overheating.
+
+<b>Why charge only to 4.1 V?</b> A lithium-ion cell ages faster at high voltage. Battery University's table gives 300-500 cycles when charged to 4.20 V and 600-1,000 cycles at 4.06 V, with 81% of the energy; 4.13 V gives 400-700 cycles and 90%.<sup class="cite">[\[2\]](#s2)</sup> Marvin Bot's 4.1 V rule sits between those rows (about 86% of the energy, interpolated). It also leaves 1.3 V more headroom below the actuators' 60 V for regenerative braking.
+
+### Where the power goes
+
+The playground adds up four terms for each activity (standing, walking, stairs):
+
+<div class="small">
+
+In the formulas below, η (eta) is an efficiency between 0 and 1; I<sub>ph</sub> and R<sub>ph</sub> are the current and resistance of one motor phase (winding), and R<sub>LL</sub> is the resistance measured between two of the motor's three wires.
+
+</div>
+
+<div class="eq">
+
+P = P<sub>computer</sub> / η<sub>DC-DC</sub> + P<sub>electronics</sub> + Σ P<sub>Cu</sub> + P<sub>mech</sub> / η<sub>gear</sub>, then × 1.10 for wiring, converter and driver losses<br /> P<sub>Cu</sub> = 3 I<sub>ph</sub>² R<sub>ph</sub> = 1.5 (τ / K<sub>t</sub>)² R<sub>LL</sub> (copper loss of one motor at output torque τ)
+
+</div>
+
+- **Computer**: the Jetson AGX Orin 64 GB has power modes of 15, 30 (default) and 50 W, plus an unconstrained MAXN mode<sup class="cite">[\[4\]](#s4)</sup>; the playground uses 60 W for MAXN, the figure NVIDIA's tools quote for the 64 GB module, and divides by a 90% DC-DC efficiency.
+- **Electronics** (estimate, 30 W): 23 RobStride drivers idling at about 1 W each, the Feetech servos' 12 V rail, the depth camera, IMU and CAN adapters. These are guesses until measured.
+- **Copper loss**: a motor's torque comes from current, and current through winding resistance makes heat. Torque τ needs current τ/K<sub>t</sub> (K<sub>t</sub> = <a class="g" href="../glossary/#torque-constant">torque constant</a>, newton-metres of torque per amp), and heat goes with current squared. The RS04's torque constant is 2.1 N·m/A and resellers list its winding resistance as 0.16 Ω line to line<sup class="cite">[\[5\]](#s5)[\[6\]](#s6)</sup>: at its 40 N·m rating that is 1.5 × (40/2.1)² × 0.16 ≈ 87 W of heat. For the RS03, RS06 and RS00, without published resistances, the playground scales that figure by motor mass (55, 38 and 19 W at rating; an estimate).<br />Because loss goes with τ², the average heat depends on the *root-mean-square* (RMS) torque: half the rated torque RMS costs a quarter of the rated loss.
+- **Mechanical work**: positive work done on the body. For walking the playground uses a mechanical cost of transport (how much work it takes to move each newton of weight one metre) of 0.1 (work per unit weight per metre; an estimate) at 0.5 m/s: 0.1 × 41 kg × 9.81 × 0.5 ≈ 20 W. For stairs, lifting 41 kg up an 18 cm step every 2 s: 41 × 9.81 × 0.09 m/s ≈ 36 W. Both are divided by 85% gearbox efficiency. Negative work (lowering the body) is assumed lost as heat, not recovered.
+
+The surprise for most newcomers is that **heat, not lifting, dominates**: holding a bent knee costs copper loss even though nothing moves. That is why the stair torques in [05 Leg loads and stairs](../05-leg-loads-stairs/) matter for runtime as well as for motor temperature.
+
+### Peak current
+
+Average power sets runtime; **peak** current sets the cell, fuse and wire choices. The playground takes one stance leg on a stair (3 RS04 at hip pitch, hip roll, knee and 3 RS03 at hip yaw and ankle) at a chosen share of peak torque and 4 rad/s, adds copper loss and mechanical power, and divides by the pack voltage near empty (3.5 V/cell). With the repo's "peaks ≤ 70% of peak rating" rule this gives about 80 A for a fraction of a second, within the 135 A the three parallel cells allow and just under the 100 A main fuse.
+
+A fuse at a modest overload takes from seconds to minutes to blow (its time-current curve), so sub-second peaks at this level pass, but the margin is thin and the phase 2 bench test must confirm the real peaks. `electrical/harness.yaml` estimates 78.5 A continuous for the main path with a different method (rated torque at half the no-load speed, half the motors at once), so both point to the same order of current.
+
+## Playground 2: regenerative braking and the 60 V margin
+
+A bicycle dynamo makes electricity when the wheel turns; an electric motor does the same when something turns it. So when a motor slows a moving limb, it works as a generator: the limb's kinetic energy turns into current that flows *back* onto the 48 V bus. If the battery can absorb it, the bus voltage rises only by current × internal resistance. If it cannot (the BMS has blocked charging because the pack is full, the contactor is open, or the robot runs from a bench supply that cannot sink current), the energy has nowhere to go but the capacitors on the bus, and their voltage climbs fast:
+
+Why it matters: the RobStride drivers are only rated to 60 V. A full pack is already at 54.6 V, so there is little room for the voltage to climb before parts are damaged.
+
+<div class="eq">
+
+kinetic energy of a swinging limb: E = ½ J ω² (J = moment of inertia, kg·m²; ω = joint speed, rad/s)<br /> battery connected: V = V<sub>OC</sub> + I R<sub>pack</sub>, I = P<sub>regen</sub> / V<br /> battery blocked: ½ C V<sub>peak</sub>² = ½ C V<sub>0</sub>² + η E → V<sub>peak</sub> = √(V<sub>0</sub>² + 2ηE / C)
+
+</div>
+
+<div class="small">
+
+In words: V<sub>OC</sub> is the pack's resting voltage, R<sub>pack</sub> its internal resistance, P<sub>regen</sub> the power flowing back; C is the total capacitance on the bus (capacitors are small, fast energy stores, measured in farads; a millifarad, mF, is a thousandth), V<sub>0</sub> the voltage before braking and η the share of the limb's energy that reaches the bus. A **clamp** is a circuit that switches a resistor across the bus above a set voltage (a "brake chopper"), or a TVS diode that conducts above it, turning excess energy into heat.
+
+</div>
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. On **Marvin Bot today** the pack swallows a leg stop with a rise of well under 1 V. Now press **Hard stop, four limbs**: all four limbs stopped from 10 rad/s as hard as the motors' peak torque allows (a fall, or a policy glitch) push about 60 A back, and with a full 4.2 V pack the bus reaches about 59 V, a whisker under the limit, before counting wiring inductance.
+2. Press **Full pack, BMS blocks charging**. About 20 J into a few millifarads sends the bus far beyond 60 V. This is the case the clamp exists for, and why the repo charges to 4.1 V, not 4.2 V.
+3. Press **Bench supply, no clamp**, then <b>+ 57 V clamp</b>. Most bench supplies cannot absorb current at all; the clamp burns the excess as heat (the "energy into clamp" readout).
+4. Double the bus capacitance. The peak falls, but only as √C: capacitors alone are an expensive way to absorb regen.
+:::
+
+A second, less obvious path: a motor spun faster than its no-load speed generates a <a class="g" href="../glossary/#back-emf">back-EMF</a> (the voltage a spinning motor makes) above the bus voltage and pushes current through its driver's transistor diodes even when the driver is disabled. A robot falling with the contactor open can therefore still pump energy into the (now isolated) motor-side capacitors. The clamp belongs on the motor side of the contactor for this reason.
+
+## Playground 3: the power path, block by block
+
+Click a block to read what it does. Use the buttons to press the <a class="g" href="../glossary/#e-stop">e-stop</a> (emergency stop button) or pull the pack while running ("hot swap"), and watch which parts stay powered. The key idea: the computer has its own small <a class="g" href="../glossary/#keep-alive-battery">keep-alive battery</a>, so cutting the motors never reboots it.
+
+<RawHtml html={widget3} />
+
+### Precharge, in numbers
+
+Every motor driver and DC-DC converter has capacitors across its input. When the <a class="g" href="../glossary/#contactor">contactor</a> (a heavy-duty, electrically operated switch) closes onto empty capacitors, the only thing limiting the current is the resistance of the loop: 54 V across 0.1 Ω is over 500 A for a fraction of a millisecond, enough to weld contactor contacts or blow the fuse. A precharge resistor first fills the capacitors slowly: with R = 47 Ω and C = 5 mF the time constant RC is 0.24 s, the peak current about 1.2 A, and after 5RC (1.2 s) the capacitors are within 1% of the pack voltage, so the contactor closes with almost no current. (RC, resistance × capacitance, is how long the charging takes: after one RC the capacitors are 63% full.) The resistor briefly absorbs ½CV² ≈ 7 J. (The capacitance is an estimate; the real value sets the resistor and the precharge time.)
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+(`docs/decisions.md`, 2026-10-25, "power: 13S3P quick-release pack, keep-alive supply, 4.1 V charging")
+
+- <b>Pack:</b> 13S3P of 21700 high-discharge cells, \~630 Wh, \~3.4 kg: about 1.5× the runtime of 13S2P for \~1.1 kg more. <i>Why:</i> comfortable margin over the 1 h requirement and over the stair current peaks.
+- **Quick-release cradle** with an anti-spark blind-mate connector (AS150 class: a plug that makes contact without sparking and lines itself up). <i>Why:</i> swap packs in seconds.
+- **Keep-alive battery** for the computer through an <a class="g" href="../glossary/#ideal-diode-or">ideal-diode OR</a> (a circuit that takes power from whichever source is higher, with almost no loss); the computer is fed upstream of the contactor. <i>Why:</i> an e-stop or pack swap never reboots the computer or loses its logs.
+- **Charge to 4.1 V/cell** (53.3 V) daily; regen clamp at about 56-58 V; DC-DCs rated for 75 V input. <i>Why:</i> longer cell life and room below the 60 V limit.
+- **Fuses and wires** (`docs/design/assembly_wiring.md`, `electrical/harness.yaml`; current expected / fuse / wire gauge, where AWG is the American wire size, smaller number = thicker wire): main 78.5 A / 100 A / 6 AWG; trunk 51.3 A / 80 A / 8 AWG; each leg 24.3 A / 40 A; each arm 13.6 A / 20 A. Positions in the torso: `cad/electrical.py`.
+- <b>Parts and prices:</b> BOM power group, $1,633 (39 Molicel P45B cells at $9.95, a 13S 150 A BMS with CAN at $145, charger, Class-T fuse, contactor, precharge, DC-DCs, ideal-diode controller, keep-alive pack, regen clamp).
+:::
+
+Requirements: R30 runtime ≥ 1 h of mixed walking and standing; R31 quick-release pack with the computer staying up during a swap; R32 pack voltage plus regen spikes below the actuators' 60 V limit (`docs/requirements.md`). The BMS reports over the seventh CAN bus at 10 Hz ([10 CAN buses](../10-can-bus/)), and the robot sits down and cuts actuator power at about 15% (`docs/safety.md`).
+
+## Trade-offs and alternatives
+
+| Option | For | Against |
+|---|---|---|
+| <b>13S3P, 4.1 V daily (chosen)</b> | \~1.5 h (repo), \~135 A of cell current, 1.3 V more regen headroom | \~3.4 kg, high in the torso |
+| 13S2P | \~1.1 kg lighter (the repo lists it as a mass reserve) | runtime at the 1 h limit; 90 A cell limit near the stair peaks |
+| Charge to 4.2 V every day | \~15% more energy | roughly half the cycle life; 54.6 V leaves 5.4 V to the 60 V limit |
+| 12S pack (50.4 V full) | more regen margin | less voltage for motor speed; 12S BMS and chargers less common at this current |
+| Two packs OR-ed (v2 in the repo) | swap one pack while walking | more mass, more electronics |
+| Computer after the contactor | simpler wiring | every e-stop reboots the computer and loses logs |
+
+:::caution[Where sources and the repo disagree]
+- Runtime: the repo states \~1.5 h (13S3P) and \~1 h (13S2P) without a published power model. This page's first-principles model with its default assumptions gives about 1.6 h and 1.1 h at 4.1 V and a 15% reserve. The difference is well inside the uncertainty of the per-mode torque and electronics estimates.
+- Voltage limit: `description/actuators.yaml` notes RobStride's manual gives 24-60 V for the RS04 while its specification README says 15-60 V; the upper 60 V limit, which matters here, agrees.
+:::
+
+## Decisions you can make here
+
+- <b>Pack size (S and P).</b> Trade: 13S2P saves about 1.1 kg high in the torso but drops runtime to about 1.1 h and puts the stair peaks (about 82 A) close to the 90 A the cells allow.
+- <b>Charge voltage.</b> Trade: 4.2 V gives about 20% more runtime, but roughly halves cycle life and leaves only 5.4 V of headroom to 60 V for braking energy.
+- **The reserve at which the robot sits down** (15% today). Trade: a lower reserve adds runtime, but leaves less margin for the voltage sag on a hard push near empty and ages the cells faster.
+- <b>Clamp voltage and position, and bus capacitance.</b> Trade: a lower clamp protects the drivers better but wastes more energy as heat and may trigger in normal braking; capacitors only help as √C and add bulk.
+- <b>Orin power mode.</b> Trade: 15 W instead of 30 W adds about 0.1 h with the default day, at the cost of slower perception and planning on the robot.
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+Next: [10 CAN buses and bandwidth](../10-can-bus/) follows the other set of wires to every motor: the data cables that carry commands and readings, including the BMS's battery reports.
+
+## Further reading
+
+- [Battery University, BU-808: How to prolong lithium-based batteries](https://batteryuniversity.com/article/bu-808-how-to-prolong-lithium-based-batteries): the charge-voltage and cycle-life table behind the 4.1 V rule.
+- [Battery University, BU-304a: Safety concerns with Li-ion](https://batteryuniversity.com/article/bu-304a-safety-concerns-with-li-ion): what goes wrong inside a cell and why packs need protection.
+- [Molicel INR-21700-P45B](https://www.molicel.com/inr21700-p45b/): the cell's capacity, current and resistance figures.
+- [NVIDIA Jetson Linux: power and performance](https://docs.nvidia.com/jetson/archives/r36.4/DeveloperGuide/SD/PlatformPowerAndPerformance/JetsonOrinNanoSeriesJetsonOrinNxSeriesAndJetsonAgxOrinSeries.html): the Orin's power modes and how to switch them.
+- [Analog Devices LTC4359](https://www.analog.com/en/products/ltc4359.html): an ideal-diode controller of the class the BOM lists, with application circuits for supply ORing.
+
+## Sources
+
+1. <span id="s1"></span>[Molicel, INR-21700-P45B product page](https://www.molicel.com/inr21700-p45b/) <span class="used">— used for: 3.6 V nominal, 4.5 Ah, 16.2 Wh, 45 A max continuous, 242 Wh/kg, 13.8 mΩ max internal resistance.</span>
+2. <span id="s2"></span>[Battery University, BU-808 How to prolong lithium-based batteries](https://batteryuniversity.com/article/bu-808-how-to-prolong-lithium-based-batteries) <span class="used">— used for: cycle life and available energy vs charge voltage (4.20 V 300-500 cycles; 4.13 V 400-700, 90%; 4.06 V 600-1,000, 81%).</span>
+3. <span id="s3"></span>[Battery University, BU-402 What is C-rate?](https://batteryuniversity.com/article/bu-402-what-is-c-rate) <span class="used">— used for: C-rate definition.</span>
+4. <span id="s4"></span>[NVIDIA, Jetson Linux Developer Guide: power modes for Jetson AGX Orin](https://docs.nvidia.com/jetson/archives/r36.4/DeveloperGuide/SD/PlatformPowerAndPerformance/JetsonOrinNanoSeriesJetsonOrinNxSeriesAndJetsonAgxOrinSeries.html) <span class="used">— used for: AGX Orin 64 GB modes MAXN (no fixed budget), 15 W, 30 W (default), 50 W.</span>
+5. <span id="s5"></span>[RobStride, Product\_Information (manuals)](https://github.com/RobStride/Product_Information) <span class="used">— used for: torque constants, rated and peak torques, 60 V upper voltage limit (via description/actuators.yaml).</span>
+6. <span id="s6"></span>[OpenELAB, RobStride04 complete guide (reseller specification)](https://openelab.io/fr/blogs/learn/robstride04-qdd-120n-m-integrated-joint-bldc-gear-motor-complete-guide) <span class="used">— used for: RS04 terminal resistance 0.16 Ω ±10% (reseller figure, not from RobStride's manual).</span>
+7. <span id="s7"></span>[Analog Devices, LTC4359 ideal diode controller](https://www.analog.com/en/products/ltc4359.html) <span class="used">— used for: what an ideal-diode OR does (a MOSFET acting as a low-loss diode).</span>
+8. <span id="s8"></span>[Littelfuse, industrial and UL fuses catalogue (POWR-GARD JLLN Class T)](https://media.masterelectronics.com/productfiles/mf-lf/5industrial-and-ul-fuses.pdf) <span class="used">— used for: Class-T fuses' DC rating (125-160 V DC) and 20 kA DC interrupting rating.</span>
+9. <span id="s9"></span>[Battery University, BU-304a Safety concerns with Li-ion](https://batteryuniversity.com/article/bu-304a-safety-concerns-with-li-ion) <span class="used">— used for: why packs need a BMS and current protection.</span>
+
+<PageScript code={script} />

@@ -1,0 +1,49 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today</button>
+<button data-preset="usb">USB backup IMU (AHRS)</button>
+<button data-preset="arm">Arm bus (6 motors, 250 Hz)</button>
+<button data-preset="cpu">Heavy policy on the CPU</button>
+<button data-preset="fast">100 Hz policy</button>
+</div>
+<h4>Loop rates</h4>
+<div class="ctl"><label>Policy rate <output id="o_prate"></output></label>
+<input id="prate" max="200" min="25" step="5" type="range" value="50"/>
+<div class="hint">How often the policy runs. Sets the tick length (1/rate).</div></div>
+<div class="ctl"><label>CAN command rate <output id="o_crate"></output></label>
+<input id="crate" max="1000" min="100" step="50" type="range" value="500"/>
+<div class="hint">How often the controller sends each motor a frame (legs 500 Hz, arms 250 Hz).</div></div>
+<div class="ctl"><label>Motors on the bus <output id="o_nmot"></output></label>
+<input id="nmot" max="8" min="1" step="1" type="range" value="3"/>
+<div class="hint">Each takes a command and a reply frame of up to 160 bits at 1 Mbit/s.</div></div>
+<div class="ctl"><label>IMU sample rate <output id="o_imu"></output></label>
+<input id="imu" max="1000" min="100" step="50" type="range" value="500"/>
+<div class="hint">Requirement R42: at least 500 Hz.</div></div>
+<h4>Delays</h4>
+<div class="ctl"><label>Sensor transport delay <output id="o_sdel"></output></label>
+<input id="sdel" max="25" min="0" step="0.5" type="range" value="2"/>
+<div class="hint">IMU filtering, USB or serial transfer and driver buffering before the reading is usable.</div></div>
+<div class="ctl"><label>Inference time <output id="o_inf"></output></label>
+<input id="inf" max="15" min="0.05" step="0.05" type="range" value="0.3"/>
+<div class="hint">Building the observation (the list of numbers fed to the network) and running the network. A small network like Marvin Bot's takes well under 1 ms.</div></div>
+<div class="ctl"><label>Driver loop rate <output id="o_drv"></output></label>
+<input id="drv" max="40" min="1" step="1" type="range" value="10"/>
+<div class="hint">How many thousand times a second each motor's own controller corrects the joint. Not published for RobStride; open-source drivers run 10–40 kHz.</div></div>
+<div class="ctl"><label>Case</label>
+<select id="mode"><option value="avg">Average (half of each wait)</option><option value="worst">Worst case (whole waits)</option></select></div>
+<button id="play">Pause animation</button>
+</div>
+<div class="preview">
+<svg aria-label="Timeline of one control tick, with stacked delay segments and the 20 ms tick boundaries" id="tick" role="img" viewbox="0 0 900 250"></svg>
+<div class="seglegend" id="seglegend"></div>
+<div class="readouts">
+<div class="ro" id="r_total"><div class="k">Event to torque</div><div class="v">–</div></div>
+<div class="ro" id="r_fit"><div class="k">Tick start to torque vs tick</div><div class="v">–</div></div>
+<div class="ro" id="r_sens"><div class="k">Sensor-side delay (trained 0–20 ms)</div><div class="v">–</div></div>
+<div class="ro" id="r_act"><div class="k">Action-side delay (trained 0–10 ms)</div><div class="v">–</div></div>
+<div class="ro" id="r_load"><div class="k">CAN bus load (limit 0.6)</div><div class="v">–</div></div>
+</div>
+</div>
+</div>

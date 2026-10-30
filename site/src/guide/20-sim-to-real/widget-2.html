@@ -1,0 +1,46 @@
+<div class="pg">
+<div class="controls">
+<h4>Presets</h4>
+<div class="presets">
+<button data-preset="today">Marvin Bot today (placeholders)</button>
+<button data-preset="nodelay">Datasheet, no delay</button>
+<button data-preset="nofric">No friction model</button>
+<button data-preset="fit">Fitted</button>
+</div>
+<h4>Bench test</h4>
+<div class="ctl"><label>Test signal</label>
+<select id="test"><option value="both">Steps then chirp (4 s)</option><option value="step">Current steps only (2 s)</option><option value="chirp">Chirp 0.5–8 Hz only (2 s)</option></select>
+<div class="hint">The output turns freely; the motor is given a current directly, with no position control (k<sub>p</sub> = k<sub>d</sub> = 0).</div></div>
+<div class="ctl"><label>Speed noise σ <output id="o_noise"></output></label><input id="noise" max="0.3" min="0" step="0.01" type="range" value="0.05"/><div class="hint">How noisy the speed sensor is (typical size of the random error).</div></div>
+<div class="btnrow"><button class="primary" id="fitbtn">Fit (least squares)</button><button id="newmotor">New hidden motor</button></div>
+<label class="chk"><input id="reveal" type="checkbox"/> Reveal the true values</label>
+<h4>Model parameters</h4>
+<div class="ctl"><label>Inertia J (output side) <output id="o_J"></output></label><input id="J" max="0.1" min="0.01" step="0.001" type="range" value="0.042"/><div class="hint">How hard the joint is to speed up: the motor's spinning parts as felt through the gearbox (<a class="g" href="../glossary/#armature">armature</a>) plus the 0.012 kg·m² test arm.</div></div>
+<div class="ctl"><label>Viscous friction b <output id="o_b"></output></label><input id="b" max="1" min="0" step="0.01" type="range" value="0"/><div class="hint">Drag that grows with speed, in N·m per rad/s.</div></div>
+<div class="ctl"><label><span>Coulomb friction τ<sub>c</sub></span> <output id="o_tc"></output></label><input id="tc" max="1.5" min="0" step="0.01" type="range" value="0.3"/><div class="hint">Constant drag whenever the joint moves (gear teeth, seals), in N·m.</div></div>
+<div class="ctl"><label>Command delay d <output id="o_d"></output></label><input id="d" max="20" min="0" step="0.5" type="range" value="5"/><div class="hint">Time from sending a command to the torque appearing, in ms.</div></div>
+<div class="ctl"><label><span>Torque constant K<sub>t</sub></span> <output id="o_Kt"></output></label><input id="Kt" max="2.5" min="1.5" step="0.01" type="range" value="2.1"/><div class="hint">Output-side N·m per A; RobStride's RS04 figure is 2.1.</div></div>
+<h4>Deploy controller</h4>
+<div class="ctl"><label><span>k<sub>p</sub></span> <output id="o_kp"></output></label><input id="kp" max="200" min="10" step="5" type="range" value="40"/><div class="hint">Marvin Bot's training gains: 40 ankles, 150 hips and knees.</div></div>
+<div class="ctl"><label><span>k<sub>d</sub></span> <output id="o_kd"></output></label><input id="kd" max="10" min="0.5" step="0.5" type="range" value="2"/><div class="hint">k<sub>p</sub> is the joint's stiffness (spring), k<sub>d</sub> its damping (see <a href="../15-pd-control/">page 15</a>).</div></div>
+</div>
+<div class="preview">
+<svg aria-label="Bench data: measured joint speed against time with the model's simulated speed overlaid, and the residual below." id="sid" role="img" viewbox="0 0 640 300"></svg>
+<svg aria-label="Locked-output test: load-cell torque against current, with the model's torque constant as a line." id="kt" role="img" style="margin-top:8px" viewbox="0 0 640 120"></svg>
+<div class="readouts">
+<div class="ro" id="r_res"><div class="k">Speed residual (RMS)</div><div class="v">–</div></div>
+<div class="ro" id="r_fl"><div class="k">Noise floor</div><div class="v">–</div></div>
+<div class="ro" id="r_ktr"><div class="k">Torque residual (locked)</div><div class="v">–</div></div>
+<div class="ro" id="r_truth"><div class="k">Worst parameter error</div><div class="v">–</div></div>
+</div>
+<svg aria-label="Deploy test: reference joint angle, the simulator's predicted tracking and the real joint's tracking, with errors." id="dep" role="img" style="margin-top:10px" viewbox="0 0 640 260"></svg>
+<div class="readouts">
+<div class="ro" id="r_esim"><div class="k">Tracking error, sim predicts</div><div class="v">–</div></div>
+<div class="ro" id="r_ereal"><div class="k">Tracking error, real</div><div class="v">–</div></div>
+<div class="ro" id="r_gap"><div class="k">Sim-to-real gap (RMS)</div><div class="v">–</div></div>
+<div class="ro" id="r_peak"><div class="k">Real peak current</div><div class="v">–</div></div>
+</div>
+<div class="legend"><span><i style="background:#9aa7b4"></i>measured (noisy)</span><span><i style="background:var(--accent)"></i>your model</span><span><i style="background:var(--violet)"></i>reference</span><span><i style="background:var(--accent2)"></i>real joint</span><span><i style="background:var(--bad)"></i>residual / error</span></div>
+<p class="hint" style="font-size:13px;color:var(--muted);margin:6px 0"><b>Reading the numbers:</b> a good model has a speed residual close to the noise floor (you cannot do better than the sensor's own noise), a small worst parameter error, and a small sim-to-real gap, meaning the simulator's prediction and the real joint agree. The straight-line chart under the speed chart is a separate test with the output clamped, which measures K<sub>t</sub> (torque per amp) from the slope.</p>
+</div>
+</div>

@@ -1,0 +1,13 @@
+---
+// Starts the 3-D model playground: the model data written by scripts/build_model.py, then the
+// viewer (viewer.js, bundled with the site's pinned three.js).
+const model = `${import.meta.env.BASE_URL}guide/model/marvin_model.js`;
+---
+<script is:inline src={model}></script>
+<script>
+  import './viewer.js';
+</script>
+<script is:inline>
+  // shown only if the viewer did not start (for example, the model data has not been built)
+  setTimeout(() => { const m = document.getElementById('vmsg'); if (m && !window.__m3dStarted) m.textContent = 'The 3-D viewer did not start. If you are building the site yourself, build the model data first (see site/README.md).'; }, 8000);
+</script>

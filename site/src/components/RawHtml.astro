@@ -1,0 +1,8 @@
+---
+// Renders one of a guide page's interactive blocks (controls, plots, diagrams), kept as plain HTML
+// in src/guide/<page>/widget-N.html so it can be edited without JSX. `not-content` opts it out of
+// Starlight's prose spacing; the playground styles are in src/styles/guide.css.
+interface Props { html: string }
+const { html } = Astro.props;
+---
+<div class="not-content guide-widget" set:html={html} />

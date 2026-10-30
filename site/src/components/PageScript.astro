@@ -1,0 +1,7 @@
+---
+// Runs a guide page's playground script (src/guide/<page>/script.js) as a classic script at the end
+// of the page, after every block it drives has been rendered.
+interface Props { code: string }
+const { code } = Astro.props;
+---
+<script is:inline set:html={code} />

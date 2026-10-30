@@ -1,0 +1,214 @@
+---
+title: "Mass budget and proportions"
+description: "Every kilogram a humanoid carries has to be held up by its knees, cooled out of its motors, stopped when it falls and paid for in battery."
+sidebar:
+  label: "07 · Mass budget and proportions"
+  order: 8
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/07-mass-proportions/widget-1.html?raw';
+import widget2 from '../../../guide/07-mass-proportions/widget-2.html?raw';
+import widget3 from '../../../guide/07-mass-proportions/widget-3.html?raw';
+import widget4 from '../../../guide/07-mass-proportions/widget-4.html?raw';
+import script from '../../../guide/07-mass-proportions/script.js?raw';
+import '../../../guide/07-mass-proportions/style.css';
+
+<div class="guide-meta">
+
+**Stage 2 · Mechanics** · \~35 min · Before this: [04 Actuators](../04-actuators/), [05 Leg loads and stairs](../05-leg-loads-stairs/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Every kilogram a humanoid carries has to be held up by its knees, cooled out of its motors, stopped when it falls and paid for in battery. This page shows where Marvin Bot's 41 kg goes, what would take it back towards the 35 kg target, why making a robot bigger is harder than it looks, and how its body compares with a person of the same height.
+
+:::note[You will learn]
+- Why mass is the number that every other number depends on: joint torque, motor heat, fall energy and runtime.
+- The square-cube law: scale a robot's height by *s* and the torque its joints need grows roughly as *s*<sup>4</sup>, while the torque its motors give grows only as *s*<sup>3</sup>.
+- How a <a class="g" href="../glossary/#mass-budget">mass budget</a> is kept, item by item, and which savings Marvin Bot has on the table.
+- Why mass far from the hip (<a class="g" href="../glossary/#distal-mass">distal mass</a>) costs more than mass near it when the leg swings.
+- How human body proportions (<a class="g" href="../glossary/#anthropometry">anthropometry</a>) guided the 2026-10-29 redesign from 1.29 m to 1.44 m, and what it cost.
+:::
+
+## The idea in one picture
+
+Think of climbing stairs with a heavy rucksack: every step costs your thighs more, you tire sooner and you fall harder. A robot is the same, except that its "thighs" are electric motors with a fixed strength, and its "tiredness" is motor heat. A **mass budget** is simply a list of every part and what it weighs, kept as carefully as a money budget, so the designers know where each kilogram went and which ones they can still win back.
+
+A humanoid standing on one bent leg is a weight on the end of a lever. The knee motor must hold the robot's weight, *m·g*, times the horizontal distance from the knee to the line of that weight. So the knee torque grows in direct proportion to the mass: in Marvin Bot's slow 18 cm stair-step check, the stance knee holds 47 N·m at 41.3 kg, about 1.1 N·m for every kilogram (`docs/design/stairs.md`). That is already 118% of the knee motor's continuous (<a class="g" href="../glossary/#rated-torque">rated</a>) torque: the torque it can hold indefinitely without overheating. Anything over 100% can only be held for a short time. Mass therefore is not a cosmetic number: it is the lever on the robot's hottest joint.
+
+The same mass shows up everywhere else too:
+
+- <b>Heat.</b> A motor's <a class="g" href="../glossary/#copper-loss">copper loss</a> (the heat made by current flowing through its windings) goes with current squared, and current goes with torque, so heat goes with mass squared. 10% more mass means about 21% more heat at the knee.
+- <b>Falls.</b> The energy to absorb in a fall is *m·g·h* (h = how far the centre of mass drops). Twice the mass, twice the energy the structure and shells must take.
+- <b>Battery.</b> Walking power grows roughly with weight, so a heavier robot drains the same battery faster; and the battery is itself one of the heaviest items.
+- <b>Structure.</b> Landing loads are a multiple of body weight (Marvin Bot designs for 3 × body weight), so every structural part must grow with the mass it carries, which adds mass again.
+
+That last point is the trap: mass begets mass. The playground below is the robot's real mass budget, so you can see which items are worth chasing. This page builds on the knee and stair loads of [05 Leg loads and stairs](../05-leg-loads-stairs/); the next page, [08 Structure and code-CAD](../08-structure-cad/), shows how the structural parts in this budget are designed and weighed.
+
+## Playground 1: the mass budget
+
+Each block is one item of `description/mass_budget.yaml`, plus the motors (counted from `description/robot.yaml` and `description/actuators.yaml`) and the add-on body shells (`description/cad_model.yaml`), exactly as `tools/check_description.py` sums them. Block area is proportional to mass (the full panel = 44 kg, so the treemap shrinks as you save). Tick a reduction idea to apply it.
+
+<b>Start here:</b> click the preset buttons one at a time and watch the five readouts under the picture. Names like RS04, RS03, RS06 and RS00 are RobStride motor models, from the largest (RS04, at the hips and knees) to the smallest (RS00, at the wrists); see [04 Actuators](../04-actuators/).
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Click **Repo's two savings** (the carrier board and lighter leg cores, the two ideas listed in `mass_budget.yaml`). How far does that get you towards 35 kg? Now look at the treemap: which blocks are bigger than either saving?
+2. Click **Towards 35 kg**. It ticks six ideas at once, including the smaller battery that brings runtime down to the 1 h requirement, and the bare robot still weighs about 36.3 kg: 1.3 kg short of the target. What does the knee readout do?
+3. Click **Add a 2-DOF waist** (two extra <a class="g" href="../glossary/#degree-of-freedom">degrees of freedom</a>, DOF: the waist could also lean sideways and bend forwards, not only twist): waist roll and pitch would help some skills (`docs/decisions.md`, 2026-10-28), but watch the limit readout and the knee.
+4. Tick only **1.5:1 knee stage**. The robot gets heavier, yet the knee readout drops a lot. Why? (A <a class="g" href="../glossary/#reduction-stage">reduction stage</a>, an extra set of gears, multiplies the motor's continuous torque by 1.5 but adds only a little mass.)
+:::
+
+## From first principles
+
+### Why torque scales with mass times length
+
+<a class="g" href="../glossary/#torque">Torque</a> is force times the perpendicular distance from the joint to the force's line of action: <span class="eq">τ = F · d</span> (τ in N·m, F in newtons, d in metres). For a joint holding up part of the body, F is that part's weight, *m·g* (g = 9.81 m/s²), and d is some fraction of a limb length *L*. So the torque a joint needs to hold a pose is
+
+<span class="eq">τ ≈ k · m · g · L</span>
+
+where *k* is a number between 0 and 1 set by the pose (how bent the leg is). Double the mass and you double the torque; double the limb length at the same pose and you double it again.<sup class="cite">[\[7\]](#s7)</sup>
+
+### The square-cube law
+
+In everyday words: if you make a robot taller, its weight grows much faster than its height, and the turning force its joints need grows faster still. The motors you can buy do not keep up. That is why a bigger humanoid is not simply a scaled-up smaller one.
+
+Suppose you scale a whole robot up by a factor *s* in every direction (s = 1.1 means 10% taller, 10% wider, 10% deeper) and keep the same materials. Then:
+
+| Quantity | Scales as | Why | s = 1.1 |
+|---|---|---|---|
+| Lengths (limbs, lever arms) | *s* | by definition | 1.10 |
+| Cross-section areas (strength of a strut) | <i>s</i>² | width × depth | 1.21 |
+| Volume, so mass at constant density | <i>s</i>³ | width × depth × height | 1.33 |
+| Joint torque needed, τ ∝ m·L | <i>s</i>⁴ | <i>s</i>³ · *s* | 1.46 |
+| Torque a scaled-up motor gives | about <i>s</i>³ | gap shear stress × gap area × gap radius | 1.33 |
+
+This is Galileo's and Haldane's old observation that big animals cannot simply be enlarged small ones: weight grows with volume, strength with area.<sup class="cite">[\[3\]](#s3)</sup> The bottom two rows are the ones that matter: the torque needed grows as <i>s</i>⁴ but the torque available only as <i>s</i>³, so the motor's torque *margin* shrinks as 1/*s*. A robot twice the size has half the relative margin.
+
+<details>
+<summary>Go deeper: where the s³ for motors and animals comes from</summary>
+
+Biologists measure the same effect across animals from mice to horses, which compensate with straighter limbs that shorten the lever arms.<sup class="cite">[\[4\]](#s4)</sup> For electric motors, the torque a motor can make is limited by the magnetic shear stress in its air gap (roughly constant for a given technology) acting over the gap's area at the gap's radius, so torque goes as radius² × length, about <i>s</i>³ for a geometrically similar motor.<sup class="cite">[\[5\]](#s5)</sup><sup class="cite">[\[6\]](#s6)</sup> Divide the two and you get the 1/*s* margin above.
+
+</details>
+
+<b>When mass grows less than s³.</b> Real robots are not uniformly scaled. Bought parts keep their size: the computer, the camera, the electronics and often the battery weigh the same whether the robot is 1.2 m or 1.7 m. So the mass grows more slowly than <i>s</i>³ at first, which helps a taller robot. But motors come in steps (RobStride has nothing bigger than the RS04 <sup class="cite">[\[9\]](#s9)</sup>), so once the biggest motor runs out of margin a taller robot cannot simply buy a bigger one. Playground 2 below uses exactly this split: fixed parts plus a part that scales with <i>s</i>³.
+
+### Distal mass and leg inertia
+
+Holding a pose is about weight; swinging a leg is about <a class="g" href="../glossary/#moment-of-inertia">moment of inertia</a>. For a leg rotating about the hip, each piece of mass <i>m<sub>i</sub></i> at distance <i>r<sub>i</sub></i> from the hip axis contributes <i>m<sub>i</sub> r<sub>i</sub></i>²:<sup class="cite">[\[7\]](#s7)</sup>
+
+<span class="eq">I = Σ m<sub>i</sub> r<sub>i</sub>² (kg·m²), τ = I · α</span>
+
+where α is the angular acceleration (rad/s²). The square means a kilogram at the ankle (0.64 m from the hip) costs about 14 times as much as a kilogram near the hip pitch motor (0.17 m). You feel this yourself: swinging your leg forward in heavy boots is far more tiring than carrying the same weight in a belt pouch. That is why designers move motors up the leg and drive the lower joints through linkages or belts. Marvin Bot's ankles are an example: their two motors sit on the shin and push the foot through rods ([06 The parallel-linkage ankle](../06-ankle-linkage/)). Its knee motor, though, sits at the knee; `docs/design/concept.md` lists "knee motor at the joint or near the hip with a linkage" as an open question. The small playground below lets you test it: drag the sliders and watch the "Hip torque" readout, the torque the hip needs just to swing this leg at the chosen acceleration (lower is better).
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+Move the knee motor to the hip (**Knee motor at the hip**). The inertia falls by about 12%. Now try **Ankle motors high** instead: the low ankle motor alone is worth more than the knee motor, because it sits further out. Marvin Bot's staggered ankle already puts one of its two motors high under the knee (chosen to make the shin narrower, but it helps inertia too), which is part of why moving the knee motor alone is not urgent.
+:::
+
+## Playground 2: proportions
+
+Human body proportions are well measured. The classic table, by Drillis and Contini and reproduced in Winter's textbook, gives each segment as a fraction of standing height *H*: shoulder 0.818 *H*, elbow 0.630 *H*, wrist 0.485 *H*, fingertip 0.377 *H*, hip (greater trochanter) 0.530 *H*, knee 0.285 *H*, ankle 0.039 *H*, shoulder width 0.259 *H*.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[2\]](#s2)</sup> They are averages for adults, good to a few per cent; they are a guide for how a humanoid will look and reach, not a law.
+
+Why care? A humanoid works in rooms built for people: door handles, tables, shelves and stairs. If its hands hang too low or its hips sit too high, it reaches and steps unlike a person, and motions recorded from people (see [17 Motion tracking](../17-motion-tracking/)) fit it badly.
+
+<b>How to read this picture:</b> on the left, Marvin Bot's front view from `description/robot.yaml`; on the right, a person of the same height from those fractions. Grey dashed boxes are parts whose size does not change with the robot. Change the height with the slider and compare the readouts: robot / person heights in metres (green = within a few centimetres of a person).
+
+<RawHtml html={widget3} />
+
+:::note[Try this]
+1. Click **Before 2026-10-29**. The fingertips hang about 0.40 m above the floor in this sketch (0.38 m in the repo's full model) against a person's 0.49 m: almost to the knees. Then click **Marvin Bot today** and see what 100 mm of torso and 50 mm of leg did.
+2. Click **Alternative: legs +90 mm**. The hips reach 0.50 of the height, like a person's, but the knee readout passes 125%: this is the option rejected on 2026-10-29 because it would need the parked 1.5:1 knee stage.
+3. Drag the height down to 1.0 m. The knee becomes comfortable, but look at the grey boxes: the Ø120 mm knee motor and the 124 mm camera no longer fit a body that size. Drag up to 1.8 m and the knee runs out of torque, unless you switch **Scale motors too** on: even then the margin shrinks as 1/*s*.
+:::
+
+<div class="small">
+
+The playground's knee model: knee % = 118% × (mass / 41.30 kg) × (thigh / 0.325 m). It reproduces the repo's static stair check for all three designs (109% at 1.29 m, 118% at 1.44 m, 127% with legs +90 mm) to within about 2 points. Mass when scaling: 7.08 kg of fixed parts (computer 0.877, battery 3.4, keep-alive pack 0.4, electronics 1.47, hands 0.8, camera 0.133) plus the rest × <i>s</i>³. Robot landmark heights come from the straight chain of `robot.yaml` lengths; the repo's full model puts the fingertips 15 mm lower (0.556 m) and the elbow 6 mm lower (0.934 m) because of mounting offsets this sketch leaves out.
+
+</div>
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- <b>One budget, checked automatically.</b> The script `tools/check_description.py`, run automatically in CI (continuous integration: the tests that run on every change to the repo), sums the motors (from the motor list in `description/robot.yaml` and the masses in `description/actuators.yaml`: 21.82 kg) and every other item in `description/mass_budget.yaml` (18.53 kg): **40.35 kg bare**. The add-on body shells, whose masses the CAD writes into `description/cad_model.yaml`, add 0.95 kg: **41.30 kg**. It warns above the 35 kg target (bare) and fails above the 42 kg hard limit (with shells and hands).
+- **Each item says how it is known**: `estimate` (a guess), `cad` (computed from the code-CAD solids, see [08 Structure and code-CAD](../08-structure-cad/)), `datasheet` or `weighed`. Today 7 items come from the CAD, the hands from a datasheet, the computer is weighed, and the battery, keep-alive pack, padding, fasteners and limb harness are still estimates.
+- <b>The computer was weighed.</b> The Jetson AGX Orin developer kit weighs 0.877 kg without its power supply, against an earlier 1.5 kg estimate (`docs/decisions.md`, 2026-10-28). The same review added items the CAD did not have: fasteners (0.4 kg, about 4% of the frame) and 7 m of limb harness (0.5 kg). An honest budget went up, not down.
+- <b>Motors are more than half the robot.</b> 23 RobStride actuators and 4 servos are 21.8 kg; the 6 RS04 (hip pitch, hip roll, knee) alone are 8.5 kg. The motors were chosen for torque, so their mass is the price of the stair requirement.
+- <b>The real gate is knee heat.</b> The 42 kg limit was set because the static stair check put the knee at 118% of its continuous rating; the trained (1.29 m) stair <a class="g" href="../glossary/#policy">policy</a> ran the knees at 73-75% of rated <a class="g" href="../glossary/#rms-torque">RMS</a> torque (root mean square, a kind of average over time that tracks heating) (`docs/design/stairs.md`). Phase 2 of the build plan, a bench test (see [22 Roadmap](../22-roadmap/)), measures the RS04's real continuous rating in a thigh-sized mount.
+:::
+
+### The 2026-10-29 redesign: 1.29 m to 1.44 m
+
+At 1.29 m the robot's heights were already close to human fractions at the shoulders and chin (2026-10-26 entry), but the bought hands are long for that size, and with the upper arm hanging 50 mm below the shoulder pitch joint the fingertips reached 0.38 m above the floor against a person's 0.49 m: the hands hung almost to the knees. The fix (`docs/decisions.md`, 2026-10-29):
+
+- torso 100 mm longer (shoulders, neck and head rise with it), shoulder roll joint 25 mm below shoulder pitch (was 50);
+- legs 50 mm longer: thigh 0.300 → 0.325 m (the extra 25 mm above the hip yaw motor, so the thigh plate still fits the desktop mill), shin 0.290 → 0.315 m;
+- result: 1.438 m, fingertips 0.556 m (person 0.542), elbows 0.934 m (person 0.906), hip axis at 0.487 of the height (0.700 / 1.438; the log rounds it to 0.48).
+
+The costs, all from the decision log: +0.64 kg; the static stair knee from 109% to 118% of rated and hip roll from 103% to 105%; the <a class="g" href="../glossary/#centre-of-mass">centre of mass</a> 78 mm higher (a taller <a class="g" href="../glossary/#linear-inverted-pendulum">inverted pendulum</a>, like a broom balanced on a hand, falls more slowly but needs bigger corrections, see [02 Balance](../02-balance/)); and the policies trained on the old body need retraining. The flat-ground policy has been retrained on the 1.44 m model (flat v8, with its knees bent more than intended through the stride); the stair policy is still the one trained on the 1.29 m body, which on the new model falls in 1 of 15 stair runs (`sim/isaaclab/README.md`).
+
+## Trade-offs and alternatives
+
+| Option | Mass | Trade-off | Status (repo) |
+|---|---|---|---|
+| Orin module on a compact <a class="g" href="../glossary/#carrier-board">carrier board</a> instead of the developer kit | −0.4 kg | needs its own heatsink, fan and carrier; the developer kit's I/O is convenient<sup class="cite">[\[8\]](#s8)</sup> | listed in <code>mass\_budget.yaml</code> (was −1.0 kg when the kit was estimated at 1.5 kg) |
+| Lighter leg cores once real loads are known | −0.5 kg | needs simulated and measured loads first | listed in <code>mass\_budget.yaml</code> |
+| 13S2P battery instead of 13S3P (13 cells in series, 2 or 3 in parallel; see [09 Power](../09-power-battery/)) | ≈ −1.1 kg | runtime about 1 h instead of 1.5 h: exactly at the requirement | not taken (2026-10-28) |
+| Shoulder pitch and roll RS03 → RS06 | −1.1 kg | shoulder peak 60 → 36 N·m; less margin for push-ups and getting up | option in <code>stairs.md</code> |
+| 7075 leg plates thinned to the same stiffness | −0.3 to −0.5 kg | cost and sourcing (note: same stiffness needs the same thickness, since 7075 is barely stiffer than 6061; the saving comes from strength-limited parts only) | option in <code>stairs.md</code> |
+| Carbon-fibre tube cores for thigh and shin | ≈ −0.5 kg | design work, bonded joints | option in <code>stairs.md</code> |
+| Body shells off | −0.95 kg | looks unfinished, less fall protection; the policies already train on the bare robot | shells are an add-on by design |
+| Waist roll and pitch joints (2-DOF waist) | ≈ +2.5 kg | more reach and bending; about +$630 | to try in simulation first (2026-10-28) |
+| 1.5:1 knee reduction stage | ≈ +0.2 kg per knee | 60 N·m continuous, some backlash, thigh redesign | parked; decided after the bench test |
+| Legs +90 mm instead of +50 mm | small | hips at 0.50 of height (human-like) but knee at 127% of rated | rejected 2026-10-29; would need the knee stage |
+| Shoulders raised 25-40 mm at 1.29 m, or torso +50 mm only | ≈ 0 | chin hits the shell's collar looking down; not enough reach | rejected 2026-10-29 |
+
+:::caution[Where sources and the repo disagree]
+- <b>Hip height.</b> The decision log says a person's hips are "about 0.50" of height. Winter's table gives the greater trochanter (the bony point on the side of the hip) at 0.530 *H*;<sup class="cite">[\[1\]](#s1)</sup> the hip joint centre sits somewhat below and inside it, so 0.50 for the joint is reasonable. The robot's hip pitch axis is at 0.487 *H*. The page compares the robot's joint axis with the person's trochanter, so the gap looks larger here than it is.
+- <b>Carrier-board saving.</b> Older entries (2026-10-25, 2026-10-26) give −1.0 kg for the Orin module on a carrier board; the budget now says −0.4 kg, because the developer kit was weighed at 0.877 kg rather than the 1.5 kg estimate. The playground uses −0.4 kg.
+- <b>Which mass the stair check used.</b> The knee figure (47 N·m) is quoted with "41.30 kg with shells" in `stairs.md`; the strength check uses the URDF mass (40.3 kg, bare). The playground scales 47 N·m from 41.3 kg, a first-order estimate.
+:::
+
+## Decisions you can make here
+
+- <b>Which savings to pursue first.</b> The battery, the RS03 set and the leg structure are the biggest blocks. Trade: the 13S2P battery saves about 1.1 kg but cuts runtime from about 1.5 h to the 1 h minimum; RS06 shoulders save 1.1 kg but drop shoulder peak torque from 60 to 36 N·m.
+- **Whether 35 kg is still the right target**, or whether the knee's measured continuous rating (phase 2 bench test) should set the limit instead. Trade: chasing 35 kg costs runtime and margin elsewhere; a measured limit may allow today's mass, or may demand more cuts.
+- <b>Whether to add a 2-DOF waist.</b> Trade: more reach and bending, but about +2.5 kg (over the 42 kg limit unless something else goes) and about +$630.
+- <b>Where to put mass on the leg.</b> Trade: the knee motor up the thigh cuts leg inertia by about 12% (an easier, quicker swing), but adds a linkage of about 0.2 kg and design work.
+- **Whether to move the proportions further towards human** (hips at 0.50 *H*). Trade: more human-like steps and reach, but the stair knee goes to about 127% of rated, so it needs the 1.5:1 knee stage (+0.2 kg per knee, some gear play).
+
+<RawHtml html={widget4} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+## Further reading
+
+- [J. B. S. Haldane, On Being the Right Size](https://en.wikisource.org/wiki/On_Being_the_Right_Size): a short, very readable essay on why size changes everything.
+- [A. A. Biewener, Biomechanical consequences of scaling (J. Exp. Biol., 2005)](https://doi.org/10.1242/jeb.01520): how animals from mice to elephants cope with the square-cube law.
+- [D. A. Winter, Biomechanics and Motor Control of Human Movement](https://doi.org/10.1002/9780470549148), chapter 4 (anthropometry): segment lengths, masses and inertias of the human body, the standard reference for humanoid proportions.
+- [P. M. Wensing et al., Proprioceptive actuator design in the MIT Cheetah](https://doi.org/10.1109/TRO.2016.2640183): how motor size, gear ratio and leg inertia trade off, the reasoning behind quasi-direct drives like the RobStride.
+- [K. M. Lynch and F. C. Park, Modern Robotics](https://hades.mech.northwestern.edu/index.php/Modern_Robotics), chapter 8: mass, inertia and the dynamics of open chains.
+
+## Sources
+
+1. <span id="s1"></span>[D. A. Winter, Biomechanics and Motor Control of Human Movement, 4th ed., Wiley, 2009](https://doi.org/10.1002/9780470549148) <span class="used">— used for: segment heights and lengths as fractions of height (Fig. 4.1, after Drillis and Contini)</span>
+2. <span id="s2"></span>[R. Drillis, R. Contini, M. Bluestein, Body segment parameters: a survey of measurement techniques, Artificial Limbs, 1964](https://the.oandplibrary.org/items/show/179693) <span class="used">— used for: origin of the segment-length fractions and their adult basis</span>
+3. <span id="s3"></span>[J. B. S. Haldane, On Being the Right Size, 1926](https://en.wikisource.org/wiki/On_Being_the_Right_Size) <span class="used">— used for: the square-cube argument</span>
+4. <span id="s4"></span>[A. A. Biewener, Biomechanical consequences of scaling, J. Exp. Biol. 208, 2005](https://doi.org/10.1242/jeb.01520) <span class="used">— used for: how animals compensate for mass growing faster than strength</span>
+5. <span id="s5"></span>[S. Seok et al., Design principles for energy-efficient legged locomotion and implementation on the MIT Cheetah robot, IEEE/ASME Trans. Mechatronics, 2015](https://doi.org/10.1109/TMECH.2014.2339013) <span class="used">— used for: motor torque scaling with gap radius and size</span>
+6. <span id="s6"></span>[P. M. Wensing, A. Wang, S. Seok, D. Otten, J. Lang, S. Kim, Proprioceptive actuator design in the MIT Cheetah, IEEE T-RO, 2017](https://doi.org/10.1109/TRO.2016.2640183) <span class="used">— used for: torque density, leg inertia and why distal mass matters</span>
+7. <span id="s7"></span>[K. M. Lynch, F. C. Park, Modern Robotics: Mechanics, Planning, and Control, Cambridge University Press, 2017](https://hades.mech.northwestern.edu/index.php/Modern_Robotics) <span class="used">— used for: torque, moment of inertia and rigid-body dynamics</span>
+8. <span id="s8"></span>[NVIDIA, Jetson AGX Orin Developer Kit User Guide](https://docs.nvidia.com/jetson/agx-orin-devkit/user-guide/latest/index.html) <span class="used">— used for: the developer kit as a module on a reference carrier board</span>
+9. <span id="s9"></span>[RobStride, Product\_Information (manuals and specifications)](https://github.com/RobStride/Product_Information) <span class="used">— used for: RS04 Ø120 mm body, 40 N·m rated and 120 N·m peak; motor masses</span>
+10. <span id="s10"></span>[Orbbec, Gemini 335L product page](https://www.orbbec.com/products/stereo-vision-camera/gemini-335l/) <span class="used">— used for: camera size 124 × 29 × 27 mm and 133 g</span>
+
+<PageScript code={script} />

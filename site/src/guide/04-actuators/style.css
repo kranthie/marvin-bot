@@ -1,0 +1,11 @@
+/* Actuators: quasi-direct drive, torque, speed and heat: styles for this page's playground */
+.pgtitle{font-size:13px;color:var(--muted);margin:0 0 6px}
+.statusline{margin-top:8px;font-size:14px;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+.statusline.ok{border-color:var(--good)} .statusline.warn{border-color:var(--warn)} .statusline.bad{border-color:var(--bad)}
+.eq{font-family:var(--mono);background:var(--code);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:.6em 0;max-width:78ch;overflow-x:auto;white-space:nowrap}
+.sym{font-size:14px;color:var(--muted)}
+.ctl.check label{justify-content:flex-start;gap:8px;align-items:center}
+.jt td.bar{min-width:160px}
+.pct{font-family:var(--mono)}
+.pct.ok{color:var(--good)} .pct.warn{color:var(--warn)} .pct.bad{color:var(--bad)}
+.small{font-size:13px;color:var(--muted)}

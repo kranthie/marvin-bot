@@ -1,0 +1,237 @@
+---
+title: "Motion tracking: Kimodo, retargeting and BeyondMimic"
+description: "Instead of writing a new reward for every skill, Marvin Bot learns one policy (a trained neural-network controller, page 16) that copies a reference motion."
+sidebar:
+  label: "17 · Motion tracking: Kimodo, retargeting and BeyondMimic"
+  order: 18
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/17-motion-tracking/widget-1.html?raw';
+import widget2 from '../../../guide/17-motion-tracking/widget-2.html?raw';
+import widget3 from '../../../guide/17-motion-tracking/widget-3.html?raw';
+import widget4 from '../../../guide/17-motion-tracking/widget-4.html?raw';
+import widget5 from '../../../guide/17-motion-tracking/widget-5.html?raw';
+import widget6 from '../../../guide/17-motion-tracking/widget-6.html?raw';
+import script from '../../../guide/17-motion-tracking/script.js?raw';
+import '../../../guide/17-motion-tracking/style.css';
+
+<div class="guide-meta">
+
+**Stage 5 · Learning** · \~35 min · Before this: [16 Reinforcement learning for walking](../16-rl-walking/) · Also useful: [01 Degrees of freedom](../01-dof-kinematics/), [13 The robot description](../13-description/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Instead of writing a new reward for every skill, Marvin Bot learns one <a class="g" href="../glossary/#policy">policy</a> (a trained neural-network controller, [page 16](../16-rl-walking/)) that copies a reference motion. A new skill is then a new clip. This page follows a clip from a text prompt to a trained tracker, and lets you break the two steps that most often go wrong: scaling a human to a 1.44 m robot, and the shape of the reward.
+
+Think of a dance class: rather than explaining in words what a good bow looks like, the teacher does it and you copy. A humanoid is expected to do many things besides walking, such as waving, bowing, squatting or clapping, and writing a separate scoring rule for each would take weeks per skill. With motion tracking the robot is shown a recording and scored on how closely it copies it. The hard parts are getting a good recording for a body that is not human-shaped, and deciding what "close enough" means.
+
+:::note[You will learn]
+- Why tracking a reference motion scales better than designing a reward per skill.
+- The four steps of Marvin Bot's pipeline: Kimodo text-to-motion, PyRoki retargeting, clip checks, and a BeyondMimic-style tracker trained in ProtoMotions on Newton.
+- Why a person cannot simply be shrunk to the robot's size, and what goes wrong with feet, hands and joint limits when you try.
+- How the exponential reward kernel exp(−e²/σ²) works, and why a 0.3 m kernel barely notices a 3 cm crouch.
+:::
+
+## The idea in one picture
+
+For walking ([page 16](../16-rl-walking/)) the reward is hand-written: follow the commanded velocity, keep the body upright, do not waste torque, lift the feet. That works for one skill, but every new skill (a bow, a squat, a wave) needs new reward terms and weeks of tuning. <a class="g" href="../glossary/#motion-tracking">Motion tracking</a> turns the problem around: give the policy a *reference motion*, a recording of where every body part should be at every moment, and reward it for staying close. The reward is the same for every skill; only the clip changes.<sup class="cite">[\[1\]](#s1)</sup>
+
+<RawHtml html={widget1} />
+
+<div class="hint">
+
+Words in the pipeline: Kimodo is a <a class="g" href="../glossary/#diffusion-model">diffusion model</a>, a neural network that generates new motions (much as image generators make pictures from text). SOMA is the human skeleton it outputs; 30 fps means 30 poses (frames) per second. A *root path* is the route the hips should follow; *keypoints* are tracked points on the body such as wrists, knees and ankles.
+
+</div>
+
+Two of these steps hide most of the difficulty. <a class="g" href="../glossary/#retargeting">Retargeting</a> has to turn a 1.75 m person into a 1.44 m robot with different proportions and joint limits, and every compromise it makes becomes part of the "truth" the policy is trained to copy. The tracker's reward has to say how close is close enough. The two playgrounds below let you try both.
+
+## Playground A: scaling a person to Marvin Bot
+
+The left panel shows a human source (a stick figure with typical adult proportions). The right panel shows Marvin Bot's skeleton (lengths from `description/robot.yaml` and `skeleton.yaml`) doing its best to put its joints on the *scaled* human keypoints (hollow circles). Legs are solved exactly (two-link <a class="g" href="../glossary/#inverse-kinematics">inverse kinematics</a>: working backwards from where the foot should be to the joint angles that put it there), arms by a small optimisation that nudges four joint angles until the hand gets as close as it can, the same kind of solver PyRoki uses. Joint limits are applied after the solve; any limit the motion asks the robot to break is listed in red.
+
+<b>Start here:</b> leave *Reach forward* playing, press *Uniform by height*, then *Marvin Bot today*, and watch the feet and the readouts. How to read the picture: the robot (orange) is trying to put its joints on the hollow blue circles (the shrunk human, shown in grey on the left at full size); red marks show where it misses or hits a joint limit. Good readouts: hand error a few centimetres, stance sole height near 0 mm (on the floor), little foot sliding, a standing knee bend near the robot's 15° stance, and no joint-limit hits. The lower chart plots the shoulder over the clip: the purple path should stay out of the shaded (forbidden) area.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. Press **Uniform by height** with *Reach forward*. The robot's straight leg (0.640 m) is shorter than the shrunk human leg (0.70 m), so with the pelvis held at its target the feet hang in the air. Untick the foot-on-floor fix to see by how much. Then press **Marvin Bot today**: legs scaled by leg length, and the gap closes.
+2. Pick **Too small**: now the target legs are too short, the robot has to bend its knees to reach them and stands in a crouch. The repo found exactly this: a target leg only 1.5 cm short held the knee at 26°.
+3. Choose **Clap** and look at the shoulder chart under the figures. The hands can only meet if the shoulder roll goes below 0°, which Marvin Bot allows only with the arm forward (the shaded corner). Now try **Two-hand wave**: the human lifts the arms sideways past 120° of roll.
+4. Try **Deep squat**: the human's knee goes to 140°, ten past the robot's 130° stop. Watch the feet: with the knee stopped, the ankle cannot reach its target and the stance foot ends up below the floor or sliding.
+:::
+
+## From first principles
+
+### Why a reference motion?
+
+Reinforcement learning ([page 16](../16-rl-walking/)) needs a number, the <a class="g" href="../glossary/#reward">reward</a>, that says how good each moment was. For walking, people write it by hand. A tracker's reward is generic: "be where the reference is". BeyondMimic showed that one such formulation, with one set of hyperparameters, learns sprints, cartwheels and dances and transfers to a real humanoid without per-skill tuning.<sup class="cite">[\[1\]](#s1)</sup> The price is that you need good reference motions, and that the robot must be physically able to do them.
+
+### Step 1: making motions from text (Kimodo)
+
+Kimodo is NVIDIA's kinematic motion <a class="g" href="../glossary/#diffusion-model">diffusion model</a>, trained on about 700 hours of commercially usable optical motion capture. It takes a text prompt and optional constraints (full-body keyframes, hand or foot positions, a 2D root path or waypoints) and outputs a human motion on NVIDIA's SOMA skeleton.<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[5\]](#s5)</sup>
+
+<details>
+<summary>Go deeper: Kimodo's licences</summary>
+
+Its code is Apache-2.0; the SOMA "RP" model is under the NVIDIA Open Model License; its text encoder (the part that turns the prompt into numbers) is Meta's Llama 3 8B Instruct (gated, Meta Llama 3 Community License) with LLM2Vec adapters.
+
+</details>
+
+"Kinematic" means it outputs positions and angles only, not forces: nothing guarantees the motion is physically possible, which is why the clips are checked.
+
+Wording alone does not set speed. In the repo, "a person jogs forward" produced a 2 m/s run that no tracker could follow. So every locomotion clip and in-place skill gets a *root path*: the hips' speed, heading and direction of travel frame by frame (`generate_kimodo.py`). Several samples are generated per clip (4 by default, 8 for the clips that needed it) and the one with the fewest failed skill checks, then the least foot sliding and crossing of the feet, is kept.
+
+### Step 2: retargeting (PyRoki)
+
+The robot has different segment lengths, fewer joints (no waist pitch, no wrist roll) and joint limits. Retargeting finds, frame by frame, the robot joint angles *q* that best put the robot's body points on the human's *keypoints* (pelvis, hips, knees, ankles, toes, shoulders, elbows, wrists). PyRoki writes this as a least-squares problem (add up the squared misses and make the total as small as possible) and solves it with a Levenberg–Marquardt optimiser, a standard method that repeatedly nudges the angles downhill, written in the JAX numerical library:<sup class="cite">[\[3\]](#s3)</sup>
+
+<div class="eq">
+
+minimise over q: Σ<sub>k</sub> w<sub>k</sub> ‖FK<sub>k</sub>(q) − s ⊙ p<sub>k</sub>‖² + w<sub>lim</sub>·limits(q) + w<sub>coll</sub>·self-collision(q) + w<sub>rest</sub>‖q − q<sub>rest</sub>‖² + smoothness
+
+</div>
+
+Here FK<sub>k</sub>(q) is <a class="g" href="../glossary/#forward-kinematics">forward kinematics</a>: the position of robot body point *k* for joint angles *q*; p<sub>k</sub> is the human keypoint; s is the scale (⊙ means each direction can be scaled separately); the w are weights saying how much each wish matters; ‖…‖² is the squared distance. In words: put the robot's points on the shrunk human's points, stay inside the joint limits, do not let limbs pass through each other, stay near a resting pose, and move smoothly.
+
+The scale is the hard part. Shrink everything by the height ratio (1.438/1.75 = 0.82) and the human's leg is still 0.70 m long while Marvin Bot's straight leg is 0.640 m: either the feet float or the pelvis must drop. Shrink by too much and the robot has to crouch. Arms, torso and legs each need their own scale, which is what the playground's "Per body part" mode does. GMR, a retargeter built for exactly this problem, also uses non-uniform local scaling followed by a two-stage optimisation, and its authors show that retargeting artefacts (foot sliding, self-penetration) directly hurt the trained tracker.<sup class="cite">[\[6\]](#s6)</sup>
+
+<details>
+<summary>What the playground's solver does, exactly</summary>
+
+Human proportions come from the repo's measured source (hip-to-ankle 0.853 m and shoulder-to-wrist 0.56 m for a 1.75 m person) plus standard anthropometry for the rest. Each frame, the human's joint angles give its keypoints; they are scaled (uniformly about the floor point under the hips, or legs about the floor, shoulders about the hips, arms about each shoulder, as in `scale_keypoints()`). The robot pelvis is pinned to the scaled pelvis target with the human's pelvis tilt. Each leg is solved analytically (hip roll, hip pitch, knee) to reach its ankle target, then clamped to its limits; the ankle pitch keeps the foot flat within ±40°. Each arm (shoulder pitch, roll, yaw, elbow) is solved by 30 damped Gauss–Newton steps on wrist error plus 0.3 × elbow error plus a small pull to the human's angles; it is solved once without limits (to find what the motion *asks* for) and once with limits, including the coupled shoulder-roll limit. Simplifications: no self-collision, no smoothness term, no root optimisation (PyRoki moves the root too), and a 2-link leg instead of the full chain.
+
+</details>
+
+### Step 3: checking the clips
+
+A bad clip wastes hours of training and teaches the wrong thing, so `sim/motion/check_clips.py` runs four layers, the first three on Kimodo's human clip and the third again on the retargeted robot clip, so a failure points at generation or at retargeting:
+
+1. <b>Text match.</b> NVIDIA's text–motion retrieval model for SOMA (TMR-SOMA-RP-v1, the model Kimodo's benchmark scores with) turns every clip and every prompt into a list of numbers (an "embedding") placed so that a motion and a sentence describing it land close together. Each clip gets its similarity to its own prompt (cosine mapped to 0–1) and that prompt's rank among all 25. A clip that another prompt describes better is suspect.
+2. <b>Motion quality.</b> Kimodo's benchmark metrics: foot sliding from toe height and from Kimodo's contact labels, the share of contact frames that skate, contact consistency, and how far the hips strayed from the requested root path. Kimodo's published foot skate is 2–4 cm/s.
+3. <b>Skill checks.</b> A geometric test per clip, in units of the standing head height H so it runs on both bodies: the hands meet (closer than 0.07 H) in front of the chest at least three times in a clap; a hand above the shoulder 40% of the time and swinging in a wave; the pelvis dropping by 30% in a squat; distance within ±25% and turn within 25° of the root path for a walk; both feet off the ground in 5% of jog frames, and so on.
+4. <b>Review renders.</b> The human as a stick figure beside the robot reference, with the checks written on the frame.
+
+On the first 25 clips every clip ranked its own prompt first or second and slid 0.2–3.8 cm/s, but five did less than asked (the wave waved for 2 s of 8; the arm raise reached about 45°). Those five were regenerated with sharper prompts and more samples, now picked by the skill checks, and all 25 pass on the human. On the robot two fall short: the clap's palms meet once rather than three times, and the pick-up's hands stop 27 cm above the floor, because with no waist pitch the robot cannot bend over.
+
+### Step 4: the tracker's reward (BeyondMimic)
+
+The tracker observes its own joint angles, joint velocities, IMU (the inertial sensor in the pelvis) and last action, plus the reference: the target pose at the next few frames (ProtoMotions uses 1, 2, 4 and 8 frames ahead) and the error of an *anchor body* (the torso) against the reference's anchor.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[4\]](#s4)</sup> Every other body's target is expressed relative to the anchor, so a small drift in where the robot stands does not count as a pose error. Each tracking term is an exponential <a class="g" href="../glossary/#reward-kernel">kernel</a>, a scoring curve that pays 1 for a perfect match and fades towards 0 as the error grows:
+
+<div class="eq">
+
+r(ē, σ) = exp(−ē / σ²), ē = mean over bodies of ‖x<sub>robot</sub> − x<sub>ref</sub>‖²
+
+</div>
+
+ē is a mean squared error (m² for positions, rad² for orientations), and σ (sigma) is the "tolerance": an error of one σ gives exp(−1) = 0.37 of the reward, two σ gives 0.02. In BeyondMimic σ is 0.3 m for body positions, 0.4 rad for orientations, 1.0 m/s for linear and 3.14 rad/s for angular velocities, each with weight 1.0, plus optional anchor position and orientation terms with weight 0.5.
+
+Penalties are −10 for soft joint limits (0.9 of the mechanical range), −0.1 for action rate and −0.1 for undesired contacts.<sup class="cite">[\[1\]](#s1)</sup>
+
+An *episode* (one attempt) ends when the anchor or an end effector (a hand or foot) is 0.25 m too high or low, or the anchor is tilted 0.8 rad from the reference. Training starts episodes at random points of the clips, more often in the one-second bins where the policy has been failing (*adaptive sampling*, a moving average of failures with a uniform floor).<sup class="cite">[\[1\]](#s1)</sup>
+
+The kernel's shape matters. Its slope, dr/de = −(2e/σ²)·r, is zero at e = 0 and largest at e = σ/√2. With σ = 0.3 m, a body 3 cm off keeps exp(−0.03²/0.3²) = exp(−0.01) = **0.990** of its reward and the gradient is tiny. Playground B shows what that does.
+
+## Playground B: the reward kernel
+
+How strict should the score be? Here you set the tolerance σ and an error, and see how much reward the robot keeps and how strongly the score pushes it to improve (the slope: zero slope means "no reason to fix this"). <b>Start here:</b> press *3 cm crouch* and read *Reward lost*: well under 1%, too little for training to bother fixing. Then press the other scenarios. How to read the chart: the solid blue curve is the reward if every scored body is off by the error on the x-axis; the dashed purple curve is the same when only some of them are off (the average dilutes the miss); the orange dot is your current setting. A flat curve under the dot means the robot feels almost no pull towards the reference.
+
+<RawHtml html={widget3} />
+
+### The weighted sum
+
+The policy sees one number per step: the weighted sum of all terms. Slide the errors and see how much each term contributes. The defaults are Marvin Bot's tracker (`mlp_bm_marvin_bot.py` as written by `setup_protomotions.py`).
+
+<RawHtml html={widget4} />
+
+:::note[Try this]
+1. **3 cm crouch**: every leg body 3 cm low costs about 1% of the body-position term, while the joint-angle term Marvin Bot added sees the 6.5° of extra bend directly. Then set the joint error to 0 and notice how little the body terms care.
+2. **Arm left hanging**: one hand 0.6 m off. Set N to 28 (all bodies) and the term still pays most of the reward, because one bad body is averaged with 27 good ones. At N = 15 the loss is about twice as large. That is why BeyondMimic scores 14 key bodies.
+3. **Hopping**: both feet in the air while the reference has one down, so one foot's contact differs. That single −2.0 penalty outweighs everything the body terms lose to the hop; at upstream's −0.1 it would hardly register.
+4. Drag σ down to 0.05 m with a 3 cm error: the kernel becomes strict, but large errors then earn almost nothing and give almost no gradient, which makes early training hard.
+:::
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+One tracker follows all 25 Kimodo clips on the 1.44 m model: trained for 4,800 epochs with 16,384 robots at once (an epoch is one round of collecting experience and updating the network; batch 65,536, about 5.6 s an epoch, about 7.5 hours on one RTX-class GPU), and every clip stays upright. Joint errors are 8–13° RMS on most clips and the hands 3–9 cm from the reference's; the two-hand wave is the weakest (34.6°, 12.1 cm). Nothing has been replayed in MuJoCo or run on hardware yet. <b>These results are provisional:</b> a new tracker (v4, with the head and joint-angle rewards below) is still training on the regenerated clips, so the per-clip numbers will change. Sources: `sim/motion/README.md`, `docs/skills.md`, `docs/decisions.md` (2026-10-27 to 2026-10-29).
+:::
+
+What Marvin Bot changed from upstream's BeyondMimic config in ProtoMotions, and why (each was found by a failed tracker):
+
+- <b>Scale.</b> Legs by leg length, shoulders about the hips (0.62 as wide, about 0.955 as high, 6.5 cm forward), arms about each shoulder; the knees and feet moved 1.5 and 3 cm outwards because the shrunk human feet ended up 12–14 cm apart and Marvin Bot's feet are 11 cm wide. With the shoulders or pelvis left high, the solver crouched the robot (knees 37–58° through a walk). The solver also starts from the standing pose, not the middle of each joint's range (a 65° knee).
+- <b>Arms kept out of the body.</b> Upstream leaves the self-collision cost off; retargeted hands went 4–10 cm into the thighs in most walking frames and the palms 9 cm through each other in the clap. `retarget_marvin_bot.py` turns it on (weight 10, margin 2 cm) for the arms against the trunk, legs and the other arm.
+- <b>Soles.</b> ProtoMotions' converter puts the lowest body origin 4 cm above the floor, which suits another robot's foot frame. `fix_sole_height.py` lifts each clip until the flatter (stance) foot is on the floor; lifting until the single lowest corner touched left walks 3–5 cm in the air, and the trackers hopped to keep up.
+- <b>Anchor reward and termination.</b> BeyondMimic's global anchor-position reward (weight 0.5, σ 0.3 m) and a "fell behind" termination at 0.5 m were missing upstream; without them trackers 1–4 stood still.
+- **Contact penalty −2.0** per foot whose contact differs from the reference's. Without it the trackers hopped (both feet down 70% of the time, both up 20%); −0.5 only halved it; at −2.0 both feet are up 1–2% of the time.
+- **Fifteen scored bodies**: BeyondMimic's 14 key bodies plus the head. Scoring all 28 let an arm hang while the reference raised it (hands 40–75 cm off); leaving the head out made it shake (46–60°/s RMS standing still).
+- **Joint-angle term**, weight 0.5, σ 0.3 rad, exp(−mean squared joint error/σ²) over all joints. The body-position kernel paid 99% for a body 3 cm off, so the tracker stood and walked 5–8° deeper in the hips, knees and ankles than the reference, and with an arm overhead chose a different arm posture for the same hand position (shoulder yaw 95° off in the two-hand wave).
+- **Looser velocity term** (σ 0.5 m/s instead of 1.0), more exploration (log std −2.3), softer gains for an action scale of at least 0.4 rad, and an episode end when any scored body is 25 cm from the reference.
+- **Adaptive sampling** in ProtoMotions is per clip: a clip's sampling weight goes back to 1 when the policy fails it and decays by 0.999 per evaluation when it succeeds (BeyondMimic's own version works on one-second bins within a clip).
+- <b>A second check.</b> ProtoMotions counts a clip as tracked when the torso height stays within 25 cm; `check_tracking.py` also compares distance covered, joint angles and the hands and feet alone. That is how the first tracker's shuffling on the spot (0–32% of the reference's distance) showed up.
+
+### The 25 skills
+
+From `docs/skills.md` (provisional: the tracker before v4, which is still training): joint RMS error against the reference, and the hands' mean distance from where the reference puts them, both relative to the pelvis. Click a column heading to sort.
+
+<RawHtml html={widget5} />
+
+## Trade-offs and alternatives
+
+| Choice | Picked | Alternatives considered | Why |
+|---|---|---|---|
+| Motion source | Kimodo (text to motion) | 100STYLE motion capture (CC-BY-4.0), CMU database, BONES-SEED, AMASS, LAFAN1, own motion capture | Same eight motions, tracked the same way: 100STYLE kept the tracker up on 5 of 8, Kimodo 5 of 8 with gentler prompts, CMU 3 of the 5 that passed the filter (feet slid 0.43 m/s median vs 0.06–0.07). Kimodo makes skills no open dataset has; BONES-SEED's licence covers only non-profits and small companies; AMASS and LAFAN1 are non-commercial or no-derivatives. 100STYLE stays as a locomotion option. |
+| Retargeter | ProtoMotions' PyRoki retargeter, with Marvin Bot's link map, scaling and self-collision | GMR<sup class="cite">[\[6\]](#s6)</sup> (named in the 2026-10-25 compute decision and in <code>ACKNOWLEDGMENTS.md</code> as a possible alternative) | PyRoki comes with ProtoMotions' Kimodo route (SOMA converter and keypoint extraction), so no converter of Marvin Bot's own is needed. |
+| Tracker framework | ProtoMotions on Newton<sup class="cite">[\[4\]](#s4)</sup> | mjlab's BeyondMimic task (kept as a fallback), BeyondMimic's original code | One framework for retargeting, motion library and training. |
+| Skills by tracking vs by reward | Tracking for skills beyond walking | Reward per skill | A new skill is a new clip. The command-driven walking and stair policies stay: a tracker needs a reference to follow, and a joystick does not produce one. |
+| Not yet tried | – | A style discriminator (AMP), BeyondMimic's gain rule, a stronger smoothness term | Listed in <code>docs/decisions.md</code> (2026-10-29) as next options for the two-hand wave and the clap. |
+
+:::caution[Where sources and the repo disagree]
+- <b>Arm and leg scale.</b> `sim/motion/README.md` says the legs scale by 0.69 and the arms by 0.79, and a code comment says "0.79 for the 0.443 m reach of a 50 mm shoulder drop". The same script computes its scales from the current description: (0.325 + 0.315)/0.853 = **0.750** for the legs and (0.025 + 0.200 + 0.188 + 0.005)/0.56 = **0.746** for the arms, since the shoulder-roll offset in `skeleton.yaml` is now 25 mm. The README numbers appear to date from the 1.29 m body; the playground's "Marvin Bot today" uses the computed values. Which values the trained 25-clip tracker's references used is not recorded.
+- <b>Shoulder height scale.</b> The README says "0.75 high"; the code multiplies 0.75 by the ratio of the robot's shoulder-above-hip height to the source's, which is 0.955 on the 1.44 m body.
+- <b>Samples per clip.</b> `docs/decisions.md` (2026-10-28) says the best of four samples is kept, by foot sliding and crossing. The current script keeps the sample with the fewest failed skill checks first, then the least sliding, crossing and jerk, and the README says 8 samples were used for some clips.
+- <b>Retargeter.</b> The 2026-10-25 compute decision names GMR for retargeting; the implemented pipeline uses PyRoki.
+- <b>BeyondMimic vs ProtoMotions sampling.</b> The paper samples one-second bins inside each clip by failure rate; ProtoMotions' evaluator re-weights whole clips. Both are called adaptive sampling.
+:::
+
+## Decisions you can make here
+
+- How to scale: by height, by limb length, or per body part. Per body part keeps the feet on the floor and the knees straight, at the cost of changing the motion's proportions.
+- Which joint limits to relax (the coupled shoulder roll is already relaxed with the arm forward) and which skills to drop because the body cannot do them (no waist pitch: no picking things off the floor).
+- Reward tolerances: tighter σ for precise poses vs looser for faster early learning; whether to add terms (joint angles, contacts) or a style discriminator (a second network that scores whether a motion "looks human"). Each extra term fixes one failure but adds a weight to tune and another hours-long training run to test it.
+- How many bodies to score, and whether hands deserve their own term. Fewer bodies make each one count more (no hanging arm) but leave the unscored ones free to do odd things (the shaking head).
+
+<RawHtml html={widget6} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+:::note[Where this leads]
+This page reused page 16's machinery (PPO, rewards, thousands of simulated robots) with a reward that says "copy this". [Page 18](../18-wbc-vla/) looks at how tracked skills, walking and higher-level models that understand language and images fit together into whole-body control; [page 20](../20-sim-to-real/) covers the checks a tracker still needs before it runs on hardware.
+:::
+
+## Further reading
+
+- [BeyondMimic (Liao et al., 2025)](https://arxiv.org/abs/2508.08241): read the supplementary material for the exact rewards, terminations, adaptive sampling and the PD-gain rule.
+- [Retargeting Matters / GMR (Araújo et al., 2025)](https://arxiv.org/abs/2510.02252): a careful study of how retargeting artefacts hurt tracking.
+- [PyRoki (Kim et al., 2025)](https://arxiv.org/abs/2505.03728): how kinematic problems become composable costs.
+- [Kimodo](https://github.com/nv-tlabs/kimodo): the prompting advice and constraint types.
+- [ProtoMotions](https://github.com/NVlabs/ProtoMotions): the training framework, with BeyondMimic-style experiments.
+- [SONIC (Luo et al., 2025)](https://arxiv.org/abs/2511.07820): what motion tracking looks like scaled to 700 hours of data; see [page 18](../18-wbc-vla/).
+
+## Sources
+
+1. <span id="s1"></span>[Q. Liao, T. E. Truong, X. Huang, Y. Gao, G. Tevet, K. Sreenath, C. K. Liu, "BeyondMimic: From Motion Tracking to Versatile Humanoid Control via Guided Diffusion", arXiv:2508.08241, 2025](https://arxiv.org/abs/2508.08241) <span class="used">— used for: tracking formulation, observations, anchor body, kernel form, σ values and weights, penalties, terminations, adaptive sampling.</span>
+2. <span id="s2"></span>[NVIDIA, Kimodo repository (nv-tlabs/kimodo)](https://github.com/nv-tlabs/kimodo) <span class="used">— used for: what Kimodo is, constraint types, skeletons, licences of code and models.</span>
+3. <span id="s3"></span>[C. M. Kim, B. Yi, H. Choi, Y. Ma, K. Goldberg, A. Kanazawa, "PyRoki: A Modular Toolkit for Robot Kinematic Optimization", arXiv:2505.03728, 2025](https://arxiv.org/abs/2505.03728) <span class="used">— used for: retargeting as cost minimisation, Levenberg–Marquardt solver in JAX.</span>
+4. <span id="s4"></span>[NVIDIA, ProtoMotions repository (NVlabs/ProtoMotions)](https://github.com/NVlabs/ProtoMotions) <span class="used">— used for: BeyondMimic-style experiment config (future frames 1/2/4/8, per-clip motion weights).</span>
+5. <span id="s5"></span>[D. Rempe, M. Petrovich, Y. Yuan et al., "Kimodo: Scaling Controllable Human Motion Generation", arXiv:2603.15546, 2026](https://arxiv.org/abs/2603.15546) <span class="used">— used for: Kimodo as a kinematic motion diffusion model.</span>
+6. <span id="s6"></span>[J. P. Araújo, Y. Ze, P. Xu, J. Wu, C. K. Liu, "Retargeting Matters: General Motion Retargeting for Humanoid Motion Tracking", arXiv:2510.02252, 2025](https://arxiv.org/abs/2510.02252) <span class="used">— used for: GMR, non-uniform scaling, effect of retargeting artefacts on tracking.</span>
+7. <span id="s7"></span>[I. Mason, S. Starke, T. Komura, 100STYLE dataset (CC-BY-4.0), 2022](https://zenodo.org/records/8127870) <span class="used">— used for: the alternative motion source.</span>
+
+<PageScript code={script} />

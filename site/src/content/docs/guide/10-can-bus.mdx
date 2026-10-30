@@ -1,0 +1,196 @@
+---
+title: "CAN buses and bandwidth"
+description: "Every leg motor on Marvin Bot must receive a command and send back its position 500 times a second, over a pair of twisted wires shared with its neighbours."
+sidebar:
+  label: "10 · CAN buses and bandwidth"
+  order: 11
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/10-can-bus/widget-1.html?raw';
+import widget2 from '../../../guide/10-can-bus/widget-2.html?raw';
+import widget3 from '../../../guide/10-can-bus/widget-3.html?raw';
+import script from '../../../guide/10-can-bus/script.js?raw';
+import '../../../guide/10-can-bus/style.css';
+
+<div class="guide-meta">
+
+**Stage 3 · Electrical, sensing and safety** · \~30 min · Before this: [03 System architecture](../03-architecture/), [04 Actuators](../04-actuators/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+Every leg motor on Marvin Bot must receive a command and send back its position 500 times a second, over a pair of twisted wires shared with its neighbours. This page shows how long each message takes on the wire, why a bus should stay at most about half full, and why the robot ends up with seven buses rather than one.
+
+:::note[You will learn]
+- How a <a class="g" href="../glossary/#can-bus">CAN bus</a> works: the differential pair, termination, and how nodes take turns without a master (<a class="g" href="../glossary/#arbitration">arbitration</a>).
+- How to count the exact worst-case length of a frame, including <a class="g" href="../glossary/#bit-stuffing">bit stuffing</a>, and turn it into <a class="g" href="../glossary/#bus-load">bus load</a>.
+- Why Marvin Bot runs six motor buses plus a battery bus, and what CAN FD would change.
+- Why the repo budgets 160 bits per frame: the exact worst case for a 29-bit, 8-byte frame, including the 3-bit inter-frame space.
+:::
+
+## The idea in one picture
+
+Marvin Bot's computer has to talk to 23 motors, many times a second: "go to this angle with this stiffness", and back from each motor, "here is where I am and how hard I am pushing". Running a separate cable from the computer to every motor would be a tangle, so motors share cables called **buses**, like several houses sharing one road. The rules for sharing that road are the **CAN** protocol (Controller Area Network), invented for cars and now common in robots.
+
+The catch is that a shared road can fill up. If the messages for one control cycle do not fit in the time that cycle lasts, commands arrive late and the robot's balance suffers. This page is about counting that traffic.
+
+A CAN bus is a single pair of wires that every node on it (here: the computer's CAN adapter and a handful of motors) listens to all the time. Only one node can talk at a time. Each message, called a <a class="g" href="../glossary/#frame">frame</a>, takes a fixed number of bit-times; at 1 Mbit/s (one million bits per second) one bit lasts 1 µs (one microsecond, a millionth of a second). If a control loop needs *N* frames every cycle, those frames have to fit in the cycle, with room to spare. That is the whole problem: <b>frames × bits per frame × cycles per second must stay well below the bit rate.</b>
+
+Marvin Bot's RobStride actuators use classic CAN at 1 Mbit/s with 29-bit identifiers, and each motor exchanges **one command and one reply** per control cycle (`description/robot.yaml`, `robot/drivers/robstride.py`).<sup class="cite">[\[9\]](#s9)</sup> "29-bit identifiers" means each message starts with a 29-bit label saying who it is for and what kind it is. A leg motor bus runs at 500 Hz, so each cycle lasts 2,000 µs. Three motors × 2 frames × 160 µs is 960 µs: the bus is busy 48% of the time.
+
+## Playground: CAN bus-load calculator
+
+<b>Start here:</b> click **Marvin Bot today: hip bus**, then the other presets, and watch the **Bus load** readout: the share of time the wires are busy. Green is at or below your load limit (60% by default), amber is above it. The frame settings (identifier, data bytes, stuffing) are explained under [Counting the bits](#counting-the-bits-in-one-frame-exactly); you can leave them alone at first.
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Start from **Marvin Bot today: hip bus** (48%, the repo's figure). Drag the stuffing down to about 65%: the frame shrinks to about 150 bits and the load to 45%. The repo used that 150-bit budget until it was corrected to the exact worst case; [the frame count below](#counting-the-bits-in-one-frame-exactly) shows why 160 is the number to plan with.
+2. Press **All six leg motors, one bus**. The exact worst case is 96%, the repo's estimate "roughly 80-90%". Either way one bus per leg cannot hold 500 Hz with margin. Now drag the loop rate down until the load drops to 60% (it takes about 300 Hz): that is the price of a single bus.
+3. Press **CAN FD, 5 Mbit/s data**. The same six motors now take 48%: the data phase shrinks fivefold, but the arbitration phase and the end of the frame still run at 1 Mbit/s, so the gain is about 2×, not 5×.
+4. Set stuffing to 0% on the hip bus: 131 bits, 39%. No real bus is that lucky every time, which is why schedules use the worst case.
+:::
+
+## From first principles
+
+### The wires: a differential pair with a resistor at each end
+
+CAN sends each bit as the *difference* between two wires, CAN\_H and CAN\_L. In the "dominant" state (a logical 0) a transmitter pulls CAN\_H up to about 3.5 V and CAN\_L down to about 1.5 V; in the "recessive" state (logical 1) nobody drives, and both wires sit near 2.5 V. Noise picked up by a twisted pair hits both wires almost equally, so the receiver, which only looks at the difference, ignores it.<sup class="cite">[\[5\]](#s5)</sup>
+
+A 120 Ω resistor at each physical end of the bus matches the cable's characteristic impedance, so a fast edge is absorbed at the end instead of reflecting back and corrupting later bits. Two 120 Ω resistors in parallel read 60 Ω across CAN\_H and CAN\_L with the power off: a quick check that a bus is terminated correctly.<sup class="cite">[\[5\]](#s5)</sup> Marvin Bot's harness puts one terminator at the hub end and one on the last motor of each bus (`docs/design/assembly_wiring.md`).
+
+### Arbitration: the lowest identifier wins, and nobody loses time
+
+Every frame begins with an identifier. If two nodes start at once, they both send their identifiers bit by bit while listening. A dominant 0 overwrites a recessive 1, so a node that sent a 1 but hears a 0 knows it has lost, stops, and tries again when the bus is free. The frame with the numerically lowest identifier gets through untouched. This is called bitwise, non-destructive arbitration.<sup class="cite">[\[1\]](#s1)</sup> It makes CAN a priority bus, and it has a consequence for timing: a frame that is ready can still be delayed by up to one whole frame that already started (no node can interrupt a frame), plus every higher-priority frame that is waiting.
+
+Classic CAN 2.0A uses 11-bit identifiers; CAN 2.0B adds an "extended" format with 29 bits.<sup class="cite">[\[1\]](#s1)</sup> RobStride packs a lot into those 29 bits: a 5-bit communication type, a 16-bit field (for the command type 1 it holds the feed-forward torque; for the reply it holds fault and mode bits) and the 8-bit motor ID (`robot/drivers/robstride.py`, after RobStride's manuals<sup class="cite">[\[9\]](#s9)</sup>).
+
+### Counting the bits in one frame, exactly
+
+A classic extended data frame with *s* data bytes is made of:
+
+| Field | Bits | What it is for |
+|---|---|---|
+| Start of frame (SOF) | 1 | one dominant bit that wakes every receiver |
+| Identifier A, SRR, IDE, identifier B, RTR | 11 + 1 + 1 + 18 + 1 | the 29-bit identifier and flags; arbitration happens here |
+| Reserved bits r1, r0; DLC | 2 + 4 | DLC = data length code (0-8 bytes) |
+| Data | 8<i>s</i> | the payload: 64 bits for RobStride's 8 bytes |
+| CRC | 15 | checksum (cyclic redundancy check): lets the receiver detect a corrupted frame |
+| CRC delimiter, ACK slot, ACK delimiter | 1 + 1 + 1 | any receiver that got the frame right overwrites the ACK slot with a dominant bit |
+| End of frame (EOF) | 7 | seven recessive bits |
+| Intermission (inter-frame space) | 3 | minimum gap before the next frame may start |
+
+With 8 data bytes that is 131 bits. Then comes <a class="g" href="../glossary/#bit-stuffing">bit stuffing</a>: CAN receivers resynchronise their clocks on edges, so after five identical bits in a row the transmitter inserts one opposite "stuff" bit, which the receiver removes. Stuffing applies from the SOF to the end of the CRC (54 + 8<i>s</i> bits for an extended frame, 34 + 8<i>s</i> for a standard one).<sup class="cite">[\[1\]](#s1)</sup> In the worst case a stuff bit can appear after the first five bits and then after every four more (because the stuff bit itself starts the next run), so Davis, Burns, Bril and Lukkien give the worst-case frame length as<sup class="cite">[\[2\]](#s2)</sup>
+
+<div class="eq">
+
+C = g + 8s + 13 + ⌊(g + 8s − 1) / 4⌋ bits<br /> g = 54 (29-bit ID) or 34 (11-bit ID); s = data bytes; 13 = CRC delimiter, ACK, EOF and intermission (not stuffed)<br /> 29-bit, 8 bytes: 54 + 64 + 13 + ⌊117/4⌋ = 131 + 29 = **160 bits** → 160 µs at 1 Mbit/s<br /> 11-bit, 8 bytes: 34 + 64 + 13 + ⌊97/4⌋ = 111 + 24 = **135 bits**
+
+</div>
+
+The same formula is used by the Linux `can-utils` bus-load tool and the kernel's CAN length helpers.<sup class="cite">[\[3\]](#s3)[\[4\]](#s4)</sup> It is the length a schedule must assume, because the stuffing depends on the data (an angle that happens to be 0x0000 or 0xFFFF stuffs a lot).
+
+### From bits to bus load
+
+<div class="eq">
+
+load = (motors × frames per motor × loop rate × bits per frame) / bit rate<br /> hip bus: 3 × 2 × 500 /s × 160 bit / 1,000,000 bit/s = 0.48 → 48%
+
+</div>
+
+<b>Why keep load at or below about 50-60%?</b> Three reasons:
+
+- <b>Error recovery.</b> A corrupted frame is followed by an error frame and a retransmission, which eats bus time the schedule did not plan.
+- **Latency** (delay): a frame that becomes ready while others queue must wait for all of them; the fuller the bus, the longer and more variable that wait (the <a class="g" href="../glossary/#jitter">jitter</a>), and response-time analysis of the kind Davis et al. formalised shows the low-priority worst case growing sharply as load approaches 100%.<sup class="cite">[\[2\]](#s2)</sup>
+- <b>Reply gaps.</b> The motors do not answer instantly: each reply comes some tens of microseconds after its command, and those gaps are idle bus time that the load figure does not count.
+
+A 50-60% ceiling is engineering practice rather than a number from the CAN standard; Marvin Bot's `robot.yaml` sets `max_load: 0.6`.
+
+### CAN FD: a faster data phase
+
+CAN FD ("flexible data-rate") is a newer version of CAN that sends the payload faster. In short: for 8-byte messages it halves the frame time, but Marvin Bot's RobStride motors do not speak it.
+
+<details>
+<summary>Go deeper: how CAN FD counts its bits</summary>
+
+CAN FD keeps the arbitration phase at the nominal rate (so every node still hears every identifier bit) and then, if the BRS (bit-rate switch) bit is set, switches to a faster bit rate for the control bits, data and CRC, before switching back for the acknowledge. It also allows up to 64 data bytes.<sup class="cite">[\[6\]](#s6)[\[7\]](#s7)</sup> The playground counts an FD extended frame as the Linux kernel does: 41 header bits plus the data are dynamically stuffed, then a CRC field with a stuff counter, CRC-17 (up to 16 bytes) or CRC-21, and fixed stuff bits, then ACK, EOF and intermission.<sup class="cite">[\[4\]](#s4)</sup> For 8 bytes that is 171 bits in the worst case, of which 57 run at the nominal rate and 114 at the data rate: 57 µs + 22.8 µs ≈ 80 µs at 1/5 Mbit/s, half the 160 µs of a classic frame. (The exact point where the rate switches is inside the BRS and CRC-delimiter bits; the split here is accurate to about one bit.)
+
+</details>
+
+### Getting CAN into a Linux computer
+
+On Linux, CAN controllers appear as network interfaces through <a class="g" href="../glossary/#socketcan">SocketCAN</a>: you bring one up with `ip link set can0 up type can bitrate 1000000` and programs read and write frames through ordinary sockets.<sup class="cite">[\[10\]](#s10)</sup> The Jetson AGX Orin has two on-board CAN controllers (MTTCAN, classic up to 1 Mbit/s and FD up to 15 Mbit/s data rate) that need external 3.3 V transceivers (the small chip that turns the controller's logic signals into the voltages on the wires).<sup class="cite">[\[8\]](#s8)</sup>
+
+More buses come from USB adapters; many use the open <a class="g" href="../glossary/#gs-usb">gs\_usb</a> protocol (the candleLight firmware), for which Linux has a driver built in.<sup class="cite">[\[11\]](#s11)</sup> USB adds its own latency and jitter (USB frames are scheduled on a 125 µs microframe grid at high speed, 1 ms at full speed), which is why Marvin Bot plans a bench timing test before relying on adapters.
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+<i>Why two buses per leg?</i> One bus per leg would be busy 96% of the time in the worst case, leaving no room for errors; splitting each leg into a hip bus and a shank bus brings every bus down to 48% and means a fault on one bus leaves the other half of the leg working. The details: `description/robot.yaml` sets classic CAN 2.0B at 1 Mbit/s, `bits_per_frame: 160` ("29-bit ID, 8 data bytes: 131 bits plus up to 29 stuff bits", the exact worst case derived above), `frames_per_motor_cycle: 2`, `max_load: 0.6`. `docs/decisions.md` (2026-10-25, "six motor CAN buses plus one battery bus") gives the reasoning and says every motor bus stays "at or below 48%" load; `robot/drivers/robstride.py` implements the frames (untested on hardware until the phase 2 bench test).
+:::
+
+The bus map below is computed live: the first load column uses the repo's 160 bits, the second the playground's stuffing setting (the same 160 bits by default). The repo's figures are 48% for the hip, shank and right-arm buses and 40% for the left arm.
+
+<RawHtml html={widget2} />
+
+Interfaces (BOM, `docs/decisions.md` 2026-10-29): the Orin's two on-board controllers carry the arm buses; one dual-channel isolated USB-CAN adapter per leg carries its hip and shank buses; a single-channel adapter carries the battery bus. That choice is "to be confirmed by the bench timing test" (roadmap item 13). A microcontroller bridge that runs the 500 Hz exchange itself is the fallback if USB jitter is too high.
+
+Why 500 Hz when the <a class="g" href="../glossary/#policy">policy</a> (the trained neural-network controller) only runs at 50 Hz? The policy runs at 50 Hz, so each policy step spans 10 motor cycles on the legs and 5 on the arms; the faster motor loop exists so that the motors' own PD control (RobStride's MIT-style "operation control" mode: <i>τ = k<sub>p</sub>(q<sub>target</sub> − q) + k<sub>d</sub>(q̇<sub>target</sub> − q̇) + τ<sub>ff</sub></i>) gets fresh targets and the controller gets fresh feedback often. (PD stands for proportional-derivative: a spring-and-damper rule, explained in [15 PD control](../15-pd-control/); k<sub>p</sub> and k<sub>d</sub> are the spring and damper strengths, q the joint angle, q̇ its speed and τ<sub>ff</sub> an extra feed-forward torque.) The battery bus, the seventh, carries the BMS reports from [09 Power and battery](../09-power-battery/).
+
+## Trade-offs and alternatives
+
+| Option | For | Against |
+|---|---|---|
+| One bus per leg (6 motors at 500 Hz) | fewer adapters and wires | 96% worst-case load (repo: "roughly 80-90%"): no room for errors, retries or parameter reads |
+| One bus per leg at 250 Hz | 48% load | below the 500 Hz leg command rate in requirement R43 |
+| <b>Two buses per leg (chosen)</b> | 48% worst case; a fault on one bus leaves the other half of the leg talking | more adapters, a 6-pin leg signal connector |
+| CAN FD at 5 Mbit/s | about half the frame time | needs motors whose firmware speaks FD; RobStride's documented protocol is classic CAN |
+| Microcontroller bridge | deterministic timing next to the bus, USB only at 50 Hz | custom firmware to write and maintain |
+| EtherCAT or another fieldbus (industrial Ethernet-based motor networks) | much higher bandwidth | not offered by the chosen motors |
+
+:::caution[Where sources and the repo disagree]
+The repo's frame budget (160 bits) and loads (48% and 40%) match the worst-case formula of Davis et al.<sup class="cite">[\[2\]](#s2)</sup>, `can-utils` and the Linux kernel.<sup class="cite">[\[3\]](#s3)[\[4\]](#s4)</sup> One small difference remains: `docs/decisions.md` says six motors on one bus at 500 Hz "would load it to roughly 80–90%"; with 160-bit frames the worst case is 96%. The conclusion (two buses per leg) is the same either way.
+:::
+
+## Decisions you can make here
+
+- **How many motors per bus, and at what loop rate** (the two multiply). Trade: fewer buses mean fewer adapters and cables, but six leg motors on one bus at 500 Hz is 96% load; keeping one bus means dropping to about 300 Hz.
+- <b>Which frame length to budget.</b> Trade: the exact worst case (160 bits) is safe but plans for traffic you rarely see; a typical value (about 150) fits about 7% more traffic but can be overrun by unlucky data.
+- **Which load ceiling to accept** (50%, 60%, more). Trade: a higher ceiling fits more motors or a faster loop, but leaves less room for parameter reads, error frames and logging, and makes delays more variable.
+- **USB-CAN adapters, on-board controllers or a microcontroller bridge**, once the bench timing test reports latency and jitter. Trade: adapters are cheap and quick but add USB delay; a bridge gives steady timing but means writing and maintaining firmware.
+- <b>Whether to require CAN FD of future actuators.</b> Trade: about half the frame time, so room for more motors per bus, but it rules out today's RobStride motors.
+
+<RawHtml html={widget3} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+Next: [11 Sensors and compute](../11-sensors-compute/) looks at the other end of these wires: the computer that sends the commands, and the sensors that tell it where the robot is.
+
+## Further reading
+
+- [Texas Instruments, Introduction to the Controller Area Network (SLOA101)](https://www.ti.com/lit/an/sloa101b/sloa101b.pdf): the clearest short introduction to the physical layer and frame format.
+- [Davis et al., CAN schedulability analysis: refuted, revisited and revised](https://doi.org/10.1007/s11241-007-9012-7): how to bound the response time of every frame on a loaded bus; the reference for frame lengths.
+- [Linux SocketCAN documentation](https://docs.kernel.org/networking/can.html): how CAN looks to a program on the Orin.
+- [Hartwich, Bit time requirements for CAN FD (CiA, 2013)](https://can-cia.org/fileadmin/cia/documents/proceedings/2013_hartwich_v2.pdf): why the FD data phase can be faster than arbitration.
+- [RobStride product information](https://github.com/RobStride/Product_Information): the manuals with the private CAN protocol that `robstride.py` implements.
+
+## Sources
+
+1. <span id="s1"></span>[Robert Bosch GmbH, CAN Specification version 2.0 (1991)](http://esd.cs.ucr.edu/webres/can20.pdf) <span class="used">— used for: frame fields, standard and extended identifiers, arbitration, bit stuffing rule.</span>
+2. <span id="s2"></span>[R. I. Davis, A. Burns, R. J. Bril, J. J. Lukkien, Controller Area Network (CAN) schedulability analysis: refuted, revisited and revised, Real-Time Systems 35(3), 2007](https://doi.org/10.1007/s11241-007-9012-7) <span class="used">— used for: worst-case frame length formula (g + 8s + 13 + ⌊(g + 8s − 1)/4⌋), response time growth with load.</span>
+3. <span id="s3"></span>[can-utils, canframelen.h (Czech Technical University in Prague)](https://rtime.felk.cvut.cz/gitweb/can-utils.git/blob/HEAD:/canframelen.h) <span class="used">— used for: confirmation that Linux bus-load tools use the same worst-case length (80 + 10s bits for 29-bit frames).</span>
+4. <span id="s4"></span>[Linux kernel, include/linux/can/length.h](https://github.com/torvalds/linux/blob/master/include/linux/can/length.h) <span class="used">— used for: classic and CAN FD field counts (41-bit FD extended header, CRC-17/21 fields with fixed stuff bits, 9-bit footer, 3-bit intermission).</span>
+5. <span id="s5"></span>[Texas Instruments, Introduction to the Controller Area Network (CAN), SLOA101B](https://www.ti.com/lit/an/sloa101b/sloa101b.pdf) <span class="used">— used for: differential signalling, dominant/recessive levels, 120 Ω termination.</span>
+6. <span id="s6"></span>[F. Hartwich, Bit time requirements for CAN FD, iCC 2013, CAN in Automation](https://can-cia.org/fileadmin/cia/documents/proceedings/2013_hartwich_v2.pdf) <span class="used">— used for: bit-rate switching after arbitration.</span>
+7. <span id="s7"></span>[CAN in Automation, Designing a CAN network](https://www.can-cia.org/can-knowledge/designing-a-can-network) <span class="used">— used for: CAN FD payload up to 64 bytes; data-phase rate limited by topology and transceivers.</span>
+8. <span id="s8"></span>[NVIDIA, Jetson Linux Developer Guide: Controller Area Network (CAN)](https://docs.nvidia.com/jetson/archives/r36.4/DeveloperGuide/HR/ControllerAreaNetworkCan.html) <span class="used">— used for: two MTTCAN controllers on AGX Orin, classic up to 1 Mbit/s, FD data up to 15 Mbit/s, external 3.3 V transceiver, bring-up commands.</span>
+9. <span id="s9"></span>[RobStride, Product\_Information (user manuals RS00, RS03, RS04, RS06)](https://github.com/RobStride/Product_Information) <span class="used">— used for: 1 Mbit/s classic CAN, 29-bit identifier layout, operation-control command and feedback reply (as implemented in robot/drivers/robstride.py).</span>
+10. <span id="s10"></span>[Linux kernel documentation, SocketCAN](https://docs.kernel.org/networking/can.html) <span class="used">— used for: CAN as network interfaces, ip link configuration.</span>
+11. <span id="s11"></span>[candleLight\_fw (gs\_usb firmware)](https://github.com/candle-usb/candleLight_fw) <span class="used">— used for: the open gs\_usb USB-CAN protocol supported by the Linux gs\_usb driver.</span>
+
+<PageScript code={script} />

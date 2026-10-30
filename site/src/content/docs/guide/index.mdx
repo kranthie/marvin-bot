@@ -1,0 +1,48 @@
+---
+title: "How a humanoid robot works, one playground at a time"
+description: "Marvin Bot is an open-source humanoid robot, a walking, two-armed machine about 1.44 m tall and 41 kg, that is being designed in the open so anyone can study, copy or improve it."
+sidebar:
+  label: "Guide map"
+  order: 0
+tableOfContents: false
+---
+
+import '../../../guide/index/style.css';
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/index/widget-1.html?raw';
+import widget2 from '../../../guide/index/widget-2.html?raw';
+import widget3 from '../../../guide/index/widget-3.html?raw';
+import widget4 from '../../../guide/index/widget-4.html?raw';
+import script from '../../../guide/index/script.js?raw';
+
+**Marvin Bot** is an open-source humanoid robot, a walking, two-armed machine about 1.44 m tall and 41 kg, that is being designed in the open so anyone can study, copy or improve it. This guide explains how it works, from its joints and motors to the AI that makes it walk, for a reader with school maths and physics and no robotics background.
+
+<RawHtml html={widget1} />
+
+:::note[Where the project stands]
+Marvin Bot is in phase 1 of 7: it exists only as a computer model, tested in physics simulators, and no hardware has been built yet. Every number in this guide comes from the project repository as of 2026-10-29, or from a cited source. Where the two disagree, the page says so.
+:::
+
+<RawHtml html={widget2} />
+
+## The map
+
+Click a part of the robot (left) or a box in the pipeline (right). For the real thing, in 3-D, open [playground 00](00-3d-model/). The panel shows what that part does and which playgrounds explain it. The pipeline reads left to right: the robot is described once in a file, turned into models, trained in simulation, and finally built and run. The colours match the stages of the learning path below.
+
+<RawHtml html={widget3} />
+
+## Suggested learning path
+
+The playgrounds are numbered in the suggested order, from basics to advanced. Each stage builds on the ones before it, but every page names its own prerequisites, so you can also jump to whatever you are curious about.
+
+<RawHtml html={widget4} />
+
+## How to use this guide
+
+- <b>Play first, then read.</b> Each page opens with a short idea and a playground. Try the presets, then the "Try this" experiments, then read the explanation.
+- **Marvin Bot boxes** (amber) give the robot's real numbers, with the repository file they come from. **Violet boxes** mark places where a published source and the repository disagree.
+- <b>Decision notes.</b> Every playground writes a short note from your settings. Copy it into an issue, a design discussion or an AI-assistant session to take the idea further.
+- **Words you don't know** are underlined with dots and link to the [glossary](glossary/). Every source is credited on its page and collected on the [sources page](sources/).
+
+<PageScript code={script} />

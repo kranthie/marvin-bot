@@ -1,0 +1,163 @@
+---
+title: "Hands"
+description: "A hand is where a humanoid meets the world, and where every gram counts twice: once as a load the wrist, elbow and shoulder must hold out at arm's length, and once as a limit on what the fingers can grip."
+sidebar:
+  label: "19 · Hands"
+  order: 20
+---
+
+import RawHtml from '../../../components/RawHtml.astro';
+import PageScript from '../../../components/PageScript.astro';
+import widget1 from '../../../guide/19-hands/widget-1.html?raw';
+import widget2 from '../../../guide/19-hands/widget-2.html?raw';
+import widget3 from '../../../guide/19-hands/widget-3.html?raw';
+import script from '../../../guide/19-hands/script.js?raw';
+import '../../../guide/19-hands/style.css';
+
+<div class="guide-meta">
+
+**Stage 5 · Learning** · \~25 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [04 Actuators](../04-actuators/), [18 Whole-body control and VLA models](../18-wbc-vla/) · numbers from the repository as of 2026-10-29
+
+</div>
+
+A hand is where a humanoid meets the world, and where every gram counts twice: once as a load the wrist, elbow and shoulder must hold out at arm's length, and once as a limit on what the fingers can grip. Marvin Bot uses two open-source AmazingHand kits on a small wrist servo. This page shows what that combination can carry and why the v1 payload is about 0.5 kg, not the 1 kg the requirements ask for.
+
+:::note[You will learn]
+- The basics of robot hands: degrees of freedom, <a class="g" href="../glossary/#underactuation">underactuation</a>, tendon vs linkage vs direct servo drives, and how grip force and friction set what a hand can hold.
+- How the AmazingHand works (four fingers, eight servos, two per finger in a parallel arrangement) and how it is mounted on Marvin Bot's wrist.
+- How to compute the gravity torque at the wrist, elbow and shoulder for any payload and arm pose, and check it against each actuator's continuous (rated) and peak torque.
+:::
+
+## The idea in one picture
+
+Hold a 1 kg bag of sugar at your side, then hold it straight out in front of you. Same mass, very different effort: your shoulder now has to resist the bag's weight times the full length of your arm. Torque is force times the horizontal distance from the joint (the <a class="g" href="../glossary/#moment-arm">moment arm</a>), so a payload at the fingertips loads every joint between it and the body, and the joints nearest the body see the longest lever. The wrist sees the shortest lever but has the smallest motor. And before any of that, the fingers must grip the object hard enough that friction stops it sliding out.
+
+So a robot hand is two problems: **can the fingers hold it** (grip and friction, Playground 2) and **can the arm hold the hand out** (joint torques, Playground 1). On Marvin Bot the weak link is the second one, at the wrist. [Page 18](../18-wbc-vla/) covered the controllers that will move these hands; [page 20](../20-sim-to-real/) covers measuring real parts, such as the hands, which have not been weighed yet.
+
+## Playground 1: wrist and arm load calculator
+
+A side view of one arm in its pitch plane. The masses and lengths are Marvin Bot's (from the generated URDF); change the pose, the payload and the hand. Torques are static: holding still, no acceleration.
+
+<RawHtml html={widget1} />
+
+:::note[Try this]
+1. Load "Hand level, empty": the wrist servo spends about 0.35 N·m, roughly a quarter of its 1.57 N·m rating, just holding the hand out. Now set the payload to 0.5 kg ("Marvin Bot today"): about 1.2 N·m, 75% of rated. These are the repo's numbers.
+2. Load "R20: 1 kg at full reach". The shoulder RS03 and the elbow RS06 are comfortable; only the wrist pitch servo is over its rating. That is the whole of the v1 deviation from requirement R20.
+3. With 1 kg in the hand, tilt the wrist to ±60°. The wrist torque falls as the hand points up or down, because the payload's moment arm about the wrist shrinks. Then bend the elbow to 90° with the shoulder at 0°: the forearm is level, the upper arm hangs straight down, and the shoulder carries exactly what the elbow does.
+4. Load "2 kg close to the body": the elbow RS06 sits near 80% of rated and the shoulder RS03 under half, but the wrist servo is at more than twice its rating. Pulling the payload in toward the wrist axis (the distance slider) helps more than anything else.
+:::
+
+## Playground 2: finger force and holdable mass
+
+How hard can a finger press, and what can friction hold? Each AmazingHand finger has two servos; when both turn the same way the finger curls, when they turn opposite ways it swings sideways. For a squeezing grasp their torques add.
+
+<RawHtml html={widget2} />
+
+:::note[Try this]
+1. "Marvin Bot today" gives a couple of newtons at the fingertip and a few hundred grams in a pinch. Compare "SCS0009 near stall": more grip, but only for seconds.
+2. "Compliant pads" changes only μ, yet nearly doubles the holdable mass. This is why compliant fingertips are the first planned upgrade.
+3. "STS3032 variant" doubles the servo torque in about the same volume. Note what it does not change: the wrist still has to hold the heavier object (go back to Playground 1).
+:::
+
+## From first principles
+
+### Degrees of freedom and underactuation
+
+A human hand has about 20 joints driven by many more muscles. A robot hand trades that off against weight, cost and control. Each independently driven joint is a degree of freedom (DOF); a hand with fewer motors than joints is *underactuated*: linkages, tendons or springs couple joints so that one motor curls several, and the fingers wrap around an object's shape on their own.<sup class="cite">[\[6\]](#s6)</sup> Underactuation makes hands lighter and more forgiving; full actuation gives more control of finger pose for in-hand manipulation.
+
+### Three ways to drive a finger
+
+- <b>Tendons:</b> motors sit in the forearm and pull cables through the fingers, like human tendons. Light fingers and many DOF, but cables stretch, need tensioning and wear. The open-source ORCA hand (17 DOF) is a modern tendon design that works hard on reliability.<sup class="cite">[\[5\]](#s5)</sup>
+- <b>Linkages:</b> motors in the palm or finger base drive the joints through rigid links. Stiff, precise and repeatable, but bulkier per DOF. The AmazingHand uses linkages from servos in the palm.<sup class="cite">[\[1\]](#s1)</sup>
+- <b>Direct servos:</b> one servo at each joint. Simple to model and control, heavier fingers. The open-source LEAP Hand puts 16 servos directly at its joints.<sup class="cite">[\[4\]](#s4)</sup>
+
+### Grip force and friction
+
+A servo's torque τ (N·m) becomes a fingertip force F = τ·η / L, where L (m) is the effective lever from the servo to the contact point and η the linkage efficiency. In words: a stronger servo, a more efficient linkage or a shorter lever all press harder. (This is the one-joint case of the statics rule τ = J<sup>T</sup>F that maps contact forces to joint torques through the <a class="g" href="../glossary/#jacobian">Jacobian</a> J.)<sup class="cite">[\[7\]](#s7)</sup> Two AmazingHand servos per finger add their torques when the finger curls. In a pinch, the object is held only by friction at its two faces: each face can resist up to μN along the surface, where N is the squeezing force and μ the friction coefficient, so the holdable mass is
+
+<div class="mono">
+
+m<sub>max</sub> = 2 · μ · N / g
+
+</div>
+
+with g = 9.81 m/s². Divide by a safety factor for the accelerations of walking. A <a class="g" href="../glossary/#power-grasp">power grasp</a>, with the object resting in the curled fingers and palm, is not limited this way: geometry carries the load, which is why a cupped hand can carry more than a pinch.
+
+### Payload at reach
+
+For each joint, the static gravity torque is the sum over everything outboard of it:
+
+<div class="mono">
+
+τ<sub>joint</sub> = g · Σ m<sub>i</sub> · x<sub>i</sub>
+
+</div>
+
+where m<sub>i</sub> is each mass outboard of the joint (link, motor, hand, payload) and x<sub>i</sub> its horizontal distance from the joint axis. In the playground, angles are measured from straight down, so a point at distance r along a segment pointing at angle φ is x = r·sin φ ahead and r·cos φ below. Check by hand for the hand alone, level: 0.418 kg × 9.81 m/s² × 0.086 m = 0.35 N·m. Add 0.5 kg at 0.17 m: 0.5 × 9.81 × 0.17 = 0.83 N·m, total 1.19 N·m, which is 76% of the STS3250's 1.57 N·m rating.
+
+### The AmazingHand
+
+The AmazingHand by Pollen Robotics is an open-source humanoid hand: four fingers (three and a thumb), two jointed segments (phalanges) each, eight Feetech SCS0009 servos inside the hand, about 400 g, under €200 in parts; software under Apache-2.0 and the mechanical design under CC-BY-4.0.<sup class="cite">[\[1\]](#s1)</sup> Each finger is a parallel mechanism: two servos side by side drive it, together for flexion and in opposition for side-to-side abduction. The servos are on a serial bus (each needs a unique ID) and want an external 5 V supply. The SCS0009 is a 5–6 V micro servo with a stall torque of about 2.3 kg·cm (0.23 N·m; kg·cm is the hobby-servo unit, and 1 kg·cm ≈ 0.098 N·m) and a rated torque of about 0.75 kg·cm (0.074 N·m), roughly 11 g.<sup class="cite">[\[2\]](#s2)</sup> Pollen publishes no grip force or payload, and notes the design has not yet been tested on long, complex grasping tasks. Its "Enhanced" version uses STS3032 servos (about 4.5 kg·cm stall, 1.5 kg·cm rated at 6 V<sup class="cite">[\[3\]](#s3)</sup>) for under €350; its to-do list includes compliant links and fingertip sensors.
+
+## How Marvin Bot does it
+
+:::tip[In the repo]
+- <b>Hands:</b> two AmazingHand kits (left and right, Seeed SKUs 100062181 and 100063642, $99 each), 0.40 kg each as published, replacing 1-DOF grippers (`docs/decisions.md` 2026-10-27). The real hand meshes ship in `description/third_party/amazing_hand/` under CC-BY-4.0 with attribution; the printed mount plate carries the hand's six M3 holes on a 42 mm circle (`cad/arm.py`). Hands group in the BOM: $224 with the converters and adapters.
+- <b>Wrist:</b> an RS00 (the smallest RobStride motor, [page 4](../04-actuators/)) for wrist yaw (14 N·m peak, 5 N·m rated) and, under it, the former gripper's STS3250, a hobby-class <a class="g" href="../glossary/#serial-bus-servo">serial-bus servo</a>, as wrist pitch (±60°; 4.9 N·m stall, 1.57 N·m rated at 12 V), hanging in a printed cradle. The wrist pitch axis is 0.063 m below the wrist yaw; the forearm is 0.188 m from elbow to wrist pitch axis; the hand reaches 0.181 m beyond it (`description/robot.yaml`, `description/skeleton.yaml`).
+- <b>Loads:</b> holding the hand level takes about 0.4 N·m (25% of rated); 0.5 kg at the fingertips about 1.2 N·m (75% of rated, 24% of stall): "enough for pick-and-place, not for holding a load out for minutes" (`docs/decisions.md` 2026-10-27).
+- <b>Requirement R20:</b> 1 kg per hand at full reach, 2 kg close to the body; v1 deviation: about 0.5 kg with the bought hands; the requirement stands for later hands (`docs/requirements.md`).
+- <b>Electrical:</b> a 12 V to 5 V converter (3 A) at each wrist; each hand on its own serial bus (Feetech SCS protocol; the neck and wrist servos use STS) with one USB adapter per hand (`docs/design/assembly_wiring.md`, `bom/bom.xlsx`).
+- <b>Still to do:</b> weigh the hands; fit the converters; a simplified hand model for manipulation in simulation (the kit's MJCF has placeholder masses and closed linkages); measure serial bus timing with 8 servos per hand (roadmap, hands; open item 12).
+- <b>Planned upgrades, in order:</b> compliant fingertips or pads; the kit's stronger-servo variant (STS3032 at 6 V); a second wrist servo for side-to-side tilt; tactile fingertips (`docs/roadmap.md`).
+:::
+
+## Trade-offs and alternatives
+
+| Option | For | Against |
+|---|---|---|
+| AmazingHand on an STS3250 wrist pitch (chosen) | Open design, 8 DOF, cheap, already bought; meshes can ship in the repo | Small finger servos; wrist at 75% of rated with 0.5 kg; hand about 30% larger than a person's scaled to Marvin Bot |
+| RS00 for wrist pitch | 14 N·m peak, plenty of margin | "Overkill", +0.24 kg at the end of the arm, which the elbow and shoulder then carry |
+| STS3215 for wrist pitch | Lighter, cheaper | 2.9 N·m stall: too little margin |
+| Keep the 1-DOF gripper with compliant fingers | Cheaper, robust, simple to learn with | Cannot learn finger-level skills; hands already bought |
+| Other open hands: LEAP Hand (16 DOF, direct servos), ORCA (17 DOF, tendons) | More dexterity, published learning results | Heavier and costlier per hand, larger than this robot's scale, a bigger wrist needed |
+
+:::caution[Where sources and the repo disagree]
+- <b>The STS3032 variant.</b> The repo calls it "the kit's stronger-servo variant". The AmazingHand README both lists an "Enhanced" version with STS3032 servos (under €350) and, in its to-do list, still says the STS3032 is to be studied because its horn is different. Treat it as an existing but less mature variant.
+- <b>Hand mass.</b> 0.40 kg is Pollen's and Seeed's published figure; the URDF's palm link (hand plus printed mount) is 0.418 kg. The hands have not been weighed yet.
+- <b>Wrist torque with the hand alone.</b> The decision log rounds it to 0.4 N·m (25%); the URDF masses give 0.35 N·m (22%). The difference is rounding and the mount, not a different model.
+- <b>SCS0009 torque.</b> No Feetech datasheet was found; retailer listings agree on 2.3 kg·cm stall at 6 V but give 0.7 or 0.75 kg·cm rated.
+:::
+
+## Decisions you can make here
+
+- What payload to promise for v1 tasks (pick-and-place of 0.5 kg; brief holds only), and which arm poses the VLA's training data should prefer (payload close to the wrist axis, elbow bent).
+- Whether the first hand upgrade is pads (cheap, more μ) or STS3032 servos (more force, and more wrist load if objects get heavier).
+- Whether R20's 1 kg at reach needs a stronger wrist pitch (a second servo, or an RS00 at +0.24 kg) before any hand upgrade.
+
+<RawHtml html={widget3} />
+
+<div class="hint">
+
+Built from your settings above. Paste it into an issue, a design discussion or an AI assistant session.
+
+</div>
+
+## Further reading
+
+- [AmazingHand on GitHub](https://github.com/pollen-robotics/AmazingHand): assembly guide, print tips, Python and Arduino examples, and the kinematics demos.
+- [LEAP Hand (Shaw, Agarwal and Pathak, 2023)](https://arxiv.org/abs/2309.06440): a low-cost open hand designed for robot learning, with a clear discussion of its joint layout.
+- [ORCA hand (2025)](https://arxiv.org/abs/2504.04259): how an open tendon-driven hand was made reliable enough for long learning runs.
+- [Modern Robotics (Lynch and Park), chapters 5 and 12](https://hades.mech.northwestern.edu/index.php/Modern_Robotics): statics with the Jacobian, and grasping with friction cones.
+
+## Sources
+
+1. <span id="s1"></span>[Pollen Robotics, AmazingHand (GitHub)](https://github.com/pollen-robotics/AmazingHand) <span class="used">— used for: 4 fingers, 8 DOF, two SCS0009 servos per finger in a parallel mechanism, 400 g, &lt;€200, licences, 5 V supply, Enhanced STS3032 version (&lt;€350), to-do list.</span>
+2. <span id="s2"></span>[Feetech SCS0009 retailer specification (Maker Store)](https://www.makerstore.com.au/?p=144908) <span class="used">— used for: 2.3 kg·cm stall at 6 V, about 0.75 kg·cm rated, 11 g, 1.0 A stall.</span>
+3. <span id="s3"></span>[Feetech STS3032 retailer specification (Evelta)](https://evelta.com/sts3032-6v-4-5kg-360deg-serial-bus-servo-motor) <span class="used">— used for: 4.5 kg·cm stall, 1.5 kg·cm rated at 6 V.</span>
+4. <span id="s4"></span>[Shaw, Agarwal and Pathak, LEAP Hand: Low-Cost, Efficient, and Anthropomorphic Hand for Robot Learning, RSS 2023](https://arxiv.org/abs/2309.06440) <span class="used">— used for: a direct-servo open-source hand as an alternative.</span>
+5. <span id="s5"></span>[Christoph et al., ORCA: An Open-Source, Reliable, Cost-Effective, Anthropomorphic Robotic Hand, 2025](https://arxiv.org/abs/2504.04259) <span class="used">— used for: a tendon-driven open-source hand (17 DOF) as an alternative.</span>
+6. <span id="s6"></span>[Birglen, Laliberté and Gosselin, Underactuated Robotic Hands, Springer 2008](https://link.springer.com/book/10.1007/978-3-540-77459-4) <span class="used">— used for: underactuation and self-adapting grasps.</span>
+7. <span id="s7"></span>[Lynch and Park, Modern Robotics, 2017](https://hades.mech.northwestern.edu/index.php/Modern_Robotics) <span class="used">— used for: statics τ = JᵀF and friction in grasping.</span>
+8. <span id="s8"></span>[RobStride, Product\_Information](https://github.com/RobStride/Product_Information) <span class="used">— used for: RS00, RS06 and RS03 rated and peak torques (as in `description/actuators.yaml`).</span>
+
+<PageScript code={script} />
