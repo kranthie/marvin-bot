@@ -26,9 +26,9 @@ An open humanoid robot, about 1.44 m tall and 41 kg, with 27 powered joints and 
 
 ## In simulation
 
-| Walking | Clapping | Kicking |
+| Walking | Squatting | Bowing |
 |---|---|---|
-| ![Walking: the tracker (solid) and its reference motion (blue)](docs/media/skills/walk.webp) | ![Clapping](docs/media/skills/clap.webp) | ![Kicking](docs/media/skills/kick.webp) |
+| ![Walking: the tracker (solid) and its reference motion (blue)](docs/media/skills/walk.webp) | ![Squatting](docs/media/skills/squat.webp) | ![Bowing](docs/media/skills/bow.webp) |
 
 One motion-tracking policy plays 25 skills on the current 1.44 m model: the solid robot is the trained policy, the translucent blue robot the reference motion it follows (human motion generated with Kimodo and retargeted to Marvin Bot). It is trained on Newton in ProtoMotions and every clip stays upright; all 25, with their tracking errors, are on the [skills page](docs/skills.md), and the pipeline is in [sim/motion/README.md](sim/motion/README.md). Not yet replayed in MuJoCo.
 

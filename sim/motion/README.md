@@ -2,9 +2,9 @@
 
 Status: one tracker follows all 25 clips generated with Kimodo (locomotion, sidesteps, turns,
 a jog, a march, a kick, squatting and picking up, a bow, a dance and arm gestures) on the 1.44 m
-model. Trained for 4,800 epochs (16,384 environments, batch 65,536, about 7.5 hours on one GPU),
-every clip stays upright; joint errors are 8-13° RMS on most clips and the hands 3-9 cm from the
-reference's, with the two-hand wave (35°, 12 cm), reach (18°) and clap (hands 11 cm) the weakest.
+model. Trained for about 5,000 epochs (16,384 environments, batch 65,536, about 9 hours on one
+GPU), every clip stays upright; the hands are 3-9 cm and the feet 2.5-7 cm from the reference's on
+most clips, with the two-handed clips the weakest (clap, two-hand wave, arms raise: hands 12-16 cm).
 The clips with the reference as a ghost are on the [skills page](../../docs/skills.md).
 Nothing has been replayed in MuJoCo yet.
 
@@ -70,6 +70,15 @@ What is specific to Marvin Bot:
   25 cm of the reference's; `check_tracking.py` also compares the distance covered, the joint
   angles and the body positions, all bodies and the hands and feet alone (an average over every
   body hides a limb that misses), which is how the first tracker's shuffling showed up.
+- **The head and a joint-angle term.** With only the 14 bodies scored the head was free: the
+  tracker turned it at 46-60°/s RMS standing still (1-3°/s in the reference). Scoring the head
+  and adding a joint-angle term (weight 0.5, sigma 0.3 rad) more than halved that (93°/s to 41°/s
+  averaged over the 25 clips) and stopped the crouch the 0.3 m body kernel let through. The term
+  scores only the legs, waist and neck: the retargeted arm angles are ill-defined (with the elbow
+  nearly straight nothing fixes shoulder yaw, and with the arm out sideways shoulder pitch and yaw
+  turn the arm the same way), so the arms-raise reference twists the shoulder yaw by 175° for no
+  change in the hand. Scored over every joint, the term made the tracker copy that twist and miss
+  the hands by 3 cm more in the arm clips; the arms are scored by their bodies instead.
 - **Training size.** 16,384 robots at once keep one RTX-class GPU busy (95%, against 58% with
   4,096), for twice the simulated steps per hour.
 
