@@ -25,6 +25,13 @@ export default defineConfig({
       social: [{ icon: 'github', label: 'GitHub', href: repo }],
       editLink: { baseUrl: `${repo}/edit/main/` },
       lastUpdated: false,
+      // link previews: the social card (made by scripts/social-card.html) on every page
+      head: [
+        { tag: 'meta', attrs: { property: 'og:image', content: 'https://kranthie.github.io/marvin-bot/social-card.png' } },
+        { tag: 'meta', attrs: { property: 'og:image:width', content: '1280' } },
+        { tag: 'meta', attrs: { property: 'og:image:height', content: '640' } },
+        { tag: 'meta', attrs: { property: 'og:image:alt', content: 'Marvin Bot, an open humanoid robot you can build, shown as its 3-D model' } },
+      ],
       customCss: ['./src/styles/theme.css', './src/styles/guide.css'],
       sidebar: [
         {

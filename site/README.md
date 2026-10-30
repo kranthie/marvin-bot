@@ -53,6 +53,14 @@ npx astro preview                     # http://localhost:4321/marvin-bot/
 
 `npm run dev` serves a live-reloading copy while you edit.
 
+## The social preview card
+
+`public/social-card.png` (1280×640) is the picture shown when a link to the site is shared; every
+page points to it in its `og:image` tags. Upload the same file in the repository's **Settings →
+General → Social preview** so links to the repository show it too. It is drawn by
+`scripts/social-card.html` with the site's own viewer and model data; regenerate it when the design
+changes, following the commands at the top of that file.
+
 ## Deploying
 
 `.github/workflows/pages.yml` builds and deploys the site on every push to `main` that touches the docs,

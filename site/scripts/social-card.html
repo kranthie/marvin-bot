@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  The social preview card (1280×640): the image shown when a link to the repository or the website
+  is shared. It draws the robot with the site's own viewer and current model data, so regenerate it
+  when the design changes. From site/, after building the model data (see site/README.md):
+
+    python3 -m http.server 8765 --bind 127.0.0.1
+    chromium --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader \
+      --window-size=1280,640 --hide-scrollbars --virtual-time-budget=10000 \
+      --screenshot=public/social-card.png http://127.0.0.1:8765/scripts/social-card.html
+
+  Upload public/social-card.png in the repository's Settings → General → Social preview; the website
+  uses it through its og:image tags. Text stays inside GitHub's recommended 40 pt (80 px) margin.
+-->
+<html lang="en">
+<meta charset="utf-8">
+<title>Marvin Bot social card</title>
+<script type="importmap">
+{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}
+</script>
+<script src="/public/guide/model/marvin_model.js"></script>
+<style>
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; background: #0f1216; }
+  body {
+    position: relative; color: #eef3f8;
+    font-family: 'Ubuntu Sans', 'Inter', 'Noto Sans', system-ui, sans-serif;
+    background: radial-gradient(ellipse 60% 85% at 76% 55%, #1d2733 0%, #0f1216 70%);
+  }
+  #viewer { position: absolute; left: 600px; top: 0; width: 680px; height: 640px; }
+  .copy { position: absolute; left: 96px; top: 96px; width: 600px; }
+  .pill { display: inline-block; font-size: 20px; letter-spacing: 0.04em; color: #ffb454; border: 1.5px solid #6b4a1c; background: #2a1f10; border-radius: 99px; padding: 6px 16px; }
+  .logo { display: flex; align-items: center; gap: 18px; margin: 30px 0 10px; }
+  .logo img { width: 64px; height: 64px; }
+  h1 { font-size: 84px; line-height: 1; margin: 0; font-weight: 800; letter-spacing: -0.02em; }
+  .tag { font-size: 36px; line-height: 1.2; color: #c3ccd6; margin: 20px 0 0; font-weight: 500; }
+  .facts { position: absolute; left: 96px; bottom: 96px; width: 720px; font-size: 22px; line-height: 1.5; color: #9aa7b4; }
+  .facts b { color: #eef3f8; font-weight: 600; }
+  .accent { color: #ffb454; }
+</style>
+<body>
+<div id="viewer"></div>
+<div class="copy">
+  <span class="pill">Open-source humanoid · phase 1, simulation</span>
+  <div class="logo"><img src="/public/favicon.svg" alt=""><h1>Marvin Bot</h1></div>
+  <p class="tag">An open humanoid robot you can build, <span class="accent">designed in code</span> and trained in simulation.</p>
+</div>
+<div class="facts"><b>1.44 m · 41 kg · 27 joints</b> · RobStride actuators · Jetson AGX Orin<br>Every part generated from code, every decision written down.</div>
+<script type="module">
+  import { mountMarvin } from '/src/scripts/marvin-viewer.js';
+  mountMarvin(document.getElementById('viewer'), { look: 'shells', rotate: false, animate: 'none', camera: 'iso', target: 0.72, dist: 3.0, grid: false, zoom: false });
+</script>
+</body>
+</html>

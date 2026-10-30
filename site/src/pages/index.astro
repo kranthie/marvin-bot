@@ -34,6 +34,13 @@ const phases = [
 <link rel="icon" href={u('favicon.svg')} type="image/svg+xml">
 <meta property="og:title" content="Marvin Bot · an open humanoid you can build">
 <meta property="og:description" content="An open-source 1.44 m humanoid, designed in code and trained in simulation.">
+<meta property="og:type" content="website">
+<meta property="og:url" content={new URL(base, Astro.site)}>
+<meta property="og:image" content={new URL(u('social-card.png'), Astro.site)}>
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="Marvin Bot, an open humanoid robot you can build, shown as its 3-D model">
+<meta name="twitter:card" content="summary_large_image">
 <script is:inline src={u('guide/model/marvin_model.js')}></script>
 </head>
 <body>
