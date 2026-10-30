@@ -172,7 +172,8 @@ score the latest with `check_tracking.py`.
 The tracker is exported to ONNX with ProtoMotions' own tool and replayed in MuJoCo, clip by clip,
 on the training MJCF with the motors as the walking policies' MuJoCo check models them (PD clipped
 by the torque-speed line, joint armature and friction, none of which Newton's built-in PD has) and
-sensor noise on the joint angles, joint speeds and pelvis rate:
+sensor noise on the joint angles, joint speeds and pelvis rate. It fails if any clip falls, so it
+is run on every new tracker when its training stops:
 
 ```bash
 $P deployment/export_bm_tracker_onnx.py --checkpoint results/marvin_bot_track/last.ckpt --output $W/onnx

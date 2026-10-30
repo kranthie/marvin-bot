@@ -15,7 +15,8 @@ Each clip starts on its reference's first frame and plays to its end. The rollou
 ProtoMotions' motion-library format, so sim/motion/check_tracking.py scores it as it scores a
 Newton rollout, and sim/motion/render_tracking.py draws it. Per clip this prints whether the
 robot fell (pelvis height 25 cm off the reference's), each joint's peak torque
-against its motor's peak, and the hottest joint's RMS torque against its continuous rating.
+against its motor's peak, and the hottest joint's RMS torque against its continuous rating. It
+fails (exit status 1) if any clip falls.
 
 Usage (in the ProtoMotions environment, from its checkout, with onnx and onnxruntime):
   python deployment/export_bm_tracker_onnx.py --checkpoint results/<run>/last.ckpt --output <dir>
@@ -110,7 +111,7 @@ def main() -> None:
 
     ref = torch.load(args.motions, weights_only=False, map_location="cpu")
     clips = [int(c) for c in args.clips] if args.clips else range(len(ref["motion_files"]))
-    gts, grs, dps, starts, lengths, files = [], [], [], [], [], []
+    gts, grs, dps, starts, lengths, files, falls = [], [], [], [], [], [], []
     print(f"{'clip':16} {'fell':>5} {'peak torque':>22} {'hottest (RMS / rated)':>28}")
     for ci in clips:
         player = MotionPlayer(args.motions, motion_index=ci, control_dt=control_dt)
@@ -179,6 +180,8 @@ def main() -> None:
             f"{names[top]:>16} {peak[top]:4.0%} {names[hot]:>20} {heat[hot]:5.0%}",
             flush=True,
         )
+        if fell is not None:
+            falls.append(label)
         starts.append(sum(lengths))
         lengths.append(len(pos))
         files.append(ref["motion_files"][ci])
@@ -198,6 +201,9 @@ def main() -> None:
         args.out,
     )
     print(f"wrote {args.out}")
+    if falls:
+        sys.exit(f"FAIL: fell in {len(falls)} of {len(lengths)} clips: {', '.join(falls)}")
+    print(f"PASS: all {len(lengths)} clips upright")
 
 
 if __name__ == "__main__":
