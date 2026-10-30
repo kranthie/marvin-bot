@@ -3,7 +3,7 @@
 // animation. Needs window.MARVIN_MODEL, written by site/scripts/build_model.py.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { decodeBin, partGeometry, partMaterial, setupLighting, shadowFloor } from './marvin-render.js';
+import { codeColour, decodeBin, partGeometry, partMaterial, setupLighting, shadowFloor } from './marvin-render.js';
 
 export function mountMarvin(host, opts = {}) {
   const M = window.MARVIN_MODEL;
@@ -35,10 +35,10 @@ export function mountMarvin(host, opts = {}) {
   for (const p of M.parts) {
     const g = partGeometry(p, AB), mat = partMaterial(p);
     const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; m.position.set(...p.xyz); m.rotation.set(p.rpy[0], p.rpy[1], p.rpy[2], 'ZYX');
-    m.userData = {p, real:mat.color.clone()}; linkG[p.link].add(m); meshes.push(m);
+    m.userData = {p, real:mat.color.clone(), code:codeColour(p)}; linkG[p.link].add(m); meshes.push(m);
   }
   const ST = M.stance, stance = {};
-  for (const s of ['left', 'right']) Object.assign(stance, {[`${s}_hip_pitch`]:ST.hip_pitch, [`${s}_knee`]:ST.knee, [`${s}_ankle_pitch`]:ST.ankle_pitch, [`${s}_shoulder_roll`]:ST.shoulder_roll, [`${s}_elbow`]:ST.elbow});
+  for (const s of ['left', 'right']) Object.assign(stance, {[`${s}_hip_pitch`]:ST.hip_pitch, [`${s}_knee`]:ST.knee, [`${s}_ankle_pitch`]:ST.ankle_pitch, [`${s}_shoulder_roll`]:ST.shoulder_roll, [`${s}_elbow`]:ST.elbow, [`${s}_wrist_yaw`]:90});  // palms in, as in tools/render_robot.py
   const pose = d => { for (const n in J) setDeg(n, (d[n] ?? stance[n] ?? 0)); };
   pose({}); base.position.set(0, 0, M.pelvis_height); scene.updateMatrixWorld(true);
   const sole = new THREE.Vector3(0.03, 0, -0.06).applyMatrix4(linkG.left_foot_link.matrixWorld).z; base.position.z -= sole;
@@ -50,7 +50,7 @@ export function mountMarvin(host, opts = {}) {
       const p = m.userData.p, mat = m.material;
       m.visible = p.cat !== 'cover' || look === 'shells'; m.castShadow = !(XR[look] && !XR[look].includes(p.cat));
       const focus = XR[look] && XR[look].includes(p.cat), fade = XR[look] && !focus;
-      mat.color.copy(m.userData.real); mat.opacity = fade ? 0.08 : 1; mat.depthWrite = !fade;
+      mat.color.copy(focus && look === 'motors' ? m.userData.code : m.userData.real); mat.opacity = fade ? 0.08 : 1; mat.depthWrite = !fade;
       mat.emissive.setHex(focus ? 0x2a1d05 : 0);
     }
   }

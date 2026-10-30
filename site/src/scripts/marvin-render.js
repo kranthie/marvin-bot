@@ -28,14 +28,40 @@ export function partGeometry(p, AB) {
   return toCreasedNormals(g, CREASE);
 }
 
+// Finish colours: what the built robot looks like, the same palette as tools/render_robot.py (which
+// renders docs/media/robot.webp): machined aluminium, graphite printed parts, dark motors, light
+// covers and a glossy dark visor. The URDF's own colours instead code each motor model by colour
+// (codeColour), which the 3-D page uses for its X-ray and "by layer" views.
+const FINISH = {
+  alu: [0.78, 0.80, 0.83], graphite: [0.16, 0.17, 0.19], motor: [0.30, 0.31, 0.34], cover: [0.92, 0.93, 0.94],
+  gloss: [0.05, 0.05, 0.06], dark: [0.09, 0.09, 0.10], bought: [0.25, 0.25, 0.27], tpu: [0.10, 0.10, 0.11], box: [0.22, 0.23, 0.26],
+};
+function finishOf(p) {
+  if (p.kind === 'cyl' || p.cat === 'actuator') return 'motor';
+  if (p.kind === 'box') return 'box';
+  const n = p.name || '';
+  if (n === 'head_visor') return 'gloss';
+  if (n === 'head_shell' || n === 'neck_cover' || n === 'head_camera_frame') return 'cover';
+  if (n === 'pelvis_cover' || n.includes('glute')) return 'dark';
+  if (p.process === 'cover') return 'cover';
+  if (p.process === 'cnc' || p.process === 'service') return 'alu';
+  if (p.material === 'tpu') return 'tpu';
+  if (p.process === 'bought') return 'bought';
+  return 'graphite';
+}
+const srgb = (c) => new THREE.Color().setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
+
+// the URDF colour (sRGB values, as a colour picker gives them): each motor model has its own
+export const codeColour = (p) => srgb(p.rgba);
+
 export function partMaterial(p) {
-  const metal = /al60|al70|steel/i.test(p.material || '') || p.cat === 'actuator';
+  const f = finishOf(p);
+  const metal = f === 'alu' || f === 'motor';
   return new THREE.MeshStandardMaterial({
-    // URDF colours are sRGB values, as a colour picker gives them
-    color: new THREE.Color().setRGB(p.rgba[0], p.rgba[1], p.rgba[2], THREE.SRGBColorSpace),
-    metalness: metal ? 0.6 : 0.0,
-    roughness: metal ? 0.38 : 0.55,
-    envMapIntensity: metal ? 0.8 : 0.25,
+    color: srgb(FINISH[f]),
+    metalness: metal ? 0.65 : 0.0,
+    roughness: f === 'gloss' ? 0.15 : metal ? 0.35 : f === 'cover' ? 0.45 : 0.6,
+    envMapIntensity: metal || f === 'gloss' ? 0.9 : 0.3,
     transparent: true,
   });
 }
