@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { decodeBin, partGeometry as buildGeometry, partMaterial, setupLighting } from '../../scripts/marvin-render.js';
+import { codeColour, decodeBin, partGeometry as buildGeometry, partMaterial, setupLighting } from '../../scripts/marvin-render.js';
 
 const $ = id => document.getElementById(id);
 window.__m3dStarted = true;   // the 3-D library loaded; from here on, errors are reported by this script
@@ -80,7 +80,7 @@ for (const p of M.parts) {
   const mat = partMaterial(p);
   const m = new THREE.Mesh(partGeometry(p), mat); m.castShadow = m.receiveShadow = true;
   m.position.set(...p.xyz); m.rotation.set(p.rpy[0], p.rpy[1], p.rpy[2], 'ZYX');
-  m.userData.p = p; m.userData.real = mat.color.clone(); m.userData.home = m.position.clone();
+  m.userData.p = p; m.userData.real = mat.color.clone(); m.userData.code = codeColour(p); m.userData.home = m.position.clone();
   linkG[p.link].add(m); meshes.push(m);
 }
 // motors per joint (a RobStride motor is drawn as a body and a driver cap; RS00 and servos as one piece)
@@ -183,7 +183,8 @@ function keyed(t, keys) {   // keys: [[t, value]...], smooth between
   return keys[keys.length - 1][1];
 }
 const arms = (pitch, roll, yaw, elbow, side) => ({[`${side}_shoulder_pitch`]:pitch, [`${side}_shoulder_roll`]:roll, [`${side}_shoulder_yaw`]:yaw, [`${side}_elbow`]:elbow});
-const restArms = () => ({...arms(0, STANCE.shoulder_roll, 0, STANCE.elbow, 'left'), ...arms(0, STANCE.shoulder_roll, 0, STANCE.elbow, 'right')});
+// arms relaxed, palms turned in towards the thighs (wrist yaw 90°, as in tools/render_robot.py)
+const restArms = () => ({...arms(0, STANCE.shoulder_roll, 0, STANCE.elbow, 'left'), ...arms(0, STANCE.shoulder_roll, 0, STANCE.elbow, 'right'), left_wrist_yaw:90, right_wrist_yaw:90});
 const STAIR = {x:0.30, h:0.18};
 const SKILLS = {
   stand:{label:'Stand', T:4, about:'The default stance the walking policies start from: knees bent 15°, feet under the hips.', fn:t => ({
@@ -214,7 +215,7 @@ const SKILLS = {
   }},
   wave:{label:'Wave', T:6, about:'Right arm raised out to the side, the forearm swinging at the elbow.', fn:t => {
     const up = seg(t, 0, 1) * (1 - seg(t, 5, 6)), w = 30 * Math.sin(2 * Math.PI * 1.4 * t) * up;
-    return {pel:[0, 0, PELVIS_Z, 0, 0, 0], q:{...restArms(), ...arms(20 * up, 8 + 95 * up, -20 * up, 20 + 70 * up + w, 'right'), right_wrist_yaw:-40 * up, neck_yaw:-20 * up, waist_yaw:-8 * up}};
+    return {pel:[0, 0, PELVIS_Z, 0, 0, 0], q:{...restArms(), ...arms(20 * up, 8 + 95 * up, -20 * up, 20 + 70 * up + w, 'right'), right_wrist_yaw:90 - 130 * up, neck_yaw:-20 * up, waist_yaw:-8 * up}};
   }},
   clap:{label:'Clap', T:4, about:'Both arms forward with the shoulders rolled inwards below 0°, which the coupled limit allows only with the arm forward.', fn:t => {
     const up = seg(t, 0, 0.8) * (1 - seg(t, 3.3, 4)), c = (1 - Math.cos(2 * Math.PI * 2.5 * t)) / 2 * up;
@@ -288,7 +289,7 @@ function applyLook() {
     m.visible = state.tab === 'assembly' ? moduleVisible(p) : state.show[p.cat];
     if (state.tab === 'skills' && p.cat === 'cover') m.visible = state.show.cover;
     let col = m.userData.real.clone();
-    if (state.colour === 'cat') col = new THREE.Color(p.cat === 'actuator' ? m.userData.real : CATS[p.cat].col);
+    if (state.colour === 'cat') col = new THREE.Color(p.cat === 'actuator' ? m.userData.code : CATS[p.cat].col);
     if (state.colour === 'module') col = new THREE.Color(MODS[p.module].col);
     let op = 1, emis = 0x000000;
     const focus = state.focus.length ? state.focus.includes(p.cat) : false;
@@ -386,7 +387,7 @@ function renderCats() {
 const VIEWS = {
   bare:{show:{cover:false}, focus:[], xray:0, colour:'real'},
   shells:{show:{cover:true}, focus:[], xray:0, colour:'real'},
-  xact:{show:{cover:false}, focus:['actuator'], xray:0.85, colour:'real'},
+  xact:{show:{cover:false}, focus:['actuator'], xray:0.85, colour:'cat'},
   xelec:{show:{cover:false}, focus:['electronics', 'sensors', 'compute', 'battery'], xray:0.85, colour:'cat'},
   made:{show:{cover:false}, focus:[], xray:0, colour:'cat'},
   buy:{show:{cnc:false, service:false, print:false, cover:false, padding:false}, focus:[], xray:0, colour:'cat'},
