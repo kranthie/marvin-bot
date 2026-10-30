@@ -75,14 +75,12 @@ Why code for a robot in its simulation phase:
 The cost: no exact curved surfaces in a mesh kernel, drawings and STEP export are harder, and fine detail (fillets, fasteners) is slower to write than to click. The repo accepts this for the first passes; fasteners are a budget item until a fastener pass.
 
 ```text
-# cad/leg.py, the thigh plate (simplified excerpt)
-thigh_t = 9.0                                   # stock thickness, mm
-tplate = union(
-    hull(box((60, thigh_t, 16), top), cyl(46, thigh_t, "y", knee)),   # a tapered strap
-    spider("RS04", knee, "y", -1, ...),                               # ring on the motor's bolt circle
-)
-tplate = lighten(tplate, "y", keep=[...], hole=20, pitch=24, rim=7, floor=2.0)  # pocket to a 2 mm floor
-out.append(Part("left_thigh_plate", "left_thigh_link", "al6061", tplate, "cnc"))
+# cad/leg.py, the thigh plate (simplified excerpt, build123d)
+k_ring, k_near = pillar_ring("RS04", knee, "y", -1)        # pillars over the knee motor's cap
+tplate = rounded(hull(rect(-32, 32, -60, fl_bot), disc(124, xz(knee))))  # outline, 3 mm inside corners
+tplate = cut(tplate, stator_holes("RS04", knee, "y"),       # the motor's bolt circle
+             lighten(tplate, keep=[ring_band("RS04", knee, "y")]))   # isogrid pockets
+out.append(made("left_thigh_plate", "left_thigh_link", "al6061", plate(tplate, "y", y, 6.0)))
 ```
 
 ### Machined aluminium, printed plastic
@@ -103,9 +101,9 @@ How to read the table: **yield** is the stress at which the material starts to b
 
 Aluminium is about 2.3 times as dense as PA-CF but 3 to 10 times as strong and 12 to 15 times as stiff, so for parts that carry the robot's weight it wins per gram. Printed parts win on shape (hollow shells, curves, internal cable runs) and cost, so the arms, which carry light loads, use printed structural shells between aluminium rings at each motor.
 
-Printed parts are weakest between layers, much as plywood splits along its layers: a part printed standing up and bent so the layers peel apart may hold only 25-40 MPa, which is the value `cad/strength.py` uses.
+Printed parts are weakest between layers, much as plywood splits along its layers: a part printed standing up and bent so the layers peel apart may hold only 25-40 MPa, which is the value `cad/fea.py` uses.
 
-<b>The workshop sets the shapes.</b> Machined parts must fit the desktop mill: about 200 × 150 mm of travel and 60 mm stock (`MILL_MM` in `cad/build.py`). Printed parts must fit a 250 mm printer. Flat parts too large for the mill (the 230 mm foot plates, the 265 mm torso side frames) go to an online laser or water-jet service. This is why the thigh grew 25 mm above the hip yaw motor rather than below it on 2026-10-29: the thigh plate still fits the mill.
+<b>The workshop sets the shapes.</b> Every machined plate is flat (2.5D: an outline and pockets from one face), so the mill cuts it with 2D toolpaths. Machined parts must fit the desktop mill with its tool changer fitted: 190 × 210 or 240 × 160 mm, depending on which side the changer sits, and 60 mm stock (`MILL_MM` in `cad/build.py`). Printed parts must fit a 250 mm printer. Flat parts too large for the mill (the 230 mm foot plates, the 265 mm torso side frames) go to an online laser or water-jet service. This is why the thigh grew 25 mm above the hip yaw motor rather than below it on 2026-10-29: the thigh plate still fits the mill.
 
 ### Load paths and far-side bearings
 
@@ -146,12 +144,9 @@ A joint's range is set by the first angle at which something hits. This matters 
 ## How Marvin Bot does it
 
 :::tip[In the repo]
-- <b>Parts:</b> `cad/leg.py`, `cad/torso.py`, `cad/arm.py`, `cad/head.py`, `cad/electrical.py`, `cad/covers.py` build 184 parts with manifold3d around the RobStride motors at their STEP-model sizes: 97 machined, 20 printed, 24 add-on shells, 12 cut by a service, 31 bought. The "mill" throughout is a desktop CNC (computer-controlled) milling machine that cuts parts from aluminium blocks. `cad/build.py` writes meshes and `description/cad_model.yaml` (mass, centre of mass, inertia, size per part) and lists any part too big for the mill or printer.
-- <b>Plates as rings and straps.</b> Instead of plates as wide as the motors, each motor is held by a ring on its stator bolt circle (the ring of bolt holes on the motor's fixed outer body) (RS04 about 86 mm, RS03 about 72 mm) joined by straps sized by the strength check (2026-10-26).
-- <b>Strength:</b> `cad/strength.py` cuts each load-carrying part at stations along its load path, takes the real CAD cross-section (holes included), and checks bending plus axial stress against yield for: landing at the ankle (3 × body weight up, 0.5 × fore-aft, 0.3 × sideways, straight leg); a hand catch (0.5 × up, 0.25 ×, 0.15 ×); a sideways fall onto the knee (1 × body weight, for the single thigh plate); and each joint's peak torque. Target SF 2.
-- **Results today** (run on the 40.3 kg model): the worst is the pelvis back plate at SF 2.0 in landing; the thigh plate's side fall 2.2; the shin under ankle peak torque 2.3; the leg's landing cases 2.3-15; printed arm shells 2.6-10.
-- **The thigh plate story** (2026-10-28): finite elements put the drilled 6 mm thigh plate at SF 0.5 in a sideways fall onto the knee. It is now 9 mm stock pocketed from the outside to a 2 mm floor: SF 2.3 at the time, +61 g a side (8 mm gave 1.8). The shin side plates went from 6 to 4 mm (SF 2.1, −0.26 kg) and the pelvis back plate from 8 to 6 mm (SF 2.1).
-- <b>Open:</b> the torso base, which a hand catch with the arm forward mostly twists. Torsion is outside `cad/strength.py`; finite elements put it at SF 0.8. It needs FEA and likely a stiffer pocketed plate before it is made.
+- <b>Parts:</b> `cad/leg.py`, `cad/torso.py`, `cad/arm.py`, `cad/head.py`, `cad/electrical.py`, `cad/covers.py` build the parts around the RobStride motors at their STEP-model sizes. The machined ones are drawn in build123d (`cad/b3d.py`) as flat plates from 2D outlines, with inside corners rounded for a 6 mm cutter and isogrid pockets, and exported as STEP files; printed shells, covers and bought parts use manifold3d. The "mill" throughout is a desktop CNC (computer-controlled) milling machine that cuts parts from aluminium blocks. `cad/build.py` writes meshes and `description/cad_model.yaml` (mass, centre of mass, inertia, size per part) and lists any part too big for the mill or printer.
+- <b>Motors on pillar rings.</b> Each motor's stator bolts run through a flat plate and a pillar ring (a pillar round every bolt, standing over the driver cap) into the motor. The first pass used a ring and three posts, which finite elements put at SF 0.2-1.3 (2026-10-30).
+- <b>Strength:</b> `cad/fea.py` meshes each link's metal parts as one bonded solid and checks them under a landing at the ankle (3 × body weight up, 0.5 × fore-aft, 0.3 × sideways), a hand catch (0.5 × up, 0.25 ×, 0.15 ×), a sideways fall onto the knee (1 × body weight), a head drop and each joint's peak torque. Target SF 2.2 (2 plus the mesh's under-read). It replaced a beam check that left out torsion, which is what failed the first-pass hip, shoulder and pelvis plates; the results and the redesign are in `docs/decisions.md` (2026-10-30).
 - <b>Shells are an add-on.</b> `cad/covers.py` grows a 1.2 mm skin 4 mm outside each link's parts, trims it where it could reach the next link, and splits it to fit the printer. Shells carry no load and stay out of the default URDF (the policies train on the bare robot); their 0.95 kg counts towards the 42 kg limit.
 - <b>Collision sweeps:</b> `python -m cad.covers --check` moves every joint through its range, every point of the coupled limit and combined poses, and fails on any shell contact. `tools/check_packaging.py` does the same for motor envelopes and collision boxes, separating packaging errors (within a limb) from ordinary self-collision (between limbs). These set the knee at 130°, hip pitch at −30° and the shoulder roll's coupled limit (2026-10-29).
 :::
@@ -163,23 +158,21 @@ A joint's range is set by the first angle at which something hits. This matters 
 | Structure | machined 6061 cores on the load path, 7075 where loads are high, printed shells | all machined (heavier, more machining time); fully printed (load must still go through metal; heat near the motors softens PETG-class plastics) (2026-10-25) |
 | Joint support | far-side bearings at knee and hip roll; hip pitch as a closed box | single-sided joints, which need the RS04 output bearing's moment rating (not taken, 2026-10-28) |
 | Thigh plate | 9 mm pocketed to 2 mm floor (+61 g a side) | 8 mm (SF 1.8); a topology-optimised outline could take back about 35 g |
-| CAD | manifold3d in Python | build123d / CadQuery (exact curved surfaces, STEP export), OpenSCAD, graphical CAD |
+| CAD | build123d for machined parts (exact outlines, STEP files), manifold3d for shells and covers | CadQuery, OpenSCAD, graphical CAD |
 | Big flat parts | online laser or water-jet service; about 12 parts to online machining (\~$1,200, not yet quoted) | a larger mill; splitting parts into pinned segments |
-| Strength check | hand calculation on real CAD sections, SF 2 | full FEA for every part (done outside the repo for the thigh plate and torso base; needed before parts are made) |
+| Strength check | finite elements for every load-carrying part (`cad/fea.py`), SF 2.2 | hand calculation on CAD sections (missed torsion; retired 2026-10-30) |
 
 :::caution[Where sources and the repo disagree]
 - <b>Aluminium yield.</b> Datasheets give typical yields of 276 MPa (6061-T6) and 503 MPa (7075-T6)<sup class="cite">[\[5\]](#s5)</sup><sup class="cite">[\[6\]](#s6)</sup> and say typical values are not for design. The repo uses 240 and 480 MPa: lower, design-style values. The playground offers both.
 - <b>PA-CF.</b> The PA6-CF datasheet gives 64 MPa across layers and 1.17 g/cm³;<sup class="cite">[\[7\]](#s7)</sup> the repo assumes 25 MPa (published tests 25-40, conservative) and 1.10 g/cm³ (`cad/lib.py`). The density difference makes printed parts about 6% lighter in the repo than the datasheet suggests.
-- <b>Results drift with mass.</b> The decision log gives the thigh plate SF 2.3 and an earlier leg pass "worst SF 2.4"; running `python -m cad.strength` today (40.3 kg) gives 2.2 for the thigh plate and a worst of 2.0 (pelvis back plate, thinned to 6 mm on 2026-10-28). All still meet the target.
 :::
 
 ## Decisions you can make here
 
-- **Plate thickness, pocket floor and material**, given the worst load case and the SF 2 target. Trade: the thigh plate at 9 mm instead of 8 mm lifts SF from 1.8 to about 2.2 for +61 g a side.
-- <b>Machined, printed or sent to a service.</b> Trade: printed is cheaper, lighter and freer in shape but far weaker (especially between layers); machined is strong but limited to the mill's 200 × 150 mm; a service handles bigger flat parts at extra cost and lead time.
+- **Plate thickness, pockets and material**, given the worst load case and the SF 2.2 target. Trade: each millimetre of plate adds strength and mass; `python -m cad.fea --link <link> --where` shows where a part's peak is.
+- <b>Machined, printed or sent to a service.</b> Trade: printed is cheaper, lighter and freer in shape but far weaker (especially between layers); machined is strong but limited to the mill's area; a service handles bigger flat parts at extra cost and lead time.
 - <b>Where a joint needs a far-side bearing.</b> Trade: an extra bearing, plate and a little mass, in exchange for several-fold less bending in each plate and no sideways load on the motor's own bearing.
 - <b>Joint range versus body shape.</b> Trade: a rounder chest or a slimmer motor gives the arm more room; otherwise accept a coupled limit that the controller must respect.
-- **FEA or topology optimisation for the open torso base** (topology optimisation: software that removes material wherever stress is low). Trade: time and tooling now, against making a part that the hand check cannot clear (torsion, SF 0.8 in FEA).
 
 <RawHtml html={widget3} />
 

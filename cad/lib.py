@@ -1,5 +1,8 @@
 """Small code-CAD toolkit on manifold3d: primitives, hulls, placement, meshing, mass properties.
 
+The made metal parts are drawn in build123d (cad/b3d.py) and meshed into this; printed shells,
+covers and bought parts are drawn here.
+
 Units are millimetres in the part generators; mass properties are returned in SI. Every part
 is a manifold solid, so volume, centre of mass and inertia come straight from the mesh.
 """
@@ -38,64 +41,12 @@ def hull(*parts: mf.Manifold) -> mf.Manifold:
     return mf.Manifold.batch_hull(list(parts))
 
 
-def strap(width: float, t: float, axis: str, *points) -> mf.Manifold:
-    """A flat strap of `width` and thickness `t` (along `axis`) through `points`, with round
-    ends: the slim link between two motor mounting rings."""
-    discs = [cyl(width, t, axis, p) for p in points]
-    return union(*[hull(a, b) for a, b in zip(discs[:-1], discs[1:], strict=True)])
-
-
 def union(*parts: mf.Manifold) -> mf.Manifold:
     return mf.Manifold.batch_boolean(list(parts), mf.OpType.Add)
 
 
 def mirror_y(m: mf.Manifold) -> mf.Manifold:
     return m.mirror([0, 1, 0])
-
-
-def lighten(
-    plate: mf.Manifold,
-    normal: str,
-    keep: list[mf.Manifold] = (),
-    hole: float = 22.0,
-    pitch: float = 30.0,
-    rim: float = 9.0,
-    floor: float | None = None,
-) -> mf.Manifold:
-    """Drill a grid of lightening holes through a flat plate whose thickness runs along
-    `normal`, staying `rim` mm inside its outline and out of the `keep` regions (motor mounting
-    faces, bearing bosses). With `floor`, pockets instead: milled from the plate's +normal face,
-    leaving `floor` mm, so the plate keeps its full depth at the ribs between them (stiffer and
-    stronger out of plane than a thinner drilled plate of the same mass)."""
-    lo, hi = np.array(plate.bounding_box()[:3]), np.array(plate.bounding_box()[3:])
-    ax = "xyz".index(normal)
-    inplane = [i for i in range(3) if i != ax]
-    centre = (lo + hi) / 2
-    size = hi - lo
-    # the plate shrunk by `rim` in its plane approximates the inner region
-    factor = [1.0, 1.0, 1.0]
-    for i in inplane:
-        factor[i] = max(0.0, 1 - 2 * rim / size[i])
-    inner = plate.translate(list(-centre)).scale(factor).translate(list(centre))
-    holes = []
-    us = np.arange(lo[inplane[0]] + rim + hole / 2, hi[inplane[0]] - rim, pitch)
-    vs = np.arange(lo[inplane[1]] + rim + hole / 2, hi[inplane[1]] - rim, pitch)
-    for k, u in enumerate(us):
-        for v in vs + (pitch / 2 if k % 2 else 0):
-            c = centre.copy()
-            c[inplane[0]], c[inplane[1]] = u, v
-            if floor is None:
-                holes.append(cyl(hole, size[ax] + 2, normal, tuple(c)))
-            else:
-                depth = size[ax] - floor + 1  # 1 mm past the face
-                c[ax] = hi[ax] + 1 - depth / 2
-                holes.append(cyl(hole, depth, normal, tuple(c)))
-    if not holes:
-        return plate
-    drill = mf.Manifold.batch_boolean(holes, mf.OpType.Add) ^ inner
-    for k in keep:
-        drill = drill - k
-    return plate - drill
 
 
 @dataclass
@@ -110,6 +61,7 @@ class Part:
     mass_g: float | None = None  # for bought parts
     notes: str = ""
     extra: dict = field(default_factory=dict)
+    brep: object = None  # build123d shape (cad/b3d.py), for STEP files; None for mesh-only parts
 
     def mass(self) -> float:
         """kg"""
@@ -141,6 +93,18 @@ class Part:
     def mirrored(self) -> Part:
         name = self.name.replace("left_", "right_")
         link = self.link.replace("left_", "right_")
+        brep = None
+        if self.brep is not None:
+            import build123d as bd  # noqa: PLC0415
+
+            brep = bd.mirror(self.brep, bd.Plane.XZ)
         return Part(
-            name, link, self.material, mirror_y(self.solid), self.process, self.mass_g, self.notes
+            name,
+            link,
+            self.material,
+            mirror_y(self.solid),
+            self.process,
+            self.mass_g,
+            self.notes,
+            brep=brep,
         )

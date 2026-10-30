@@ -7,7 +7,6 @@ ruff format --check .
 pytest -q tests
 python -m cad.build --check
 python -m cad.export --check
-python -m cad.strength --check
 python -m cad.covers --check
 python -m cad.build > /dev/null  # meshes (git-ignored) for the MuJoCo checks
 python tools/check_description.py

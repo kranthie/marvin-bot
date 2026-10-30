@@ -40,9 +40,9 @@ ankle_linkage:
   # outer side), b high and forward, below the knee (crank on the inner side); (x, z) above the
   # ankle axis. Each crank sits outside the side plate opposite its motor's mounting face, so
   # crank_y is the crank plane, not the motor centre
-  geometry: {crank_radius: 0.060, crank_tilt: 0.0, motor_a: [-0.010, 0.080], motor_b: [0.040, 0.180], crank_y: 0.041, rod_back: 0.060, rod_side: 0.040, rod_below: 0.010}
+  geometry: {crank_radius: 0.060, crank_tilt: 0.0, motor_a: [-0.010, 0.080], motor_b: [0.040, 0.180], crank_y: 0.043, rod_back: 0.060, rod_side: 0.042, rod_below: 0.010}
   pitch_ratio: 0.99
-  roll_ratio: 0.67
+  roll_ratio: 0.70
 
 # Motor housings sit on the parent link of the joint they drive, at the joint, unless listed here.
 motor_mounts:
@@ -63,7 +63,7 @@ motor_mounts:
 # from; the masses of each item (both sides counted) must add up to the budget figure.
 bodies:
   - {link: pelvis,                   budget: pelvis,        mass: 1.00,  xyz: [0, 0, 0.040],       size: [0.14, 0.18, 0.12]}
-  - {link: pelvis,                   budget: electronics,   mass: 0.50,  xyz: [-0.094, 0, 0.010],  size: [0.05, 0.034, 0.08]}  # between the hip roll motors and the gussets
+  - {link: pelvis,                   budget: electronics,   mass: 0.50,  xyz: [-0.096, 0, 0.115],  size: [0.08, 0.05, 0.06]}  # on the top plate, behind the waist motor
   - {link: left_hip_pitch_link,      budget: leg_structure, mass: 0.15,  xyz: [0, 0.015, -0.045],  size: [0.08, 0.04, 0.10]}
   - {link: left_hip_roll_link,       budget: leg_structure, mass: 0.15,  xyz: [0, 0, -0.050],      size: [0.08, 0.06, 0.10]}
   - {link: left_thigh_link,          budget: leg_structure, mass: 0.60,  xyz: [0, 0, -0.060],      size: [0.08, 0.08, 0.16]}

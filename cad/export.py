@@ -2,6 +2,8 @@
 
 Writes:
   outputs/parts/<process>/<part>.stl   each part in mm, sitting on z = 0 (git-ignored)
+  outputs/parts/step/<part>.step       each machined part's B-rep (build123d, cad/b3d.py), in its
+                                       link's frame, for CAM (git-ignored)
   outputs/parts/dxf/<part>.dxf         the outline of each flat part (a plate of one thickness),
                                        for the laser or water-jet service and for the mill's
                                        2D toolpaths (git-ignored)
@@ -174,6 +176,11 @@ def main() -> int:
         v = v - [(v[:, 0].min() + v[:, 0].max()) / 2, (v[:, 1].min() + v[:, 1].max()) / 2, 0]
         v[:, 2] -= v[:, 2].min()
         trimesh.Trimesh(v, f).export(folder / f"{name}.stl")
+        if p.brep is not None:
+            import build123d as bd  # noqa: PLC0415
+
+            (OUT / "step").mkdir(parents=True, exist_ok=True)
+            bd.export_step(p.brep, str(OUT / "step" / f"{name}.step"))
         if shape:
             (OUT / "dxf").mkdir(parents=True, exist_ok=True)
             (OUT / "dxf" / f"{name}.dxf").write_text(dxf(shape[1]))

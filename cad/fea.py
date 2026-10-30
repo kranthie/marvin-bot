@@ -1,13 +1,15 @@
 """Finite-element stress check of the load-carrying parts: each link's parts as one bonded solid.
 
-`cad/strength.py` cuts sections along a load path and uses beam theory; that misses parts whose
-shape a beam can't describe (motor rings and their posts, flanges, cranks, the torso frames).
-This meshes the metal parts of a link together, with the printed shells that carry load between
+A beam check (cuts along a load path) misses torsion and every part whose shape a beam can't
+describe (motor rings and pillars, flanges, cranks, the torso frames), so this replaced it. It
+meshes the metal parts of a link together, with the printed shells that carry load between
 them (each in its own material). The parts are treated as bonded: the plate-to-plate fasteners
 are not designed yet, and a part that touches nothing that carries load is reported as not
 attached. It holds the link where it is driven (the motor output or stator face that carries it,
 and that joint's far-side bearing seat) and loads it where the next link hangs on it, with the
-load cases of `cad/strength.py` (a landing, a hand catch, a side fall, each joint's peak torque),
+load cases: a landing (3 x body weight up at the ankle, 0.5 x fore-aft, 0.3 x sideways), a hand
+catch (0.5 x body weight up at the palm, 0.25 x fore-aft, 0.15 x sideways), a sideways fall onto
+the knee (1 x body weight), the head dropping (10 g) and each joint's peak torque,
 as a force and moment on the loaded patches, tied together as one rigid body (the next link); a
 bearing takes no torque about its own axis. Linear elastic, quadratic tetrahedra (fTetWild meshes,
 scikit-fem assembles, PARDISO or SciPy solves).
@@ -305,7 +307,14 @@ class Model:
 
 # --- the load cases ------------------------------------------------------------------------------
 
-TARGET = 2.2  # SF on yield: cad/strength.py's 2, plus the mesh's 5-9% under-read in bending
+YIELD_MPA = {
+    "al6061": 240.0,
+    "al7075": 480.0,
+    # printed carbon-fibre nylon: the strength between layers (25-40 MPa in published
+    # tests), the weak direction for a part printed standing up; conservative
+    "pa_cf": 25.0,
+}
+TARGET = 2.2  # SF on yield: 2, plus the mesh's 5-9% under-read in bending
 RS03_PEAK = 60.0  # N·m, the ankle motors (they drive the ankle through the linkage)
 # printed parts that carry load between metal ones (checked with them, in their own material)
 STRUCTURAL_PRINTS = ("_upper_arm_shell", "_forearm_shell")
@@ -451,6 +460,7 @@ def main() -> int:
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--link", help="one link or group")
     ap.add_argument("--size", type=float, default=3.0, help="mesh size, mm")
+    ap.add_argument("--where", action="store_true", help="where each part's peak is (link frame)")
     args = ap.parse_args()
     mass, peak, joints, origin, parts = _setup()
     worst_sf = np.inf
@@ -493,22 +503,26 @@ def main() -> int:
                     continue
                 v, r = float(vm[sel].max()), float(model.raw[sel].max())
                 if v > worst.get(p.name, (0,))[0]:
-                    worst[p.name] = (v, case, r)
-        floating = {group[k].name for k in np.unique(own[model.floating])}
+                    at = model.centroids()[np.flatnonzero(sel)[np.argmax(vm[sel])]]
+                    worst[p.name] = (v, case, r, at)
+        float_el = getattr(model, "floating", np.zeros(len(own), bool))  # unset if all skipped
+        floating = {group[k].name for k in np.unique(own[float_el])}
         for p in group:
             if p.name in floating:
                 print(f"{p.name:30} not attached: joins nothing that carries load yet")
                 continue
             if p.name not in worst:
                 continue
-            v, case, r = worst[p.name]
-            from .strength import YIELD_MPA  # noqa: PLC0415
-
+            v, case, r, at = worst[p.name]
             ys = YIELD_MPA[p.material]
             sf = ys / v
             worst_sf = min(worst_sf, sf)
             flag = "  <-- below target" if sf < TARGET else ""
-            print(f"{p.name:30} {case:22} {v:7.0f} {ys:6.0f} {sf:5.1f}  {r:7.0f}{flag}", flush=True)
+            where = f"  at ({at[0]:.0f}, {at[1]:.0f}, {at[2]:.0f})" if args.where else ""
+            print(
+                f"{p.name:30} {case:22} {v:7.0f} {ys:6.0f} {sf:5.1f}  {r:7.0f}{flag}{where}",
+                flush=True,
+            )
     if args.check and worst_sf < TARGET:
         return 1
     return 0

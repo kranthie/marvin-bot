@@ -59,7 +59,7 @@ FUSES = [5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 125, 150]
 # pelvis frame (skeleton.yaml's electronics boxes)
 HUBS = {
     "torso_pdb": ("torso_link", [0.005, 0.001, 0.187]),
-    "pelvis_pdb": ("pelvis", [-0.094, 0.0, 0.01]),
+    "pelvis_pdb": ("pelvis", [-0.096, 0.0, 0.103]),
 }
 LIMBS = {  # harness: hub, motors in kinematic order
     "{side}_leg": (

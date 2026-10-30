@@ -12,8 +12,9 @@ other (`python -m cad.covers --check` and the rest-pose audit), with the wiring 
   precharge, then the torso power board), the computer's DC-DC (fed before the contactor, so
   an e-stop keeps it up), the e-stop relay and the three USB-CAN adapters next to the
   computer's USB ports;
-- the pelvis channel under the waist motor holds the 12 V DC-DC for the servos and the IMU;
-  the leg power board with the leg fuses sits between the hip roll motors behind the hips.
+- the pelvis top plate, behind the waist motor, carries the leg power board with the leg fuses,
+  the 12 V DC-DC for the servos on it, and the IMU (the hip roll yokes swing through the
+  space between the hip roll motors).
 
 The harness itself is a mass allowance in each bay. Masses are estimates for the class of
 part until weighed.
@@ -85,20 +86,20 @@ TORSO = [
         "harness allowance: torso (limb-root connectors on the bulkheads)",
     ),
 ]
-PELVIS = [
-    ("elec_dcdc_servo", (60, 34, 25), (-30, 0, 63), 110, "DC-DC 48 V to 12 V, 10 A (servos)"),
-    ("elec_imu", (40, 30, 20), (25, 0, 60), 60, "IMU on the pelvis, near the hip axes"),
+PELVIS = [  # on the top plate behind the waist motor, clear of the hip roll yokes' swing
     (
         "elec_power_board_pelvis",
-        (50, 34, 80),
-        (-94, 0, 10),
+        (80, 50, 34),
+        (-93, 0, 103),
         150,
         "pelvis power board: leg branch fuses",
     ),
+    ("elec_dcdc_servo", (60, 34, 25), (-93, 0, 133), 110, "DC-DC 48 V to 12 V, 10 A (servos)"),
+    ("elec_imu", (40, 30, 20), (-100, 0, 62), 60, "IMU on the pelvis, in the top box"),
     (
         "elec_harness_pelvis",
         (10, 10, 10),
-        (-94, 0, 60),
+        (-60, 0, 62),
         220,
         "harness allowance: pelvis (limb-root connectors on the bulkheads)",
     ),

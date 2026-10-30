@@ -72,7 +72,7 @@ coupled_limits:
 # output: the direction its output face looks, in the frame of the link carrying it (left side;
 # mirrored for the right); for servos, length: the direction its case's long side runs.
 motors:
-  - {name: "{side}_hip_pitch",      model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_pitch"], output: [0, 1, 0]}
+  - {name: "{side}_hip_pitch",      model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_pitch"], output: [0, -1, 0]}  # output inward: its stator on the hip roll yoke's web, over the roll axis (cad/leg.py)
   - {name: "{side}_hip_roll",       model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_roll"], output: [1, 0, 0]}
   - {name: "{side}_hip_yaw",        model: RS03,    bus: "{side}_hip",   drives: ["{side}_hip_yaw"], output: [0, 0, -1]}
   - {name: "{side}_knee",           model: RS04,    bus: "{side}_shank", drives: ["{side}_knee"], output: [0, -1, 0]}

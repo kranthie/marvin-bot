@@ -33,6 +33,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from .b3d import disc, made, prism, rect
 from .lib import Part, box, cyl, ellipsoid, hull, union
 from .mounts import face as contact
 
@@ -79,28 +80,29 @@ def parts() -> list[Part]:
     # a hub on the horn carries the base plate clear of the bridge, and two cheeks hold the
     # pitch servo, which stands case-down below its shaft, by its mounting ears
     horn_top = neck_mount[2] + s_hi + horn_t - neck[2]  # neck frame
-    bridge_top = neck_mount[2] + s_hi + 6.0 - neck[2]  # cad/torso.py
+    bridge_top = neck_mount[2] + s_hi + 10.0 - neck[2]  # cad/torso.py: a 10 mm bridge
     base_z = bridge_top + 2.0 + 2.0  # 4 mm base, 2 mm over the bridge
-    hub = cyl(16, base_z - 2.0 - horn_top, "z", (0, 0, (horn_top + base_z - 2.0) / 2))
-    base = box((40, 50, 4), (0, -12, base_z))
     case_bot = pitch[2] - s_off - s_len / 2  # the pitch servo's case, along -z below the shaft
     ymid = (s_hi + s_lo) / 2
-    cradle = box(
-        (s_wid + 6, s_hi - s_lo + 6, case_bot - base_z), (0, ymid, (case_bot + base_z) / 2)
+    sy = s_hi - s_lo  # the case's extent along the shaft
+    cw = s_wid + 6  # the cradle, 3 mm round the case
+    bracket = prism(disc(16), "z", horn_top, base_z - 2.0)  # the hub
+    bracket += prism(rect(-20, 20, -37, 13), "z", base_z - 2.0, base_z + 2.0)  # the base
+    frame = rect(-cw / 2, cw / 2, ymid - sy / 2 - 3, ymid + sy / 2 + 3)
+    frame = prism(frame, "z", case_bot, base_z - 2.0)
+    # an open frame, not a block
+    frame -= prism(
+        rect(-cw / 2 + 5, cw / 2 - 5, ymid - sy, ymid + sy, r=0), "z", case_bot + 4, base_z - 6
     )
-    cheeks = [
-        box((3, s_hi - s_lo, 25), (sgn * (s_wid / 2 + 1.5), ymid, case_bot + 12.5))
-        for sgn in (1, -1)
-    ]
-    cradle = cradle - box(
-        (s_wid - 4, s_hi - s_lo + 8, case_bot - base_z - 8), (0, ymid, (case_bot + base_z) / 2)
-    )  # an open frame, not a block
-    bracket = union(hub, base, cradle, *cheeks)
+    bracket += frame
+    for g in (1, -1):
+        cheek = rect(g * (s_wid / 2), g * (s_wid / 2 + 3), ymid - sy / 2, ymid + sy / 2)
+        bracket += prism(cheek, "z", case_bot, case_bot + 25)
     nb_if = [contact("neck_yaw", (0, 0, horn_top), "z", 0, 8)]
     nb_if += [
         contact("neck_pitch", (g * s_wid / 2, ymid, case_bot + 12.5), "x", 0, 20) for g in (1, -1)
     ]
-    out.append(Part("neck_bracket", "neck_link", "al6061", bracket, "cnc", extra={"ifaces": nb_if}))
+    out.append(made("neck_bracket", "neck_link", "al6061", bracket, ifaces=nb_if))
 
     # --- head frame: side plates on the pitch servo's horn (+y) and idler (-y), a bridge with an
     # arm forward to the camera's tripod thread, and a top bar joining them

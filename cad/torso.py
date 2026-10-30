@@ -24,18 +24,24 @@ from pathlib import Path
 
 import yaml
 
-from .lib import Part, box, cyl, hull, lighten, strap, union
+from .b3d import cut, disc, hull, lighten, made, rect, rounded, slot, uv
+from .b3d import plate as bplate
+from .b3d import prism as bprism
+from .b3d import union as union2
+from .leg import HIP_BACK_T
+from .lib import Part, box, cyl
+from .lib import hull as mhull
 from .mounts import (
-    bolt_holes,
     bore,
     output_face,
-    output_flange,
-    rear_ring,
+    output_plate,
+    pillar_ring,
+    ring_band,
+    ring_od,
     spec,
-    spider,
     stator_face,
+    stator_holes,
 )
-from .mounts import posts as mount_posts
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -57,92 +63,141 @@ def parts() -> list[Part]:
     out: list[Part] = []
 
     # --- pelvis: frame on the hip pitch axes. The two hip roll RS04s are fixed behind the hips
-    # (axes along x, output faces forward); the hip pitch motors ride on the roll brackets and
-    # swing round the roll axes, so nothing of the pelvis sits where they go: |y| < 35 mm below
-    # z = 45 mm, and x > -66 mm (in front of their back edge) only above that.
+    # (axes along x, output faces forward) on pillar rings on a back plate; the hip roll yokes
+    # (cad/leg.py) swing round the roll axes and their rear bearings ride on stub axles behind
+    # it. Each hip's moment about y reaches the middle in a closed box behind the back plate
+    # (low, under the rear bearings), and two deep gussets (y-normal, 23 mm either side of the
+    # centre line) carry it up and forward to the waist; its moment about x goes up the back
+    # plate's centre spine into a closed box along x under the waist motor (the top plate, the
+    # gussets' upper parts and a floor). The thighs swing to the centre line under the front of
+    # the gussets (hip roll -30 deg), so they stop short there. The pelvis electronics sit on
+    # the top plate behind the waist motor (cad/electrical.py).
     rc = mounts["left_hip_roll"]  # roll motor centre (pelvis frame)
-    hip_t = 6.0  # back plate, with edge flanges: it carries the leg's landing moment (SF 2.1)
-    bx = rc[0] - t04 / 2 - hip_t / 2  # back plate, on the roll motors' back faces
-    waist_z = j["waist_yaw"][2]
-    top_z = waist_z - t03 / 2 - t / 2  # under the waist RS03's driver cap
-    # The roll brackets' bars run over the roll motors and swing inward over them when a leg
-    # rolls out, so the back plate is full width only below the roll axes, with a narrow
-    # spine up the middle to the top plate
-    back = union(
-        *[spider("RS04", (rc[0], s * rc[1], rc[2]), "x", 1, t04 / 2, hip_t) for s in (1, -1)],
-        box((hip_t, 2 * rc[1], 55), (bx, 0, rc[2] - 32.5)),
-        box((hip_t, 36, top_z - rc[2] + 60 + t / 2), (bx, 0, (top_z + t / 2 + rc[2] - 60) / 2)),
-    )
-    back = lighten(
-        back,
-        "x",
-        keep=[cyl(70, 40, "x", (bx, s * rc[1], rc[2])) for s in (1, -1)],
-        hole=16,
-        pitch=22,
-        rim=9,
-    )
-    # stub axles behind the roll motors for the roll brackets' far-side bearings
-    stubs = [cyl(30, 14, "x", (bx - hip_t / 2 - 7, s * rc[1], rc[2])) for s in (1, -1)]
-    pb_if = [bore("left_hip_roll", (bx - hip_t / 2 - 7, rc[1], rc[2]), "x", 30, 14)]
-    out.append(
-        Part(
-            "pelvis_back",
-            "pelvis",
-            "al6061",
-            union(back, *stubs),
-            "service",
-            extra={"ifaces": pb_if},
+    hip_t = HIP_BACK_T
+    r_near = pillar_ring("RS04", rc, "x", 1)[1]
+    bf = rc[0] - r_near  # back plate's front face
+    bb = bf - hip_t  # and its back face
+    waist_c = (j["waist_yaw"][0], 0.0, j["waist_yaw"][2])
+    w_ring, w_near = pillar_ring("RS03", waist_c, "z", 1)
+    top_t = 8.0
+    top_z0 = waist_c[2] - w_near - top_t  # the top plate's underside
+    top_z1 = top_z0 + top_t
+    rx = bb - 30.0  # the box's back: under the yokes' rear plates
+    bz0, bz1, bw = -62.0, -32.0, 5.0  # the box: below the rear bearings (r = 29 mm)
+    yb = 150.0  # its ends
+    gy, gt = 23.0, 6.0  # the gussets
+    back = rounded(
+        union2(
+            *[disc(124, (s * rc[1], rc[2])) for s in (1, -1)],
+            rect(-yb, yb, bz0, -20.0),
+            rect(-gy - gt / 2, gy + gt / 2, bz0, top_z0),
         )
     )
-    # each roll motor's stator bolts to a ring on its body's rear face; posts join it to the
-    # back plate over the driver cap
+    back = cut(
+        back,
+        *[stator_holes("RS04", (rc[0], s * rc[1], rc[2]), "x") for s in (1, -1)],
+        *[disc(8.5, (s * rc[1], rc[2])) for s in (1, -1)],
+        lighten(
+            back,
+            keep=[ring_band("RS04", (rc[0], s * rc[1], rc[2]), "x") for s in (1, -1)]
+            + [disc(24, (s * rc[1], rc[2])) for s in (1, -1)],
+            pitch=24,
+            rim=6,
+        ),
+    )
+    out.append(
+        made("pelvis_back", "pelvis", "al6061", bplate(back, "x", bf - hip_t / 2, hip_t), "service")
+    )
+    stub_l = 22.0  # to the roll yokes' far-side bearings
     for side, s in (("l", 1), ("r", -1)):
         c = (rc[0], s * rc[1], rc[2])
-        ring, _ = rear_ring("RS04", c, "x", 1)
-        mount = union(ring, mount_posts("RS04", c, "x", 1, 4.0, t04 / 2))
-        rm_if = [stator_face("left_hip_roll", "RS04", c, "x", 1)] if s == 1 else []
+        sc = (bb - stub_l / 2, s * rc[1], rc[2])
+        stub = bplate(cut(disc(30, uv("x", sc)), disc(8.5, uv("x", sc))), "x", sc[0], stub_l)
         out.append(
-            Part(
+            made(
+                f"pelvis_stub_{side}",
+                "pelvis",
+                "al6061",
+                stub,
+                ifaces=[bore("left_hip_roll", sc, "x", 30, stub_l)] if s == 1 else None,
+            )
+        )
+        out.append(
+            made(
                 f"pelvis_roll_mount_{side}",
                 "pelvis",
                 "al6061",
-                mount,
-                "cnc",
-                extra={"ifaces": rm_if},
+                pillar_ring("RS04", c, "x", 1)[0],
+                ifaces=[stator_face("left_hip_roll", "RS04", c, "x", 1)] if s == 1 else None,
             )
         )
-    wx = j["waist_yaw"][0]  # the waist motor sits a little ahead of the hips
-    front_x = wx + 50.0
-    bf = bx + hip_t / 2  # back plate's front face
-    top = box((front_x - bf, 90, t), ((front_x + bf) / 2, 0, top_z))
-    top = union(top, cyl(100, t, "z", (wx, 0, top_z)))  # under the waist motor
-    # the waist motor's stator bolts to a ring on its body's underside, on posts over the cap
-    w_ring, _ = rear_ring("RS03", (wx, 0, waist_z), "z", 1)
-    w_mount = union(w_ring, mount_posts("RS03", (wx, 0, waist_z), "z", 1, 4.0, t03 / 2))
-    wm_if = [stator_face("waist_yaw", "RS03", (wx, 0, waist_z), "z", 1)]
-    out.append(
-        Part("pelvis_waist_mount", "pelvis", "al6061", w_mount, "cnc", extra={"ifaces": wm_if})
-    )
-    top = lighten(top, "z", keep=[cyl(56, 40, "z", (wx, 0, top_z))], hole=18, pitch=24, rim=9)
-    out.append(Part("pelvis_top", "pelvis", "al6061", top, "service"))  # 210 mm: laser cut
-    gy = 23.0  # gussets: vertical plates under the top plate, a channel with it
+    # the box behind the back plate: floor, roof and back wall, each in two halves (the mill's
+    # travel) meeting at the centre, closed at the ends and at the gussets
     for side, s in (("l", 1), ("r", -1)):
-        g = union(
-            box(
-                (-66 - bf, t, top_z - t / 2 + 40), ((bf - 66) / 2, s * gy, (top_z - t / 2 - 40) / 2)
-            ),
-            box(
-                (front_x + 66, t, top_z - t / 2 - 45),
-                ((front_x - 66) / 2, s * gy, (top_z - t / 2 + 45) / 2),
-            ),
+        y0, y1 = sorted((0.0, s * yb))
+        for name, z in (("floor", bz0 + bw / 2), ("roof", bz1 - bw / 2)):
+            sk = rect(rx, bb, y0, y1, r=0)
+            out.append(
+                made(f"pelvis_box_{name}_{side}", "pelvis", "al6061", bplate(sk, "z", z, bw))
+            )
+        wall = rect(y0, y1, bz0 + bw, bz1 - bw, r=0)
+        out.append(
+            made(f"pelvis_box_back_{side}", "pelvis", "al6061", bplate(wall, "x", rx + 2.5, bw))
         )
-        g = lighten(g, "y", hole=14, pitch=20, rim=8)
-        out.append(Part(f"pelvis_gusset_{side}", "pelvis", "al6061", g, "service"))
+        for name, y in (("end", s * (yb - 2.0)), ("mid", s * gy)):
+            sk = rect(rx + bw, bb, bz0 + bw, bz1 - bw, r=0)
+            out.append(
+                made(f"pelvis_box_{name}_{side}", "pelvis", "al6061", bplate(sk, "y", y, 4.0))
+            )
+    # the gussets: behind the back plate (over the box) and in front of it, clear of the thighs
+    # in front (|x| < 40 mm below z = 40 mm)
+    kz = 45.0  # the top box's floor
+    for side, s in (("l", 1), ("r", -1)):
+        rear_g = rounded(rect(rx, bb, bz1, top_z0, r=0))
+        front_g = rounded(
+            rect(bf, waist_c[0] + 50, bz0, top_z0, r=0) - rect(-40.0, 200.0, bz0 - 1, 40.0, r=0)
+        )
+        for name, sk in (("rear", rear_g), ("front", front_g)):
+            sk = cut(sk, lighten(sk, keep=[rect(-200, 200, kz - 4, kz + 9)], hole=16, pitch=22))
+            out.append(
+                made(
+                    f"pelvis_gusset_{name}_{side}", "pelvis", "al6061", bplate(sk, "y", s * gy, gt)
+                )
+            )
+    out.append(
+        made(
+            "pelvis_keel_floor",
+            "pelvis",
+            "al6061",
+            bplate(rect(bf, -40.0, -gy + gt / 2, gy - gt / 2), "z", kz + 2.5, 5.0),
+        )
+    )
+    top = rounded(hull(disc(ring_od("RS03") + 4, (waist_c[0], 0)), rect(bb, -60.0, -28.0, 28.0)))
+    top = cut(
+        top,
+        stator_holes("RS03", waist_c, "z"),
+        lighten(top, keep=[ring_band("RS03", waist_c, "z")], pitch=24, rim=6),
+    )
+    out.append(
+        made(
+            "pelvis_top",
+            "pelvis",
+            "al6061",
+            bplate(top, "z", (top_z0 + top_z1) / 2, top_t),
+        )
+    )
+    out.append(
+        made(
+            "pelvis_waist_mount",
+            "pelvis",
+            "al6061",
+            w_ring,
+            ifaces=[stator_face("waist_yaw", "RS03", waist_c, "z", 1)],
+        )
+    )
 
     # --- torso: frame on the waist axis at the waist motor's centre; output face up
     out_z = t03 / 2
-    flange = output_flange("RS03", (0, 0, 0), "z", 1, 84, t)[0]
-    base_z = out_z + t + t / 2
     sh = mounts["left_shoulder_pitch"]  # shoulder pitch RS03 centre (torso frame)
     # The shoulder motors sit deep in the torso (narrow shoulders), deeper than the battery is
     # wide, so each side frame is two plates: a lower frame outside the battery, and an upper
@@ -155,88 +210,134 @@ def parts() -> list[Part]:
     comp = next(b for b in _skel["bodies"] if b["budget"] == "compute")
     y_bot = comp["size"][1] * 1000 / 2 + 6 + t / 2  # the frame narrows to the computer at the base
     bat_floor = (bat["xyz"][2] - bat["size"][2] / 2) * 1000  # the battery's shelf
-    up_y = sh[1] - spec("RS03")["rear"] - t / 2  # on the motors' body rear faces (caps inboard)
+    tp = 8.0  # the shoulder plates
+    up_y = sh[1] - spec("RS03")["rear"] - tp / 2  # on the motors' body rear faces (caps inboard)
     # the frame runs from behind the battery to just ahead of the computer standing on edge
     fx0, fx1 = -95.0, 55.0
     tops = ((-70.0, sh[2] - 18), (42.0, sh[2] - 58))  # back and front spacers (x, z)
-    base = box((fx1 - fx0, 2 * y_bot - t, t), ((fx0 + fx1) / 2, 0, base_z))  # between the plates
-    base = lighten(base, "z", keep=[cyl(60, 40, "z", (0, 0, base_z))], hole=22, rim=10)
-    wf_if = [output_face("waist_yaw", "RS03", (0, 0, 0), "z", 1)]
+    flange, _ = output_plate("RS03", disc(84), (0, 0, 0), "z", 1, t)
+    base_z = out_z + t + t / 2
     out.append(
-        Part("torso_waist_flange", "torso_link", "al6061", flange, "cnc", extra={"ifaces": wf_if})
+        made(
+            "torso_waist_flange",
+            "torso_link",
+            "al6061",
+            flange,
+            ifaces=[output_face("waist_yaw", "RS03", (0, 0, 0), "z", 1)],
+        )
     )
-    out.append(Part("torso_base", "torso_link", "al6061", base, "cnc"))
+    base = rect(fx0, fx1, -y_bot + t / 2, y_bot - t / 2)  # between the side frames
+    base = cut(base, lighten(base, keep=[disc(100)], pitch=28, rim=8))
+    out.append(made("torso_base", "torso_link", "al6061", bplate(base, "z", base_z + 1, 8.0)))
     # the battery shelf, clear of the computer plate in front
     sx0, sx1 = fx0 + 5, (bat["xyz"][0] + bat["size"][0] / 2) * 1000 + 2
-    shelf = box((sx1 - sx0, 2 * y_low - 2 * t, 4.0), ((sx0 + sx1) / 2, 0, bat_floor - 2.0))
-    shelf = lighten(shelf, "z", hole=18, pitch=24, rim=7)
-    out.append(Part("torso_battery_shelf", "torso_link", "al6061", shelf, "cnc"))
-    gap = y_low - up_y - t
+    shelf = rect(sx0, sx1, -y_low + t / 2, y_low - t / 2)  # between the side frames
+    shelf = cut(shelf, lighten(shelf, hole=18, pitch=24, rim=7))
+    out.append(
+        made(
+            "torso_battery_shelf", "torso_link", "al6061", bplate(shelf, "z", bat_floor - 2.0, 4.0)
+        )
+    )
+    (bx, bz), (fx, fz) = tops
     for side, s in (("l", 1), ("r", -1)):
-        (bx, bz), (fx, fz) = tops
-        low = union(
-            box((fx1 - fx0 - 10, t, 12), ((fx0 + fx1) / 2, s * y_bot, base_z + 6)),
-            strap(30, t, "y", (fx0 + 20, s * y_bot, base_z + 12), (fx0 + 20, s * y_low, bat_floor)),
-            strap(30, t, "y", (fx1 - 20, s * y_bot, base_z + 12), (fx1 - 20, s * y_low, bat_floor)),
-            strap(30, t, "y", (fx0 + 20, s * y_low, bat_floor), (bx, s * y_low, bz)),
-            strap(30, t, "y", (fx1 - 20, s * y_low, bat_floor), (fx, s * y_low, fz)),
-            strap(24, t, "y", (fx0 + 15, s * y_low, bat_floor), (fx1 - 10, s * y_low, bat_floor)),
+        # the lower frame leans out from the base to the battery: drawn at y_low; its foot is a
+        # second plate at the computer's width (two flat plates; the lean is in the straps)
+        low = rounded(
+            union2(
+                slot(30, (fx0 + 20, bat_floor), (bx, bz)),
+                slot(30, (fx1 - 20, bat_floor), (fx, fz)),
+                slot(24, (fx0 + 15, bat_floor), (fx1 - 10, bat_floor)),
+                slot(30, (fx0 + 20, base_z + 12), (fx0 + 20, bat_floor)),
+                slot(30, (fx1 - 20, base_z + 12), (fx1 - 20, bat_floor)),
+            )
         )
-        low = lighten(low, "y", hole=12, pitch=18, rim=7)
-        out.append(Part(f"torso_upright_{side}", "torso_link", "al6061", low, "service"))
-        ring = (sh[0], s * up_y, sh[2])
-        up = union(
-            cyl(112, t, "y", ring),  # round the motor's ears (stator holes on Ø98)
-            strap(30, t, "y", ring, (bx, s * up_y, bz)),
-            strap(30, t, "y", ring, (fx, s * up_y, fz)),
-        )
-        up = lighten(up, "y", keep=[cyl(70, 40, "y", ring)], hole=12, pitch=18, rim=7)
-        sh_h = spec("RS03")["holes"]["stator"]
-        up = up - cyl(spec("RS03")["cap_d"] + 2, t + 2, "y", ring)
-        up = up - bolt_holes(sh_h["n"], sh_h["thread"], sh_h["pcd"], "y", ring, t + 2)
-        sp_if = [stator_face("left_shoulder_pitch", "RS03", sh, "y", 1)] if s == 1 else []
+        low = cut(low, lighten(low, hole=12, pitch=18, rim=7))
         out.append(
-            Part(
+            made(
+                f"torso_upright_{side}",
+                "torso_link",
+                "al6061",
+                bplate(low, "y", s * y_low, t),
+                "service",
+            )
+        )
+        foot = rect(fx0 + 5, fx1 - 5, base_z - t / 2, base_z + t / 2 + 12)
+        out.append(
+            made(f"torso_foot_{side}", "torso_link", "al6061", bplate(foot, "y", s * y_bot, t))
+        )
+        # the foot and the lower frame are joined by two struts across the lean
+        for k, x in enumerate((fx0 + 20, fx1 - 20)):
+            strut = rect(x - 12, x + 12, base_z + t / 2, base_z + t / 2 + 12)
+            y0, y1 = sorted((s * (y_bot + t / 2), s * (y_low - t / 2)))
+            out.append(
+                made(
+                    f"torso_strut_{side}{k}",
+                    "torso_link",
+                    "al6061",
+                    bprism(strut, "y", y0, y1),
+                )
+            )
+        ring = (sh[0], sh[2])
+        up = rounded(union2(disc(116, ring), slot(40, ring, (bx, bz)), slot(40, ring, (fx, fz))))
+        up = cut(
+            up,
+            disc(spec("RS03")["cap_d"] + 2, ring),
+            stator_holes("RS03", (sh[0], s * sh[1], sh[2]), "y"),
+            lighten(up, keep=[ring_band("RS03", (sh[0], s * sh[1], sh[2]), "y")], pitch=20, rim=6),
+        )
+        sp_if = [stator_face("left_shoulder_pitch", "RS03", sh, "y", 1)] if s == 1 else None
+        out.append(
+            made(
                 f"torso_shoulder_plate_{side}",
                 "torso_link",
                 "al6061",
-                up,
-                "cnc",
-                extra={"ifaces": sp_if},
+                bplate(up, "y", s * up_y, tp),
+                ifaces=sp_if,
             )
         )
         for k, (x, z) in enumerate(tops):
-            yc = s * (up_y + t / 2 + gap / 2)
-            spacer = box((20, gap, 20), (x, yc, z)) - cyl(7, gap + 2, "y", (x, yc, z))
-            out.append(Part(f"torso_spacer_{side}{k}", "torso_link", "al6061", spacer, "cnc"))
+            y0, y1 = sorted((s * (up_y + tp / 2), s * (y_low - t / 2)))
+            sp = cut(rect(x - 13, x + 13, z - 13, z + 13), disc(8.5, (x, z)))
+            out.append(
+                made(f"torso_spacer_{side}{k}", "torso_link", "al6061", bprism(sp, "y", y0, y1))
+            )
     # the neck yaw servo hangs under the bridge by its ears, its spline up through it. The bridge
     # is an H: two cross bars in front of and behind the shoulder motors' caps, joined by the
     # servo plate between them
     neck = mounts["neck_yaw"]
-    bridge_z = neck[2] + 5.8 + t / 2  # on top of the servo (its spline up through the bridge)
-    bars = [box((12, 2 * up_y - t, t), (s * 50.0, 0, bridge_z)) for s in (1, -1)]
-    plate = box((112, 70, t), (0, 0, bridge_z))
-    bridge = union(*bars, plate) - cyl(26, 20, "z", (0, 0, bridge_z))
-    out.append(Part("torso_bridge", "torso_link", "al6061", bridge, "cnc"))
+    bt = 10.0
+    bridge_z = neck[2] + 5.8 + bt / 2  # on top of the servo (its spline up through the bridge)
+    yb_ = up_y - tp / 2
+    bridge = rounded(
+        union2(rect(38.0, 62.0, -yb_, yb_), rect(-62.0, -38.0, -yb_, yb_), rect(-56, 56, -35, 35))
+    )
+    bridge = cut(bridge, disc(26))
+    out.append(made("torso_bridge", "torso_link", "al6061", bplate(bridge, "z", bridge_z, bt)))
     # the computer stands on edge, fan forward, its I/O ports toward the sides (cable room to
-    # the uprights) and its buttons up; it bolts by the feet on its underside to a plate behind
-    # it, tied to the lower uprights
+    # the frames) and its buttons up; it bolts by the feet on its underside to a plate behind
+    # it, standing on the base plate
     cx0 = (comp["xyz"][0] - comp["size"][0] / 2) * 1000  # its back face (the underside)
     cz = comp["xyz"][2] * 1000
-    oplate = union(
-        box((3, 104, 104), (cx0 - 1.5, 0, cz)),
-        *[box((3, y_bot - 50, 20), (cx0 - 1.5, s * (y_bot + 50) / 2, cz)) for s in (1, -1)],
+    oplate = rounded(union2(rect(-52, 52, cz - 52, cz + 52), rect(-30, 30, base_z + t / 2, cz)))
+    oplate = cut(oplate, lighten(oplate, pitch=20, rim=8))
+    out.append(
+        made(
+            "torso_compute_plate",
+            "torso_link",
+            "pa_cf",
+            bplate(oplate, "x", cx0 - 2.5, 5.0),
+            "print",
+            notes="printed: it carries only the computer",
+        )
     )
-    oplate = lighten(oplate, "x", hole=14, pitch=20, rim=8)
-    out.append(Part("torso_compute_plate", "torso_link", "al6061", oplate, "cnc"))
     # chest shell: front and sides, 2 mm, open at the back (battery) and top and bottom
     z0, z1 = base_z + t, sh[2] + 20
-    outer = hull(
+    outer = mhull(
         box((118, 2 * y_bot + 2 * t + 6, 2), (-1, 0, z0)),
         box((124, 2 * y_low + 2 * t + 6, 2), (0, 0, bat_floor)),
         box((124, 2 * y_low + 2 * t + 6, 2), (0, 0, z1)),
     )
-    inner_s = hull(
+    inner_s = mhull(
         box((114, 2 * y_bot + 2 * t + 2, 4), (-1, 0, z0)),
         box((120, 2 * y_low + 2 * t + 2, 4), (0, 0, bat_floor)),
         box((120, 2 * y_low + 2 * t + 2, 4), (0, 0, z1)),

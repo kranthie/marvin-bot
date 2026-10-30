@@ -9,10 +9,11 @@ tools/build_urdf.py takes the CAD parts' masses and inertias in place of skeleto
 estimates for the budget items they cover (leg structure, feet, pelvis, torso), and shows their
 meshes.
 
-Checks that machined parts fit the desktop mill (MILL_MM, the usable area with the tool
-changer, and stock thickness) and printed parts fit the printer (PRINT_MM); parts that don't
-are listed to be split. Parts marked "service" (flat plates cut by an online laser or water-jet
-service) are not size-checked.
+Checks that machined parts fit the desktop mill (MILL_MM: its usable area with the tool changer
+fitted, which takes a strip off one side of the bed, so either of two areas, and the stock
+thickness) and printed parts fit the printer (PRINT_MM); parts that don't are listed to be
+split. Parts marked "service" (flat plates cut by an online laser or water-jet service) are not
+size-checked.
 
 Usage:
   python -m cad.build            # write meshes and cad_model.yaml, print the part table
@@ -35,7 +36,8 @@ from . import arm, covers, electrical, head, leg, torso
 ROOT = Path(__file__).resolve().parent.parent
 MESHES = ROOT / "description" / "meshes"
 MODEL = ROOT / "description" / "cad_model.yaml"
-MILL_MM = (200.0, 150.0, 60.0)  # usable X, Y, stock thickness (mm), with the tool changer fitted
+# usable X, Y and stock thickness (mm) with the tool changer fitted, beside or behind the bed
+MILL_MM = ((190.0, 210.0, 60.0), (240.0, 160.0, 60.0))
 PRINT_MM = (250.0, 250.0, 250.0)
 BUDGET = {
     "elec_": "electronics",  # first: electronics names also name their bay
@@ -60,6 +62,9 @@ def budget_item(p) -> str:
 
 
 def fits(size: np.ndarray, limit) -> bool:
+    """Whether a part fits a box (or any of several boxes), in any orientation."""
+    if isinstance(limit[0], tuple):
+        return any(fits(size, one) for one in limit)
     return all(
         a <= b for a, b in zip(sorted(size, reverse=True), sorted(limit, reverse=True), strict=True)
     )

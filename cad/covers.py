@@ -238,11 +238,15 @@ def parts() -> list[Part]:
     pel = [m_ for m_ in on("pelvis") if abs((m_.bounding_box()[1] + m_.bounding_box()[4]) / 2) < 50]
     waist_top = j["waist_yaw"][2] + 18.0  # below the torso shell's bottom edge
     centre = half("y", 1, -28) ^ half("y", -1, 28)
-    add(
-        "pelvis_cover",
-        "pelvis",
-        wrap(pel, centre ^ half("z", -1, waist_top) ^ half("z", 1, -75)),
+    # not under the front of the gussets: the thighs swing to the centre line there; in two
+    # pieces, front and back, each inside the printer's 250 mm
+    girdle = wrap(
+        pel,
+        (centre ^ half("z", -1, waist_top) ^ half("z", 1, -75))
+        - (half("x", 1, -62) ^ half("z", -1, -10)),
     )
+    add("pelvis_cover_back", "pelvis", girdle ^ half("x", -1, -60))
+    add("pelvis_cover_front", "pelvis", girdle ^ half("x", 1, -60))
 
     # --- thigh shell: all round the thigh from under the hip yaw motor to the knee, except a
     # strip at the back of the inner side (harness); over the knee motor only in front

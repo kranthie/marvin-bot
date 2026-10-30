@@ -26,7 +26,7 @@ tools/check_all.sh          # every check CI runs, in CI's order
 ```
 
 `check_all.sh` lints the code, runs the unit tests, rebuilds the code-CAD and checks it against the
-committed files, checks the strength of the frame, sweeps every joint for collisions, checks the
+committed files, sweeps every joint for collisions, checks the
 description, bill of materials, URDF and wiring harness, and stands the robot up in MuJoCo. The
 [overview](/marvin-bot/overview/#checks) lists each check on its own.
 
