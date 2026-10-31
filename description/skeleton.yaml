@@ -47,17 +47,24 @@ ankle_linkage:
 # Motor housings sit on the parent link of the joint they drive, at the joint, unless listed here.
 motor_mounts:
   # hip roll RS04 fixed in the pelvis behind the hip pitch RS04, on its own (x) axis: at the
-  # joint origin they would overlap
-  left_hip_roll: {link: pelvis, xyz: [-0.098, 0.100, 0]}
+  # joint origin they would overlap. 10 mm further back than the bearing carrier on its front
+  left_hip_roll: {link: pelvis, xyz: [-0.108, 0.100, 0]}
+  # hip yaw RS03 carried by the thigh, output up: it is tapped only at its output end, so the
+  # thigh hangs from a ring on its ears, round a crossed-roller bearing under the hip pitch box
+  left_hip_yaw: {link: left_thigh_link, xyz: [0, 0, 0]}
+  # waist RS03 9 mm below the joint: the bearing ring and hub on its output end
+  waist_yaw: {link: pelvis, xyz: [0.025, 0, 0.106]}
   # shoulder pitch RS03 pulled into the torso along its axis, clear of the shoulder roll RS03;
   # deep in the torso (above the battery and computer) so the arms hang close to the body
-  left_shoulder_pitch: {link: torso_link, xyz: [0, 0.080, 0.350]}
+  left_shoulder_pitch: {link: torso_link, xyz: [0, 0.076, 0.350]}  # 4 mm in: the hub on its output
   # neck yaw servo lowered into the torso top, clear of the head
   neck_yaw: {link: torso_link, xyz: [0, 0, 0.365]}
   # the two ankle RS03 staggered on the shin's centre line (a slim shin): a low, b high and
   # forward like a kneecap (tools/ankle_linkage.py: ankle_linkage geometry, from the ankle)
-  left_ankle_a: {link: left_shin_link, xyz: [-0.010, 0, -0.235]}
-  left_ankle_b: {link: left_shin_link, xyz: [0.040, 0, -0.135]}
+  # each bolted by its output-end ears to the side plate its output passes through (3 mm off the
+  # centre line)
+  left_ankle_a: {link: left_shin_link, xyz: [-0.010, 0.003, -0.235]}
+  left_ankle_b: {link: left_shin_link, xyz: [0.040, -0.003, -0.135]}
 
 # Structure and equipment, as boxes. "budget" names the mass_budget.yaml item each mass comes
 # from; the masses of each item (both sides counted) must add up to the budget figure.

@@ -74,7 +74,7 @@ coupled_limits:
 motors:
   - {name: "{side}_hip_pitch",      model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_pitch"], output: [0, -1, 0]}  # output inward: its stator on the hip roll yoke's web, over the roll axis (cad/leg.py)
   - {name: "{side}_hip_roll",       model: RS04,    bus: "{side}_hip",   drives: ["{side}_hip_roll"], output: [1, 0, 0]}
-  - {name: "{side}_hip_yaw",        model: RS03,    bus: "{side}_hip",   drives: ["{side}_hip_yaw"], output: [0, 0, -1]}
+  - {name: "{side}_hip_yaw",        model: RS03,    bus: "{side}_hip",   drives: ["{side}_hip_yaw"], output: [0, 0, 1]}  # on the thigh, output up (cad/leg.py)
   - {name: "{side}_knee",           model: RS04,    bus: "{side}_shank", drives: ["{side}_knee"], output: [0, -1, 0]}
   # two calf-mounted motors driving ankle pitch and roll through push rods (parallel linkage)
   - {name: "{side}_ankle_a",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"], output: [0, 1, 0]}

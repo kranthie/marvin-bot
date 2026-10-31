@@ -248,12 +248,12 @@ def parts() -> list[Part]:
     add("pelvis_cover_back", "pelvis", girdle ^ half("x", -1, -60))
     add("pelvis_cover_front", "pelvis", girdle ^ half("x", 1, -60))
 
-    # --- thigh shell: all round the thigh from under the hip yaw motor to the knee, except a
-    # strip at the back of the inner side (harness); over the knee motor only in front
+    # --- thigh shell: all round the thigh from its hip yaw ring (the yaw motor is the thigh's)
+    # to the knee, except a strip at the back of the inner side (harness); over the knee motor
+    # only in front
     knee_z = j["left_knee"][2]
-    yaw_out = -t03 / 2
     thigh = on("left_thigh_link")
-    upper = half("z", -1, yaw_out - 5) ^ half("z", 1, knee_z + d04 / 2 + 10)
+    upper = half("z", -1, leg.YAW_RING_FRONT - 1) ^ half("z", 1, knee_z + d04 / 2 + 10)
     kneecap = half("z", 1, knee_z - 10, None, knee_z + d04 / 2 + 12) ^ half("x", 1, 40)
     add(
         "left_thigh_cover",
@@ -272,8 +272,9 @@ def parts() -> list[Part]:
     )
 
     # (no shell over the hip roll motors behind the hips: they are left bare)
-    # --- upper thigh: round the hip pitch yoke and the yaw motor, between the pitch motor
-    # (which the yoke turns round) and the yaw output, where the thigh shell starts
+    # --- upper thigh: round the hip pitch yoke down to its floor on the yaw hub, between the
+    # pitch motor (which the yoke turns round) and the thigh's yaw ring, where the thigh shell
+    # starts
     yaw = j["left_hip_yaw"]
     add(
         "left_upper_thigh_cover",
@@ -281,8 +282,8 @@ def parts() -> list[Part]:
         wrap(
             on("left_hip_pitch_link"),
             half("z", -1, -d04 / 2 - 8)
-            ^ half("z", 1, yaw[2] - t03 / 2 + 2)
-            ^ half("x", 1, -45)  # the hip roll motor is behind it when the hip extends
+            ^ half("z", 1, yaw[2] + leg.YAW_RING_FRONT + 1)
+            ^ half("x", 1, -38)  # the hip roll motor and carrier are behind it as the hip extends
             ^ half("y", 1, -30),  # and the pelvis inboard of it when the hip flexes
         ),
     )

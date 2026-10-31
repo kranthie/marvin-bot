@@ -77,9 +77,22 @@ def rounded(sk: bd.Sketch, inside: float = CUTTER / 2) -> bd.Sketch:
     """Inside corners rounded to `inside` (outside corners are rounded where they're drawn:
     rect(); offsetting an offset outline again crashes OpenCascade on some outlines, so the
     result keeps the outline it came from, for lighten())."""
-    out = bd.offset(bd.offset(sk, inside), -inside)
+    try:
+        out = bd.offset(bd.offset(sk, inside), -inside)
+    except RuntimeError:  # OpenCascade's offset fails on some unions: do it in Clipper
+        cs = _cs(sk).offset(inside, mf.JoinType.Round).offset(-inside, mf.JoinType.Round)
+        out = _sketch(cs.simplify(0.05))
     out.raw = getattr(sk, "raw", sk)
     return out
+
+
+def arc_slot(c, r: float, w: float, a0: float, a1: float) -> bd.Sketch:
+    """A slot `w` wide along the arc of radius r about c from a0 to a1 (deg), round-ended."""
+    a = np.radians(np.linspace(a0, a1, max(8, int(abs(a1 - a0) / 3))))
+    ring = [(c[0] + (r + w / 2) * np.cos(x), c[1] + (r + w / 2) * np.sin(x)) for x in a]
+    ring += [(c[0] + (r - w / 2) * np.cos(x), c[1] + (r - w / 2) * np.sin(x)) for x in a[::-1]]
+    ends = [(c[0] + r * np.cos(x), c[1] + r * np.sin(x)) for x in (a[0], a[-1])]
+    return union(bd.Polygon(*ring, align=None), *[disc(w, e) for e in ends])
 
 
 def circles(d: float, pts) -> bd.Sketch:
@@ -170,6 +183,15 @@ def lighten(
     if not keepers:
         return None
     return _sketch(mf.CrossSection.batch_boolean(keepers, mf.OpType.Add).simplify(0.05))
+
+
+def opened(sk: bd.Sketch, r: float = CUTTER / 2) -> bd.Sketch | None:
+    """A pocket's outline with its corners rounded to the cutter's radius (a closed pocket's
+    corners are convex: offset in and back out), dropping parts the cutter can't enter."""
+    cs = _cs(sk).offset(-r, mf.JoinType.Round)
+    if cs.is_empty():
+        return None
+    return _sketch(cs.offset(r, mf.JoinType.Round).simplify(0.05))
 
 
 def cut(sk: bd.Sketch, *holes) -> bd.Sketch:

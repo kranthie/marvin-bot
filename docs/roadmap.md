@@ -38,7 +38,8 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Strength check, hand calcs on the CAD sections (`cad/strength.py`): landing case fails five one-sided parts
 - [x] Leg CAD second pass: far-side bearings (knee, hip roll), channel-flanged hip block, ribbed foot; passes the strength check (worst SF 2.4); robot 39.55 kg, limit raised to 40 kg
 - [x] Finite-element check of every load-carrying part (`cad/fea.py`; decisions 2026-10-30): most of the leg, pelvis and shoulder structure is below SF 2 in torsion or through the motor rings' posts
-- [ ] Strengthen the failing parts (closed sections or ribs against twist; rings bolted to plates, not on posts) and fix the CAD faults the check found (shin spacers, upper arm shell, computer plate)
+- [x] Strengthen the failing parts and fix the CAD faults the check found; RS03/RS06 on front rings at their output-end ears, crossed-roller bearings at the hip yaw, waist and hip roll, zero pins and hard stops at nine joints; every load-carrying part aluminium and at SF 2.2 or better (decisions 2026-10-30)
+- [ ] Lighten to the 42 kg limit with covers (43.24 kg now): thin the parts still at SF 4+ (hip pitch box, hip roll carriers, waist ring), merge rings and cages into fewer machined parts
 - [ ] Leg CAD: fasteners, bearing seats, hip yaw far-side support
 - [x] Pelvis and torso CAD, first pass (`cad/torso.py`): 0.86 + 1.46 kg (estimates were 1.0 + 1.8); pelvis frame SF 37 in the landing case; robot 39.06 kg
 - [x] Arm and head CAD, first pass (`cad/arm.py`, `cad/head.py`): arms 1.47 kg and grippers 0.18 kg for both (estimates 1.0 and 0.4), head 0.40 kg with the camera; shoulder plates SF 2.4 in a hand-load case; robot 39.20 kg

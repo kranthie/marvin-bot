@@ -33,8 +33,8 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from .b3d import disc, made, prism, rect
-from .lib import Part, box, cyl, ellipsoid, hull, union
+from .b3d import disc, made, plate, prism, rect
+from .lib import Part, box, cyl, ellipsoid, hull
 from .mounts import face as contact
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -86,24 +86,27 @@ def parts() -> list[Part]:
     ymid = (s_hi + s_lo) / 2
     sy = s_hi - s_lo  # the case's extent along the shaft
     cw = s_wid + 6  # the cradle, 3 mm round the case
-    # printed PA-CF (it carries only the head), so walls thicker than in aluminium
-    bracket = prism(disc(20), "z", horn_top, base_z - 2.0)  # the hub
-    bracket += prism(rect(-20, 20, -37, 13), "z", base_z - 2.0, base_z + 4.0)  # the base
-    frame = rect(-cw / 2, cw / 2, ymid - sy / 2 - 3, ymid + sy / 2 + 3)
-    frame = prism(frame, "z", case_bot, base_z - 2.0)
-    # an open frame, not a block
-    frame -= prism(
-        rect(-cw / 2 + 5, cw / 2 - 5, ymid - sy, ymid + sy, r=0), "z", case_bot + 4, base_z - 6
-    )
-    bracket += frame
-    for g in (1, -1):
-        cheek = rect(g * (s_wid / 2), g * (s_wid / 2 + 5), ymid - sy / 2, ymid + sy / 2)
-        bracket += prism(cheek, "z", case_bot, case_bot + 25)
+    # flat 7075 plates: a hub on the horn, a base plate, and two cheeks down the pitch servo's
+    # sides that hold it by its mounting ears
+    hub = prism(disc(20), "z", horn_top, base_z - 2.0)
+    base = prism(rect(-20, 20, -37, 13), "z", base_z - 2.0, base_z + 1.0)
+    cheeks = [
+        prism(
+            rect(g * (s_wid / 2), g * (s_wid / 2 + 3), ymid - sy / 2 - 3, ymid + sy / 2 + 3),
+            "z",
+            base_z + 1.0,
+            case_bot + 25,
+        )
+        for g in (1, -1)
+    ]
     nb_if = [contact("neck_yaw", (0, 0, horn_top), "z", 0, 8)]
     nb_if += [
         contact("neck_pitch", (g * s_wid / 2, ymid, case_bot + 12.5), "x", 0, 20) for g in (1, -1)
     ]
-    out.append(made("neck_bracket", "neck_link", "pa_cf", bracket, "print", ifaces=nb_if))
+    out.append(made("neck_hub", "neck_link", "al7075", hub, ifaces=nb_if[:1]))
+    out.append(made("neck_bracket", "neck_link", "al7075", base))
+    for name, ch_ in zip(("l", "r"), cheeks, strict=True):
+        out.append(made(f"neck_cheek_{name}", "neck_link", "al7075", ch_, ifaces=nb_if[1:]))
 
     # --- head frame: side plates on the pitch servo's horn (+y) and idler (-y), a bridge with an
     # arm forward to the camera's tripod thread, and a top bar joining them
@@ -112,14 +115,46 @@ def parts() -> list[Part]:
     back = HEAD_FRAME_FRONT
     y_horn = s_hi + horn_t + 1.5
     y_idler = s_lo - 2.5
-    plates = [box((back + 10, 3, 110), ((back - 10) / 2, y, 50)) for y in (y_horn, y_idler)]
-    span = y_horn - y_idler + 3
-    bridge = box((4, span, 22), (back - 2, (y_horn + y_idler) / 2, cz))
+    # flat 7075 plates: side plates (3 mm), the bridge and top bar (4 mm), the camera arm (6 mm,
+    # for the tripod thread)
+    hf = [
+        made(
+            f"head_frame_side_{n}",
+            "head_link",
+            "al7075",
+            plate(rect(-10, back, -5, 105), "y", y, 3.0),
+        )
+        for n, y in (("horn", y_horn), ("idler", y_idler))
+    ]
+    hf.append(
+        made(
+            "head_frame_bridge",
+            "head_link",
+            "al7075",
+            plate(
+                rect(y_idler + 1.5, y_horn - 1.5, cz - 11, min(cz + 11, 101.0)), "x", back - 2, 4.0
+            ),
+        )
+    )
     arm_top = cz - ch / 2 - FRAME_GAP  # under the camera, to just past its tripod thread
     arm_end = CAMERA_FRONT - TRIPOD_BACK + 8
-    arm = box((arm_end - (back - 4), 16, 9), ((arm_end + back - 4) / 2, 0, arm_top - 4.5))
-    top = box((back + 10, span, 4), ((back - 10) / 2, (y_horn + y_idler) / 2, 103))
-    out.append(Part("head_frame", "head_link", "pa_cf", union(*plates, bridge, arm, top), "print"))
+    hf.append(
+        made(
+            "head_frame",
+            "head_link",
+            "al7075",
+            plate(rect(back - 4, arm_end, -8, 8), "z", arm_top - 3, 6.0),
+        )
+    )
+    hf.append(
+        made(
+            "head_frame_top",
+            "head_link",
+            "al7075",
+            plate(rect(-10, back, y_idler + 1.5, y_horn - 1.5), "z", 103, 4.0),
+        )
+    )
+    out.extend(hf)
 
     # --- shell and visor
     outer = hull(ellipsoid(CROWN[1], CROWN[0]), ellipsoid(CHIN[1], CHIN[0]))

@@ -30,21 +30,39 @@ import manifold3d as mf
 import numpy as np
 import yaml
 
-from .b3d import cut, disc, hull, lighten, made, rect, rounded
+from .b3d import (
+    circle_pts,
+    circles,
+    cut,
+    disc,
+    hull,
+    lighten,
+    made,
+    rect,
+    rounded,
+    slot,
+    to_manifold,
+)
 from .b3d import plate as bplate
+from .b3d import prism as bprism
 from .b3d import union as union2
-from .lib import Part, box, cyl, union
-from .lib import hull as mhull
-from .mounts import face as contact
+from .lib import Part, cyl
 from .mounts import (
+    cage,
+    ear_face,
+    front_ring,
     output_face,
     output_plate,
-    pillar_ring,
     ring_band,
     spec,
-    stator_face,
-    stator_holes,
+    zero_stop,
 )
+from .mounts import face as contact
+from .mounts import hub as out_hub
+from .torso import SHOULDER_PIN, SHOULDER_RING_T
+
+PIN_06 = (32.0, 22.5)  # stop and zero pins on the RS06 rings: between the bore and the screws
+PIN_ROLL = (40.5, 90.0)  # and on the shoulder roll's
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -82,182 +100,223 @@ def parts() -> list[Part]:
     t = 6.0
     out: list[Part] = []
 
-    # --- shoulder pitch link: frame on the pitch axis; the pitch RS03 (torso) ends at its output
-    # face, y0; the roll RS03 is centred at `roll`, its axis along x. The roll motor's body comes
-    # within 0.3 mm of the pitch output's face, so the flange is cut round it below the axis
-    # (it keeps the output's upper bolts and pins) and reaches back behind the roll motor to a
-    # back plate on the roll motor's pillar ring. Everything here stays within 54 mm of the roll
-    # axis behind the motor: the shoulder roll link's top plate swings round outside that.
+    # --- shoulder pitch link: frame on the pitch axis; the pitch RS03 (torso, centred at pm)
+    # drives a hub through the torso's ring on its ears, y0 the hub's face; the roll RS03 is
+    # centred at `roll`, its axis along x, its output forward. The roll motor's body comes
+    # within 0.3 mm of the hub's face, so the flange (and the hub) are cut round it below the
+    # axis (they keep the output's upper bolts and pins); the flange reaches forward to a ring
+    # on the roll motor's output-end ears. Everything here stays within 56 mm of the roll axis
+    # ahead of the flange: the shoulder roll link's top plate swings round outside that.
     L = "left_shoulder_pitch_link"
     sp = j["left_shoulder_pitch"]
-    y0 = mounts["left_shoulder_pitch"][1] + t03 / 2 - sp[1]  # output face (this frame)
+    pm = (0.0, mounts["left_shoulder_pitch"][1] - sp[1], 0.0)
     roll = j["left_shoulder_roll"]
-    tb = 10.0  # the back plate
-    r_ring, r_near = pillar_ring("RS03", roll, "x", 1, od=108.0)
-    back_x = roll[0] - r_near - tb / 2
     ry, rz = roll[1], roll[2]
-    # the roll motor's body (r = 50 mm, 1 mm clear) where it crosses the flange's plate
-    cut_z = math.sqrt(51.0**2 - (ry - (y0 + t)) ** 2)
-    fl = rounded(union2(disc(76), rect(back_x - tb / 2, -20, rz - 30, 8)))
-    fl = cut(fl, rect(-t03 / 2 - 1, t03 / 2 + 1, rz - cut_z, rz + cut_z))
-    flange, _ = output_plate("RS03", fl, (0, y0 - t03 / 2, 0), "y", 1, t)
+    phub, p_top, p_relief = out_hub("RS03", pm, "y", 1, spec("RS03")["ear"] + SHOULDER_RING_T)
+    y0 = pm[1] + p_top  # the hub's face
+    hub_cut = math.sqrt(51.0**2 - (ry - y0) ** 2)
+    phub = phub - bprism(
+        rect(-t03 / 2 - 1, t03 / 2 + 1, rz - hub_cut, rz + hub_cut, r=5.0), "y", y0 - 10, y0 + 1
+    )
     out.append(
         made(
-            "left_shoulder_flange",
+            "left_shoulder_hub",
             L,
             "al7075",
-            flange,
-            ifaces=[output_face("left_shoulder_pitch", "RS03", (0, y0 - t03 / 2, 0), "y", 1)],
+            phub,
+            ifaces=[output_face("left_shoulder_pitch", "RS03", pm, "y", 1)],
         )
     )
-    back = rounded(hull(disc(108, (ry, rz)), rect(y0 + t, y0 + t + 10, rz - 27, rz + 25)))
-    back = cut(
-        back,
-        stator_holes("RS03", roll, "x"),
-        lighten(back, keep=[ring_band("RS03", roll, "x")], pitch=20, rim=6),
-    )
-    out.append(made("left_shoulder_back", L, "al7075", bplate(back, "x", back_x, tb)))
+    rt = 6.0  # the roll motor's ring
+    r_front = roll[0] + spec("RS03")["ear"] + rt
+    # the roll motor's body (r = 50 mm, 1 mm clear) where it crosses the flange's plate
+    cut_z = math.sqrt(51.0**2 - (ry - (y0 + t)) ** 2)
+    fl = rounded(union2(disc(92), rect(-20, r_front, rz - 30, 8)))
+    # (to its ears' face: ahead of that only the output spigot, well inside the flange's plane)
+    fl = cut(fl, rect(-t03 / 2 - 1, spec("RS03")["ear"], rz - cut_z, rz + cut_z))
+    flange, _ = output_plate("RS03", fl, pm, "y", 1, t, at=p_top, d=p_relief)
+    _, groove, zh, _ = zero_stop("RS03", pm, "y", "left_shoulder_pitch", True, *SHOULDER_PIN)
+    flange = flange - bprism(groove, "y", y0 - 1, y0 + 3.5) - bprism(zh, "y", y0 - 1, y0 + t + 1)
+    out.append(made("left_shoulder_flange", L, "al7075", flange))
+    # the ring sits on the flange's outer face (one of its eight screws gives way to the flange),
+    # and stays 1 mm inside the swing of the shoulder roll link's top plate (r = 53.75 mm)
+    r_out = -(j["left_shoulder_yaw"][2] + t06 / 2 + 6.0) - 1.0
+    r_sk = cut(disc(2 * r_out, (ry, rz)), rect(y0 + t - 100, y0 + t, rz - 100, rz + 100, r=0))
+    r_pins, _, _, r_zp = zero_stop("RS03", roll, "x", "left_shoulder_roll", True, *PIN_ROLL)
+    r_ring, _ = front_ring("RS03", roll, "x", 1, t=rt, outline=r_sk, keep=r_zp)
+    r_ring = r_ring - bprism(r_pins, "x", r_front - 5, r_front + 1)
     out.append(
         made(
-            "left_shoulder_roll_mount",
+            "left_shoulder_roll_ring",
             L,
             "al7075",
             r_ring,
-            ifaces=[stator_face("left_shoulder_roll", "RS03", roll, "x", 1)],
+            ifaces=[ear_face("left_shoulder_roll", "RS03", roll, "x", 1)],
         )
     )
 
-    # --- shoulder roll link: frame on the roll axis (roll RS03 centred here); output face at
-    # +x; the shoulder yaw RS06 is centred on the yaw joint below, axis z, output down, on a
-    # pillar ring under the top plate. A front plate on the roll output and the top plate make
-    # an L (no room for gussets: the roll motor fills the corner).
+    # --- shoulder roll link: frame on the roll axis (roll RS03 centred here); a hub on its
+    # output through the ring, the front plate on the hub; the shoulder yaw RS06 is centred at ym
+    # below, axis z, output down: a ring on its output-end ears, four strips round it up to the
+    # top plate over its driver cap. The front plate and the top plate make an L (no room for
+    # gussets: the roll motor fills the corner).
     L = "left_shoulder_roll_link"
-    face = t03 / 2
-    yaw = j["left_shoulder_yaw"]
-    y_ring, y_near = pillar_ring("RS06", yaw, "z", -1, clear=0.0, od=90.0)
-    tt = 6.0
-    top_z0 = yaw[2] + y_near  # the top plate's underside
-    fb = 8.0  # the front plate (7075)
-    front = rounded(union2(disc(72), rect(-28, 28, top_z0, 0)))
-    front = cut(front, lighten(front, keep=[disc(56)], hole=14, pitch=20, rim=7))
-    front, _ = output_plate("RS03", front, (0, 0, 0), "x", 1, fb)
+    rhub, face, r_relief = out_hub("RS03", (0, 0, 0), "x", 1, spec("RS03")["ear"] + rt)
     out.append(
         made(
-            "left_shoulder_roll_front",
+            "left_shoulder_roll_hub",
             L,
             "al7075",
-            front,
+            rhub,
             ifaces=[output_face("left_shoulder_roll", "RS03", (0, 0, 0), "x", 1)],
         )
     )
-    top = rounded(hull(disc(90.0, (yaw[0], yaw[1])), rect(0, face, -28, 28)))
+    ym = j["left_shoulder_yaw"]
+    yt = 5.0  # the yaw motor's ring
+    tt = 3.0
+    top_z0 = ym[2] + t06 / 2  # the top plate's underside, on the yaw motor's driver cap
+    # two strips behind the yaw motor; in front, the front plate's two legs come down to its ring
+    y_strips, y_pads, y_fea = cage("RS06", ym, "z", -1, to=t06 / 2, angles=(135.0, 225.0))
+    ring_z = ym[2] - spec("RS06")["ear"]  # the yaw ring's rear face (the ears' face)
+    # each leg widens outward into a foot on the ring
+    legs = [rect(s * 30.0, s * 46.0, ring_z, top_z0 + 8) for s in (1, -1)]
+    legs += [rect(s * 30.0, s * 56.0, ring_z, ring_z + 14) for s in (1, -1)]
+    legs.append(rect(-46.0, 46.0, top_z0, top_z0 + 8))  # joined along the plate's lower edge
+    fb = 10.0  # the front plate (7075): its legs stand on the yaw ring (cad/fea.py)
+    # (86 mm: clear of the shoulder flange, 44 mm from the roll axis)
+    front = rounded(union2(disc(86), rect(-28, 28, top_z0, 0), *legs), inside=8.0)
+    front = cut(front, lighten(front, keep=[disc(86)], hole=14, pitch=20, rim=7))
+    front, _ = output_plate("RS03", front, (0, 0, 0), "x", 1, fb, at=face, d=r_relief)
+    _, groove, zh, _ = zero_stop("RS03", (0, 0, 0), "x", "left_shoulder_roll", True, *PIN_ROLL)
+    front = (
+        front - bprism(groove, "x", face - 1, face + 4) - bprism(zh, "x", face - 1, face + fb + 1)
+    )
+    out.append(made("left_shoulder_roll_front", L, "al7075", front))
+    yxy = (ym[0], ym[1])
+    behind = hull(disc(90.0, yxy), y_pads) & rect(-100, ym[0] - 15, -100, 100, r=0)  # the strips
+    top = rounded(union2(hull(disc(90.0, yxy), rect(0, face, -28, 28)), behind))
     top = cut(
         top,
-        stator_holes("RS06", yaw, "z"),
-        lighten(top, keep=[ring_band("RS06", yaw, "z")], pitch=20, rim=6),
+        rect(face, face + 100, -100, 100, r=0),  # the front plate's (the strips end under it)
+        disc(24, (ym[0], ym[1])),  # the yaw motor's cable
+        lighten(top, keep=[y_pads, disc(60, (ym[0], ym[1]))], pitch=20, rim=6),
     )
     out.append(made("left_shoulder_roll_top", L, "al7075", bplate(top, "z", top_z0 + tt / 2, tt)))
+    out.append(made("left_shoulder_yaw_cage", L, "al7075", y_strips, extra={"fea_solid": y_fea}))
+    leg_pads = [rect(face, face + fb, s * 30.0, s * 56.0) for s in (1, -1)]
+    y_sk = rounded(union2(disc(92, (ym[0], ym[1])), y_pads, *leg_pads))
+    y_pins, _, _, y_zp = zero_stop("RS06", ym, "z", "left_shoulder_yaw", True, *PIN_06)
+    y_ring, y_front = front_ring("RS06", ym, "z", -1, t=yt, outline=y_sk, pocket=False)
+    yf = ym[2] - y_front
+    y_ring = y_ring - bprism(y_pins, "z", yf - 1, yf + 4)
+    # 4 mm deeper under the front plate's legs, outside the upper arm's ring
+    y_ring = y_ring + bprism(cut(union2(*leg_pads), disc(90, (ym[0], ym[1]))), "z", yf - 4, yf)
     out.append(
         made(
-            "left_shoulder_yaw_mount",
+            "left_shoulder_yaw_ring",
             L,
-            "al6061",
+            "al7075",
             y_ring,
-            ifaces=[stator_face("left_shoulder_yaw", "RS06", yaw, "z", -1)],
+            ifaces=[ear_face("left_shoulder_yaw", "RS06", ym, "z", -1)],
         )
     )
 
-    # --- upper arm: frame on the yaw joint (yaw RS06 centred here, output face at -t06/2); the
-    # elbow RS06 is centred on the elbow joint, axis y, its stator face inward (-y). The ring on
-    # the yaw output is wider than the shell (84 mm) so the shell bears on it
+    # --- upper arm: frame on the yaw joint (the yaw RS06 centred at um, output down): a hub on
+    # its output through the ring, a ring on the hub, and from the ring down the arm's outer side
+    # a strap that is the elbow RS06's ring (its output-end ears, output outward +y); a printed
+    # cover round it all. The strap runs down behind the elbow, so the forearm folds clear of it
     L = "left_upper_arm_link"
     el = j["left_elbow"]
-    yaw_out = -t06 / 2
-    ring_top, _ = output_plate("RS06", cut(disc(84), disc(16)), (0, 0, 0), "z", -1, t)
+    um = (0.0, 0.0, 0.0)
+    uhub, u_top, u_relief = out_hub("RS06", um, "z", -1, spec("RS06")["ear"] + yt)
     out.append(
         made(
-            "left_upper_arm_ring",
+            "left_upper_arm_hub",
             L,
-            "al6061",
-            ring_top,
-            ifaces=[output_face("left_shoulder_yaw", "RS06", (0, 0, 0), "z", -1)],
+            "al7075",
+            uhub,
+            ifaces=[output_face("left_shoulder_yaw", "RS06", um, "z", -1)],
         )
     )
-    et = 4.0  # the elbow ring
-    stator_y = el[1] - spec("RS06")["rear"] - et / 2  # on the elbow motor's body rear face
-    ring_el = cut(
-        disc(d06 + 11, xz(el)),
-        disc(spec("RS06")["cap_d"] + 2, xz(el)),
-        stator_holes("RS06", el, "y"),
+    ut = 4.0  # the ring on the yaw hub (7075)
+    ring_top, _ = output_plate(
+        "RS06", cut(disc(84), disc(16)), um, "z", -1, ut, at=u_top, d=u_relief
     )
+    _, groove, zh, _ = zero_stop("RS06", um, "z", "left_shoulder_yaw", True, *PIN_06)
+    uf = um[2] - u_top  # the ring's face toward the yaw ring
+    ring_top = ring_top - bprism(groove, "z", uf - 3, uf + 1) - bprism(zh, "z", uf - ut - 1, uf + 1)
+    out.append(made("left_upper_arm_ring", L, "al7075", ring_top))
+    ring_bot = um[2] - u_top - ut  # the ring's underside
+    et = 6.0  # the strap (7075): a hand load bends it out of its plane (cad/fea.py)
+    strap = rounded(
+        union2(
+            disc(96, xz(el)),
+            slot(36, (-12, el[2]), (-12, ring_bot - 18)),
+            rect(-30, 30, ring_bot - 22, ring_bot),
+        )
+    )
+    strap = cut(
+        strap,
+        lighten(strap, keep=[ring_band("RS06", el, "y"), rect(-30, 30, ring_bot - 12, ring_bot)]),
+    )
+    e_pins, _, _, e_zp = zero_stop("RS06", el, "y", "left_elbow", True, *PIN_06)
+    strap, s_front = front_ring("RS06", el, "y", 1, t=et, outline=strap, pocket=False)
+    strap = strap - bprism(e_pins, "y", el[1] + s_front - 4, el[1] + s_front + 1)
     out.append(
         made(
-            "left_upper_arm_elbow_ring",
+            "left_upper_arm_strap",
             L,
-            "al6061",
-            bplate(ring_el, "y", stator_y, et),
-            ifaces=[stator_face("left_elbow", "RS06", el, "y", 1)],
+            "al7075",
+            strap,
+            ifaces=[ear_face("left_elbow", "RS06", el, "y", 1)],
         )
     )
-    # shell: a rounded tube from the top ring to around the elbow motor's inner half; it
-    # carries the forearm and hand, so 3.5 mm walls (cad/fea.py)
-    UW = 3.5
-    top_z = yaw_out - t
-    o = mhull(
-        cyl(78, 2, "z", (0, 0, top_z - 1)),
-        cyl(d06 + 2 * UW + 2, t06 / 2 + 8, "y", (el[0], el[1] - t06 / 4 - 4, el[2])),
-    )
-    i = mhull(
-        cyl(78 - 2 * UW, 4, "z", (0, 0, top_z)),
-        cyl(d06 + 2, t06 / 2 + 8 - 2 * UW, "y", (el[0], el[1] - t06 / 4 - 4 + UW, el[2])),
-    )
-    upper = o - i - cyl(d06 + 3, t06 + 2, "y", el) - box((200, 200, 40), (0, 0, el[2] - 70))
-    upper = upper - box((40, 20, 20), (-30, -10, el[2] + 30))  # harness exit to the elbow loop
-    # a relief at the front above the elbow, where the forearm folds against it
-    upper = upper - box((100, 200, 140), (15 + 50, 0, el[2] + 5))
-    out.append(Part("left_upper_arm_shell", "left_upper_arm_link", "pa_cf", upper, "print"))
 
-    # --- forearm: frame on the elbow joint (elbow RS06 centred here, output face +y); the
-    # wrist RS00 is centred on the wrist joint below, axis z, output down
+    # --- forearm: frame on the elbow joint (elbow RS06 centred here, output +y): a hub through
+    # the strap and a flange on it; the wrist RS00 is centred on the wrist joint below, axis z,
+    # output down
     wr = j["left_wrist_yaw"]
-    out_y = t06 / 2
-    ft = 5.0  # the forearm flange; the shell starts on its outer face
-    flange_f, _ = output_plate("RS06", disc(72), (0, 0, 0), "y", 1, ft)
+    fhub, out_y, f_relief = out_hub("RS06", (0, 0, 0), "y", 1, spec("RS06")["ear"] + et)
     out.append(
         made(
-            "left_forearm_flange",
+            "left_forearm_hub",
             "left_forearm_link",
-            "al6061",
-            flange_f,
+            "al7075",
+            fhub,
             ifaces=[output_face("left_elbow", "RS06", (0, 0, 0), "y", 1)],
         )
     )
-    cup_top = wr[2] + t00 / 2
-    o = mhull(
-        cyl(68, 6, "y", (0, out_y + ft + 3, -6)),
-        cyl(d00 + 2 * WALL, t00 * 0.6, "z", (0, 0, cup_top - t00 * 0.3)),
-        cyl(d00 + 2 * WALL + 4, 4, "z", (0, 0, cup_top + 20)),
+    # the frame: a 6 mm strap on the hub, down the outside of the forearm (outboard of the upper
+    # arm's strap) to a bracket on the wrist RS00's rear face, by its 4 x M3 rear holes
+    ft = 6.0
+    cup_top = wr[2] + t00 / 2  # the wrist motor's rear face
+    bt = 5.0  # the bracket
+    fy0, fy1 = out_y, out_y + ft
+    foot = rect(-22, 22, cup_top + bt, cup_top + bt + 16)
+    frame = rounded(union2(disc(72), slot(30, (0, -10), (0, cup_top + bt + 12)), foot), inside=8.0)
+    _, groove, zh, zpads = zero_stop("RS06", (0, 0, 0), "y", "left_elbow", True, *PIN_06)
+    frame = cut(frame, lighten(frame, keep=[disc(76), zpads, foot], pitch=16, rim=5))
+    frame = cut(frame, rect(-100, 100, cup_top - 100, cup_top + bt, r=0))  # on the bracket
+    frame, _ = output_plate("RS06", frame, (0, 0, 0), "y", 1, ft, at=out_y, d=f_relief)
+    frame = frame - bprism(groove, "y", fy0 - 1, fy0 + 3) - bprism(zh, "y", fy0 - 1, fy1 + 1)
+    out.append(made("left_forearm_frame", "left_forearm_link", "al7075", frame))
+    brk = rounded(union2(disc(d00 + 6), rect(-22, 22, 0, fy1)))
+    rear_pcd = _acts["RS00"]["holes"]["rear"]["pcd"]
+    brk = cut(brk, disc(20), circles(3.4, circle_pts(4, rear_pcd, phase=np.pi / 4)))
+    bracket = bplate(brk, "z", cup_top + bt / 2, bt)
+    # for cad/fea.py: 1 mm up into the strap's foot (faces that only touch don't always mesh as
+    # one)
+    tab = bprism(
+        rect(-21.5, 21.5, fy0 + 0.5, fy1 - 0.5, r=0), "z", cup_top + bt - 0.1, cup_top + bt + 1
     )
-    i = mhull(
-        cyl(68 - 2 * WALL, 6 - 2 * WALL, "y", (0, out_y + ft + 3, -6)),
-        cyl(d00 + 0.6, t00 * 0.6 + 2, "z", (0, 0, cup_top - t00 * 0.3 - WALL)),
-        cyl(d00 + 4, 4, "z", (0, 0, cup_top + 20)),
-    )
-    fore = o - i - cyl(d06 + 4, t06 + 4, "y", (0, 0, 0)) - cyl(d00 + 0.6, t00, "z", wr)
-    fore = union(
-        fore,
-        cyl(d00 + 2 * WALL, WALL, "z", (0, 0, cup_top + WALL / 2))
-        - cyl(20, 10, "z", (0, 0, cup_top)),
-    )
-    fs_if = [contact("left_wrist_yaw", (0, 0, cup_top), "z", 10, d00 / 2)]  # the wrist motor's seat
     out.append(
-        Part(
-            "left_forearm_shell",
+        made(
+            "left_wrist_bracket",
             "left_forearm_link",
-            "pa_cf",
-            fore,
-            "print",
-            extra={"ifaces": fs_if},
+            "al7075",
+            bracket,
+            ifaces=[contact("left_wrist_yaw", (0, 0, cup_top), "z", 10, d00 / 2)],
+            extra={"fea_solid": to_manifold(bracket.fuse(tab))},
         )
     )
 
@@ -269,42 +328,65 @@ def parts() -> list[Part]:
     sv = _acts["STS3250"]["shape"]
     s_len, s_wid = sv["box"]
     s_lo, s_hi = sv["axial"]
-    s_off = sv["shaft_offset"]
     horn_t = 3.0
-    c_top, c_bot = wp[2] + s_off + s_len / 2, wp[2] + s_off - s_len / 2
-    ymid = s_lo / 2  # the case runs from s_lo to 0 along y; the spline from 0 to s_hi
-    case = box((s_wid, -s_lo, s_len), (0, ymid, (c_top + c_bot) / 2))
-    # the cradle holds the case's upper half (its upper mounting ears), leaving the lower end
-    # free for the hand mount to swing round
+    # the cradle: a top plate on the RS00's output, two side plates along the case's sides down
+    # past its upper mounting ears, and a back plate behind the case carrying the shoulder screw
+    # the hand mount's idler arm turns on; flat 7075 plates
     hold = wp[2] + 8
-    cradle_o = mhull(
-        cyl(d00 - 2, 3, "z", (0, 0, w_out - 1.5)),
-        box((s_wid + 2 * WALL, -s_lo + 2 * WALL, c_top - hold), (0, ymid, (c_top + hold) / 2)),
+    cx = s_wid / 2 + 1.5  # the side plates' mid-planes, against the case
+    ct = 3.0
+    top_c, _ = output_plate("RS00", disc(d00 - 2), (0, 0, 0), "z", -1, ct)
+    out.append(made("left_wrist_cradle", "left_wrist_link", "al7075", top_c))
+    top_under = w_out - ct
+    for name, g in (("l", 1), ("r", -1)):
+        side = bplate(rect(s_lo, 0, hold, top_under), "x", g * cx, ct)
+        out.append(made(f"left_wrist_cradle_side_{name}", "left_wrist_link", "al7075", side))
+    back_c = cut(rect(-cx - ct / 2, cx + ct / 2, wp[2] - 10, top_under), disc(4.2, (0, wp[2])))
+    out.append(
+        made(
+            "left_wrist_cradle_back",
+            "left_wrist_link",
+            "al7075",
+            bplate(back_c, "y", s_lo - ct / 2, ct),
+        )
     )
-    # an idler pin on the case's back (-y) face, on the pitch axis, for the mount's second arm
-    pin = cyl(8, 6, "y", (0, s_lo - WALL - 3, wp[2]))
-    rib = box((8, WALL, hold - wp[2] + 4), (0, s_lo - WALL / 2, (hold + wp[2]) / 2))
-    cradle = union(cradle_o - case - box((s_wid - 6, -s_lo, 20), (0, ymid, hold)), pin, rib)
-    out.append(Part("left_wrist_cradle", "left_wrist_link", "pa_cf", cradle, "print"))
+    pin_y = s_lo - ct
+    out.append(
+        Part(
+            "left_wrist_idler_pin",
+            "left_wrist_link",
+            "bought",
+            cyl(8, 9, "y", (0, pin_y - 4.5, wp[2])),
+            "bought",
+            mass_g=4.0,
+            notes="M4 shoulder screw, 8 mm shoulder: the hand mount's idler pivot",
+        )
+    )
 
     # --- hand: frame on the wrist pitch axis. A printed U round the servo's lower end, on the
     # horn (+y) and the idler pin (-y), with a plate below for the hand's wrist interface: its
     # round flange (49 mm) centred under the forearm, and its six M3 clearance holes
     plate_z = -22.0  # the plate's lower face; the case's lower corners swing within 17 mm
-    hy = s_hi + horn_t
-    py = s_lo - WALL - 6.5
-    arm_horn = mhull(cyl(22, 4, "y", (0, hy + 2, 0)), box((22, 4, 4), (0, hy + 2, plate_z + 2)))
-    arm_idle = mhull(cyl(16, 4, "y", (0, py, 0)), box((22, 4, 4), (0, py, plate_z + 2)))
-    arm_idle = arm_idle - cyl(8.4, 6, "y", (0, py, 0))
-    plate = union(
-        box((50, hy + 4 - py + 4, 4), (0, (hy + 4 + py - 2) / 2, plate_z + 2)),
-        cyl(HAND_FLANGE + 4, 4, "z", (0, 0, plate_z + 2)),
+    at = 3.0  # the arms (7075)
+    hy = s_hi + horn_t + at / 2  # the horn arm's mid-plane, on the horn
+    py = pin_y - 9 + at / 2  # the idler arm's, on the shoulder screw's shoulder
+    horn_arm = hull(disc(22), rect(-11, 11, plate_z + 4, plate_z + 5))
+    out.append(
+        made("left_hand_arm_horn", "left_palm_link", "al7075", bplate(horn_arm, "y", hy, at))
     )
-    for a in HAND_HOLES:
-        c = (HAND_PCD / 2 * math.cos(math.radians(a)), HAND_PCD / 2 * math.sin(math.radians(a)))
-        plate = plate - cyl(3.2, 10, "z", (*c, plate_z + 2))
-    mount = union(arm_horn, arm_idle, plate)
-    out.append(Part("left_hand_mount", "left_palm_link", "pa_cf", mount, "print"))
+    idle_arm = cut(hull(disc(16), rect(-11, 11, plate_z + 4, plate_z + 5)), disc(8.2))
+    out.append(
+        made("left_hand_arm_idler", "left_palm_link", "al7075", bplate(idle_arm, "y", py, at))
+    )
+    plate = union2(rect(-25, 25, py - at / 2, hy + at / 2), disc(HAND_FLANGE + 4))
+    holes = [
+        (HAND_PCD / 2 * math.cos(math.radians(a)), HAND_PCD / 2 * math.sin(math.radians(a)))
+        for a in HAND_HOLES
+    ]
+    plate = cut(plate, circles(3.2, holes))
+    out.append(
+        made("left_hand_mount", "left_palm_link", "al7075", bplate(plate, "z", plate_z + 2, 4.0))
+    )
     out.append(hand("left", plate_z))
     return out
 

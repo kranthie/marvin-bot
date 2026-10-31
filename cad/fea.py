@@ -115,9 +115,11 @@ class Model:
         parts = solid if isinstance(solid, list) else None
         whole = solid
         if parts:
-            whole = parts[0].solid
+            # a part bolted on by its ends may carry a solid for this check that reaches into the
+            # parts it bolts to (cad.mounts.cage): faces that only touch don't always mesh as one
+            whole = parts[0].extra.get("fea_solid", parts[0].solid)
             for q in parts[1:]:
-                whole = whole + q.solid
+                whole = whole + q.extra.get("fea_solid", q.solid)
         nodes, tets = mesh_solid(whole, size)
         self.mesh = skfem.MeshTet(nodes.T, tets.T).with_boundaries({})
         self.element = skfem.ElementVector(skfem.ElementTetP2())
@@ -317,9 +319,11 @@ YIELD_MPA = {
 TARGET = 2.2  # SF on yield: 2, plus the mesh's 5-9% under-read in bending
 RS03_PEAK = 60.0  # N·m, the ankle motors (they drive the ankle through the linkage)
 # printed parts that carry load between metal ones (checked with them, in their own material)
-STRUCTURAL_PRINTS = ("_upper_arm_shell", "_forearm_shell", "_hip_roll_strip", "neck_bracket")
+STRUCTURAL_PRINTS: tuple[str, ...] = ()
 HELD = {  # joints whose interfaces hold a group, where it isn't the link's parent joint
     "pelvis": ["waist_yaw"],
+    # the hip roll's bearing carrier, on the roll motor's housing: all the hip's load through it
+    "pelvis_roll_carrier": ["left_hip_roll_housing"],
     "left_foot_link": ["left_ankle_roll", "left_ankle_rod_a", "left_ankle_rod_b"],
 }
 
@@ -360,7 +364,7 @@ def groups(parts) -> dict[str, list]:
     out: dict[str, list] = {}
     for p in parts:
         structural = p.material.startswith("al") or p.name.endswith(STRUCTURAL_PRINTS)
-        if not structural or p.link.startswith("right_"):
+        if not structural or p.link.startswith("right_") or p.extra.get("fea") is False:
             continue
         out.setdefault(p.extra.get("group", p.link), []).append(p)
     return out

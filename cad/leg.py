@@ -41,20 +41,29 @@ import yaml
 
 from .b3d import cut, disc, hull, lighten, made, plate, prism, rect, rounded, slot, to_manifold
 from .b3d import union as union2
-from .lib import Part, box, cyl
+from .lib import Part, cyl
 from .lib import hull as mhull
 from .mounts import (
+    BEARINGS,
     bore,
+    cage,
+    ear_face,
+    front_ring,
     output_face,
     output_holes,
     output_plate,
     pillar_ring,
     ring_band,
     ring_od,
+    spec,
     stator_face,
     stator_holes,
+    zero_stop,
 )
 from .mounts import face as contact
+from .mounts import (
+    hub as out_hub,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
@@ -62,9 +71,16 @@ DESC = ROOT / "description"
 _acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
 _skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
 # the pelvis back plate (cad/torso.py), between the roll motor and its rear bearing
-HIP_BACK_T = 8.0
+HIP_BACK_T = 10.0  # the pelvis back plate: each hip's whole load comes in through its roll motor
 BRG_D, BRG_W = 42.0, 7.0  # 6806 far-side bearings (30 x 42 x 7 mm)
 STUB_D, STUB_L = 30.0, 12.0  # their stub axles
+YAW_BRG = "RA6008"  # the hip yaw's crossed-roller bearing (and the hip roll's carrier)
+# the hip yaw ring's front face from the yaw motor's centre: 1 mm past the output, the bearing
+YAW_RING_FRONT = spec("RS03")["t"] / 2 + 1 + BEARINGS[YAW_BRG]["B"]
+ROLL_RING_FRONT = spec("RS04")["t"] / 2 + 1 + BEARINGS[YAW_BRG]["B"]  # the hip roll's carrier
+# stop and zero pins (radius, angle) on the bearing rings: between the seat and the screws
+YAW_PIN = (41.5, 22.5)
+HIP_ROLL_PIN = (42.5, 18.0)
 
 
 def env(model: str) -> tuple[float, float]:
@@ -103,6 +119,26 @@ def bearing(name: str, link: str, axis: str, centre) -> Part:
     )
 
 
+def crossed_roller(name: str, link: str, axis: str, centre, kind: str = YAW_BRG) -> Part:
+    b = BEARINGS[kind]
+    return Part(
+        name,
+        link,
+        "bought",
+        cyl(b["D"], b["B"], axis, centre) - cyl(b["d"], b["B"] + 2, axis, centre),
+        "bought",
+        mass_g=b["mass_g"],
+        notes=f"{kind} crossed-roller bearing ({b['d']:.0f} x {b['D']:.0f} x {b['B']:.0f} mm)",
+    )
+
+
+def _along(c, axis: str, d: float) -> tuple:
+    """The point `d` along `axis` from c."""
+    v = list(c)
+    v["xyz".index(axis)] += d
+    return tuple(v)
+
+
 def stub(axis: str, centre):
     """A stub axle for a far-side bearing, bolted to its plate through the middle (M8)."""
     i = "xyz".index(axis)
@@ -129,37 +165,48 @@ def parts() -> list[Part]:
     rj = J["left_hip_roll"]
     roll_c = [a - b for a, b in zip(mounts["left_hip_roll"], rj, strict=True)]  # this frame
     pj = J["left_hip_pitch"]
-    out_x = roll_c[0] + t04 / 2  # roll output face
-    ft = 8.0  # front plate
+    # the roll output drives a hub through the pelvis's bearing carrier (cad/torso.py) on the
+    # roll motor's front face; the yoke's front plate bolts on the hub, clamping the inner ring
+    rhub, roll_top, roll_relief = out_hub("RS04", roll_c, "x", 1, ROLL_RING_FRONT, bearing=YAW_BRG)
+    out.append(
+        made(
+            "left_hip_roll_hub",
+            L,
+            "al7075",
+            rhub,
+            ifaces=[
+                output_face("left_hip_roll", "RS04", roll_c, "x", 1),
+                bore("left_hip_roll", _along(roll_c, "x", roll_top - 4.5), "x", 60.0, 8.0),
+            ],
+        )
+    )
+    out_x = roll_c[0] + roll_top  # the front plate's face, on the hub
+    ft = 6.0  # front plate
     fx = out_x + ft / 2
     hp_ring, near = pillar_ring("RS04", pj, "y", -1)
-    wt = 8.0  # the web (7075)
-    st = 8.0  # the strip behind it, printed: it carries the rear bearing's small share
+    wt = 6.0  # the web (7075)
     w_in = pj[1] + near  # its inner face, on the pitch motor's pillar ring
     w_out = w_in + wt
     top_z = d04 / 2 + 32  # the web's top edge: it runs back 2 mm over the roll motor
-    rt = 8.0  # rear plate: the bearing is 7 mm wide
-    # the roll motor's pillar ring and the pelvis back plate behind it, then 14 mm for the stub
-    back_face = roll_c[0] - pillar_ring("RS04", roll_c, "x", 1)[1] - HIP_BACK_T
-    rear_x = back_face - 14 - rt / 2
     web_f = rounded(hull(disc(124, xz(pj)), rect(fx + ft / 2, -30, -40, top_z)))
+    # the hip pitch's stop and zero pins stand out of the web's outer face into the box's
+    # outer wall, 2 mm away across the stub axle
+    hp_pins, _, _, hp_pads = zero_stop("RS04", pj, "y", "left_hip_pitch", False, 30.0, 0.0)
     web_f = cut(
         web_f,
         stator_holes("RS04", pj, "y"),
         disc(8.5, xz(pj)),
-        lighten(web_f, keep=[ring_band("RS04", pj, "y"), disc(20, xz(pj))], pitch=22, rim=6),
+        lighten(
+            web_f, keep=[ring_band("RS04", pj, "y"), disc(20, xz(pj)), hp_pads], pitch=22, rim=6
+        ),
     )
-    web_r = rect(rear_x + rt / 2, out_x, d04 / 2 + 2, top_z)
-    web_r = cut(web_r, lighten(web_r, hole=14, pitch=20, rim=7))
-    out.append(made("left_hip_roll_web", L, "al7075", plate(web_f, "y", w_in + wt / 2, wt)))
-    out.append(
-        made("left_hip_roll_strip", L, "pa_cf", plate(web_r, "y", w_in + st / 2, st), "print")
-    )
+    web = plate(web_f, "y", w_in + wt / 2, wt) - prism(hp_pins, "y", w_out - 5, w_out + 1)
+    out.append(made("left_hip_roll_web", L, "al7075", web))
     out.append(
         made(
             "left_hip_pitch_mount",
             L,
-            "al6061",
+            "al7075",
             hp_ring,
             ifaces=[stator_face("left_hip_pitch", "RS04", pj, "y", -1)],
         )
@@ -174,30 +221,14 @@ def parts() -> list[Part]:
             ifaces=[bore("left_hip_pitch", stub_c, "y", STUB_D, STUB_L)],
         )
     )
-    front = rounded(union2(disc(84), rect(w_in - 14, w_out + 14, -40, top_z)))
-    front = cut(front, lighten(front, keep=[disc(60)], hole=12, pitch=18, rim=7))
-    front, _ = output_plate("RS04", front, roll_c, "x", 1, ft)
-    out.append(
-        made(
-            "left_hip_roll_front",
-            L,
-            "al7075",
-            front,
-            ifaces=[output_face("left_hip_roll", "RS04", roll_c, "x", 1)],
-        )
+    front = rounded(union2(disc(98), rect(w_in - 14, w_out + 14, -40, top_z)))
+    front = cut(front, lighten(front, keep=[disc(98)], hole=12, pitch=18, rim=7))
+    front, _ = output_plate("RS04", front, roll_c, "x", 1, ft, at=roll_top, d=roll_relief)
+    _, groove, zh, _ = zero_stop("RS04", roll_c, "x", "left_hip_roll", True, *HIP_ROLL_PIN)
+    front = (
+        front - prism(groove, "x", out_x - 1, out_x + 4) - prism(zh, "x", out_x - 1, out_x + ft + 1)
     )
-    rear = rounded(union2(disc(BRG_D + 16), rect(w_in - 14, w_out + 14, 0, top_z)))
-    rear = cut(rear, disc(BRG_D), lighten(rear, keep=[disc(BRG_D + 16)], hole=12, pitch=18))
-    out.append(
-        made(
-            "left_hip_roll_rear",
-            L,
-            "al6061",
-            plate(rear, "x", rear_x, rt),
-            ifaces=[bore("left_hip_roll", (rear_x, 0, 0), "x", BRG_D, rt)],
-        )
-    )
-    out.append(bearing("left_hip_roll_bearing", L, "x", (rear_x, 0, 0)))
+    out.append(made("left_hip_roll_front", L, "al7075", front))
 
     # --- hip pitch link: frame on the pitch axis (the pitch RS04 centred here, output face -y).
     # A closed box round the pitch motor: a flange and inner wall on its output, an outer wall on
@@ -215,9 +246,23 @@ def parts() -> list[Part]:
             ifaces=[output_face("left_hip_pitch", "RS04", (0, 0, 0), "y", -1)],
         )
     )
-    y_ring, y_near = pillar_ring("RS03", yaw_c, "z", -1, base=2.0)
-    floor_t = 8.0
-    fz0 = yaw_c[2] + y_near  # the floor's underside, on the yaw motor's pillar ring
+    # the yaw RS03 is on the thigh, output up: its hub (here) stands on its output flange through
+    # the thigh's bearing ring, and the floor bolts onto the hub, clamping the bearing's inner ring
+    yhub, hub_top, hub_relief = out_hub("RS03", yaw_c, "z", 1, YAW_RING_FRONT, bearing=YAW_BRG)
+    out.append(
+        made(
+            "left_hip_yaw_hub",
+            L,
+            "al7075",
+            yhub,
+            ifaces=[
+                output_face("left_hip_yaw", "RS03", yaw_c, "z", 1),
+                bore("left_hip_yaw", _along(yaw_c, "z", hub_top - 4.5), "z", 60.0, 8.0),
+            ],
+        )
+    )
+    floor_t = 5.0
+    fz0 = yaw_c[2] + hub_top  # the floor's underside, on the hub
     fz1 = fz0 + floor_t
     side_t = 4.0
     iy1 = -t04 / 2 - 6.0  # inner wall, on the flange: its outer face
@@ -234,38 +279,28 @@ def parts() -> list[Part]:
     out.append(
         made("left_hip_pitch_inner", L, "al6061", plate(inner_w, "y", iy1 - side_t / 2, side_t))
     )
-    outer_w = rounded(union2(disc(BRG_D + 16), walls))
-    outer_w = cut(
-        outer_w, disc(BRG_D), lighten(outer_w, keep=[disc(BRG_D + 12)], hole=12, pitch=18)
-    )
+    outer_w = rounded(union2(disc(76), walls))
+    outer_w = cut(outer_w, disc(BRG_D), lighten(outer_w, keep=[disc(76)], hole=12, pitch=18))
+    _, hp_groove, hp_zero, _ = zero_stop("RS04", (0, 0, 0), "y", "left_hip_pitch", True, 30.0, 0.0)
+    ow0 = oy - ot / 2  # the wall's face toward the web
     out.append(
         made(
             "left_hip_pitch_outer",
             L,
             "al7075",
-            plate(outer_w, "y", oy, ot),
+            plate(outer_w, "y", oy, ot)
+            - prism(hp_groove, "y", ow0 - 1, ow0 + 3)
+            - prism(hp_zero, "y", ow0 - 1, ow0 + ot + 1),
             ifaces=[bore("left_hip_pitch", (0, oy, 0), "y", BRG_D, ot)],
         )
     )
     yaw_xy = (yaw_c[0], yaw_c[1])
-    floor = rounded(
-        hull(disc(ring_od("RS03") + 4, yaw_xy), rect(-24, 24, iy1 - side_t, oy + ot / 2))
-    )
-    floor = cut(
-        floor,
-        stator_holes("RS03", yaw_c, "z"),
-        lighten(floor, keep=[ring_band("RS03", yaw_c, "z")], pitch=24, rim=6),
-    )
-    out.append(made("left_hip_pitch_top", L, "al7075", plate(floor, "z", (fz0 + fz1) / 2, floor_t)))
-    out.append(
-        made(
-            "left_hip_yaw_mount",
-            L,
-            "al6061",
-            y_ring,
-            ifaces=[stator_face("left_hip_yaw", "RS03", yaw_c, "z", -1)],
-        )
-    )
+    floor = rounded(hull(disc(96, yaw_xy), rect(-24, 24, iy1 - side_t, oy + ot / 2)))
+    floor = cut(floor, disc(12, yaw_xy), lighten(floor, keep=[disc(96, yaw_xy)], pitch=24, rim=6))
+    floor, _ = output_plate("RS03", floor, yaw_c, "z", 1, floor_t, at=hub_top, d=hub_relief)
+    _, groove, zh, _ = zero_stop("RS03", yaw_c, "z", "left_hip_yaw", False, *YAW_PIN)
+    floor = floor - prism(groove, "z", fz0 - 1, fz0 + 3) - prism(zh, "z", fz0 - 1, fz1 + 1)
+    out.append(made("left_hip_pitch_top", L, "al7075", floor))
     wall_t = 4.0
     for name, s in (("front", 1), ("back", -1)):
         w = rect(iy1, oy - ot / 2, fz1, wz0)
@@ -276,35 +311,62 @@ def parts() -> list[Part]:
         )
     out.append(bearing("left_hip_pitch_bearing", L, "y", (0, oy, 0)))
 
-    # --- thigh: frame on the yaw axis at the yaw motor's centre; yaw output faces down. A flange
-    # on the yaw output, an outer side plate on the knee RS04's pillar ring (its stator outward),
-    # and two ribs under the flange inside the plate
+    # --- thigh: frame on the yaw axis at the yaw motor's centre; the yaw RS03 is the thigh's,
+    # output up. A ring on its output-end ears holds it and seats the crossed-roller bearing
+    # whose inner ring is on the hip pitch box's hub; four strips round the motor carry the ring
+    # down to a floor 1 mm below its driver cap, and under the floor an outer side plate carries
+    # the knee RS04's pillar ring (its stator outward), stiffened against a sideways fall by two
+    # ribs inside the plate
     L = "left_thigh_link"
-    yaw_out = -t03 / 2
+    o3 = (0.0, 0.0, 0.0)
     knee = J["left_knee"]
     k_ring, k_near = pillar_ring("RS04", knee, "y", -1, base=2.0)
     tt = 5.0  # 7075
     ty0 = knee[1] + k_near  # the plate's inner face
-    tf_sk = rounded(union2(disc(84), rect(-32, 32, 12, ty0 + tt)))
-    tflange, _ = output_plate("RS03", tf_sk, (0, 0, 0), "z", -1, 6.0)
+    cap_end = t03 / 2  # the yaw motor's driver cap end, below its centre
+    strips, pads, strips_fea = cage("RS03", o3, "z", 1, to=cap_end + 1.0, width=20.0, t=5.0)
+    ring_sk = rounded(union2(disc(ring_od("RS03")), pads))
+    y_pins, _, _, y_pads = zero_stop("RS03", o3, "z", "left_hip_yaw", False, *YAW_PIN)
+    yring, _ = front_ring("RS03", o3, "z", 1, outline=ring_sk, bearing=YAW_BRG, keep=y_pads)
+    yring = yring - prism(y_pins, "z", YAW_RING_FRONT - 6, YAW_RING_FRONT + 1)
+    seat_c = (0.0, 0.0, YAW_RING_FRONT - BEARINGS[YAW_BRG]["B"] / 2)
     out.append(
         made(
-            "left_thigh_flange",
+            "left_thigh_yaw_ring",
             L,
-            "al6061",
-            tflange,
-            ifaces=[output_face("left_hip_yaw", "RS03", (0, 0, 0), "z", -1)],
+            "al7075",
+            yring,
+            ifaces=[
+                ear_face("left_hip_yaw", "RS03", o3, "z", 1),
+                bore("left_hip_yaw", seat_c, "z", BEARINGS[YAW_BRG]["D"], BEARINGS[YAW_BRG]["B"]),
+            ],
         )
     )
-    fl_bot = yaw_out - 6.0
+    out.append(made("left_thigh_cage", L, "al7075", strips, extra={"fea_solid": strips_fea}))
+    out.append(crossed_roller("left_hip_yaw_bearing", L, "z", seat_c))
+    yaw_out = -cap_end - 1.0  # the floor's top face
+    fl_t = 6.0
+    tf_sk = rounded(union2(disc(124), rect(-32, 32, 12, ty0 + tt)))  # under the strips
+    tf_sk = cut(
+        tf_sk, disc(30), lighten(tf_sk, keep=[pads, rect(-32, 32, 12, ty0 + tt)], pitch=18, rim=5)
+    )
+    out.append(made("left_thigh_floor", L, "al7075", plate(tf_sk, "z", yaw_out - fl_t / 2, fl_t)))
+    fl_bot = yaw_out - fl_t
     tplate = rounded(hull(rect(-32, 32, -60, fl_bot), disc(124, xz(knee))))
+    k_pins, _, _, k_pads = zero_stop("RS04", knee, "y", "left_knee", False, 30.0, 0.0)
     tplate = cut(
         tplate,
         stator_holes("RS04", knee, "y"),
         disc(8.5, xz(knee)),
-        lighten(tplate, keep=[ring_band("RS04", knee, "y"), disc(20, xz(knee))], pitch=24, rim=6),
+        lighten(
+            tplate,
+            keep=[ring_band("RS04", knee, "y"), disc(20, xz(knee)), k_pads],
+            pitch=24,
+            rim=6,
+        ),
     )
-    out.append(made("left_thigh_plate", L, "al7075", plate(tplate, "y", ty0 + tt / 2, tt)))
+    tplate = plate(tplate, "y", ty0 + tt / 2, tt) - prism(k_pins, "y", ty0, ty0 + tt + 1)
+    out.append(made("left_thigh_plate", L, "al7075", tplate))
     for name, s in (("front", 1), ("back", -1)):
         rib = rect(12, ty0, -96, fl_bot)
         out.append(made(f"left_thigh_rib_{name}", L, "al7075", plate(rib, "x", s * 29.0, 6.0)))
@@ -327,14 +389,6 @@ def parts() -> list[Part]:
             ifaces=[bore("left_knee", kstub_c, "y", STUB_D, STUB_L)],
         )
     )
-    shell_top, shell_bot = yaw_out - 12, knee[2] + d04 / 2 + 4
-    outer = mhull(
-        cyl(d03 + 16, 2, "z", (0, 0, shell_top)), box((d04 + 10, t04 + 30, 2), (0, 2, shell_bot))
-    )
-    inner = mhull(
-        cyl(d03 + 10, 4, "z", (0, 0, shell_top)), box((d04 + 4, t04 + 24, 4), (0, 2, shell_bot))
-    )
-    out.append(Part("left_thigh_shell", L, "pa_cf", outer - inner, "print"))
 
     # --- shin: frame on the knee axis; knee output faces inward (-y). Two side plates on the
     # shin's centre line hold the staggered ankle RS03 between them: a (low) bolts its stator to
@@ -345,9 +399,9 @@ def parts() -> list[Part]:
     ankle_z = J["left_ankle_pitch"][2]
     shin_t = 5.0  # outer plate
     in_t = 4.0  # inner plate: more margin (cad/fea.py)
-    a_ring, a_near = pillar_ring("RS03", ka, "y", 1, clear=0.5)
-    b_ring, b_near = pillar_ring("RS03", kb, "y", -1, clear=0.5, base=2.0)
-    yi, yo = -a_near, b_near  # the plates' inner faces (toward the motors)
+    # each ankle motor's output-end ears bolt to the plate its output passes through: a's to the
+    # outer plate, b's to the inner; the plates' inner faces (toward the motors)
+    yi, yo = kb[1] - spec("RS03")["ear"], ka[1] + spec("RS03")["ear"]
     w = 44.0  # strap width
     cheek = (0.0, ankle_z)
     bridge_c = (70.0, -49.0)  # the bridge, in front of the knee motor
@@ -359,7 +413,7 @@ def parts() -> list[Part]:
     inner = rounded(
         union2(
             disc(84),
-            disc(disc_ab, xz(ka)),
+            disc(disc_ab, xz(kb)),
             slot(w, (0, 0), (-12, -110), xz(ka), cheek),
             slot(30, (0, 0), bridge_c),
         )
@@ -371,25 +425,30 @@ def parts() -> list[Part]:
         rod_slot,
         disc(22, cheek),
         output_holes("RS04", (0, 0, 0), "y"),
-        stator_holes("RS03", ka, "y"),
+        disc(spec("RS03")["output_d"] + 2, xz(kb)),  # b's output and crank hub
+        stator_holes("RS03", kb, "y"),
         lighten(
             inner,
-            keep=[disc(48), ring_band("RS03", ka, "y"), disc(40, cheek), *anchors],
+            keep=[disc(48), ring_band("RS03", kb, "y"), disc(40, cheek), *anchors],
             pitch=20,
             rim=6,
         ),
     )
     outer = rounded(
-        union2(disc(disc_ab, xz(kb)), slot(w, bridge_c, xz(kb), (kb[0], ka[2] - 20), cheek))
+        union2(
+            disc(disc_ab, xz(ka)),
+            slot(w, bridge_c, xz(kb), (kb[0], ka[2] - 20), cheek),
+        )
     )
     outer = cut(
         outer,
         disc(136),  # the thigh plate and its stub turn inside r = 68 mm
         disc(22, cheek),
-        stator_holes("RS03", kb, "y"),
+        disc(spec("RS03")["output_d"] + 2, xz(ka)),  # a's output and crank hub
+        stator_holes("RS03", ka, "y"),
         lighten(
             outer,
-            keep=[ring_band("RS03", kb, "y"), disc(40, cheek), *anchors],
+            keep=[ring_band("RS03", ka, "y"), disc(40, cheek), *anchors],
             pitch=20,
             rim=6,
         ),
@@ -403,6 +462,7 @@ def parts() -> list[Part]:
             "service",
             ifaces=[
                 contact("left_knee", (0, yi, 0), "y", 8.0, 24.0),
+                ear_face("left_ankle_b", "RS03", kb, "y", -1),
                 bore("left_ankle_pitch", (0, yi - in_t / 2, ankle_z), "y", 22, in_t),
             ],
         )
@@ -414,40 +474,37 @@ def parts() -> list[Part]:
             "al7075",
             plate(outer, "y", yo + shin_t / 2, shin_t),
             "service",
-            ifaces=[bore("left_ankle_pitch", (0, yo + shin_t / 2, ankle_z), "y", 22, shin_t)],
+            ifaces=[
+                ear_face("left_ankle_a", "RS03", ka, "y", 1),
+                bore("left_ankle_pitch", (0, yo + shin_t / 2, ankle_z), "y", 22, shin_t),
+            ],
         )
     )
-    for name, c, sgn, ring in (("a", ka, 1, a_ring), ("b", kb, -1, b_ring)):
-        out.append(
-            made(
-                f"left_ankle_mount_{name}",
-                L,
-                "al6061",
-                ring,
-                ifaces=[stator_face(f"left_ankle_{name}", "RS03", c, "y", sgn)],
-            )
-        )
     # the knee's far side: a plate on a bearing on the thigh plate's stub axle, tied to both
     # side plates by a bridge tube in front of the knee motor (and a short spacer)
     ko_y = kstub_c[1]
-    ko = rounded(union2(disc(BRG_D + 16), slot(26, (0, 0), bridge_c)))
+    ko = rounded(union2(disc(76), slot(26, (0, 0), bridge_c)))
     ko = cut(ko, disc(BRG_D))
+    _, k_groove, k_zero, _ = zero_stop("RS04", (0, 0, 0), "y", "left_knee", True, 30.0, 0.0)
+    kf = ko_y - 4.0  # its face toward the thigh plate
     out.append(
         made(
             "left_shin_knee_outer",
             L,
             "al6061",
-            plate(ko, "y", ko_y, 8.0),
+            plate(ko, "y", ko_y, 8.0)
+            - prism(k_groove, "y", kf - 1, kf + 3)
+            - prism(k_zero, "y", kf - 1, kf + 9),
             ifaces=[bore("left_knee", (0, ko_y, 0), "y", BRG_D, 8.0)],
         )
     )
-    out.append(made("left_shin_bridge", L, "al7075", tube(28, 5, "y", bridge_c, yi, yo)))
+    out.append(made("left_shin_bridge", L, "al7075", tube(28, 3, "y", bridge_c, yi, yo)))
     out.append(
         made(
             "left_shin_bridge_spacer",
             L,
             "al6061",
-            tube(28, 5, "y", bridge_c, yo + shin_t, ko_y - 4),
+            tube(28, 3, "y", bridge_c, yo + shin_t, ko_y - 4),
         )
     )
     out.append(bearing("left_knee_bearing", L, "y", (0, ko_y, 0)))
@@ -461,10 +518,12 @@ def parts() -> list[Part]:
     cy = link["crank_y"] * 1000
     for name, c, s in (("a", ka, 1), ("b", kb, -1)):
         tip = (c[0] + r * math.cos(th), s * cy, c[2] + r * math.sin(th))
-        arm = plate(hull(disc(36, xz(c)), disc(18, xz(tip))), "y", s * cy, 5)
-        hub = prism(disc(40, xz(c)), "y", s * t03 / 2, s * (cy - 2.5))
+        arm = plate(hull(disc(32, xz(c)), disc(16, xz(tip))), "y", s * cy, 4)
+        hub = prism(disc(36, xz(c)), "y", c[1] + s * t03 / 2, s * (cy - 2))
         crank = arm + hub
-        crank = crank - prism(output_holes("RS03", c, "y"), "y", s * (t03 / 2 - 1), s * (cy + 4))
+        crank = crank - prism(
+            output_holes("RS03", c, "y"), "y", c[1] + s * (t03 / 2 - 1), s * (cy + 4)
+        )
         crank = crank - prism(disc(6.5, xz(tip)), "y", s * (cy - 4), s * (cy + 4))
         out.append(
             made(

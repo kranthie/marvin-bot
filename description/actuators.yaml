@@ -23,8 +23,9 @@ RS04:
   # Outline (RobStride drawing, manual §1.1, and STEP model): a Ø120 body with the output on its
   # front face, and a Ø94 driver cap (cable exit) standing 13.2 mm proud of the rear face.
   shape: {body_d: 120, cap_d: 94, cap_len: 13.2, output_d: 42}
-  holes:   # mm; stator holes on both body faces (front: blind 5 deep; rear: 6 deep)
-    stator: {n: 10, thread: M4, pcd: 106}
+  holes:   # mm; stator holes on both body faces (front: blind 5 deep; rear: 6 deep); the front
+    # face is 3.5 mm behind the output face
+    stator: {n: 10, thread: M4, pcd: 106, face: both, setback: 3.5}
     output: {n: 9, thread: M5, pcd: 36, pins: {n: 2, d: 5, pcd: 35.86}}
   verified: manual
 
@@ -44,7 +45,9 @@ RS03:
   # ~Ø78 driver cap 12.5 mm proud of the rear face (drawing and STEP model).
   shape: {body_d: 100, cap_d: 78, cap_len: 12.5, ears_d: 107, output_d: 70}
   holes:
-    stator: {n: 8, thread: M4, pcd: 98}   # in the ears, 8 deep
+    # in ears at the output end, 8 deep, their faces 2.5 mm behind the output face; the rear has
+    # only 4 tapped holes, in the ears' rear faces 39.5 mm from the output face (drawing, STEP)
+    stator: {n: 8, thread: M4, pcd: 98, face: front, setback: 2.5}
     output: {n: 6, thread: M4, pcd: 30.36, pins: {n: 3, d: 4, pcd: 30.36}}
   verified: manual
 
@@ -64,7 +67,7 @@ RS06:
   # Ø70 driver cap ~14 mm proud of the rear face (drawing and STEP model).
   shape: {body_d: 85, cap_d: 70, cap_len: 14.0, ears_d: 88, output_d: 52}
   holes:
-    stator: {n: 8, thread: M3, pcd: 82}   # in the ears, 8.5 deep
+    stator: {n: 8, thread: M3, pcd: 82, face: front, setback: 1.5}   # ears at the output end, 8.5 deep
     output: {n: 6, thread: M4, pcd: 30, pins: {n: 3, d: 4, pcd: 24}}   # screw circle read off the drawing, to confirm
   verified: manual
 
@@ -83,7 +86,8 @@ RS00:
   # Outline: a plain Ø57 cylinder, the output (Ø35, 1 mm proud) on its front face.
   shape: {body_d: 57, cap_d: null, cap_len: 0, output_d: 35}
   holes:
-    stator: {n: 6, thread: M3, pcd: 50}   # front face; the rear face has 4 x M3 on Ø38
+    stator: {n: 6, thread: M3, pcd: 50, face: front, setback: 1.0}   # front face
+    rear: {n: 4, thread: M3, pcd: 38}     # rear face: the wrist's printed cup bolts here
     output: {n: 6, thread: M3, pcd: 27, pins: {n: 2, d: 3, pcd: 24.46}}
   verified: manual
 
