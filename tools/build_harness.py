@@ -22,8 +22,14 @@ Sizing assumptions (first pass, to be replaced by bench measurements):
   for actuator power (headroom for peak current, and the size the actuators' power connectors take);
   the wrist pitch servo and the hand get a 12 V pair from the servo DC-DC in the pelvis; fuses at
   the next standard rating above 1.25 x the branch current;
-- run length is the straight distance between motors in the default pose x 1.3, plus each
-  crossed joint's service loop (range x 35 mm), plus 80 mm for termination.
+- run length is the straight distance between the motors' cable exits (a RobStride's driver cap,
+  at its rear end) in the default pose x 1.3, plus each crossed joint's service loop
+  (range x 35 mm), plus 80 mm for termination.
+
+Each service loop is tied down on both sides, to a named plate of the parent link and one of the
+child link (CLIPS: a cable tie through one of the plate's lightening pockets, or a P-clip under
+one of its screws); the names are checked against description/cad_model.yaml, so a renamed or
+removed part fails the check.
 
 Usage:
   python tools/build_harness.py           # write electrical/harness.yaml and print a summary
@@ -59,7 +65,22 @@ FUSES = [5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 125, 150]
 # pelvis frame (skeleton.yaml's electronics boxes)
 HUBS = {
     "torso_pdb": ("torso_link", [0.005, 0.001, 0.187]),
-    "pelvis_pdb": ("pelvis", [-0.096, 0.0, 0.103]),
+    "pelvis_pdb": ("pelvis", [-0.096, 0.0, 0.094]),
+}
+# each crossed joint's service loop is tied to a plate either side (left side and centre; the
+# right side mirrors): (parent link's plate, child link's plate)
+CLIPS = {
+    "left_hip_roll": ("pelvis_back", "left_hip_roll_web"),
+    "left_hip_pitch": ("left_hip_roll_web", "left_hip_pitch_outer"),
+    "left_hip_yaw": ("left_hip_pitch_top", "left_thigh_floor"),
+    "left_knee": ("left_thigh_plate", "left_shin_inner"),
+    "waist_yaw": ("pelvis_top", "torso_base"),
+    "neck_yaw": ("torso_bridge", "neck_bracket"),
+    "left_shoulder_pitch": ("torso_shoulder_plate_l", "left_shoulder_flange"),
+    "left_shoulder_roll": ("left_shoulder_flange", "left_shoulder_roll_top"),
+    "left_shoulder_yaw": ("left_shoulder_roll_top", "left_upper_arm_strap"),
+    "left_elbow": ("left_upper_arm_strap", "left_forearm_frame"),
+    "left_wrist_yaw": ("left_wrist_bracket", "left_wrist_cradle_back"),
 }
 LIMBS = {  # harness: hub, motors in kinematic order
     "{side}_leg": (
@@ -88,6 +109,29 @@ def build() -> str:
     joints = bu.mirrored(skel["joints"], key_is_name=True)
     ranges = {j["name"]: j["range"] for j in bu.expand(robot["joints"])}
     motors = {m["name"]: m for m in bu.motor_placements()}
+    cad = yaml.safe_load((bu.DESC / "cad_model.yaml").read_text())
+
+    def clip_parts(joint: str) -> list[str]:
+        left = joint.replace("right_", "left_")
+        pair = CLIPS.get(left)
+        if pair is None:
+            raise SystemExit(f"no clip plates for the service loop at {joint} (CLIPS)")
+        out = []
+        for name in pair:
+            if joint.startswith("right_"):
+                name = name.replace("left_", "right_").replace("_plate_l", "_plate_r")
+            if name not in cad:
+                raise SystemExit(f"clip plate {name} for {joint} is not in cad_model.yaml")
+            out.append(name)
+        return out
+
+    def exit_xyz(m: dict) -> list[float]:
+        """Where a motor's cable comes out: a RobStride's driver cap, at its rear end."""
+        if not (m.get("shape") or {}).get("cap_d"):
+            return list(m["xyz"])
+        t = m["envelope"][2]
+        return [x - o * t / 2 for x, o in zip(m["xyz"], m["output"], strict=True)]
+
     bus_of = {m["name"]: m["bus"] for m in bu.expand(robot["motors"])}
 
     # link origins in the pelvis frame, default pose (all frames aligned)
@@ -138,9 +182,9 @@ def build() -> str:
             length_m=round(math.dist(p, q) * ROUTE_FACTOR + loops + TERMINATION, 2),
             crosses=crossed,
             service_loop_m=round(loops, 2),
-            # a clip on each side of every loop: on the parent link and on the child link, so
-            # the joint only flexes the loop
-            clips=[[joints[j]["parent"], joints[j]["child"]] for j in crossed],
+            # a clip on each side of every loop: on a plate of the parent link and one of the
+            # child link, so the joint only flexes the loop
+            clips=[clip_parts(j) for j in crossed],
             current_a=round(amps, 1),
             power_awg=min(awg(amps), MIN_POWER_AWG) if amps else SERVO_AWG,
             signals=carries,
@@ -160,8 +204,10 @@ def build() -> str:
                 m = motors[n]
                 rest = names[i:]
                 carries = [b for b in buses if any(bus_of[r] == b for r in rest)]
-                segs.append(segment(frm, frm_link, frm_xyz, n, m["link"], m["xyz"], carries, rest))
-                frm, frm_link, frm_xyz = n, m["link"], m["xyz"]
+                segs.append(
+                    segment(frm, frm_link, frm_xyz, n, m["link"], exit_xyz(m), carries, rest)
+                )
+                frm, frm_link, frm_xyz = n, m["link"], exit_xyz(m)
             amps = segs[0]["current_a"]
             harnesses[template.format(side=side)] = dict(
                 hub=hub,
@@ -197,7 +243,7 @@ def build() -> str:
         *HUBS["pelvis_pdb"],
         "waist_yaw",
         waist["link"],
-        waist["xyz"],
+        exit_xyz(waist),
         ["right_arm"],
         ["waist_yaw"],
     )

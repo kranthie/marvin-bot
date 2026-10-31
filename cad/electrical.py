@@ -86,15 +86,16 @@ TORSO = [
         "harness allowance: torso (limb-root connectors on the bulkheads)",
     ),
 ]
-PELVIS = [  # on the top plate behind the waist motor, clear of the hip roll yokes' swing
+PELVIS = [  # on the top plate (its top face at z = 76.7) behind the waist motor, clear of the
+    # hip roll yokes' swing
     (
         "elec_power_board_pelvis",
         (80, 50, 34),
-        (-93, 0, 103),
+        (-93, 0, 94),
         150,
         "pelvis power board: leg branch fuses",
     ),
-    ("elec_dcdc_servo", (60, 34, 25), (-93, 0, 133), 110, "DC-DC 48 V to 12 V, 10 A (servos)"),
+    ("elec_dcdc_servo", (60, 34, 25), (-93, 0, 124), 110, "DC-DC 48 V to 12 V, 10 A (servos)"),
     ("elec_imu", (40, 30, 20), (-100, 0, 62), 60, "IMU on the pelvis, in the top box"),
     (
         "elec_harness_pelvis",

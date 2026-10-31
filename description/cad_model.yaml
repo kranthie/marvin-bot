@@ -1762,7 +1762,7 @@ elec_power_board_pelvis:
   process: bought
   budget: electronics
   mass: 0.15
-  com: [-0.093, 0.0, 0.103]
+  com: [-0.093, 0.0, 0.094]
   inertia: [4.57e-05, 9.445e-05, 0.00011125, 0.0, 0.0, 0.0]
   size_mm: [80.0, 50.0, 34.0]
 elec_dcdc_servo:
@@ -1771,7 +1771,7 @@ elec_dcdc_servo:
   process: bought
   budget: electronics
   mass: 0.11
-  com: [-0.093, 0.0, 0.133]
+  com: [-0.093, 0.0, 0.124]
   inertia: [1.63258e-05, 3.87292e-05, 4.35967e-05, 0.0, 0.0, 0.0]
   size_mm: [60.0, 34.0, 25.0]
 elec_imu:
@@ -1933,8 +1933,8 @@ pelvis_cover_back:
   process: cover
   budget: covers
   mass: 0.01764
-  com: [-0.136528, 0.0, 0.0029936]
-  inertia: [8.24536e-05, 8.87086e-05, 1.54753e-05, 0.0, 1.53655e-05, 0.0]
+  com: [-0.136395, 0.0, 0.0029936]
+  inertia: [8.24536e-05, 8.86687e-05, 1.54354e-05, 0.0, 1.51034e-05, 0.0]
   size_mm: [89.9, 56.0, 200.0]
 pelvis_cover_front:
   link: pelvis

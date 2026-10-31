@@ -8,15 +8,15 @@ The robot is built from seven modules that are assembled and tested on their own
 
 | Module | Contents | Joins at | Connectors at the joint |
 |---|---|---|---|
-| Torso core | torso frame, chest shell, Orin, electronics bay, battery cradle, shoulder pitch and neck yaw motors | waist RS03 output flange (bolted) | trunk harness: power plus 5 CAN pairs |
-| Pelvis | back plate, top plate and gussets, waist RS03, hip roll RS04s, pelvis power board, 12 V servo DC-DC, IMU | waist flange; leg flanges | leg bulkheads |
-| Leg (×2) | roll bracket to foot: 5 actuators (hip pitch, yaw, knee, two ankle), linkage, foot | hip roll RS04 output flange and the far-side bearing behind it | 1 power, 1 signal, at the leg bulkhead |
+| Torso core | torso frame, Orin, electronics bay, battery cradle, shoulder pitch and neck yaw motors | the waist hub, which turns in the pelvis's crossed-roller bearing (bolted) | trunk harness: power plus 5 CAN pairs |
+| Pelvis | back plate, top plate and gussets, waist RS03 on its bearing ring, hip roll RS04s with their bearing carriers, pelvis power board, 12 V servo DC-DC, IMU | waist hub; leg hubs | leg bulkheads |
+| Leg (×2) | roll yoke to foot: 5 actuators (hip pitch, yaw, knee, two ankle), linkage, foot | the yoke's front plate on the hip roll hub, which turns in the carrier's bearing | 1 power, 1 signal, at the leg bulkhead |
 | Arm (×2) | shoulder bracket to hand: 4 actuators (shoulder roll, yaw, elbow, wrist yaw), wrist pitch servo, hand | shoulder pitch RS03 output flange | 1 power, 1 signal, at the arm bulkhead |
 | Head | neck bracket, pitch servo, frame, shell, visor, camera | neck yaw servo horn | servo bus, camera USB-C |
 | Battery | 13S pack with BMS | slides into the cradle from the back | blind-mate power and BMS connector |
 | Body shells | clip-on shells (optional) | clips on the parts below | none |
 
-Each limb's first actuator stays on the parent module (hip roll on the pelvis, shoulder pitch on the torso), so a limb comes off by removing the bolts on one output flange and unplugging two connectors. That meets R63: any actuator in a limb can be changed with only that limb off the robot.
+Each limb's first actuator stays on the parent module (hip roll on the pelvis, shoulder pitch on the torso), so a limb comes off by removing the bolts on one hub and unplugging two connectors (the hub and its bearing stay on the parent). That meets R63: any actuator in a limb can be changed with only that limb off the robot.
 
 ## Making the parts
 
@@ -36,7 +36,7 @@ Each limb's first actuator stays on the parent module (hip roll on the pelvis, s
 | Where | What, in power-flow order |
 |---|---|
 | Torso, back, high | 13S pack on a shelf under the shoulder motors, behind the electronics bay, between two printed side guides; a latch plate behind it. It slides out backwards with the back shell off; its blind-mate connector (AS150 class) is at its front-top corner and seats in a socket at the front of its bay. |
-| Torso, middle | the computer on edge: fan forward (vents in the chest shell), I/O ports to the sides, buttons up, bolted by its feet to a plate behind it. |
+| Torso, middle | the computer on edge: fan forward (vents in the torso covers), I/O ports to the sides, buttons up, bolted by its feet to a plate behind it. |
 | Torso, bay above the computer | main contactor and precharge, torso power board (bus bars, arm fuses), e-stop receiver and watchdog relay; the computer's DC-DC (fed ahead of the contactor); three isolated USB-CAN adapters beside the computer's USB ports. |
 | Torso, low at the back | keep-alive pack under the battery (keeps the computer up during a pack swap). |
 | Shoulder plates | the arm bulkheads, behind the shoulder pitch motors. |
@@ -76,9 +76,9 @@ The computer's supply is taken before the contactor, so an e-stop cuts every act
 | Harness | Branch current | Fuse | Length | Carries |
 |---|---|---|---|---|
 | Main (battery to torso board) | 78.5 A | 100 A | — | 6 AWG |
-| Trunk (torso to pelvis, across the waist) | 51.3 A | 80 A | 0.68 m | 8 AWG, 4 leg CAN pairs, waist CAN |
-| Leg (each) | 24.3 A | 40 A | 1.96 m | 12 AWG at the root down to 16 AWG; hip and shank CAN |
-| Arm (each) | 13.6 A | 20 A | 1.91 m | 16 AWG; arm CAN; 12 V and serial for the wrist pitch servo and the hand |
+| Trunk (torso to pelvis, across the waist) | 51.3 A | 80 A | 0.58 m | 8 AWG, 4 leg CAN pairs, waist CAN |
+| Leg (each) | 24.3 A | 40 A | 2.07 m | 12 AWG at the root down to 16 AWG; hip and shank CAN |
+| Arm (each) | 13.6 A | 20 A | 1.98 m | 16 AWG; arm CAN; 12 V and serial for the wrist pitch servo and the hand |
 | Head | — | — | 0.49 m | 12 V and serial for the neck servos; camera USB-C |
 
 The currents are continuous estimates: rated torque at half the no-load speed, 80% efficiency, 48 V, with half the branch's motors at rated output at once. Peak currents are several times higher for short periods; the fuse and gauge choices are first-pass, and the real bus currents come from the phase 2 bench test (open item 3 in [roadmap.md](../roadmap.md)).
@@ -87,14 +87,18 @@ Rules the harness follows:
 
 - **One harness per limb**: power is daisy-chained motor to motor in kinematic order, with the limb's CAN pair(s) twisted alongside. Each motor's own power and CAN connectors plug into the chain, so a motor swap needs no crimping.
 - **Service loops at every joint**: a loop of length range × 35 mm around each joint the harness crosses (0.04–0.15 m per joint). The loop runs beside the motor housing, on the side away from the output flange, inside the clearance the packaging check keeps. The waist and shoulder pitch, the joints with the largest ranges, get the longest loops.
-- **No wire carries load**: the harness is clipped to the structure on both sides of each loop (`harness.yaml` lists the clip pair, parent link and child link, for every loop), so motion only flexes the loop.
+- **No wire carries load**: the harness is tied to a plate on both sides of each loop, so motion only flexes the loop. `harness.yaml` names the two plates for every loop (`CLIPS` in `tools/build_harness.py`, checked against `description/cad_model.yaml`): a cable tie through one of the plate's lightening pockets, or a P-clip under one of its screws where it has none, with spiral wrap over the loop.
 - **CAN**: twisted pair, 120 Ω termination at the hub end and on the last motor of each bus, shield or drain grounded at the hub only. Each leg carries two buses (hip and shank), so its signal connector has 6 pins.
 - **Limb-root connectors**: a keyed 2-pin power connector rated above the branch fuse (XT60 class for legs and arms) and a latching signal connector (CAN pairs, ground, a spare), both mounted on a bulkhead on the parent module next to the limb's first flange (`elec_bulkhead_*` in `cad/electrical.py`).
-- **Paths**: the leg harness leaves the bulkhead under the pelvis board, runs to the hip roll motor behind the hip, then past the hip pitch and yaw motors, down the back of the thigh shell and between the shin's side plates to the ankle motors. The arm harness leaves the torso beside the shoulder pitch motor, runs inside the upper-arm and forearm shells (they leave a cable channel; the upper-arm shell has an exit at the elbow for the loop), and ends at the wrist pitch servo, beside which a 12 V to 5 V converter feeds the hand's servos (their serial bus is separate: they use Feetech's SCS protocol, the other servos its STS protocol).
+- **Paths** (after the front-ring redesign, 2026-10-30). Each RobStride's cable leaves its driver cap at its rear end, through the connectors on the cap's side, so run lengths are measured from the caps.
+  - Leg: from the bulkhead in front of the back plate to the hip roll RS04's cap, through its pillar ring's windows behind the hip; forward along the roll motor past its bearing carrier (the roll loop) to the hip pitch RS04's cap, through the windows of its pillar ring on the yoke's web; down the outside of the hip pitch box (tied to its pocketed outer wall) to the hip yaw loop under the box's floor. The hip yaw RS03 now rides on the thigh, its cap down on the thigh floor inside the four cage strips: the harness reaches its connectors between the strips, then runs down the back of the thigh plate, round the knee (tied to the thigh plate and the shin's inner plate) and between the shin's side plates to the two ankle motors, whose caps face each other on the shin's centre line.
+  - Waist: the waist RS03's cap sits down on the pelvis top plate inside its cage; the pelvis power board beside it on the same plate feeds it between the strips. The trunk's loop runs round the waist ring between the pelvis top plate and the torso base, tied to both.
+  - Arm: from the bulkhead behind the shoulder pitch motor to its cap (inboard, through the shoulder plate), out between the shoulder cage's strips and round the outside of the torso's shoulder ring (the pitch loop, tied to the shoulder plate and the shoulder flange) to the shoulder roll RS03's cap behind it; over the shoulder roll top plate (the roll loop) to the shoulder yaw RS06's cap, which stands up into the top plate's cable hole; round the yaw ring and its two rear strips (the yaw loop) and down the upper arm's strap to the elbow RS06's cap on the arm's inner side; round the back of the elbow, between the strap and the forearm frame (the elbow loop), down the frame to the wrist RS00's rear face, which takes its cable through the wrist bracket's hole; then round the wrist yaw (tied to the bracket and the cradle's back plate) to the wrist pitch servo, beside which a 12 V to 5 V converter feeds the hand's servos (their serial bus is separate: they use Feetech's SCS protocol, the other servos its STS protocol).
+  - Where a cap's cable passes through a plate (thigh floors, pelvis top plate, shoulder roll top plates, wrist brackets) the hole takes a rubber grommet (`cable-grommets` in the BOM).
 
 ## Body shells (add-on)
 
-The bare robot is meant to look finished: graphite printed shells (thigh, upper arm, forearm, chest), bead-blasted aluminium plates, the actuators' own housings and a glossy helmet head. The body shells are an optional layer that gives it a finished body: a helmet head with a full-face glossy visor over a slim dark neck, a smooth light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them.
+The bare robot is an open aluminium frame: bead-blasted 7075 and 6061 plates, the actuators' own housings and a glossy helmet head (its printed chest, thigh and arm shells were removed in 2026-10-30's redesign, as the covers below do their job). The body shells are an optional layer that gives it a finished body: a helmet head with a full-face glossy visor over a slim dark neck, a smooth light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them.
 
 | Shell | Pieces | Notes |
 |---|---|---|
@@ -115,8 +119,8 @@ The shells weigh 0.95 kg in all. The default model (`description/urdf/marvin_bot
 
 ## Still to do
 
-- Bearing seats, clip bosses on the clip points `harness.yaml` lists, and connector footprints on the bulkheads.
-- Loop guides; check the loops against the packaging envelopes through the full joint ranges.
+- Connector footprints on the bulkheads, and the RobStride caps' connector positions from a real motor (the paths above assume connectors on the cap's side, between the cage strips).
+- Loop envelopes in the packaging and shell checks: today they check the parts, not the loops; the snap-fit shell redesign must leave each joint's loop room.
 - Torso shell seams: clip and alignment details at the eight pieces' joins.
 - Datasheet outlines for the bought electronics once chosen (the layout uses typical sizes).
 - Measured bus currents (phase 2) to confirm the gauges and fuses.
