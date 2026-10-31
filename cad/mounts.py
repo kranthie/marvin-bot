@@ -143,6 +143,7 @@ __all__ = [
     "spec",
     "stator_face",
     "stator_holes",
+    "output_windows",
     "zero_stop",
 ]
 
@@ -301,9 +302,9 @@ def front_ring(
         pk = b3d.cut(b3d.disc(2 * r_out, c), b3d.disc(2 * r_in, c), pads, keep)
         pk = b3d.opened(pk)
         if pk is not None:
-            # a thick ring: pockets from the rear, a 3 mm web left at the front; a thin one:
+            # a thick ring: pockets from the rear, a 2 mm web left at the front; a thin one:
             # through-pockets between the screws
-            a1 = front - 3 if front - s["ear"] > 7 else front + 1
+            a1 = front - 2 if front - s["ear"] > 7 else front + 1
             body = body - b3d.prism(
                 pk, axis, centre[i] + sign * (s["ear"] - 1), centre[i] + sign * a1
             )
@@ -339,7 +340,7 @@ def hub(model: str, centre, axis: str, sign: int, front: float, bearing: str | N
     body = b3d.prism(base, axis, *_span(centre[i], sign, out_f, out_f + 1))
     spigot = b3d.cut(b3d.disc(BEARINGS[bearing]["d"], c), holes)
     body = body + b3d.prism(spigot, axis, *_span(centre[i], sign, out_f + 0.5, top))
-    body = body - b3d.prism(b3d.disc(44.0, c), axis, *_span(centre[i], sign, out_f + 3, top + 1))
+    body = body - b3d.prism(b3d.disc(50.0, c), axis, *_span(centre[i], sign, out_f + 3, top + 1))
     return body, top, HUB_BASE
 
 
@@ -437,3 +438,21 @@ def zero_stop(
     groove = b3d.arc_slot(c, r, d + 0.4, min(a0, a1), max(a0, a1))
     pads = b3d.circles(d + 8, [at(alpha), at(beta)])
     return ring, groove, b3d.disc(d, at(beta)), pads
+
+
+def output_windows(model: str, centre, axis: str, r0: float, r1: float):
+    """Lightening windows in a plate on a motor's output, between radii r0 and r1, with a rib
+    5 mm wide at each output screw (and pin): sector windows, their corners rounded to the
+    cutter's. A 2D sketch (or None)."""
+    import numpy as np  # noqa: PLC0415
+
+    from . import b3d  # noqa: PLC0415
+
+    h = spec(model)["holes"]["output"]
+    c = _uvc(axis, centre)
+    win = b3d.cut(b3d.disc(2 * r1, c), b3d.disc(2 * r0, c))
+    ribs = []
+    for a in np.degrees(2 * np.pi * np.arange(h["n"]) / h["n"]):
+        strip = b3d.rect(0, r1 + 2, -2.5, 2.5, r=0)
+        ribs.append(b3d.bd.Pos(*c) * (b3d.bd.Rot(0, 0, a) * strip))
+    return b3d.opened(b3d.cut(win, *ribs))

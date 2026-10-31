@@ -29,7 +29,7 @@ from . import arm, head, leg, torso
 from .lib import Part, box, cyl, hull, union
 
 ROOT = Path(__file__).resolve().parent.parent
-GAP, SKIN = 4.0, 1.2
+GAP, SKIN = 4.0, 1.0
 
 
 def _sphere_dirs() -> list[np.ndarray]:

@@ -181,7 +181,7 @@ def parts() -> list[Part]:
         )
     )
     out_x = roll_c[0] + roll_top  # the front plate's face, on the hub
-    ft = 6.0  # front plate
+    ft = 5.0  # front plate
     fx = out_x + ft / 2
     hp_ring, near = pillar_ring("RS04", pj, "y", -1)
     wt = 6.0  # the web (7075)
@@ -236,7 +236,8 @@ def parts() -> list[Part]:
     # motor, and a floor on the yaw RS03's pillar ring.
     L = "left_hip_pitch_link"
     yaw_c = J["left_hip_yaw"]
-    flange, _ = output_plate("RS04", disc(80), (0, 0, 0), "y", -1, 6.0)
+    ht = 4.0  # the flange; the box's inner wall sits on its outer face
+    flange, _ = output_plate("RS04", disc(80), (0, 0, 0), "y", -1, ht)
     out.append(
         made(
             "left_hip_pitch_flange",
@@ -261,11 +262,11 @@ def parts() -> list[Part]:
             ],
         )
     )
-    floor_t = 5.0
+    floor_t = 3.0
     fz0 = yaw_c[2] + hub_top  # the floor's underside, on the hub
     fz1 = fz0 + floor_t
     side_t = 4.0
-    iy1 = -t04 / 2 - 6.0  # inner wall, on the flange: its outer face
+    iy1 = -t04 / 2 - ht  # inner wall, on the flange: its outer face
     oy = stub_c[1] - pj[1]  # outer wall, on the far-side bearing (this frame)
     ot = 8.0
     wz0 = -math.sqrt((d04 / 2) ** 2 - 24.0**2) - 7  # 7 mm under the pitch motor at x = +-24
@@ -280,7 +281,7 @@ def parts() -> list[Part]:
         made("left_hip_pitch_inner", L, "al6061", plate(inner_w, "y", iy1 - side_t / 2, side_t))
     )
     outer_w = rounded(union2(disc(76), walls))
-    outer_w = cut(outer_w, disc(BRG_D), lighten(outer_w, keep=[disc(76)], hole=12, pitch=18))
+    outer_w = cut(outer_w, disc(BRG_D), lighten(outer_w, keep=[disc(60)], hole=12, pitch=18))
     _, hp_groove, hp_zero, _ = zero_stop("RS04", (0, 0, 0), "y", "left_hip_pitch", True, 30.0, 0.0)
     ow0 = oy - ot / 2  # the wall's face toward the web
     out.append(
@@ -299,14 +300,15 @@ def parts() -> list[Part]:
     floor = cut(floor, disc(12, yaw_xy), lighten(floor, keep=[disc(96, yaw_xy)], pitch=24, rim=6))
     floor, _ = output_plate("RS03", floor, yaw_c, "z", 1, floor_t, at=hub_top, d=hub_relief)
     _, groove, zh, _ = zero_stop("RS03", yaw_c, "z", "left_hip_yaw", False, *YAW_PIN)
-    floor = floor - prism(groove, "z", fz0 - 1, fz0 + 3) - prism(zh, "z", fz0 - 1, fz1 + 1)
+    floor = floor - prism(groove, "z", fz0 - 1, fz0 + 2) - prism(zh, "z", fz0 - 1, fz1 + 1)
     out.append(made("left_hip_pitch_top", L, "al7075", floor))
-    wall_t = 4.0
+    wall_t = 3.0
     for name, s in (("front", 1), ("back", -1)):
         w = rect(iy1, oy - ot / 2, fz1, wz0)
+        w = cut(w, lighten(w, pitch=14, rim=5))
         out.append(
             made(
-                f"left_hip_pitch_{name}", L, "al6061", plate(w, "x", s * (24 - wall_t / 2), wall_t)
+                f"left_hip_pitch_{name}", L, "al7075", plate(w, "x", s * (24 - wall_t / 2), wall_t)
             )
         )
     out.append(bearing("left_hip_pitch_bearing", L, "y", (0, oy, 0)))
@@ -324,7 +326,7 @@ def parts() -> list[Part]:
     tt = 5.0  # 7075
     ty0 = knee[1] + k_near  # the plate's inner face
     cap_end = t03 / 2  # the yaw motor's driver cap end, below its centre
-    strips, pads, strips_fea = cage("RS03", o3, "z", 1, to=cap_end + 1.0, width=20.0, t=5.0)
+    strips, pads, strips_fea = cage("RS03", o3, "z", 1, to=cap_end + 1.0, width=16.0, t=4.0)
     ring_sk = rounded(union2(disc(ring_od("RS03")), pads))
     y_pins, _, _, y_pads = zero_stop("RS03", o3, "z", "left_hip_yaw", False, *YAW_PIN)
     yring, _ = front_ring("RS03", o3, "z", 1, outline=ring_sk, bearing=YAW_BRG, keep=y_pads)
@@ -498,13 +500,13 @@ def parts() -> list[Part]:
             ifaces=[bore("left_knee", (0, ko_y, 0), "y", BRG_D, 8.0)],
         )
     )
-    out.append(made("left_shin_bridge", L, "al7075", tube(28, 3, "y", bridge_c, yi, yo)))
+    out.append(made("left_shin_bridge", L, "al7075", tube(24, 3, "y", bridge_c, yi, yo)))
     out.append(
         made(
             "left_shin_bridge_spacer",
             L,
             "al6061",
-            tube(28, 3, "y", bridge_c, yo + shin_t, ko_y - 4),
+            tube(24, 3, "y", bridge_c, yo + shin_t, ko_y - 4),
         )
     )
     out.append(bearing("left_knee_bearing", L, "y", (0, ko_y, 0)))
@@ -518,8 +520,9 @@ def parts() -> list[Part]:
     cy = link["crank_y"] * 1000
     for name, c, s in (("a", ka, 1), ("b", kb, -1)):
         tip = (c[0] + r * math.cos(th), s * cy, c[2] + r * math.sin(th))
-        arm = plate(hull(disc(32, xz(c)), disc(16, xz(tip))), "y", s * cy, 4)
-        hub = prism(disc(36, xz(c)), "y", c[1] + s * t03 / 2, s * (cy - 2))
+        ca = 3.5  # the arm
+        arm = plate(hull(disc(32, xz(c)), disc(16, xz(tip))), "y", s * cy, ca)
+        hub = prism(disc(36, xz(c)), "y", c[1] + s * t03 / 2, s * (cy - ca / 2))
         crank = arm + hub
         crank = crank - prism(
             output_holes("RS03", c, "y"), "y", c[1] + s * (t03 / 2 - 1), s * (cy + 4)
@@ -569,8 +572,8 @@ def parts() -> list[Part]:
     fl, fw, _ = mm(foot["size"])
     fx = foot["xyz"][0] * 1000
     sole_bot = (foot["xyz"][2] - foot["size"][2] / 2) * 1000
-    out.append(Part("left_foot_sole", L, "tpu", shoe(fl, fw, 4, fx, sole_bot + 2), "print"))
-    pz = sole_bot + 4 + 2.5  # the base plate's mid-plane
+    out.append(Part("left_foot_sole", L, "tpu", shoe(fl, fw, 3, fx, sole_bot + 1.5), "print"))
+    pz = sole_bot + 3 + 2.5  # the base plate's mid-plane, on the 3 mm sole
     # the base is longer than the desktop mill's travel: a flat plate cut by an online laser or
     # water-jet service; posts and lugs are machined and bolted on
     base = shoe_outline(fl - 10, fw - 10, fx)

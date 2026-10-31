@@ -41,7 +41,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
 _acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
 _skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
-WALL = 2.5
+WALL = 1.8
 # helmet: the hull of a crown ellipsoid and a smaller chin ellipsoid (centre, semi-axes; head frame)
 # deeper than it is wide, sitting forward of the neck, the chin forward and low, the crown
 # back and high
@@ -89,12 +89,12 @@ def parts() -> list[Part]:
     # flat 7075 plates: a hub on the horn, a base plate, and two cheeks down the pitch servo's
     # sides that hold it by its mounting ears
     hub = prism(disc(20), "z", horn_top, base_z - 2.0)
-    base = prism(rect(-20, 20, -37, 13), "z", base_z - 2.0, base_z + 1.0)
+    base = prism(rect(-20, 20, -37, 13), "z", base_z - 2.0, base_z + 0.5)
     cheeks = [
         prism(
-            rect(g * (s_wid / 2), g * (s_wid / 2 + 3), ymid - sy / 2 - 3, ymid + sy / 2 + 3),
+            rect(g * (s_wid / 2), g * (s_wid / 2 + 2.5), ymid - sy / 2 - 3, ymid + sy / 2 + 3),
             "z",
-            base_z + 1.0,
+            base_z + 0.5,
             case_bot + 25,
         )
         for g in (1, -1)

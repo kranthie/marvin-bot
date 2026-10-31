@@ -53,6 +53,7 @@ from .mounts import (
     front_ring,
     output_face,
     output_plate,
+    output_windows,
     ring_band,
     spec,
     zero_stop,
@@ -173,7 +174,7 @@ def parts() -> list[Part]:
     )
     ym = j["left_shoulder_yaw"]
     yt = 5.0  # the yaw motor's ring
-    tt = 3.0
+    tt = 2.5
     top_z0 = ym[2] + t06 / 2  # the top plate's underside, on the yaw motor's driver cap
     # two strips behind the yaw motor; in front, the front plate's two legs come down to its ring
     y_strips, y_pads, y_fea = cage("RS06", ym, "z", -1, to=t06 / 2, angles=(135.0, 225.0))
@@ -186,6 +187,7 @@ def parts() -> list[Part]:
     # (86 mm: clear of the shoulder flange, 44 mm from the roll axis)
     front = rounded(union2(disc(86), rect(-28, 28, top_z0, 0), *legs), inside=8.0)
     front = cut(front, lighten(front, keep=[disc(86)], hole=14, pitch=20, rim=7))
+    front = cut(front, output_windows("RS03", (0, 0, 0), "x", 21.0, 33.0))
     front, _ = output_plate("RS03", front, (0, 0, 0), "x", 1, fb, at=face, d=r_relief)
     _, groove, zh, _ = zero_stop("RS03", (0, 0, 0), "x", "left_shoulder_roll", True, *PIN_ROLL)
     front = (
@@ -210,7 +212,15 @@ def parts() -> list[Part]:
     yf = ym[2] - y_front
     y_ring = y_ring - bprism(y_pins, "z", yf - 1, yf + 4)
     # 4 mm deeper under the front plate's legs, outside the upper arm's ring
-    y_ring = y_ring + bprism(cut(union2(*leg_pads), disc(90, (ym[0], ym[1]))), "z", yf - 4, yf)
+    y_ring = y_ring + bprism(
+        cut(
+            union2(*[rect(face, face + fb, s * 26.0, s * 56.0) for s in (1, -1)]),
+            disc(90, (ym[0], ym[1])),
+        ),
+        "z",
+        yf - 4,
+        yf,
+    )
     out.append(
         made(
             "left_shoulder_yaw_ring",
@@ -240,7 +250,14 @@ def parts() -> list[Part]:
     )
     ut = 4.0  # the ring on the yaw hub (7075)
     ring_top, _ = output_plate(
-        "RS06", cut(disc(84), disc(16)), um, "z", -1, ut, at=u_top, d=u_relief
+        "RS06",
+        cut(disc(84), disc(16)),
+        um,
+        "z",
+        -1,
+        ut,
+        at=u_top,
+        d=u_relief,
     )
     _, groove, zh, _ = zero_stop("RS06", um, "z", "left_shoulder_yaw", True, *PIN_06)
     uf = um[2] - u_top  # the ring's face toward the yaw ring
@@ -288,14 +305,17 @@ def parts() -> list[Part]:
     )
     # the frame: a 6 mm strap on the hub, down the outside of the forearm (outboard of the upper
     # arm's strap) to a bracket on the wrist RS00's rear face, by its 4 x M3 rear holes
-    ft = 6.0
+    ft = 5.0
     cup_top = wr[2] + t00 / 2  # the wrist motor's rear face
-    bt = 5.0  # the bracket
+    bt = 3.5  # the bracket
     fy0, fy1 = out_y, out_y + ft
     foot = rect(-22, 22, cup_top + bt, cup_top + bt + 16)
     frame = rounded(union2(disc(72), slot(30, (0, -10), (0, cup_top + bt + 12)), foot), inside=8.0)
     _, groove, zh, zpads = zero_stop("RS06", (0, 0, 0), "y", "left_elbow", True, *PIN_06)
-    frame = cut(frame, lighten(frame, keep=[disc(76), zpads, foot], pitch=16, rim=5))
+    frame = cut(
+        frame,
+        lighten(frame, keep=[disc(76), zpads, foot], pitch=16, rim=5),
+    )
     frame = cut(frame, rect(-100, 100, cup_top - 100, cup_top + bt, r=0))  # on the bracket
     frame, _ = output_plate("RS06", frame, (0, 0, 0), "y", 1, ft, at=out_y, d=f_relief)
     frame = frame - bprism(groove, "y", fy0 - 1, fy0 + 3) - bprism(zh, "y", fy0 - 1, fy1 + 1)
