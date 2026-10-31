@@ -16,7 +16,7 @@ import '../../../guide/08-structure-cad/style.css';
 
 <div class="guide-meta">
 
-**Stage 2 · Mechanics** · \~35 min · Before this: [05 Leg loads and stairs](../05-leg-loads-stairs/), [07 Mass budget and proportions](../07-mass-proportions/) · numbers from the repository as of 2026-10-29
+**Stage 2 · Mechanics** · \~35 min · Before this: [05 Leg loads and stairs](../05-leg-loads-stairs/), [07 Mass budget and proportions](../07-mass-proportions/) · numbers from the repository as of 2026-10-31
 
 </div>
 
@@ -63,7 +63,7 @@ A plate is clamped at one end (the station where we check it) and a load acts at
 
 ### Code-CAD: parts as programs
 
-Most mechanical design is done in graphical CAD (computer-aided design) programs: you sketch and extrude with a mouse, and the model lives in a binary file. <a class="g" href="../glossary/#code-cad">Code-CAD</a> writes the same solids as a program: a plate is `box(...)`, a motor seat is `cyl(...)`, and a part is the union or difference of such shapes. Marvin Bot uses **manifold3d**, a fast, robust library for boolean operations (join, subtract, intersect) on triangle meshes (surfaces made of many small triangles), from Python.<sup class="cite">[\[1\]](#s1)</sup> Alternatives in the same spirit: build123d and CadQuery (Python on the OpenCascade kernel, with exact curved surfaces and export to STEP, the standard file format machine shops accept)<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[3\]](#s3)</sup> and OpenSCAD (its own language, also mesh-based).<sup class="cite">[\[4\]](#s4)</sup>
+Most mechanical design is done in graphical CAD (computer-aided design) programs: you sketch and extrude with a mouse, and the model lives in a binary file. <a class="g" href="../glossary/#code-cad">Code-CAD</a> writes the same solids as a program: a plate is `box(...)`, a motor seat is `cyl(...)`, and a part is the union or difference of such shapes. Marvin Bot draws its machined parts in **build123d**, Python on the OpenCascade kernel, with exact outlines and curved surfaces and export to STEP, the standard file format machine shops accept.<sup class="cite">[\[2\]](#s2)</sup> The shells, covers and quick checks use **manifold3d**, a fast, robust library for boolean operations (join, subtract, intersect) on triangle meshes (surfaces made of many small triangles).<sup class="cite">[\[1\]](#s1)</sup> Alternatives in the same spirit: CadQuery (also on OpenCascade)<sup class="cite">[\[3\]](#s3)</sup> and OpenSCAD (its own language, mesh-based).<sup class="cite">[\[4\]](#s4)</sup>
 
 Why code for a robot in its simulation phase:
 
@@ -72,26 +72,27 @@ Why code for a robot in its simulation phase:
 - <b>One source of truth for mass.</b> `cad/build.py` computes each part's mass, centre of mass and inertia and writes them into `description/cad_model.yaml`; the <a class="g" href="../glossary/#urdf">URDF</a> (the robot model file the simulators read) and the mass budget take them from there ([13 The robot description](../13-description/)). The simulator therefore trains on the masses of the parts that will be machined.
 - <b>Checks run on every change.</b> Size against the mill and printer, strength, packaging and shell collisions are all scripts.
 
-The cost: no exact curved surfaces in a mesh kernel, drawings and STEP export are harder, and fine detail (fillets, fasteners) is slower to write than to click. The repo accepts this for the first passes; fasteners are a budget item until a fastener pass.
+The cost: fine detail (fillets, fasteners) is slower to write than to click, and styled surfaces are hard to get right in code: today's shells are generated as an offset hull round each link's parts, so the frame sets their shape. They are to be redrawn in build123d as designed, lofted panels (`docs/decisions.md`, 2026-10-31). Fasteners are a budget item until a fastener pass.
 
 ```text
 # cad/leg.py, the thigh plate (simplified excerpt, build123d)
-k_ring, k_near = pillar_ring("RS04", knee, "y", -1)        # pillars over the knee motor's cap
-tplate = rounded(hull(rect(-32, 32, -60, fl_bot), disc(124, xz(knee))))  # outline, 3 mm inside corners
+tplate = rounded(hull(rect(-32, 32, -60, fl_bot), disc(124, xz(knee))))  # outline, rounded inside corners
+k_clip = clip_spot(tplate, xz(knee), [stator_holes("RS04", knee, "y")], min_r=64)  # harness clip
 tplate = cut(tplate, stator_holes("RS04", knee, "y"),       # the motor's bolt circle
-             lighten(tplate, keep=[ring_band("RS04", knee, "y")]))   # isogrid pockets
-out.append(made("left_thigh_plate", "left_thigh_link", "al6061", plate(tplate, "y", y, 6.0)))
+             lighten(tplate, keep=[ring_band("RS04", knee, "y"), disc(CLIP_PAD, k_clip)]),  # pockets
+             disc(CLIP_HOLE, k_clip))                       # the push-in clip's hole
+out.append(made("left_thigh_plate", "left_thigh_link", "al7075", plate(tplate, "y", y, tt)))
 ```
 
 ### Machined aluminium, printed plastic
 
 | Material | Yield / strength (MPa) | Density (g/cm³) | Stiffness E (GPa) | Used for in Marvin Bot |
 |---|---|---|---|---|
-| 6061-T6 aluminium | 276 typical<sup class="cite">[\[5\]](#s5)</sup> (repo design value 240) | 2.70 | 68.9 | almost every load-carrying part (103 of 184 CAD parts) |
-| 7075-T6 aluminium | 503 typical<sup class="cite">[\[6\]](#s6)</sup> (repo 480) | 2.81 | 71.7 | highly loaded flanges, ankle cranks (6 parts) |
-| PA6-CF, printed (carbon-fibre nylon) | 82 in layer, 64 across layers<sup class="cite">[\[7\]](#s7)</sup> (repo 25 across layers) | 1.17 (repo 1.10) | 5.7 / 4.7 | arm shells that carry load, head frame, chest shell, body shells |
+| 6061-T6 aluminium | 276 typical<sup class="cite">[\[5\]](#s5)</sup> (repo design value 240) | 2.70 | 68.9 | motor rings and hubs, spacers (37 of 237 CAD parts) |
+| 7075-T6 aluminium | 503 typical<sup class="cite">[\[6\]](#s6)</sup> (repo 480) | 2.81 | 71.7 | most of the frame: plates, brackets, flanges, cranks, straps (125 parts) |
+| PA6-CF, printed (carbon-fibre nylon) | 82 in layer, 64 across layers<sup class="cite">[\[7\]](#s7)</sup> (repo 25 across layers) | 1.17 (repo 1.10) | 5.7 / 4.7 | body shells (25, no load), head shell, camera frame, battery latch and guides |
 | PETG, printed | ≈ 47-50<sup class="cite">[\[8\]](#s8)</sup> | 1.27 | ≈ 2 | not used for structure: softens near warm motors |
-| TPU, printed | flexible | ≈ 1.15 | — | 4 mm foot soles |
+| TPU, printed | flexible | ≈ 1.15 | — | 3 mm foot soles, harness edge clips |
 
 <div class="small">
 
@@ -99,7 +100,7 @@ How to read the table: **yield** is the stress at which the material starts to b
 
 </div>
 
-Aluminium is about 2.3 times as dense as PA-CF but 3 to 10 times as strong and 12 to 15 times as stiff, so for parts that carry the robot's weight it wins per gram. Printed parts win on shape (hollow shells, curves, internal cable runs) and cost, so the arms, which carry light loads, use printed structural shells between aluminium rings at each motor.
+Aluminium is about 2.3 times as dense as PA-CF but 3 to 10 times as strong and 12 to 15 times as stiff, so for parts that carry the robot's weight it wins per gram. Printed parts win on shape (hollow shells, curves, internal cable runs) and cost, but nothing printed carries load any more: since 2026-10-30 the arms carry their load in 7075 straps and every load-carrying part is aluminium, and printing is kept for the shells, the head and small fittings.
 
 Printed parts are weakest between layers, much as plywood splits along its layers: a part printed standing up and bent so the layers peel apart may hold only 25-40 MPa, which is the value `cad/fea.py` uses.
 
@@ -111,7 +112,7 @@ Each joint on a <a class="g" href="../glossary/#quasi-direct-drive">quasi-direct
 
 Marvin Bot's first-pass leg did exactly that, and the strength check failed five parts at landing load: the foot base plate (SF 0.3), hip yoke back plate (0.3), hip roll front plate (0.6), shin knee flange (0.8) and hip yoke side plate (1.4) (`docs/decisions.md`, 2026-10-26).
 
-The second pass added a <a class="g" href="../glossary/#far-side-bearing">far-side bearing</a> at the knee and hip roll: the link becomes a yoke held on both sides, the load splits between two plates and the bending in each falls several-fold. The worst safety factor went to 2.4.
+The second pass added a <a class="g" href="../glossary/#far-side-bearing">far-side bearing</a> at the knee and hip roll: the link becomes a yoke held on both sides, the load splits between two plates and the bending in each falls several-fold. The worst safety factor went to 2.4. Later, with finite elements (below), thin crossed-roller bearings went into rings at the hip yaw, the waist and the front of each hip roll motor, so those joints' tilting loads reach the frame without passing through the motors' own output bearings (2026-10-30).
 
 ### Beam bending: σ = M·c / I
 
@@ -145,9 +146,10 @@ A joint's range is set by the first angle at which something hits. This matters 
 
 :::tip[In the repo]
 - <b>Parts:</b> `cad/leg.py`, `cad/torso.py`, `cad/arm.py`, `cad/head.py`, `cad/electrical.py`, `cad/covers.py` build the parts around the RobStride motors at their STEP-model sizes. The machined ones are drawn in build123d (`cad/b3d.py`) as flat plates from 2D outlines, with inside corners rounded for a 6 mm cutter and isogrid pockets, and exported as STEP files; printed shells, covers and bought parts use manifold3d. The "mill" throughout is a desktop CNC (computer-controlled) milling machine that cuts parts from aluminium blocks. `cad/build.py` writes meshes and `description/cad_model.yaml` (mass, centre of mass, inertia, size per part) and lists any part too big for the mill or printer.
-- <b>Motors on pillar rings.</b> Each motor's stator bolts run through a flat plate and a pillar ring (a pillar round every bolt, standing over the driver cap) into the motor. The first pass used a ring and three posts, which finite elements put at SF 0.2-1.3 (2026-10-30).
+- <b>Motors on front rings.</b> RobStride's drawings show the RS03 and RS06 are tapped only in ears at their output end, so each hangs from a flat ring on those ears, and the part it drives stands on a hub on the output, past the ring (`front_ring` and `hub` in `cad/mounts.py`); flat strips round the motor join the ring to structure behind it (`cage`). The RS04 bolts through a plate on either face. Nine joints have a stop pin in the ring running in an arc groove (hard stops at the range plus 3°) and a hole for a zeroing dowel (2026-10-30).
+- <b>Harness clip points.</b> Each service loop is tied either side of its joint: a push-in cable-tie mount in a hole on a solid pad (`clip_spot` in `cad/b3d.py`), a printed TPU clip over the edge of a thicker plate (`cad/clips.py`), or a P-clip under a screw (2026-10-31).
 - <b>Strength:</b> `cad/fea.py` meshes each link's metal parts as one bonded solid and checks them under a landing at the ankle (3 × body weight up, 0.5 × fore-aft, 0.3 × sideways), a hand catch (0.5 × up, 0.25 ×, 0.15 ×), a sideways fall onto the knee (1 × body weight), a head drop and each joint's peak torque. Target SF 2.2 (2 plus the mesh's under-read). It replaced a beam check that left out torsion, which is what failed the first-pass hip, shoulder and pelvis plates; the results and the redesign are in `docs/decisions.md` (2026-10-30).
-- <b>Shells are an add-on.</b> `cad/covers.py` grows a 1.2 mm skin 4 mm outside each link's parts, trims it where it could reach the next link, and splits it to fit the printer. Shells carry no load and stay out of the default URDF (the policies train on the bare robot); their 0.95 kg counts towards the 42 kg limit.
+- <b>Shells are an add-on.</b> `cad/covers.py` grows a 1.0 mm skin 4 mm outside each link's parts (the torso's as a faceted hull), trims it where it could reach the next link, cuts room for the harness loops and grilles over the arm motors, and splits it to fit the printer. Shells carry no load and stay out of the default URDF (the policies train on the bare robot); their 0.82 kg counts towards the 42 kg limit (41.99 kg with them).
 - <b>Collision sweeps:</b> `python -m cad.covers --check` moves every joint through its range, every point of the coupled limit and combined poses, and fails on any shell contact. `tools/check_packaging.py` does the same for motor envelopes and collision boxes, separating packaging errors (within a limb) from ordinary self-collision (between limbs). These set the knee at 130°, hip pitch at −30° and the shoulder roll's coupled limit (2026-10-29).
 :::
 
@@ -155,10 +157,10 @@ A joint's range is set by the first angle at which something hits. This matters 
 
 | Choice | Taken | Alternatives considered (repo) |
 |---|---|---|
-| Structure | machined 6061 cores on the load path, 7075 where loads are high, printed shells | all machined (heavier, more machining time); fully printed (load must still go through metal; heat near the motors softens PETG-class plastics) (2026-10-25) |
-| Joint support | far-side bearings at knee and hip roll; hip pitch as a closed box | single-sided joints, which need the RS04 output bearing's moment rating (not taken, 2026-10-28) |
+| Structure | all-aluminium flat plates on the load path (mostly 7075, pocketed), printed shells as an add-on | printed structural shells on the arms and chest (retired 2026-10-30); fully printed (load must still go through metal; heat near the motors softens PETG-class plastics) (2026-10-25) |
+| Joint support | far-side bearings at the knee; crossed-roller bearings at the hip yaw, waist and hip roll; hip pitch as a closed box | single-sided joints, which need the RS04 output bearing's moment rating (not taken, 2026-10-28); the hip roll's rear bearing (about 300 g, replaced by the front carrier) |
 | Thigh plate | 9 mm pocketed to 2 mm floor (+61 g a side) | 8 mm (SF 1.8); a topology-optimised outline could take back about 35 g |
-| CAD | build123d for machined parts (exact outlines, STEP files), manifold3d for shells and covers | CadQuery, OpenSCAD, graphical CAD |
+| CAD | build123d for machined parts (exact outlines, STEP files), manifold3d for shells and covers today; shells to move to build123d lofted panels | CadQuery, OpenSCAD, graphical CAD; Blender or implicit modelling for the shells |
 | Big flat parts | online laser or water-jet service; about 12 parts to online machining (\~$1,200, not yet quoted) | a larger mill; splitting parts into pinned segments |
 | Strength check | finite elements for every load-carrying part (`cad/fea.py`), SF 2.2 | hand calculation on CAD sections (missed torsion; retired 2026-10-30) |
 
@@ -186,7 +188,7 @@ Next: [09 Power and battery](../09-power-battery/) starts the electrical stage, 
 
 ## Further reading
 
-- [manifold3d on GitHub](https://github.com/elalish/manifold): the library behind Marvin Bot's CAD; its README explains why its booleans never produce broken meshes.
+- [manifold3d on GitHub](https://github.com/elalish/manifold): the library behind Marvin Bot's shells and mesh checks; its README explains why its booleans never produce broken meshes.
 - [build123d documentation](https://build123d.readthedocs.io/): the best starting point if you want exact geometry and STEP files from Python.
 - [MIT OCW 2.001 Mechanics and Materials I](https://ocw.mit.edu/courses/2-001-mechanics-materials-i-fall-2006/): free lectures on stress, bending and beams.
 - [M. F. Ashby, Materials Selection in Mechanical Design](https://doi.org/10.1016/C2009-0-25539-5): how to choose a material for strength or stiffness per kilogram.
@@ -195,7 +197,7 @@ Next: [09 Power and battery](../09-power-battery/) starts the electrical stage, 
 ## Sources
 
 1. <span id="s1"></span>[E. Lalish et al., Manifold: geometry library for topological robustness](https://github.com/elalish/manifold) <span class="used">— used for: what manifold3d is (mesh booleans, Python bindings)</span>
-2. <span id="s2"></span>[build123d documentation](https://build123d.readthedocs.io/) <span class="used">— used for: Python B-rep CAD on OpenCascade as an alternative</span>
+2. <span id="s2"></span>[build123d documentation](https://build123d.readthedocs.io/) <span class="used">— used for: the machined parts' code-CAD (Python B-rep on OpenCascade)</span>
 3. <span id="s3"></span>[CadQuery documentation](https://cadquery.readthedocs.io/) <span class="used">— used for: Python CAD alternative with STEP export</span>
 4. <span id="s4"></span>[OpenSCAD](https://openscad.org/) <span class="used">— used for: script-based CAD alternative</span>
 5. <span id="s5"></span>[Aerospace Metals, Aluminum 6061-T6 / T651 datasheet (ASM / Aluminum Association data)](https://www.aerospacemetals.com/wp-content/uploads/2023/06/Aluminum-6061-T6-6061-T651.pdf) <span class="used">— used for: 6061-T6 yield 276 MPa, density 2.70, E 68.9 GPa</span>

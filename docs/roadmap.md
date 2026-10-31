@@ -40,7 +40,11 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Finite-element check of every load-carrying part (`cad/fea.py`; decisions 2026-10-30): most of the leg, pelvis and shoulder structure is below SF 2 in torsion or through the motor rings' posts
 - [x] Strengthen the failing parts and fix the CAD faults the check found; RS03/RS06 on front rings at their output-end ears, crossed-roller bearings at the hip yaw, waist and hip roll, zero pins and hard stops at nine joints; every load-carrying part aluminium and at SF 2.2 or better (decisions 2026-10-30)
 - [x] Lighten to the 42 kg limit with covers: 41.95 kg (41.16 bare), every metal part at SF 2.3 or better
-- [ ] Wiring paths for the new layout (the hip yaw motor on the thigh, the front-ring joints) before retraining the policies on it
+- [x] Wiring paths for the new layout (the hip yaw motor on the thigh, the front-ring joints), measured from the motors' driver caps; harness clip points in the parts: push-in mount holes on pads, TPU edge clips, a P-clip (decisions 2026-10-31)
+- [x] Shells brought up to the new frame: a faceted torso shell, grilles over the arm motors, room for the harness loops; 41.99 kg with shells, no shell contacts (decisions 2026-10-31)
+- [ ] Shells redrawn in build123d as designed panels (lofted, even wall, filleted, chosen seams, clips), starting with a thigh pilot
+- [ ] Pelvis back plate: SF 2.1-2.3 between runs at the 6 mm mesh; firm up its margin
+- [ ] Retrain the walking, stair and tracking policies on the front-ring model
 - [ ] Leg CAD: fasteners, bearing seats, hip yaw far-side support
 - [x] Pelvis and torso CAD, first pass (`cad/torso.py`): 0.86 + 1.46 kg (estimates were 1.0 + 1.8); pelvis frame SF 37 in the landing case; robot 39.06 kg
 - [x] Arm and head CAD, first pass (`cad/arm.py`, `cad/head.py`): arms 1.47 kg and grippers 0.18 kg for both (estimates 1.0 and 0.4), head 0.40 kg with the camera; shoulder plates SF 2.4 in a hand-load case; robot 39.20 kg
@@ -55,7 +59,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] No side-to-side waddle (pelvis roll 20° to 6° peak to peak, head sway 16.5 to 7-8 cm); 0-20 ms sensor and 0-10 ms motor delays in training
 - [ ] Stair robustness: rough v9 falls in 2 of 15 runs on 15-20 cm stairs over five noise seeds
 - [ ] Motion tracking (`sim/motion/`): one tracker follows all 25 Kimodo clips on the 1.44 m model (locomotion, sidesteps, jog, march, kick, squat, pick-up, gestures), every clip upright, the head steadier and the arms retargeted collision-free ([skills page](skills.md)). Next: a jog that leaves the ground, closer two-handed clips (clap, two-hand wave, arms raise) and squat depth, and the torso position it reads, which the robot will have only from odometry. Replayed in MuJoCo (sensor noise, torque-speed limits, joint friction): every clip upright, hands 6.7 cm against 6.8 in Newton
-- [ ] Fasteners, clips, harness clip points and connector footprints in the CAD; covers and harness loops in the packaging check
+- [ ] Fasteners and connector footprints in the CAD; covers and harness loops in the packaging check (the harness clip points are in, 2026-10-31)
 - [x] Battery cradle, blind-mate connector and electronics bay layout (`cad/electrical.py`)
 
 ## Phase 2 preparation

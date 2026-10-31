@@ -6,9 +6,11 @@ torso tapering to the waist, a dark hip girdle, long leg shells, arm sleeves, to
 light neck sleeve under the helmet head, with the joints left visible between them. They add
 some fall protection.
 
-Each shell is a 1.2 mm printed skin following its link's parts and motors at a 4 mm gap: the
+Each shell is a 1.0 mm printed skin following its link's parts and motors at a 4 mm gap: the
 hull of everything on the link, grown outward (rounded), kept only where it cannot reach the
-next link, and split where it must come off for service. Shells clip onto the parts under them
+next link, and split where it must come off for service. It is slotted where it hugs a motor
+housing (`vents`, for the motor's cooling) and cut back round each joint's harness service
+loop (`loop_rooms`). Shells clip onto the parts under them
 (clip and boss details come with the fastener pass), so every one comes off without tools,
 and none carries load. `python -m cad.covers --check` moves every joint through its range and
 fails if a shell touches a part of another link.
@@ -22,6 +24,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import manifold3d as mf
 import numpy as np
 import yaml
 
@@ -83,50 +86,86 @@ def offset_hull(solids, r: float):
     return hull(*[h.translate(list(r * d)) for d in _DIRS])
 
 
-def lofted(solids, gap: float, corner: float, step: float = 10.0, neck=None, slope: float = 0.7):
-    """A smooth body round `solids` that follows them slice by slice: at each height, a
-    rectangle with rounded corners (radius `corner`) containing everything in that slice plus
-    `gap`, widened only as far as needed for the slices above and below to blend at `slope`
-    (mm across per mm up), each joined to the next by their hull; closed at the top by a
-    smaller section so the shoulders round over. `neck` = (half depth, half width, height)
-    adds a small top section that the shoulders slope up to."""
+def _ngon(n: int, phase: float, squash: float) -> np.ndarray:
+    """A unit n-gon (x forward, y left), its corners pushed out towards the unit square by
+    `squash` < 1 so it hugs a box-shaped section."""
+    a = np.radians(phase + 360.0 * np.arange(n) / n)
+    x, y = np.cos(a), np.sin(a)
+    pts = np.column_stack([np.sign(x) * np.abs(x) ** squash, np.sign(y) * np.abs(y) ** squash])
+    return pts[np.argsort(np.arctan2(pts[:, 1], pts[:, 0]))]
+
+
+def _inside(poly: np.ndarray, p) -> bool:
+    for i in range(len(poly)):
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        if (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) < -1e-9:
+            return False
+    return True
+
+
+def faceted(solids, gap: float, levels: int = 9, n: int = 8, twist: float = 22.5, neck=None):
+    """The torso's faceted body: squashed n-gons at `levels` heights, alternate ones turned by
+    `twist` (the diamonds), each sized, symmetric about y = 0, to hold everything within 14 % of
+    the height either side of it plus `gap`, and slightly fuller at mid-height; the hull of
+    them all. `neck` = height of a small n-gon the shoulders rise to round the neck."""
     h = union(*solids)
     lo, hi = h.bounding_box()[2], h.bounding_box()[5]
+    z0, z1 = lo - gap, hi + gap
+    span = z1 - z0
 
-    def section(x0, y0, x1, y1, zc, r):
-        r = min(r, (x1 - x0) / 2 - 1, (y1 - y0) / 2 - 1)
-        return hull(
-            *[cyl(2 * r, 1.0, "z", (x, y, zc)) for x in (x0 + r, x1 - r) for y in (y0 + r, y1 - r)]
-        )
+    def held(a, b):
+        sl = h ^ box((BIG, BIG, b - a), (0, 0, (a + b) / 2))
+        bb = sl.bounding_box()
+        return bb[0] - gap, max(abs(bb[1]), abs(bb[4])) + gap, bb[3] + gap
 
-    pull = gap + corner * (1 - 0.5**0.5)  # the rounded corner still contains the slice's
-    zs, rects = [], []
-    for z in np.arange(lo + step / 2, hi, step):
-        sl = h ^ box((BIG, BIG, step), (0, 0, z))
-        if sl.is_empty():
-            continue
-        b = sl.bounding_box()
-        zs.append(z)
-        rects.append(np.array([b[0] - pull, b[1] - pull, b[3] + pull, b[4] + pull]))
-    zs, rects = np.array(zs), np.array(rects)
-    smooth = rects.copy()
-    for i, z in enumerate(zs):
-        d = slope * np.abs(zs - z)
-        smooth[i, :2] = np.min(rects[:, :2] + d[:, None], axis=0)
-        smooth[i, 2:] = np.max(rects[:, 2:] - d[:, None], axis=0)
-    chain = [section(*smooth[i], z, corner) for i, z in enumerate(zs)]
-    x0, y0, x1, y1 = smooth[-1]
-    inset = 0.6 * corner
-    cap = [chain[-1], section(x0 + inset, y0 + inset, x1 - inset, y1 - inset, hi + gap, corner)]
+    def section(shape, x0, w, x1, grow):
+        c, a, b = np.array([(x0 + x1) / 2, 0.0]), (x1 - x0) / 2, w
+        k = 1.0
+        while not all(
+            _inside(c + shape * [a * k, b * k], q) for q in [(x0, -w), (x0, w), (x1, -w), (x1, w)]
+        ):
+            k *= 1.01
+        return c + shape * [a * k * grow, b * k * grow]
+
+    pts = []
+    for i, f in enumerate(np.linspace(0, 1, levels)):
+        x0, w, x1 = held(lo + max(0.0, f - 0.14) * span, lo + min(1.0, f + 0.14) * span)
+        poly = section(_ngon(n, twist * (i % 2), 0.75), x0, w, x1, 1.0 + 0.03 * np.sin(np.pi * f))
+        pts += [[p[0], p[1], z0 + f * span] for p in poly]
     if neck is not None:
-        hx, hy, nz = neck
-        cap.append(section(-hx, -hy, hx, hy, nz, corner))
-    bottom = section(*smooth[0], lo - gap, corner)
-    return union(
-        hull(bottom, chain[0]),
-        *[hull(a, b) for a, b in zip(chain, chain[1:], strict=False)],
-        hull(*cap),
-    )
+        x0, w, x1 = held(hi - 0.02 * span, hi)
+        poly = section(_ngon(n, twist, 0.75), x0, w, x1, 0.45)
+        pts += [[p[0], p[1], neck + gap] for p in poly]
+    return mf.Manifold.hull_points(np.array(pts))
+
+
+def side_keep(body, half_w: float, shoulder_z: float, top_c: float = 28.0, edge_c: float = 22.0):
+    """The region a torso shell keeps sideways: |y| <= half_w, its side walls' top edge
+    bevelled in by `top_c` and their front and back edges chamfered by up to `edge_c`, growing
+    from 110 mm below the shoulder axis to the top."""
+    b = body.bounding_box()
+    x0, x1, zt = b[0] - 1, b[3] + 1, b[5] + 1
+
+    def layer(z, w, c):
+        return [(x1, w - c, z), (x1 - c, w, z), (x0 + c, w, z), (x0, w - c, z)] + [
+            (x, -y, z)
+            for x, y, _ in [(x0, w - c, z), (x0 + c, w, z), (x1 - c, w, z), (x1, w - c, z)]
+        ]
+
+    pts = layer(-BIG, half_w, 0.0) + layer(shoulder_z - 110, half_w, 0.0)
+    pts += layer(zt - top_c, half_w, edge_c) + layer(zt, half_w - top_c, edge_c)
+    return mf.Manifold.hull_points(np.array(pts))
+
+
+def front_bevel(body, at: float, slope: float, z0: float, inset: float = 0.0):
+    """`body` with its two front side corners bevelled: kept where x + |y| <= `at` at height
+    `z0`, `slope` mm less per mm higher, so the bevel deepens towards the shoulders; `inset`
+    moves the planes in by that much (the skin's inner face)."""
+    for sy in (1, -1):
+        n = np.array([1.0, sy, slope])
+        k = np.linalg.norm(n)
+        body = body.trim_by_plane((-n / k).tolist(), -(at + slope * z0) / k + inset)
+    return body
 
 
 def wrap(solids, keep, cut=(), extra: float = 0.0):
@@ -187,7 +226,7 @@ def parts() -> list[Part]:
     d06, t06 = env("RS06")
     d00, t00 = env("RS00")
 
-    # --- torso: a smooth shell from the waist to the shoulders, in a front half and a back half
+    # --- torso: a faceted shell from the waist to the shoulders, in a front half and a back half
     # (the back half comes off for the battery). It stops short of the shoulder flanges, leaves
     # a round opening for the neck sleeve, and its bottom edge clears the hip girdle.
     # the shell covers the inner part of the shoulder pitch motors: broad shoulders over a
@@ -202,12 +241,16 @@ def parts() -> list[Part]:
         - (cyl(108, BIG, "y", (sh[0], 0, sh[2])) - box((BIG, 2 * 110, BIG)))  # shoulder motors
         - cyl(100, 200, "z", (0, 0, neck_z))  # the neck opening
     )
-    # the body follows its contents; the shoulders slope up into a collar round the neck
-    collar = (60.0, 70.0, neck_z + 4)
-    # flat side walls short of the shoulder flanges close the sides
-    outer_b = lofted(tor, GAP + SKIN, 24.0, neck=(collar[0] + SKIN, collar[1] + SKIN, collar[2]))
-    inner_b = lofted(tor, GAP, 24.0 - SKIN, neck=(collar[0], collar[1], collar[2] - SKIN))
-    skin = (outer_b ^ box((BIG, 2 * sh_y, BIG))) - (inner_b ^ box((BIG, 2 * (sh_y - SKIN), BIG)))
+    # faceted: alternate sections turned half a step make diamond facets, the shoulders rise to
+    # the neck, and the side walls short of the shoulder flanges are chamfered at the shoulders
+    outer_b = faceted(tor, GAP + SKIN, neck=neck_z + 4)
+    inner_b = faceted(tor, GAP, neck=neck_z + 4)
+    # the front corners bevelled deeper towards the shoulders: the shoulder roll bracket swings
+    # past them with the arm forward and rolled in (cad/covers.py --check)
+    bev = (147.0, 0.35, sh[2])
+    skin = front_bevel(outer_b ^ side_keep(outer_b, sh_y, sh[2]), *bev) - front_bevel(
+        inner_b ^ side_keep(outer_b, sh_y - SKIN, sh[2]), *bev, inset=SKIN
+    )
     # each half in four pieces (left and right, chest and waist): a whole half is too big to
     # print; the seams run down the middle and round the body under the chest
     seam_z = 200.0
@@ -325,6 +368,128 @@ def parts() -> list[Part]:
     # --- toe cap: over the front of the foot, above the sole
     foot = on("left_foot_link")
     add("left_toe_cover", "left_foot_link", wrap(foot, half("x", 1, 55) ^ half("z", 1, -54)))
+
+    # vents where a shell hugs a motor housing, and room for the harness's service loops
+    made_parts = leg.parts() + torso.parts() + arm.parts() + head.parts()
+    rooms = loop_rooms(skel, {p.name: p for p in made_parts})
+    for k, p in enumerate(out):
+        solid = p.solid - vents(p.link)
+        for link, room in rooms:
+            if link == p.link:
+                solid = solid - room
+        out[k] = Part(p.name, p.link, p.material, solid, p.process)
+    return out
+
+
+# a grille over a motor: slot width and spacing, its half-angle and how far out it cuts
+VENT_W, VENT_PITCH, VENT_ARC, VENT_REACH = 4.0, 9.0, 30.0, 16.0
+
+
+def vents(link: str):
+    """A grille in a limb shell over each of `link`'s RobStride housings, on its front (a
+    RobStride's rated torque assumes its housing can shed heat): parallel slots along the
+    housing, VENT_PITCH apart over +-VENT_ARC degrees about the forward direction, each cut
+    right through the shell wherever it passes within VENT_REACH of the housing, so every slot
+    is a whole, straight line. Housings along x (pointing forward), the legs' shells (the thigh
+    and shin keep clean faces) and the torso, pelvis and head get none."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import build_urdf
+
+    cuts = []
+    if not link.startswith(("left_", "right_")) or "thigh" in link or "shin" in link:
+        return box((0.01, 0.01, 0.01), (BIG, BIG, BIG))
+    for m in build_urdf.motor_placements():
+        if m["link"] != link or not (m.get("shape") or {}).get("cap_d"):
+            continue
+        ax = np.asarray(m["axis"], float)
+        if abs(ax[0]) > 0.5:
+            continue
+        d, t = m["envelope"][0] * 1000, m["envelope"][2] * 1000
+        r0, r1 = d / 2 + 1, d / 2 + VENT_REACH
+        step = np.degrees(VENT_PITCH / ((r0 + r1) / 2))
+        slot = box((r1 - r0, VENT_W, 0.6 * t), ((r0 + r1) / 2, 0, 0))
+        angles = np.arange(-VENT_ARC, VENT_ARC + 0.1, step)
+        grille = union(*[slot.rotate([0, 0, float(a)]) for a in angles - angles.mean()])
+        if abs(ax[1]) > 0.5:
+            grille = grille.rotate([90, 0, 0])  # about x: local x stays forward
+        cuts.append(grille.translate([x * 1000 for x in m["xyz"]]))
+    return union(*cuts) if cuts else box((0.01, 0.01, 0.01), (BIG, BIG, BIG))
+
+
+LOOP_ARC = 20.0  # degrees of swing room past each clip
+LOOP_R = 9.0  # the half-width of a service loop's room: a 12 mm bundle and its swing
+
+
+def loop_rooms(skel: dict, parts: dict) -> list[tuple[str, object]]:
+    """Room for each joint's harness service loop, cut from the shells of the joint's two links:
+    a band round the joint's axis, LOOP_R either side of the loop radially and along the axis,
+    over the arc the loop runs between the clips it is tied to (tools/build_harness.py's CLIPS;
+    a plate's clip hole where cad/ records it, else the clip part's centre), plus LOOP_ARC either
+    side for its swing. Of the two arcs it takes the shorter, or the rear one when they are near
+    equal (as at the knee, clipped above and below the axis), so it never notches a front face.
+    [(link, solid in that link's frame)]; left side and centre (the right side is mirrored)."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import build_harness
+
+    joints = skel["joints"]
+    origin = {"pelvis": np.zeros(3)}
+    pending = dict(joints)
+    while pending:
+        for k, v in list(pending.items()):
+            if v["parent"] in origin:
+                origin[v["child"]] = origin[v["parent"]] + np.array(v["xyz"]) * 1000
+                del pending[k]
+    out = []
+    for jn, pair in build_harness.CLIPS.items():
+        j = joints[jn]
+        ax = np.asarray(j["axis"], float)
+        ax = ax / np.linalg.norm(ax)
+        jo = origin[j["child"]]
+        # the ring's local frame (axis z) in world terms, as the rotations below place it
+        if abs(ax[0]) > 0.5:
+            rot, to_local = [0, 90, 0], lambda w: np.array([-w[2], w[1], w[0]])
+        elif abs(ax[1]) > 0.5:
+            rot, to_local = [90, 0, 0], lambda w: np.array([w[0], w[2], -w[1]])
+        else:
+            rot, to_local = [0, 0, 0], lambda w: np.asarray(w, float)
+        alongs, radii, angles = [], [], []
+        for name in pair:
+            p = parts[name]
+            if "clip" in p.extra:
+                c = np.asarray(p.extra["clip"], float)
+            else:
+                b = np.array(p.solid.bounding_box())
+                c = (b[:3] + b[3:]) / 2
+            v = origin[p.link] + c - jo
+            a = float(v @ ax)
+            q = to_local(v - a * ax)
+            alongs.append(a)
+            radii.append(float(np.hypot(q[0], q[1])))
+            angles.append(np.degrees(np.arctan2(q[1], q[0])))
+        along, r = float(np.mean(alongs)), float(np.mean(radii))
+        a0, a1 = angles
+        span = (a1 - a0) % 360.0
+        back = to_local(np.array([-1.0, 0.0, 0.0]) - (-ax[0]) * ax)
+        if abs(span - 180.0) < 20.0 and np.hypot(back[0], back[1]) > 0.5:
+            mid_a = a0 + span / 2
+            rear = np.degrees(np.arctan2(back[1], back[0]))
+            if np.cos(np.radians(mid_a - rear)) < 0:
+                a0, span = a1, 360.0 - span
+        elif span > 180.0:
+            a0, span = a1, 360.0 - span
+        ts = np.radians(np.linspace(a0 - LOOP_ARC, a0 + span + LOOP_ARC, 48))
+        big = 4 * (r + LOOP_R)
+        wedge = (
+            mf.CrossSection([[(0.0, 0.0)] + [(big * np.cos(t), big * np.sin(t)) for t in ts]])
+            .extrude(4 * LOOP_R)
+            .translate([0, 0, -2 * LOOP_R])
+        )
+        ring = cyl(2 * (r + LOOP_R), 2 * LOOP_R, "z") - cyl(
+            2 * max(r - LOOP_R, 1.0), 4 * LOOP_R, "z"
+        )
+        world = (ring ^ wedge).rotate(rot).translate(list(jo + along * ax))
+        for link in (j["parent"], j["child"]):
+            out.append((link, world.translate(list(-origin[link]))))
     return out
 
 

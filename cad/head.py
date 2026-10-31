@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from .b3d import disc, made, plate, prism, rect
+from .b3d import clip_spot, cut, disc, made, plate, prism, rect
 from .lib import Part, box, cyl, ellipsoid, hull
 from .mounts import face as contact
 
@@ -89,7 +89,13 @@ def parts() -> list[Part]:
     # flat 7075 plates: a hub on the horn, a base plate, and two cheeks down the pitch servo's
     # sides that hold it by its mounting ears
     hub = prism(disc(20), "z", horn_top, base_z - 2.0)
-    base = prism(rect(-20, 20, -37, 13), "z", base_z - 2.0, base_z + 0.5)
+    base_sk = rect(-20, 20, -37, 13)
+    cheek_fp = [
+        rect(g * (s_wid / 2) - 1, g * (s_wid / 2 + 3.5), ymid - sy / 2 - 4, ymid + sy / 2 + 4)
+        for g in (1, -1)
+    ]
+    nc = clip_spot(base_sk, (0.0, 0.0), [disc(20), *cheek_fp], min_r=18, d=12.0)  # neck yaw loop
+    base = prism(cut(base_sk, disc(6.5, nc)), "z", base_z - 2.0, base_z + 0.5)
     cheeks = [
         prism(
             rect(g * (s_wid / 2), g * (s_wid / 2 + 2.5), ymid - sy / 2 - 3, ymid + sy / 2 + 3),

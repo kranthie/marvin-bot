@@ -1,6 +1,6 @@
 # Assembly, wiring and covers
 
-How the robot comes apart, how the wiring runs, and what the optional covers add. Status as of 2026-10-29: first-pass CAD of every structural part (`cad/`), the electronics bay, battery cradle and limb-root bulkheads at their parts' outlines (`cad/electrical.py`), a generated harness (`tools/build_harness.py` → `electrical/harness.yaml`), and the covers as an add-on (`cad/covers.py`). Fastener holes are in the mounts; clip bosses and the bought parts' datasheet outlines are still to come.
+How the robot comes apart, how the wiring runs, and what the optional covers add. Status as of 2026-10-31: first-pass CAD of every structural part (`cad/`), the electronics bay, battery cradle and limb-root bulkheads at their parts' outlines (`cad/electrical.py`), a generated harness (`tools/build_harness.py` → `electrical/harness.yaml`), and the covers as an add-on (`cad/covers.py`). Fastener holes and the harness clip points are in the parts; shell clips and the bought parts' datasheet outlines are still to come.
 
 ## Modules
 
@@ -87,7 +87,10 @@ Rules the harness follows:
 
 - **One harness per limb**: power is daisy-chained motor to motor in kinematic order, with the limb's CAN pair(s) twisted alongside. Each motor's own power and CAN connectors plug into the chain, so a motor swap needs no crimping.
 - **Service loops at every joint**: a loop of length range × 35 mm around each joint the harness crosses (0.04–0.15 m per joint). The loop runs beside the motor housing, on the side away from the output flange, inside the clearance the packaging check keeps. The waist and shoulder pitch, the joints with the largest ranges, get the longest loops.
-- **No wire carries load**: the harness is tied to a plate on both sides of each loop, so motion only flexes the loop. `harness.yaml` names the two plates for every loop (`CLIPS` in `tools/build_harness.py`, checked against `description/cad_model.yaml`): a cable tie through one of the plate's lightening pockets, or a P-clip under one of its screws where it has none, with spiral wrap over the loop.
+- **No wire carries load**: the harness is clipped to a plate on both sides of each loop, so motion only flexes the loop, with spiral wrap over the loop. `harness.yaml` names the two clip parts for every loop (`CLIPS` in `tools/build_harness.py`, checked against `description/cad_model.yaml`). Three kinds:
+  - a **push-in cable-tie mount** (a ribbed "fir-tree" stem, bought) in a 6.5 mm hole on a solid 14 mm pad in plates up to 6 mm thick: the hip roll web (two), the hip pitch box's back wall, the thigh floor and plate, the shin's inner plate, the pelvis top plate, the torso base, the shoulder plates, the upper arm strap (two), the forearm frame (two), the wrist cradle's back plate and the neck bracket. `cad/b3d.py`'s `clip_spot` places each hole near its joint, outside the motor and its rings and clear of every other hole, and the plate's pockets keep away from its pad, so later re-pocketing cannot move or cut it;
+  - a **printed TPU edge clip** (`cad/clips.py`) that slides over the edge of a plate too thick for a push-in mount and grips it, with a ring outside the edge for the cable tie: the pelvis back plate (one per hip), the hip pitch box's outer wall, the shoulder roll's front plate and the neck bridge. TPU, not PA-CF, because PA-CF is too stiff to snap;
+  - a **P-clip under an existing screw** where a plate has no room for either: the shoulder flange, under one of the shoulder pitch output's screws.
 - **CAN**: twisted pair, 120 Ω termination at the hub end and on the last motor of each bus, shield or drain grounded at the hub only. Each leg carries two buses (hip and shank), so its signal connector has 6 pins.
 - **Limb-root connectors**: a keyed 2-pin power connector rated above the branch fuse (XT60 class for legs and arms) and a latching signal connector (CAN pairs, ground, a spare), both mounted on a bulkhead on the parent module next to the limb's first flange (`elec_bulkhead_*` in `cad/electrical.py`).
 - **Paths** (after the front-ring redesign, 2026-10-30). Each RobStride's cable leaves its driver cap at its rear end, through the connectors on the cap's side, so run lengths are measured from the caps.
@@ -98,29 +101,30 @@ Rules the harness follows:
 
 ## Body shells (add-on)
 
-The bare robot is an open aluminium frame: bead-blasted 7075 and 6061 plates, the actuators' own housings and a glossy helmet head (its printed chest, thigh and arm shells were removed in 2026-10-30's redesign, as the covers below do their job). The body shells are an optional layer that gives it a finished body: a helmet head with a full-face glossy visor over a slim dark neck, a smooth light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them.
+The bare robot is an open aluminium frame: bead-blasted 7075 and 6061 plates, the actuators' own housings and a glossy helmet head (its printed chest, thigh and arm shells were removed in 2026-10-30's redesign, as the covers below do their job). The body shells are an optional layer that gives it a finished body: a helmet head with a full-face glossy visor over a slim dark neck, a faceted light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them.
 
 | Shell | Pieces | Notes |
 |---|---|---|
-| Torso | 8 (front and back, left and right, chest and waist) | follows the torso frame slice by slice (rounded sections ~13 mm outside it, blended where the width changes), so it is broad at the shoulders and slimmer at the chest and waist; the shoulders slope up into a collar round the neck; flat side walls with round openings for the shoulder motors; the back comes off for the battery |
+| Torso | 8 (front and back, left and right, chest and waist) | faceted: squashed octagons at nine heights round the torso frame, every other one turned 22.5°, hulled into flat panels that meet in diamond facets; broad at the shoulders and slimmer at the waist; the shoulders slope up into a collar round the neck; flat side walls with round openings for the shoulder motors, chamfered at the shoulders, and front corners that bevel deeper towards the shoulders (the shoulder roll bracket swings past them); the back comes off for the battery |
 | Neck sleeve | 1, dark, flexible print | flares from the helmet down into the collar; turns with neck yaw inside the torso's neck opening; the head pitches over it |
 | Hip girdle | 1, dark | round the pelvis frame and waist motor; reaches over the hip motors in front, stays clear of the hip roll motors that swing round the hip behind |
 | Thigh, shin | 1 each per leg | thigh all round except a strip at the back of the inner side (harness), and over the front of the knee motor; shin front and sides, open at the back where the cranks and rods move |
 | Shoulder | 1 per side | over the top of the shoulder roll motor only, above the swing of the roll bracket (the hip roll motors behind the hips are left bare) |
-| Upper arm, forearm, toe | 1 each per side | sleeves between the joints (the upper arm's runs down the back of the elbow motor); a cap over the front of the foot |
+| Upper arm, forearm, toe | 1 each per side | sleeves between the joints (the upper arm's runs down the back of the elbow motor), with a grille of slots over the front of each motor housing they cover, as the motors' ratings assume their housings shed heat; a cap over the front of the foot |
 
 How they are made and checked:
 
-- Each shell is a 1.2 mm printed skin at a 4 mm gap from the parts it covers (an offset of their hull, rounded; the torso is lofted from rounded sections), so the shells refit automatically when the structure changes.
+- Each shell is a 1.0 mm printed skin at a 4 mm gap from the parts it covers (an offset of their hull, rounded; the torso's is the faceted hull above), so the shells refit automatically when the structure changes. Each has room cut for the harness loops at its joints: a band round the joint's axis over the arc between the loop's two clip points plus 20° of swing, on the rear arc where the two are near equal, as at the knee (`loop_rooms`).
+- Generated this way, the frame sets each shell's shape. They are to be redrawn in build123d as designed panels: lofted through cross-sections, an even wall, filleted, split along chosen seams, with clips, and these hulls as the keep-out they must clear (`docs/decisions.md`, 2026-10-31).
 - `python -m cad.covers --check` (run in CI) moves every joint to both ends and to half of each end of its range, plus combined poses (deep squat, knee up, arm up, hand to chest, looking down while turned), and fails if any shell touches a part or shell of another link. Shells on one limb are not checked against the other limbs; limb-to-limb contact is the policy's job.
 - They clip on (clip and boss details come with the fastener pass), so they come off without tools, and they carry no load; they add some fall protection (R53).
 
-The shells weigh 0.95 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 40.35 kg with the hands) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (41.30 kg) adds the shells' mass and visuals, inside the 42 kg limit, which applies to the robot with them; a robot that runs with them should be trained on it.
+The shells weigh 0.82 kg in all. The default model (`description/urdf/marvin_bot.urdf`, 41.17 kg with the hands) is the bare robot, and the policies are trained on it. `marvin_bot_covers.urdf` (41.99 kg) adds the shells' mass and visuals, inside the 42 kg limit, which applies to the robot with them; a robot that runs with them should be trained on it.
 
 ## Still to do
 
 - Connector footprints on the bulkheads, and the RobStride caps' connector positions from a real motor (the paths above assume connectors on the cap's side, between the cage strips).
-- Loop envelopes in the packaging and shell checks: today they check the parts, not the loops; the snap-fit shell redesign must leave each joint's loop room.
+- Loop envelopes in the packaging check: the shells leave each loop room, but the sweeps check the parts, not the loops themselves.
 - Torso shell seams: clip and alignment details at the eight pieces' joins.
 - Datasheet outlines for the bought electronics once chosen (the layout uses typical sizes).
 - Measured bus currents (phase 2) to confirm the gauges and fuses.

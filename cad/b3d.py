@@ -194,6 +194,29 @@ def opened(sk: bd.Sketch, r: float = CUTTER / 2) -> bd.Sketch | None:
     return _sketch(cs.offset(r, mf.JoinType.Round).simplify(0.05))
 
 
+def clip_spot(sk, target, avoid=(), min_r: float = 45.0, d: float = 14.0, step: float = 2.0):
+    """Where a harness clip goes on a plate: the point nearest `target` (the joint's axis, in
+    the plate's (u, v)) but at least `min_r` from it (outside the motor and its rings), with a
+    pad `d` across fully inside the outline and clear of the `avoid` shapes (holes, bores)."""
+    allowed = _cs(getattr(sk, "raw", sk)).offset(-d / 2, mf.JoinType.Round)
+    for a in avoid:
+        if a is not None:
+            allowed = allowed - _cs(a).offset(d / 2, mf.JoinType.Round)
+    if allowed.is_empty():
+        raise ValueError("no room for a harness clip on this plate")
+    x0, y0, x1, y1 = allowed.bounds()
+    xs, ys = np.meshgrid(np.arange(x0, x1, step), np.arange(y0, y1, step))
+    pts = np.column_stack([xs.ravel(), ys.ravel()])
+    r = np.hypot(pts[:, 0] - target[0], pts[:, 1] - target[1])
+    dot = mf.CrossSection.circle(0.3, 8)
+    for k in np.argsort(np.where(r < min_r, np.inf, r)):
+        if r[k] < min_r:
+            break
+        if (allowed ^ dot.translate(pts[k].tolist())).area() > 0.2:
+            return float(pts[k][0]), float(pts[k][1])
+    raise ValueError("no room for a harness clip on this plate")
+
+
 def cut(sk: bd.Sketch, *holes) -> bd.Sketch:
     for h in holes:
         if h is not None:

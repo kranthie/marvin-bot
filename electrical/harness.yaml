@@ -31,7 +31,7 @@ head:
   crosses: [neck_yaw]
   service_loop_m: 0.07
   clips:
-  - [torso_bridge, neck_bracket]
+  - [torso_bridge_clip, neck_bracket]
   current_a: 0.0
   power_awg: 20
   signals: [servo (12 V + serial), camera USB-C]
@@ -60,7 +60,7 @@ limbs:
       crosses: [left_hip_roll]
       service_loop_m: 0.05
       clips:
-      - [pelvis_back, left_hip_roll_web]
+      - [pelvis_back_clip_l, left_hip_roll_web]
       current_a: 18.9
       power_awg: 14
       signals: [left_hip, left_shank]
@@ -70,8 +70,8 @@ limbs:
       crosses: [left_hip_yaw, left_hip_pitch]
       service_loop_m: 0.2
       clips:
-      - [left_hip_pitch_top, left_thigh_floor]
-      - [left_hip_roll_web, left_hip_pitch_outer]
+      - [left_hip_pitch_back, left_thigh_floor]
+      - [left_hip_roll_web, left_hip_pitch_outer_clip]
       current_a: 13.4
       power_awg: 16
       signals: [left_hip, left_shank]
@@ -127,7 +127,7 @@ limbs:
       crosses: [right_hip_roll]
       service_loop_m: 0.05
       clips:
-      - [pelvis_back, right_hip_roll_web]
+      - [pelvis_back_clip_r, right_hip_roll_web]
       current_a: 18.9
       power_awg: 14
       signals: [right_hip, right_shank]
@@ -137,8 +137,8 @@ limbs:
       crosses: [right_hip_yaw, right_hip_pitch]
       service_loop_m: 0.2
       clips:
-      - [right_hip_pitch_top, right_thigh_floor]
-      - [right_hip_roll_web, right_hip_pitch_outer]
+      - [right_hip_pitch_back, right_thigh_floor]
+      - [right_hip_roll_web, right_hip_pitch_outer_clip]
       current_a: 13.4
       power_awg: 16
       signals: [right_hip, right_shank]
@@ -204,7 +204,7 @@ limbs:
       crosses: [left_shoulder_roll]
       service_loop_m: 0.09
       clips:
-      - [left_shoulder_flange, left_shoulder_roll_top]
+      - [left_shoulder_flange, left_shoulder_roll_front_clip]
       current_a: 8.3
       power_awg: 16
       signals: [left_arm, servo]
@@ -214,7 +214,7 @@ limbs:
       crosses: [left_shoulder_yaw]
       service_loop_m: 0.18
       clips:
-      - [left_shoulder_roll_top, left_upper_arm_strap]
+      - [left_shoulder_roll_front_clip, left_upper_arm_strap]
       current_a: 4.7
       power_awg: 16
       signals: [left_arm, servo]
@@ -234,7 +234,7 @@ limbs:
       crosses: [left_wrist_yaw]
       service_loop_m: 0.11
       clips:
-      - [left_wrist_bracket, left_wrist_cradle_back]
+      - [left_forearm_frame, left_wrist_cradle_back]
       current_a: 0.0
       power_awg: 20
       signals: [servo]
@@ -272,7 +272,7 @@ limbs:
       crosses: [right_shoulder_roll]
       service_loop_m: 0.09
       clips:
-      - [right_shoulder_flange, right_shoulder_roll_top]
+      - [right_shoulder_flange, right_shoulder_roll_front_clip]
       current_a: 8.3
       power_awg: 16
       signals: [right_arm, servo]
@@ -282,7 +282,7 @@ limbs:
       crosses: [right_shoulder_yaw]
       service_loop_m: 0.18
       clips:
-      - [right_shoulder_roll_top, right_upper_arm_strap]
+      - [right_shoulder_roll_front_clip, right_upper_arm_strap]
       current_a: 4.7
       power_awg: 16
       signals: [right_arm, servo]
@@ -302,7 +302,7 @@ limbs:
       crosses: [right_wrist_yaw]
       service_loop_m: 0.11
       clips:
-      - [right_wrist_bracket, right_wrist_cradle_back]
+      - [right_forearm_frame, right_wrist_cradle_back]
       current_a: 0.0
       power_awg: 20
       signals: [servo]

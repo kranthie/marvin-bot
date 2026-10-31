@@ -24,10 +24,11 @@ from pathlib import Path
 
 import yaml
 
-from .b3d import cut, disc, hull, lighten, made, rect, rounded, slot
+from .b3d import clip_spot, cut, disc, hull, lighten, made, rect, rounded, slot
 from .b3d import plate as bplate
 from .b3d import prism as bprism
 from .b3d import union as union2
+from .clips import edge_clip
 from .leg import (
     HIP_BACK_T,
     HIP_ROLL_PIN,
@@ -40,6 +41,8 @@ from .leg import (
 from .lib import Part
 from .mounts import (
     BEARINGS,
+    CLIP_HOLE,
+    CLIP_PAD,
     bore,
     cage,
     ear_face,
@@ -128,6 +131,11 @@ def parts() -> list[Part]:
     out.append(
         made("pelvis_back", "pelvis", "al7075", bplate(back, "x", bf - hip_t / 2, hip_t), "service")
     )
+    for side, s in (("l", 1), ("r", -1)):  # the hip roll loops' harness clips, over each motor
+        tgt = (s * 40.0, 40.0)
+        out.append(
+            edge_clip(f"pelvis_back_clip_{side}", "pelvis", "x", bf - hip_t / 2, hip_t, back, tgt)
+        )
     for side, s in (("l", 1), ("r", -1)):
         c = (rc[0], s * rc[1], rc[2])
         # the bearing carrier on the roll motor's front face: the yoke's hub turns in it, so the
@@ -186,16 +194,20 @@ def parts() -> list[Part]:
         )
     )
     top = rounded(hull(disc(124, (waist_c[0], 0)), rect(bb, -60.0, -28.0, 28.0)))
+    # the waist loop's harness clip, clear of the cage and the power board standing behind it
+    board = rect(-135, -51, -27, 27)
+    wc = clip_spot(top, (waist_c[0], 0), [disc(30, (waist_c[0], 0)), w_pads, board], min_r=62)
     top = cut(
         top,
         disc(30, (waist_c[0], 0)),  # the waist motor's cable, out of its cap
         lighten(
             top,
-            keep=[w_pads]
+            keep=[w_pads, disc(CLIP_PAD, wc)]
             + [rect(-70, 90, s * gy - 12, s * gy + 12) for s in (1, -1)],  # over the gussets
             pitch=24,
             rim=6,
         ),
+        disc(CLIP_HOLE, wc),
     )
     out.append(
         made(
@@ -274,7 +286,12 @@ def parts() -> list[Part]:
     base_z = out_z + t + bt0 / 2
     out.append(made("torso_waist_flange", "torso_link", "al6061", flange))
     base = rect(fx0, fx1, -y_bot + t / 2, y_bot - t / 2)  # between the side frames
-    base = cut(base, lighten(base, keep=[disc(100)], pitch=28, rim=8))
+    bc = clip_spot(base, (0.0, 0.0), [disc(100)], min_r=58)  # the waist loop's clip
+    base = cut(
+        base,
+        lighten(base, keep=[disc(100), disc(CLIP_PAD, bc)], pitch=28, rim=8),
+        disc(CLIP_HOLE, bc),
+    )
     out.append(made("torso_base", "torso_link", "al7075", bplate(base, "z", base_z, bt0)))
     # the battery shelf, clear of the computer plate in front
     sx0, sx1 = fx0 + 5, (bat["xyz"][0] + bat["size"][0] / 2) * 1000 + 2
@@ -336,10 +353,13 @@ def parts() -> list[Part]:
         up = rounded(
             union2(disc(112, ring), pads, slot(34, ring, (bx, bz)), slot(34, ring, (fx, fz)))
         )
+        # the shoulder pitch loop's harness clip, beside the motor
+        uc = clip_spot(up, ring, [disc(spec("RS03")["cap_d"] + 2, ring), pads], min_r=64)
         up = cut(
             up,
             disc(spec("RS03")["cap_d"] + 2, ring),
-            lighten(up, keep=[disc(100, ring), pads], pitch=20, rim=6),
+            lighten(up, keep=[disc(100, ring), pads, disc(CLIP_PAD, uc)], pitch=20, rim=6),
+            disc(CLIP_HOLE, uc),
         )
         s_pins, _, _, s_zp = zero_stop("RS03", shc, "y", "left_shoulder_pitch", True, *SHOULDER_PIN)
         s_ring, sf = front_ring(
@@ -391,6 +411,8 @@ def parts() -> list[Part]:
     )
     bridge = cut(bridge, disc(26), lighten(bridge, keep=[rect(-56, 56, -35, 35)], pitch=16, rim=5))
     out.append(made("torso_bridge", "torso_link", "al7075", bplate(bridge, "z", bridge_z, bt)))
+    # the neck yaw loop's harness clip, on the bridge's back edge
+    out.append(edge_clip("torso_bridge_clip", "torso_link", "z", bridge_z, bt, bridge, (-60, 0)))
     # the computer stands on edge, fan forward, its I/O ports toward the sides (cable room to
     # the frames) and its buttons up; it bolts by the feet on its underside to a plate behind
     # it, standing on the base plate

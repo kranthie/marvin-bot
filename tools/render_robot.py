@@ -50,6 +50,8 @@ VIEWS = {"front": 180, "three-quarter": 215, "side": 270, "back": 20}
 def scene(covers: bool) -> tuple[mujoco.MjModel, mujoco.MjData]:
     cs.URDF = ROOT / "description" / "urdf" / f"marvin_bot{'_covers' if covers else ''}.urdf"
     spec, _ = cs.build()
+    if covers:
+        flat_shade(spec, "torso_cover")
     spec.visual.headlight.ambient = [0.25, 0.25, 0.27]
     spec.visual.headlight.diffuse = [0.30, 0.30, 0.30]
     spec.visual.quality.shadowsize = 4096
@@ -85,6 +87,24 @@ def scene(covers: bool) -> tuple[mujoco.MjModel, mujoco.MjData]:
     model.mat_specular[:] = 0.6
     model.mat_shininess[:] = 0.6
     return model, mujoco.MjData(model)
+
+
+def flat_shade(spec: mujoco.MjSpec, prefix: str) -> None:
+    """Draw the meshes named `prefix`... with one normal per face: MuJoCo otherwise smooths the
+    shading across shallow edges, which blurs the torso shells' facets into curves."""
+    import trimesh  # noqa: PLC0415
+
+    meshdir = ROOT / "description" / "meshes"
+    for mesh in spec.meshes:
+        if not mesh.name.startswith(prefix):
+            continue
+        tm = trimesh.load(meshdir / Path(mesh.file).name, force="mesh")
+        v = np.asarray(tm.vertices)[np.asarray(tm.faces)].reshape(-1, 3) * mesh.scale
+        mesh.file = ""
+        mesh.scale = [1.0, 1.0, 1.0]
+        mesh.smoothnormal = False
+        mesh.uservert = v.ravel().tolist()
+        mesh.userface = np.arange(len(v)).tolist()
 
 
 def colour(model: mujoco.MjModel) -> None:

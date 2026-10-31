@@ -70,17 +70,17 @@ HUBS = {
 # each crossed joint's service loop is tied to a plate either side (left side and centre; the
 # right side mirrors): (parent link's plate, child link's plate)
 CLIPS = {
-    "left_hip_roll": ("pelvis_back", "left_hip_roll_web"),
-    "left_hip_pitch": ("left_hip_roll_web", "left_hip_pitch_outer"),
-    "left_hip_yaw": ("left_hip_pitch_top", "left_thigh_floor"),
+    "left_hip_roll": ("pelvis_back_clip_l", "left_hip_roll_web"),
+    "left_hip_pitch": ("left_hip_roll_web", "left_hip_pitch_outer_clip"),
+    "left_hip_yaw": ("left_hip_pitch_back", "left_thigh_floor"),
     "left_knee": ("left_thigh_plate", "left_shin_inner"),
     "waist_yaw": ("pelvis_top", "torso_base"),
-    "neck_yaw": ("torso_bridge", "neck_bracket"),
+    "neck_yaw": ("torso_bridge_clip", "neck_bracket"),
     "left_shoulder_pitch": ("torso_shoulder_plate_l", "left_shoulder_flange"),
-    "left_shoulder_roll": ("left_shoulder_flange", "left_shoulder_roll_top"),
-    "left_shoulder_yaw": ("left_shoulder_roll_top", "left_upper_arm_strap"),
+    "left_shoulder_roll": ("left_shoulder_flange", "left_shoulder_roll_front_clip"),
+    "left_shoulder_yaw": ("left_shoulder_roll_front_clip", "left_upper_arm_strap"),
     "left_elbow": ("left_upper_arm_strap", "left_forearm_frame"),
-    "left_wrist_yaw": ("left_wrist_bracket", "left_wrist_cradle_back"),
+    "left_wrist_yaw": ("left_forearm_frame", "left_wrist_cradle_back"),
 }
 LIMBS = {  # harness: hub, motors in kinematic order
     "{side}_leg": (
@@ -120,6 +120,7 @@ def build() -> str:
         for name in pair:
             if joint.startswith("right_"):
                 name = name.replace("left_", "right_").replace("_plate_l", "_plate_r")
+                name = name.replace("_clip_l", "_clip_r")
             if name not in cad:
                 raise SystemExit(f"clip plate {name} for {joint} is not in cad_model.yaml")
             out.append(name)

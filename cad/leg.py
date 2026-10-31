@@ -39,12 +39,28 @@ from pathlib import Path
 
 import yaml
 
-from .b3d import cut, disc, hull, lighten, made, plate, prism, rect, rounded, slot, to_manifold
+from .b3d import (
+    clip_spot,
+    cut,
+    disc,
+    hull,
+    lighten,
+    made,
+    plate,
+    prism,
+    rect,
+    rounded,
+    slot,
+    to_manifold,
+)
 from .b3d import union as union2
+from .clips import edge_clip
 from .lib import Part, cyl
 from .lib import hull as mhull
 from .mounts import (
     BEARINGS,
+    CLIP_HOLE,
+    CLIP_PAD,
     bore,
     cage,
     ear_face,
@@ -192,13 +208,25 @@ def parts() -> list[Part]:
     # the hip pitch's stop and zero pins stand out of the web's outer face into the box's
     # outer wall, 2 mm away across the stub axle
     hp_pins, _, _, hp_pads = zero_stop("RS04", pj, "y", "left_hip_pitch", False, 30.0, 0.0)
+    # harness clips (tools/build_harness.py's CLIPS): the hip roll loop's, over the roll
+    # motor, and the hip pitch loop's, beside the pitch motor
+    web_avoid = [stator_holes("RS04", pj, "y"), disc(8.5, xz(pj)), hp_pads]
+    web_clips = [
+        clip_spot(web_f, (out_x - 15, 0.0), web_avoid, min_r=64),
+        clip_spot(web_f, xz(pj), web_avoid, min_r=64),
+    ]
     web_f = cut(
         web_f,
         stator_holes("RS04", pj, "y"),
         disc(8.5, xz(pj)),
         lighten(
-            web_f, keep=[ring_band("RS04", pj, "y"), disc(20, xz(pj)), hp_pads], pitch=22, rim=6
+            web_f,
+            keep=[ring_band("RS04", pj, "y"), disc(20, xz(pj)), hp_pads]
+            + [disc(CLIP_PAD, c) for c in web_clips],
+            pitch=22,
+            rim=6,
         ),
+        *[disc(CLIP_HOLE, c) for c in web_clips],
     )
     web = plate(web_f, "y", w_in + wt / 2, wt) - prism(hp_pins, "y", w_out - 5, w_out + 1)
     out.append(made("left_hip_roll_web", L, "al7075", web))
@@ -295,6 +323,8 @@ def parts() -> list[Part]:
             ifaces=[bore("left_hip_pitch", (0, oy, 0), "y", BRG_D, ot)],
         )
     )
+    # the hip pitch loop's harness clip, on the outer wall's upper edge
+    out.append(edge_clip("left_hip_pitch_outer_clip", L, "y", oy, ot, outer_w, (0, 50)))
     yaw_xy = (yaw_c[0], yaw_c[1])
     floor = rounded(hull(disc(96, yaw_xy), rect(-24, 24, iy1 - side_t, oy + ot / 2)))
     floor = cut(floor, disc(12, yaw_xy), lighten(floor, keep=[disc(96, yaw_xy)], pitch=24, rim=6))
@@ -305,7 +335,13 @@ def parts() -> list[Part]:
     wall_t = 3.0
     for name, s in (("front", 1), ("back", -1)):
         w = rect(iy1, oy - ot / 2, fz1, wz0)
-        w = cut(w, lighten(w, pitch=14, rim=5))
+        # the back wall carries the hip yaw loop's clip, low over the yaw axis
+        clips = [clip_spot(w, (yaw_c[1], fz1), min_r=0)] if s == -1 else []
+        w = cut(
+            w,
+            lighten(w, keep=[disc(CLIP_PAD, c) for c in clips], pitch=14, rim=5),
+            *[disc(CLIP_HOLE, c) for c in clips],
+        )
         out.append(
             made(
                 f"left_hip_pitch_{name}", L, "al7075", plate(w, "x", s * (24 - wall_t / 2), wall_t)
@@ -349,26 +385,42 @@ def parts() -> list[Part]:
     yaw_out = -cap_end - 1.0  # the floor's top face
     fl_t = 6.0
     tf_sk = rounded(union2(disc(124), rect(-32, 32, 12, ty0 + tt)))  # under the strips
+    t_clip = clip_spot(tf_sk, (0.0, 0.0), [disc(30), pads], min_r=40)
     tf_sk = cut(
-        tf_sk, disc(30), lighten(tf_sk, keep=[pads, rect(-32, 32, 12, ty0 + tt)], pitch=18, rim=5)
+        tf_sk,
+        disc(30),
+        lighten(
+            tf_sk, keep=[pads, rect(-32, 32, 12, ty0 + tt), disc(CLIP_PAD, t_clip)], pitch=18, rim=5
+        ),
+        disc(CLIP_HOLE, t_clip),
     )
     out.append(made("left_thigh_floor", L, "al7075", plate(tf_sk, "z", yaw_out - fl_t / 2, fl_t)))
     fl_bot = yaw_out - fl_t
     tplate = rounded(hull(rect(-32, 32, -60, fl_bot), disc(124, xz(knee))))
     k_pins, _, _, k_pads = zero_stop("RS04", knee, "y", "left_knee", False, 30.0, 0.0)
+    k_clip = clip_spot(tplate, xz(knee), [stator_holes("RS04", knee, "y"), k_pads], min_r=64)
     tplate = cut(
         tplate,
         stator_holes("RS04", knee, "y"),
         disc(8.5, xz(knee)),
         lighten(
             tplate,
-            keep=[ring_band("RS04", knee, "y"), disc(20, xz(knee)), k_pads],
+            keep=[ring_band("RS04", knee, "y"), disc(20, xz(knee)), k_pads, disc(CLIP_PAD, k_clip)],
             pitch=24,
             rim=6,
         ),
+        disc(CLIP_HOLE, k_clip),
     )
     tplate = plate(tplate, "y", ty0 + tt / 2, tt) - prism(k_pins, "y", ty0, ty0 + tt + 1)
-    out.append(made("left_thigh_plate", L, "al7075", tplate))
+    out.append(
+        made(
+            "left_thigh_plate",
+            L,
+            "al7075",
+            tplate,
+            extra={"clip": (k_clip[0], ty0 + tt / 2, k_clip[1])},
+        )
+    )
     for name, s in (("front", 1), ("back", -1)):
         rib = rect(12, ty0, -96, fl_bot)
         out.append(made(f"left_thigh_rib_{name}", L, "al7075", plate(rib, "x", s * 29.0, 6.0)))
@@ -422,6 +474,14 @@ def parts() -> list[Part]:
     )
     # a slot behind motor a where push rod b passes at full ankle travel
     rod_slot = hull(disc(34, (ka[0] - 36, ka[2] + 35)), disc(34, (ka[0] - 36, ka[2] - 33)))
+    # the knee loop's clip on the shin side
+    s_avoid = [
+        rod_slot,
+        disc(48),
+        disc(spec("RS03")["output_d"] + 2, xz(kb)),
+        stator_holes("RS03", kb, "y"),
+    ]
+    s_clip = clip_spot(inner, (0.0, 0.0), s_avoid, min_r=64)
     inner = cut(
         inner,
         rod_slot,
@@ -431,10 +491,12 @@ def parts() -> list[Part]:
         stator_holes("RS03", kb, "y"),
         lighten(
             inner,
-            keep=[disc(48), ring_band("RS03", kb, "y"), disc(40, cheek), *anchors],
+            keep=[disc(48), ring_band("RS03", kb, "y"), disc(40, cheek), *anchors]
+            + [disc(CLIP_PAD, s_clip)],
             pitch=20,
             rim=6,
         ),
+        disc(CLIP_HOLE, s_clip),
     )
     outer = rounded(
         union2(
@@ -462,6 +524,7 @@ def parts() -> list[Part]:
             "al7075",
             plate(inner, "y", yi - in_t / 2, in_t),
             "service",
+            extra={"clip": (s_clip[0], yi - in_t / 2, s_clip[1])},
             ifaces=[
                 contact("left_knee", (0, yi, 0), "y", 8.0, 24.0),
                 ear_face("left_ankle_b", "RS03", kb, "y", -1),

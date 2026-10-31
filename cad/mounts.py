@@ -73,6 +73,10 @@ BEARINGS = {"RA6008": dict(d=60.0, D=76.0, B=8.0, mass_g=90.0, C=5.68, C0=8.68)}
 HUB_BASE = 66.0  # the hub's shoulder under the bearing's inner ring
 LIP = 72.0  # the ring's bore under the bearing's outer ring (clears the shoulder)
 HEAD = {"M3": (6.5, 2.3), "M4": (8.0, 3.1)}  # low-head (DIN 7984) counterbores: diameter, depth
+# harness clips: a push-in cable-tie mount (a "fir-tree" stem, for 1-6 mm panels) in a round
+# hole on a solid pad at each service loop (tools/build_harness.py's CLIPS), or a printed edge
+# clip on thicker plates (cad/clips.py)
+CLIP_HOLE, CLIP_PAD = 6.5, 14.0
 
 
 def _vec(axis: str, sign: int, dist: float):
@@ -316,13 +320,21 @@ def front_ring(
     return body, front
 
 
-def hub(model: str, centre, axis: str, sign: int, front: float, bearing: str | None = None):
+def hub(
+    model: str,
+    centre,
+    axis: str,
+    sign: int,
+    front: float,
+    bearing: str | None = None,
+    d: float | None = None,
+):
     """A hub on a motor's output flange standing the driven part past a front ring's face
-    `front` (from the motor centre), bolted through with it: a disc the output's size, 0.5 mm
-    proud of the ring; with `bearing`, flush with it (the driven part clamps the bearing's
-    inner ring), a shoulder and a spigot for the inner ring, bored out from the driven side to a
-    3 mm web round the output's screws. (B-rep, its face from the motor centre, the diameter outside
-    which the driven part is relieved)."""
+    `front` (from the motor centre), bolted through with it: a disc `d` across (the output's
+    size by default), 0.5 mm proud of the ring; with `bearing`, flush with it (the driven part
+    clamps the bearing's inner ring), a shoulder and a spigot for the inner ring, bored out from
+    the driven side to a 3 mm web round the output's screws. (B-rep, its face from the motor
+    centre, the diameter outside which the driven part is relieved)."""
     from . import b3d  # noqa: PLC0415
 
     s = spec(model)
@@ -332,7 +344,7 @@ def hub(model: str, centre, axis: str, sign: int, front: float, bearing: str | N
     holes = b3d.union(output_holes(model, centre, axis), b3d.disc(12.0, c))
     if not bearing:
         top = front + 0.5
-        d = s["output_d"]
+        d = d or s["output_d"]
         body = b3d.prism(b3d.cut(b3d.disc(d, c), holes), axis, *_span(centre[i], sign, out_f, top))
         return body, top, d + 2
     top = front

@@ -33,6 +33,7 @@ import yaml
 from .b3d import (
     circle_pts,
     circles,
+    clip_spot,
     cut,
     disc,
     hull,
@@ -46,8 +47,11 @@ from .b3d import (
 from .b3d import plate as bplate
 from .b3d import prism as bprism
 from .b3d import union as union2
+from .clips import edge_clip
 from .lib import Part, cyl
 from .mounts import (
+    CLIP_HOLE,
+    CLIP_PAD,
     cage,
     ear_face,
     front_ring,
@@ -162,7 +166,7 @@ def parts() -> list[Part]:
     # top plate over its driver cap. The front plate and the top plate make an L (no room for
     # gussets: the roll motor fills the corner).
     L = "left_shoulder_roll_link"
-    rhub, face, r_relief = out_hub("RS03", (0, 0, 0), "x", 1, spec("RS03")["ear"] + rt)
+    rhub, face, r_relief = out_hub("RS03", (0, 0, 0), "x", 1, spec("RS03")["ear"] + rt, d=58.0)
     out.append(
         made(
             "left_shoulder_roll_hub",
@@ -188,12 +192,19 @@ def parts() -> list[Part]:
     front = rounded(union2(disc(86), rect(-28, 28, top_z0, 0), *legs), inside=8.0)
     front = cut(front, lighten(front, keep=[disc(86)], hole=14, pitch=20, rim=7))
     front = cut(front, output_windows("RS03", (0, 0, 0), "x", 21.0, 33.0))
+    front_sk = front
     front, _ = output_plate("RS03", front, (0, 0, 0), "x", 1, fb, at=face, d=r_relief)
     _, groove, zh, _ = zero_stop("RS03", (0, 0, 0), "x", "left_shoulder_roll", True, *PIN_ROLL)
     front = (
         front - bprism(groove, "x", face - 1, face + 4) - bprism(zh, "x", face - 1, face + fb + 1)
     )
     out.append(made("left_shoulder_roll_front", L, "al7075", front))
+    # the shoulder roll and yaw loops' harness clip, on the front plate's outer edge
+    out.append(
+        edge_clip(
+            "left_shoulder_roll_front_clip", L, "x", face + fb / 2, fb, front_sk, (-60, top_z0 + 10)
+        )
+    )
     yxy = (ym[0], ym[1])
     behind = hull(disc(90.0, yxy), y_pads) & rect(-100, ym[0] - 15, -100, 100, r=0)  # the strips
     top = rounded(union2(hull(disc(90.0, yxy), rect(0, face, -28, 28)), behind))
@@ -238,7 +249,7 @@ def parts() -> list[Part]:
     L = "left_upper_arm_link"
     el = j["left_elbow"]
     um = (0.0, 0.0, 0.0)
-    uhub, u_top, u_relief = out_hub("RS06", um, "z", -1, spec("RS06")["ear"] + yt)
+    uhub, u_top, u_relief = out_hub("RS06", um, "z", -1, spec("RS06")["ear"] + yt, d=46.0)
     out.append(
         made(
             "left_upper_arm_hub",
@@ -272,11 +283,22 @@ def parts() -> list[Part]:
             rect(-30, 30, ring_bot - 22, ring_bot),
         )
     )
+    e_pins, _, _, e_zp = zero_stop("RS06", el, "y", "left_elbow", True, *PIN_06)
+    # harness clips: the shoulder yaw loop's, high on the strap, and the elbow loop's, behind it
+    s_avoid = [disc(54, xz(el)), ring_band("RS06", el, "y"), e_zp]
+    s_clips = [
+        clip_spot(strap, (-12.0, ring_bot - 20), s_avoid, min_r=0),
+        clip_spot(strap, xz(el), s_avoid, min_r=50),
+    ]
     strap = cut(
         strap,
-        lighten(strap, keep=[ring_band("RS06", el, "y"), rect(-30, 30, ring_bot - 12, ring_bot)]),
+        lighten(
+            strap,
+            keep=[ring_band("RS06", el, "y"), rect(-30, 30, ring_bot - 12, ring_bot)]
+            + [disc(CLIP_PAD, c) for c in s_clips],
+        ),
+        *[disc(CLIP_HOLE, c) for c in s_clips],
     )
-    e_pins, _, _, e_zp = zero_stop("RS06", el, "y", "left_elbow", True, *PIN_06)
     strap, s_front = front_ring("RS06", el, "y", 1, t=et, outline=strap, pocket=False)
     strap = strap - bprism(e_pins, "y", el[1] + s_front - 4, el[1] + s_front + 1)
     out.append(
@@ -293,7 +315,7 @@ def parts() -> list[Part]:
     # the strap and a flange on it; the wrist RS00 is centred on the wrist joint below, axis z,
     # output down
     wr = j["left_wrist_yaw"]
-    fhub, out_y, f_relief = out_hub("RS06", (0, 0, 0), "y", 1, spec("RS06")["ear"] + et)
+    fhub, out_y, f_relief = out_hub("RS06", (0, 0, 0), "y", 1, spec("RS06")["ear"] + et, d=46.0)
     out.append(
         made(
             "left_forearm_hub",
@@ -312,9 +334,16 @@ def parts() -> list[Part]:
     foot = rect(-22, 22, cup_top + bt, cup_top + bt + 16)
     frame = rounded(union2(disc(72), slot(30, (0, -10), (0, cup_top + bt + 12)), foot), inside=8.0)
     _, groove, zh, zpads = zero_stop("RS06", (0, 0, 0), "y", "left_elbow", True, *PIN_06)
+    # harness clips: the elbow loop's, below the elbow, and the wrist yaw loop's, low down
+    f_avoid = [disc(76), zpads, foot]
+    fcs = [
+        clip_spot(frame, (0.0, 0.0), f_avoid, min_r=46),
+        clip_spot(frame, (0.0, cup_top + bt + 16), f_avoid, min_r=0),
+    ]
     frame = cut(
         frame,
-        lighten(frame, keep=[disc(76), zpads, foot], pitch=16, rim=5),
+        lighten(frame, keep=[*f_avoid, *[disc(CLIP_PAD, c) for c in fcs]], pitch=16, rim=5),
+        *[disc(CLIP_HOLE, c) for c in fcs],
     )
     frame = cut(frame, rect(-100, 100, cup_top - 100, cup_top + bt, r=0))  # on the bracket
     frame, _ = output_plate("RS06", frame, (0, 0, 0), "y", 1, ft, at=out_y, d=f_relief)
@@ -322,7 +351,8 @@ def parts() -> list[Part]:
     out.append(made("left_forearm_frame", "left_forearm_link", "al7075", frame))
     brk = rounded(union2(disc(d00 + 6), rect(-22, 22, 0, fy1)))
     rear_pcd = _acts["RS00"]["holes"]["rear"]["pcd"]
-    brk = cut(brk, disc(20), circles(3.4, circle_pts(4, rear_pcd, phase=np.pi / 4)))
+    rear_holes = circles(3.4, circle_pts(4, rear_pcd, phase=np.pi / 4))
+    brk = cut(brk, disc(20), rear_holes)
     bracket = bplate(brk, "z", cup_top + bt / 2, bt)
     # for cad/fea.py: 1 mm up into the strap's foot (faces that only touch don't always mesh as
     # one)
@@ -361,7 +391,9 @@ def parts() -> list[Part]:
     for name, g in (("l", 1), ("r", -1)):
         side = bplate(rect(s_lo, 0, hold, top_under), "x", g * cx, ct)
         out.append(made(f"left_wrist_cradle_side_{name}", "left_wrist_link", "al7075", side))
-    back_c = cut(rect(-cx - ct / 2, cx + ct / 2, wp[2] - 10, top_under), disc(4.2, (0, wp[2])))
+    back_c = rect(-cx - ct / 2, cx + ct / 2, wp[2] - 10, top_under)
+    bc = clip_spot(back_c, (0.0, top_under), [disc(4.2, (0, wp[2]))], min_r=0)
+    back_c = cut(back_c, disc(4.2, (0, wp[2])), disc(CLIP_HOLE, bc))  # the wrist yaw loop's clip
     out.append(
         made(
             "left_wrist_cradle_back",
