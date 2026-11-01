@@ -42,7 +42,7 @@ jobs:
         run: |
           python -m cad.build > /dev/null
           python site/scripts/build_model.py
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
