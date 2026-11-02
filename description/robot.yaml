@@ -81,9 +81,9 @@ motors:
   - {name: "{side}_ankle_b",        model: RS03,    bus: "{side}_shank", drives: ["{side}_ankle_pitch", "{side}_ankle_roll"], output: [0, -1, 0]}
   - {name: waist_yaw,               model: RS03,    bus: right_arm,      drives: [waist_yaw], output: [0, 0, 1]}
   - {name: "{side}_shoulder_pitch", model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_pitch"], output: [0, 1, 0]}
-  - {name: "{side}_shoulder_roll",  model: RS03,    bus: "{side}_arm",   drives: ["{side}_shoulder_roll"], output: [1, 0, 0]}
-  - {name: "{side}_shoulder_yaw",   model: RS06,    bus: "{side}_arm",   drives: ["{side}_shoulder_yaw"], output: [0, 0, -1]}
-  - {name: "{side}_elbow",          model: RS06,    bus: "{side}_arm",   drives: ["{side}_elbow"], output: [0, 1, 0]}
+  - {name: "{side}_shoulder_roll",  model: RS10P,   bus: "{side}_arm",   drives: ["{side}_shoulder_roll"], output: [1, 0, 0]}
+  - {name: "{side}_shoulder_yaw",   model: RS10P,   bus: "{side}_arm",   drives: ["{side}_shoulder_yaw"], output: [0, 0, -1]}
+  - {name: "{side}_elbow",          model: RS10P,   bus: "{side}_arm",   drives: ["{side}_elbow"], output: [0, 1, 0]}
   - {name: "{side}_wrist_yaw",      model: RS00,    bus: "{side}_arm",   drives: ["{side}_wrist_yaw"], output: [0, 0, -1]}
   - {name: neck_yaw,                model: STS3250, bus: servo,          drives: [neck_yaw], output: [0, 0, 1], length: [1, 0, 0]}
   - {name: neck_pitch,              model: STS3250, bus: servo,          drives: [neck_pitch], output: [0, 1, 0], length: [0, 0, -1]}

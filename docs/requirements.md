@@ -25,7 +25,7 @@
 
 | ID | Requirement | Target | Level |
 |---|---|---|---|
-| R20 | Arm payload | 1 kg per hand at full reach, 2 kg close to the body. v1 deviation: about 0.5 kg with the bought hands (the wrist pitch servo is at 75% of its rating with 0.5 kg at the fingertips, and the finger servos are small); the requirement stands for later hands | must |
+| R20 | Arm payload | 1 kg per hand at full reach, 2 kg close to the body. v1 deviation: about 0.5 kg with the bought hands (the wrist pitch servo is at 75% of its rating with 0.5 kg at the fingertips, and the finger servos are small); the requirement stands for later hands; the RS10P shoulder roll holds 1 kg straight out sideways for about two minutes, 0.5 kg indefinitely (decisions 2026-11-02) | must |
 | R21 | Hands | open 8-DOF four-finger hands (bought kits) on a wrist pitch joint in v1; stronger hands later | must |
 | R22 | Task learning | fine-tune a VLA (GR00T N1.7) from teleoperation data | should |
 

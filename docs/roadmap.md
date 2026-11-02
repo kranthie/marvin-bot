@@ -42,6 +42,7 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Lighten to the 42 kg limit with covers: 41.95 kg (41.16 bare), every metal part at SF 2.3 or better
 - [x] Wiring paths for the new layout (the hip yaw motor on the thigh, the front-ring joints), measured from the motors' driver caps; harness clip points in the parts: push-in mount holes on pads, TPU edge clips, a P-clip (decisions 2026-10-31)
 - [x] Shells brought up to the new frame: a faceted torso shell, grilles over the arm motors, room for the harness loops; 41.99 kg with shells, no shell contacts (decisions 2026-10-31)
+- [x] RS10P at shoulder roll, shoulder yaw and elbow: 40.47 kg with shells, every arm part at SF 2.7 or better (decisions 2026-11-02); the arm policies to be retrained for its 13 rad/s
 - [ ] Shells redrawn in build123d as designed panels (lofted, even wall, filleted, chosen seams, clips), starting with a thigh pilot
 - [ ] Pelvis back plate: SF 2.1-2.3 between runs at the 6 mm mesh; firm up its margin
 - [ ] Retrain the walking, stair and tracking policies on the front-ring model

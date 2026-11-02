@@ -57,6 +57,13 @@ motor_mounts:
   # shoulder pitch RS03 pulled into the torso along its axis, clear of the shoulder roll RS03;
   # deep in the torso (above the battery and computer) so the arms hang close to the body
   left_shoulder_pitch: {link: torso_link, xyz: [0, 0.076, 0.350]}  # 4 mm in: the hub on its output
+  # shoulder yaw RS10P 5 mm up its axis from the joint: it is 10 mm longer than the RS06 it
+  # replaced, and this keeps its front ring where the RS06's sat, clear of the forearm at full
+  # elbow flexion (cad.covers --check), and the upper arm's parts on its output where they were
+  left_shoulder_yaw: {link: left_shoulder_roll_link, xyz: [0, 0, -0.080]}
+  # elbow RS10P 5 mm inward along its axis, for the same reason: its front ring (the upper arm's
+  # strap) and its output (the forearm's frame) stay where the RS06's were
+  left_elbow: {link: left_upper_arm_link, xyz: [0, -0.005, -0.115]}
   # neck yaw servo lowered into the torso top, clear of the head
   neck_yaw: {link: torso_link, xyz: [0, 0, 0.365]}
   # the two ankle RS03 staggered on the shin's centre line (a slim shin): a low, b high and

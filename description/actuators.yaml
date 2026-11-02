@@ -71,6 +71,29 @@ RS06:
     output: {n: 6, thread: M4, pcd: 30, pins: {n: 3, d: 4, pcd: 24}}   # screw circle read off the drawing, to confirm
   verified: manual
 
+RS10P:
+  vendor: RobStride
+  peak_torque: 42.0           # at 19 A peak phase current
+  rated_torque: 14.0          # turning, measured at 50 rpm, 210 x 210 mm heat sink; 9.5 N·m stalled
+  stall_rated_torque: 9.5     # holding still: one phase carries the current (14 N·m for 120 s)
+  no_load_speed_rpm: 125      # manual ±10% (specification sheet 126); 14 N·m at 100 rpm, 3 at 120
+  gear_ratio: 25
+  mass: 0.46
+  torque_constant: 3.73       # N·m/A rms, specification sheet (the manual prints 7.73)
+  voltage: [15, 60]
+  interface: can
+  protocols: [robstride, mit, canopen]
+  envelope_mm: [57, 57, 60.6]  # RobStride STEP model (2026-10-30): 59.1 body + 1.5 output spigot
+  # Outline (manual §1.1 and STEP model): a plain Ø57 cylinder, no driver cap (the cable leaves
+  # the side near the rear); the output (Ø34.2 spigot) 1.5 mm proud of the front face.
+  shape: {body_d: 57, cap_d: null, cap_len: 0, output_d: 34.2}
+  holes:
+    # front face (the housing's ring round the output), 5 deep; 3 Ø3 dowel holes on the same circle
+    stator: {n: 6, thread: M4, pcd: 51, face: front, setback: 1.5, pins: {n: 3, d: 3, pcd: 51}}
+    rear: {n: 4, thread: M3, pcd: 38}     # rear face, 4 deep
+    output: {n: 6, thread: M4, pcd: 27, pins: {n: 3, d: 3, pcd: 27}}
+  verified: manual
+
 RS00:
   vendor: RobStride
   peak_torque: 14.0           # at 15.5 A

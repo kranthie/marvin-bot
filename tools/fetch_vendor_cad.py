@@ -30,6 +30,12 @@ SOURCES = [  # (folder, raw-file base URL, commit, {local name: path in the repo
             "RS06.step": "Product Literature/CAN2.0/RS06/RS06.STEP",
         },
     ),
+    (  # the RS10P's model was added later, at a newer commit
+        "robstride",
+        "https://raw.githubusercontent.com/RobStride/Product_Information",
+        "b05095a98d5a586092d4011c3dbb6b7fb719a63b",
+        {"RS10P.step": "Product Literature/CAN2.0/10P/RS10P-20261030.stp"},
+    ),
     (
         "orbbec",
         "https://raw.githubusercontent.com/orbbec/OrbbecSDK_ROS2",

@@ -1185,45 +1185,45 @@ left_shoulder_hub:
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.02621
-  com: [0.0, -0.0042, 0.0041532]
-  inertia: [6.6486e-06, 1.55545e-05, 8.9452e-06, 0.0, 0.0, 0.0]
-  size_mm: [69.9, 3.0, 69.9]
+  mass: 0.03063
+  com: [0.0, -0.0042, 0.0]
+  inertia: [9.8235e-06, 1.9601e-05, 9.8235e-06, 0.0, 0.0, 0.0]
+  size_mm: [70.0, 3.0, 70.0]
 left_shoulder_flange:
   link: left_shoulder_pitch_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.06555
-  com: [0.0016701, 0.00061, 0.0069307]
-  inertia: [3.67367e-05, 7.6596e-05, 4.02172e-05, 1.4e-09, 4.3473e-06, 4.55e-08]
+  mass: 0.10726
+  com: [0.0009783, 0.0005508, -0.0051205]
+  inertia: [6.93755e-05, 0.000120141, 5.13555e-05, -2.23e-08, 4.2836e-06, 3.13e-08]
   size_mm: [92.0, 6.0, 101.0]
 left_shoulder_roll_ring:
   link: left_shoulder_pitch_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.03219
-  com: [0.0287024, 0.0523107, -0.0250047]
-  inertia: [6.37129e-05, 3.62479e-05, 2.76584e-05, 7.4e-09, 0.0, -3.1e-09]
-  size_mm: [6.0, 97.5, 105.5]
+  mass: 0.05657
+  com: [0.0317509, 0.0429893, -0.025]
+  inertia: [5.26352e-05, 2.20949e-05, 3.08804e-05, 1.39e-08, 0.0, 0.0]
+  size_mm: [6.0, 81.2, 73.0]
 left_shoulder_roll_hub:
   link: left_shoulder_roll_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.02731
-  com: [0.0303, 0.0, 0.0]
-  inertia: [1.2174e-05, 6.1234e-06, 6.1234e-06, 0.0, 0.0, 0.0]
-  size_mm: [4.0, 58.0, 58.0]
+  mass: 0.00996
+  com: [0.0328, 0.0, 0.0]
+  inertia: [1.605e-06, 8.232e-07, 8.232e-07, 0.0, 0.0, 0.0]
+  size_mm: [5.0, 34.2, 34.2]
 left_shoulder_roll_front:
   link: left_shoulder_roll_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.18784
-  com: [0.0377453, -0.0004804, -0.0323296]
-  inertia: [0.000464861, 0.000319487, 0.000148047, -2.658e-07, 1.052e-07, 3.5085e-06]
+  mass: 0.18433
+  com: [0.0407451, -6.35e-05, -0.0306227]
+  inertia: [0.000478454, 0.000320917, 0.000160114, -3.45e-08, 2.802e-07, 4.015e-07]
   size_mm: [10.0, 112.0, 151.8]
 left_shoulder_roll_front_clip:
   link: left_shoulder_roll_link
@@ -1231,90 +1231,81 @@ left_shoulder_roll_front_clip:
   process: print
   budget: arm_structure
   mass: 0.00164
-  com: [0.0373, -0.0484579, -0.0511615]
-  inertia: [8.01e-08, 5.76e-08, 8.7e-08, 0.0, 0.0, 2.19e-08]
-  size_mm: [14.0, 25.9, 20.1]
+  com: [0.0403, -0.0485068, -0.0412071]
+  inertia: [8.01e-08, 5.66e-08, 8.8e-08, 0.0, 0.0, 2.12e-08]
+  size_mm: [14.0, 25.9, 19.7]
 left_shoulder_roll_top:
   link: left_shoulder_roll_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.04221
-  com: [-0.0071445, 0.0, -0.0585]
-  inertia: [2.64796e-05, 2.07447e-05, 4.71803e-05, 0.0, 0.0, 0.0]
-  size_mm: [79.0, 93.3, 2.5]
-left_shoulder_yaw_cage:
-  link: left_shoulder_roll_link
-  material: al7075
-  process: cnc
-  budget: arm_structure
-  mass: 0.04957
-  com: [-0.0339411, 0.0, -0.08425]
-  inertia: [6.89538e-05, 1.1851e-05, 6.09691e-05, 0.0, 0.0, 0.0]
-  size_mm: [25.5, 93.3, 49.0]
+  mass: 0.03861
+  com: [-0.0026201, 0.0, -0.04845]
+  inertia: [2.19997e-05, 1.81636e-05, 4.0123e-05, 0.0, 0.0, 0.0]
+  size_mm: [80.3, 90.0, 2.5]
 left_shoulder_yaw_ring:
   link: left_shoulder_roll_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.07771
-  com: [0.0046033, 2.19e-05, -0.1116]
-  inertia: [7.34075e-05, 6.55243e-05, 0.000138376, 1.285e-07, 9.588e-07, -6.0e-10]
-  size_mm: [92.5, 112.0, 9.0]
+  mass: 0.08326
+  com: [0.0097099, 0.0, -0.111111]
+  inertia: [7.96372e-05, 6.00636e-05, 0.00013928, 5.8e-08, 8.256e-07, 0.0]
+  size_mm: [91.9, 112.0, 8.0]
 left_upper_arm_hub:
   link: left_upper_arm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.01631
-  com: [0.0, 0.0, -0.02725]
-  inertia: [2.3507e-06, 2.3507e-06, 4.658e-06, 0.0, 0.0, 0.0]
-  size_mm: [46.0, 46.0, 4.0]
+  mass: 0.00598
+  com: [0.0, 0.0, -0.0268]
+  inertia: [4.86e-07, 4.86e-07, 9.63e-07, 0.0, 0.0, 0.0]
+  size_mm: [34.2, 34.2, 3.0]
 left_upper_arm_ring:
   link: left_upper_arm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.04501
-  com: [-0.0002955, -0.0001224, -0.0315982]
-  inertia: [1.92746e-05, 1.95641e-05, 3.87438e-05, -1.448e-07, 5.5e-09, 2.3e-09]
-  size_mm: [83.9, 84.0, 4.0]
+  mass: 0.07249
+  com: [-6.17e-05, -3.56e-05, -0.0317762]
+  inertia: [3.36433e-05, 3.36925e-05, 6.7008e-05, -4.26e-08, 1.16e-08, 6.7e-09]
+  size_mm: [83.9, 84.0, 6.0]
 left_upper_arm_strap:
   link: left_upper_arm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.09964
-  com: [-0.0011018, 0.0267263, -0.0959042]
-  inertia: [0.000154526, 0.000216167, 6.22364e-05, 1.9e-09, 3.494e-06, -4.55e-08]
-  size_mm: [96.0, 6.0, 129.7]
+  mass: 0.09346
+  com: [-0.0009913, 0.0262803, -0.0976803]
+  inertia: [0.000124664, 0.000179143, 5.48694e-05, 1.8e-09, 2.9819e-06, -3.19e-08]
+  size_mm: [96.0, 5.0, 128.7]
 left_forearm_hub:
   link: left_forearm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.02039
-  com: [0.0, 0.02775, 0.0]
-  inertia: [2.9537e-06, 5.8225e-06, 2.9537e-06, 0.0, 0.0, 0.0]
-  size_mm: [46.0, 5.0, 46.0]
+  mass: 0.00797
+  com: [0.0, 0.0273, 0.0]
+  inertia: [6.526e-07, 1.284e-06, 6.526e-07, 0.0, 0.0, 0.0]
+  size_mm: [34.2, 4.0, 34.2]
 left_forearm_frame:
   link: left_forearm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.07042
-  com: [-0.0003423, 0.0331014, -0.0214839]
-  inertia: [9.44886e-05, 0.000111367, 1.71115e-05, -2.29e-08, 3.702e-07, 2.513e-07]
+  mass: 0.06832
+  com: [-0.0002253, 0.0322248, -0.0223226]
+  inertia: [9.29447e-05, 0.000109837, 1.71004e-05, -1.69e-08, 3.104e-07, 1.285e-07]
   size_mm: [72.0, 5.0, 131.8]
 left_wrist_bracket:
   link: left_forearm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.03
-  com: [0.0, 0.0029723, -0.09755]
-  inertia: [1.00279e-05, 8.0879e-06, 1.80546e-05, 0.0, 0.0, 0.0]
-  size_mm: [63.0, 66.7, 3.5]
+  mass: 0.02959
+  com: [0.0, 0.0025308, -0.09755]
+  inertia: [9.6065e-06, 8.0212e-06, 1.75672e-05, 0.0, 0.0, 0.0]
+  size_mm: [63.0, 65.8, 3.5]
 left_wrist_cradle:
   link: left_wrist_link
   material: al7075
@@ -1401,45 +1392,45 @@ right_shoulder_hub:
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.02621
-  com: [0.0, 0.0042, 0.0041532]
-  inertia: [6.6486e-06, 1.55545e-05, 8.9452e-06, 0.0, 0.0, 0.0]
-  size_mm: [69.9, 3.0, 69.9]
+  mass: 0.03063
+  com: [0.0, 0.0042, 0.0]
+  inertia: [9.8235e-06, 1.9601e-05, 9.8235e-06, 0.0, 0.0, 0.0]
+  size_mm: [70.0, 3.0, 70.0]
 right_shoulder_flange:
   link: right_shoulder_pitch_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.06555
-  com: [0.0016701, -0.00061, 0.0069307]
-  inertia: [3.67367e-05, 7.6596e-05, 4.02172e-05, -1.4e-09, 4.3473e-06, -4.55e-08]
+  mass: 0.10726
+  com: [0.0009783, -0.0005508, -0.0051205]
+  inertia: [6.93755e-05, 0.000120141, 5.13555e-05, 2.23e-08, 4.2836e-06, -3.13e-08]
   size_mm: [92.0, 6.0, 101.0]
 right_shoulder_roll_ring:
   link: right_shoulder_pitch_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.03219
-  com: [0.0287024, -0.0523107, -0.0250047]
-  inertia: [6.37129e-05, 3.62479e-05, 2.76584e-05, -7.4e-09, 0.0, 3.1e-09]
-  size_mm: [6.0, 97.5, 105.5]
+  mass: 0.05657
+  com: [0.0317509, -0.0429893, -0.025]
+  inertia: [5.26352e-05, 2.20949e-05, 3.08804e-05, -1.39e-08, 0.0, 0.0]
+  size_mm: [6.0, 81.2, 73.0]
 right_shoulder_roll_hub:
   link: right_shoulder_roll_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.02731
-  com: [0.0303, 0.0, 0.0]
-  inertia: [1.2174e-05, 6.1234e-06, 6.1234e-06, 0.0, 0.0, 0.0]
-  size_mm: [4.0, 58.0, 58.0]
+  mass: 0.00996
+  com: [0.0328, 0.0, 0.0]
+  inertia: [1.605e-06, 8.232e-07, 8.232e-07, 0.0, 0.0, 0.0]
+  size_mm: [5.0, 34.2, 34.2]
 right_shoulder_roll_front:
   link: right_shoulder_roll_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.18784
-  com: [0.0377453, 0.0004804, -0.0323296]
-  inertia: [0.000464861, 0.000319487, 0.000148047, 2.658e-07, 1.052e-07, -3.5085e-06]
+  mass: 0.18433
+  com: [0.0407451, 6.35e-05, -0.0306227]
+  inertia: [0.000478454, 0.000320917, 0.000160114, 3.45e-08, 2.802e-07, -4.015e-07]
   size_mm: [10.0, 112.0, 151.8]
 right_shoulder_roll_front_clip:
   link: right_shoulder_roll_link
@@ -1447,90 +1438,81 @@ right_shoulder_roll_front_clip:
   process: print
   budget: arm_structure
   mass: 0.00164
-  com: [0.0373, 0.0484579, -0.0511615]
-  inertia: [8.01e-08, 5.76e-08, 8.7e-08, 0.0, 0.0, -2.19e-08]
-  size_mm: [14.0, 25.9, 20.1]
+  com: [0.0403, 0.0485068, -0.0412071]
+  inertia: [8.01e-08, 5.66e-08, 8.8e-08, 0.0, 0.0, -2.12e-08]
+  size_mm: [14.0, 25.9, 19.7]
 right_shoulder_roll_top:
   link: right_shoulder_roll_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.04221
-  com: [-0.0071445, 0.0, -0.0585]
-  inertia: [2.64796e-05, 2.07447e-05, 4.71803e-05, 0.0, 0.0, 0.0]
-  size_mm: [79.0, 93.3, 2.5]
-right_shoulder_yaw_cage:
-  link: right_shoulder_roll_link
-  material: al7075
-  process: cnc
-  budget: arm_structure
-  mass: 0.04957
-  com: [-0.0339411, 0.0, -0.08425]
-  inertia: [6.89538e-05, 1.1851e-05, 6.09691e-05, 0.0, 0.0, 0.0]
-  size_mm: [25.5, 93.3, 49.0]
+  mass: 0.03861
+  com: [-0.0026201, 0.0, -0.04845]
+  inertia: [2.19997e-05, 1.81636e-05, 4.0123e-05, 0.0, 0.0, 0.0]
+  size_mm: [80.3, 90.0, 2.5]
 right_shoulder_yaw_ring:
   link: right_shoulder_roll_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.07771
-  com: [0.0046033, -2.19e-05, -0.1116]
-  inertia: [7.34075e-05, 6.55243e-05, 0.000138376, -1.285e-07, 9.588e-07, 6.0e-10]
-  size_mm: [92.5, 112.0, 9.0]
+  mass: 0.08326
+  com: [0.0097099, 0.0, -0.111111]
+  inertia: [7.96372e-05, 6.00636e-05, 0.00013928, -5.8e-08, 8.256e-07, 0.0]
+  size_mm: [91.9, 112.0, 8.0]
 right_upper_arm_hub:
   link: right_upper_arm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.01631
-  com: [0.0, 0.0, -0.02725]
-  inertia: [2.3507e-06, 2.3507e-06, 4.658e-06, 0.0, 0.0, 0.0]
-  size_mm: [46.0, 46.0, 4.0]
+  mass: 0.00598
+  com: [0.0, 0.0, -0.0268]
+  inertia: [4.86e-07, 4.86e-07, 9.63e-07, 0.0, 0.0, 0.0]
+  size_mm: [34.2, 34.2, 3.0]
 right_upper_arm_ring:
   link: right_upper_arm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.04501
-  com: [-0.0002955, 0.0001224, -0.0315982]
-  inertia: [1.92746e-05, 1.95641e-05, 3.87438e-05, 1.448e-07, 5.5e-09, -2.3e-09]
-  size_mm: [83.9, 84.0, 4.0]
+  mass: 0.07249
+  com: [-6.17e-05, 3.56e-05, -0.0317762]
+  inertia: [3.36433e-05, 3.36925e-05, 6.7008e-05, 4.26e-08, 1.16e-08, -6.7e-09]
+  size_mm: [83.9, 84.0, 6.0]
 right_upper_arm_strap:
   link: right_upper_arm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.09964
-  com: [-0.0011018, -0.0267263, -0.0959042]
-  inertia: [0.000154526, 0.000216167, 6.22364e-05, -1.9e-09, 3.494e-06, 4.55e-08]
-  size_mm: [96.0, 6.0, 129.7]
+  mass: 0.09346
+  com: [-0.0009913, -0.0262803, -0.0976803]
+  inertia: [0.000124664, 0.000179143, 5.48694e-05, -1.8e-09, 2.9819e-06, 3.19e-08]
+  size_mm: [96.0, 5.0, 128.7]
 right_forearm_hub:
   link: right_forearm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.02039
-  com: [0.0, -0.02775, 0.0]
-  inertia: [2.9537e-06, 5.8225e-06, 2.9537e-06, 0.0, 0.0, 0.0]
-  size_mm: [46.0, 5.0, 46.0]
+  mass: 0.00797
+  com: [0.0, -0.0273, 0.0]
+  inertia: [6.526e-07, 1.284e-06, 6.526e-07, 0.0, 0.0, 0.0]
+  size_mm: [34.2, 4.0, 34.2]
 right_forearm_frame:
   link: right_forearm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.07042
-  com: [-0.0003423, -0.0331014, -0.0214839]
-  inertia: [9.44886e-05, 0.000111367, 1.71115e-05, 2.29e-08, 3.702e-07, -2.513e-07]
+  mass: 0.06832
+  com: [-0.0002253, -0.0322248, -0.0223226]
+  inertia: [9.29447e-05, 0.000109837, 1.71004e-05, 1.69e-08, 3.104e-07, -1.285e-07]
   size_mm: [72.0, 5.0, 131.8]
 right_wrist_bracket:
   link: right_forearm_link
   material: al7075
   process: cnc
   budget: arm_structure
-  mass: 0.03
-  com: [0.0, -0.0029723, -0.09755]
-  inertia: [1.00279e-05, 8.0879e-06, 1.80546e-05, 0.0, 0.0, 0.0]
-  size_mm: [63.0, 66.7, 3.5]
+  mass: 0.02959
+  com: [0.0, -0.0025308, -0.09755]
+  inertia: [9.6065e-06, 8.0212e-06, 1.75672e-05, 0.0, 0.0, 0.0]
+  size_mm: [63.0, 65.8, 3.5]
 right_wrist_cradle:
   link: right_wrist_link
   material: al7075
@@ -2040,28 +2022,28 @@ left_shoulder_cover:
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.00656
-  com: [-0.0116946, 0.0494753, 0.0242226]
-  inertia: [4.8573e-06, 4.6007e-06, 5.323e-06, -3.829e-07, -1.2378e-06, 5.475e-07]
-  size_mm: [64.3, 74.6, 106.5]
+  mass: 0.00595
+  com: [-0.0098535, 0.0430359, 0.0165751]
+  inertia: [3.8787e-06, 4.5463e-06, 4.2457e-06, -2.65e-07, -9.969e-07, 6.816e-07]
+  size_mm: [66.3, 63.0, 104.2]
 left_upper_arm_cover:
   link: left_upper_arm_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.0147
-  com: [-0.0179109, 0.0017633, -0.0658808]
-  inertia: [2.03006e-05, 2.30538e-05, 2.95121e-05, 7.939e-07, -4.6468e-06, 7.538e-07]
-  size_mm: [102.6, 93.2, 81.8]
+  mass: 0.01751
+  com: [-0.0090521, 0.0015523, -0.0679119]
+  inertia: [2.42269e-05, 2.80708e-05, 3.87811e-05, 5.365e-07, -4.724e-06, 2.195e-07]
+  size_mm: [103.6, 93.3, 76.7]
 left_forearm_cover:
   link: left_forearm_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.0178
-  com: [0.0024014, 0.0050461, -0.108151]
-  inertia: [2.23389e-05, 2.22019e-05, 2.35974e-05, 3.165e-07, -2.212e-07, -1.2701e-06]
-  size_mm: [75.8, 76.0, 80.2]
+  mass: 0.01767
+  com: [0.0023899, 0.0046235, -0.108214]
+  inertia: [2.19581e-05, 2.20512e-05, 2.31741e-05, 3.094e-07, -2.193e-07, -1.1893e-06]
+  size_mm: [75.8, 75.0, 80.2]
 left_toe_cover:
   link: left_foot_link
   material: pa_cf
@@ -2103,28 +2085,28 @@ right_shoulder_cover:
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.00656
-  com: [-0.0116946, -0.0494753, 0.0242226]
-  inertia: [4.8573e-06, 4.6007e-06, 5.323e-06, 3.829e-07, -1.2378e-06, -5.475e-07]
-  size_mm: [64.3, 74.6, 106.5]
+  mass: 0.00595
+  com: [-0.0098535, -0.0430359, 0.0165751]
+  inertia: [3.8787e-06, 4.5463e-06, 4.2457e-06, 2.65e-07, -9.969e-07, -6.816e-07]
+  size_mm: [66.3, 63.0, 104.2]
 right_upper_arm_cover:
   link: right_upper_arm_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.0147
-  com: [-0.0179109, -0.0017633, -0.0658808]
-  inertia: [2.03006e-05, 2.30538e-05, 2.95121e-05, -7.939e-07, -4.6468e-06, -7.538e-07]
-  size_mm: [102.6, 93.2, 81.8]
+  mass: 0.01751
+  com: [-0.0090521, -0.0015523, -0.0679119]
+  inertia: [2.42269e-05, 2.80708e-05, 3.87811e-05, -5.365e-07, -4.724e-06, -2.195e-07]
+  size_mm: [103.6, 93.3, 76.7]
 right_forearm_cover:
   link: right_forearm_link
   material: pa_cf
   process: cover
   budget: covers
-  mass: 0.0178
-  com: [0.0024014, -0.0050461, -0.108151]
-  inertia: [2.23389e-05, 2.22019e-05, 2.35974e-05, -3.165e-07, -2.212e-07, 1.2701e-06]
-  size_mm: [75.8, 76.0, 80.2]
+  mass: 0.01767
+  com: [0.0023899, -0.0046235, -0.108214]
+  inertia: [2.19581e-05, 2.20512e-05, 2.31741e-05, -3.094e-07, -2.193e-07, 1.1893e-06]
+  size_mm: [75.8, 75.0, 80.2]
 right_toe_cover:
   link: right_foot_link
   material: pa_cf

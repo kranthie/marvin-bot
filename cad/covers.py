@@ -222,8 +222,13 @@ def parts() -> list[Part]:
         return d, t
 
     d04, t04 = env("RS04")
-    d03, t03 = env("RS03")
-    d06, t06 = env("RS06")
+    models = {
+        m["name"].replace("{side}", "left"): m["model"]
+        for m in yaml.safe_load((ROOT / "description" / "robot.yaml").read_text())["motors"]
+    }
+    _, t_roll = env(models["left_shoulder_roll"])
+    _, t_yaw = env(models["left_shoulder_yaw"])
+    d_elbow, _ = env(models["left_elbow"])
     d00, t00 = env("RS00")
 
     # --- torso: a faceted shell from the waist to the shoulders, in a front half and a back half
@@ -340,16 +345,16 @@ def parts() -> list[Part]:
         "left_shoulder_pitch_link",
         wrap(
             on("left_shoulder_pitch_link"),
-            up ^ half("x", -1, t03 / 2 - 4) ^ half("x", 1, -40) ^ half("y", 1, 14),
+            up ^ half("x", -1, t_roll / 2 - 4) ^ half("x", 1, -40) ^ half("y", 1, 14),
         ),
     )
 
     # --- arm sleeves: the upper arm from the yaw output to above the elbow motor, the forearm
     # from below the elbow motor to the wrist output
     el = j["left_elbow"]
-    band = half("z", -1, -t06 / 2 - 8) ^ half("z", 1, el[2] + d06 / 2 + 6)
+    band = half("z", -1, -t_yaw / 2 - 8) ^ half("z", 1, el[2] + d_elbow / 2 + 6)
     # and down the back of the elbow motor: the forearm swings forward, never back
-    elbow_back = half("z", -1, -t06 / 2 - 8) ^ half("z", 1, el[2]) ^ half("x", -1, -24)
+    elbow_back = half("z", -1, -t_yaw / 2 - 8) ^ half("z", 1, el[2]) ^ half("x", -1, -24)
     add(
         "left_upper_arm_cover",
         "left_upper_arm_link",
@@ -361,7 +366,9 @@ def parts() -> list[Part]:
         "left_forearm_link",
         wrap(
             on("left_forearm_link"),
-            half("z", -1, -d06 / 2 - 26) ^ half("z", 1, wr[2] - t00 / 2 + 2),
+            # its top no higher than below an RS06 (Ø85): a smaller elbow motor would let it
+            # reach up into the shoulder roll link with the arm forward and the elbow bent
+            half("z", -1, -max(d_elbow, 85.0) / 2 - 26) ^ half("z", 1, wr[2] - t00 / 2 + 2),
         ),
     )
 
