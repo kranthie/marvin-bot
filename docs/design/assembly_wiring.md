@@ -101,12 +101,12 @@ Rules the harness follows:
 
 ## Body shells (add-on)
 
-The bare robot is an open aluminium frame: bead-blasted 7075 and 6061 plates, the actuators' own housings and a glossy helmet head (its printed chest, thigh and arm shells were removed in 2026-10-30's redesign, as the covers below do their job). The body shells are an optional layer that gives it a finished body: a helmet head with a full-face glossy visor over a slim dark neck, a faceted light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them.
+The bare robot is an open aluminium frame: bead-blasted 7075 and 6061 plates, the actuators' own housings and a light rounded-box head with a dark visor band (its printed chest, thigh and arm shells were removed in 2026-10-30's redesign, as the covers below do their job). The body shells are an optional layer that gives it a finished body: a wide rounded-box head with a dark visor band at eye height over a slim neck, a faceted light torso that widens from the waist to the shoulders, a dark hip girdle, long light leg shells, arm sleeves and toe caps, with the joints left visible between them.
 
 | Shell | Pieces | Notes |
 |---|---|---|
 | Torso | 8 (front and back, left and right, chest and waist) | faceted: squashed octagons at nine heights round the torso frame, every other one turned 22.5°, hulled into flat panels that meet in diamond facets; broad at the shoulders and slimmer at the waist; the shoulders slope up into a collar round the neck; flat side walls with round openings for the shoulder motors, chamfered at the shoulders, and front corners that bevel deeper towards the shoulders (the shoulder roll bracket swings past them); the back comes off for the battery |
-| Neck sleeve | 1, dark, flexible print | flares from the helmet down into the collar; turns with neck yaw inside the torso's neck opening; the head pitches over it |
+| Neck sleeve | 1, dark, flexible print | flares from inside the head down into the collar; turns with neck yaw inside the torso's neck opening; the head pitches over it |
 | Hip girdle | 1, dark | round the pelvis frame and waist motor; reaches over the hip motors in front, stays clear of the hip roll motors that swing round the hip behind |
 | Thigh, shin | 1 each per leg | thigh all round except a strip at the back of the inner side (harness), and over the front of the knee motor; shin front and sides, open at the back where the cranks and rods move |
 | Shoulder | 1 per side | over the top of the shoulder roll motor only, above the swing of the roll bracket (the hip roll motors behind the hips are left bare) |

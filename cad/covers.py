@@ -3,7 +3,7 @@
 The robot is designed to look finished without them (graphite printed shells, aluminium
 plates, the actuators' own housings). The shells give it a finished body: a smooth light
 torso tapering to the waist, a dark hip girdle, long leg shells, arm sleeves, toe caps and a
-light neck sleeve under the helmet head, with the joints left visible between them. They add
+light neck sleeve under the head, with the joints left visible between them. They add
 some fall protection.
 
 Each shell is a 1.0 mm printed skin following its link's parts and motors at a 4 mm gap: the
@@ -267,7 +267,7 @@ def parts() -> list[Part]:
             add(f"torso_cover_{name}_{side}_waist", "torso_link", q ^ half("z", -1, seam_z))
 
     # --- neck sleeve (light, flexible print): from inside the torso shell's neck opening up
-    # into the helmet, turning with neck yaw; the head pitches over it
+    # into the head, turning with neck yaw; the head pitches over it
     nz = j["neck_pitch"][2]
     bot = -22.0  # just above the torso bridge; flaring towards the collar
 
@@ -276,8 +276,11 @@ def parts() -> list[Part]:
     def oval(w, d, z):
         return cyl(w, 2, "z").scale([d / w, 1.0, 1.0]).translate([0, 0, z])
 
-    sleeve = hull(cyl(92, 2, "z", (0, 0, bot)), oval(84, 60, nz + 14)) - hull(
-        cyl(88, 2, "z", (0, 0, bot - 2)), oval(80, 56, nz + 16)
+    # its top 5 mm up inside the head's open underside (cad/head.py: its rim 29 mm above the
+    # pitch axis), so no gap shows between them
+    top = nz + head.SIDE[0][0] + head.HEAD_RISE + 5.0
+    sleeve = hull(cyl(92, 2, "z", (0, 0, bot)), oval(84, 60, top)) - hull(
+        cyl(88, 2, "z", (0, 0, bot - 2)), oval(80, 56, top + 2)
     )
     add("neck_cover", "neck_link", sleeve)
 

@@ -174,14 +174,18 @@
     <visual><origin xyz="0 -0.0121 0.0235" rpy="0 0 0"/><geometry><box size="0.0248 0.0358 0.0453"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
   </link>
   <link name="head_link">
-    <inertial><origin xyz="0.0344051 -0.00153863 0.0894517"/><mass value="0.35465"/><inertia ixx="0.000892144" ixy="-1.87871e-05" ixz="1.74257e-05" iyy="0.00113275" iyz="-1.28692e-05" izz="0.00119577"/></inertial>
+    <inertial><origin xyz="0.0343616 -0.00133893 0.091286"/><mass value="0.40755"/><inertia ixx="0.00122909" ixy="-1.87633e-05" ixz="4.77717e-05" iyy="0.0020682" iyz="-1.38698e-05" izz="0.00240827"/></inertial>
     <visual><geometry><mesh filename="../meshes/head_frame_side_horn.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame_side_idler.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame_bridge.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame_top.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_shell.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_visor.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_crown.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_chin.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_rear.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_cheek_l.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_cheek_r.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_camera_frame.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_camera.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
     <collision><origin xyz="0.004 0 0.099"/><geometry><box size="0.16 0.142 0.158"/></geometry></collision>

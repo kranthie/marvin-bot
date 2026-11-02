@@ -119,11 +119,9 @@ def colour(model: mujoco.MjModel) -> None:
         elif t == mujoco.mjtGeom.mjGEOM_MESH:
             name = model.mesh(model.geom_dataid[g]).name
             p = cad.get(name, {})
-            if name == "head_visor":
+            if name in ("head_visor", "head_camera_frame"):
                 model.geom_rgba[g] = GLOSS
-            elif name in ("head_shell", "neck_cover"):
-                model.geom_rgba[g] = COVER
-            elif name == "head_camera_frame":
+            elif name.startswith("head_shell") or name == "neck_cover":
                 model.geom_rgba[g] = COVER
             elif name.startswith("pelvis_cover") or "glute" in name:
                 model.geom_rgba[g] = DARK

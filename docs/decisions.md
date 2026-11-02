@@ -2,6 +2,12 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-11-02: a rounded-box head with a visor band
+
+The helmet head (the hull of two ellipsoids, a full-face glossy visor and a light camera frame across it) is replaced by the head drawn for the human-form study's approved exterior: a wide, deep rounded box, 156 mm wide, 203 mm deep and 121 mm tall, with a dark visor band across the face at eye height. `cad/head.py` draws it from that head's plan, side and front outlines (measured from its panels and kept as tables in the code), extruded across one another and intersected, every edge rounded 12 mm, a 1.8 mm wall, open underneath; it is printed as five light panels split where the study's were (crown, chin, two cheeks, a rear cap) and the visor band. The depth camera stays at eye height (92 mm over the neck pitch axis) and now sits in the middle of the band, its front level with the face on the centre line, 20 mm further forward than before, on a longer arm from the head frame; its frame is dark, so it reads as part of the band. The neck sleeve runs 5 mm up inside the head's open underside, which sits 29 mm over the pitch axis. The head's top is about 25 mm lower than the helmet's. Head 0.458 kg (was 0.405); robot 40.53 kg with shells. `cad.covers --check` finds no contacts over the neck's range. The camera arm, now 94 mm long, is not in `cad/fea.py`'s cases (the head has no load path there).
+
+Alternatives considered (renders outside this repo): the study's head on the study's neck, with the neck pitch axis 72 mm higher, inside the head, over a longer dark neck (closest to the study, but it moves the neck joint); the same head 8% smaller; and keeping the helmet.
+
 ## 2026-11-02: RS10P at shoulder roll, shoulder yaw and elbow
 
 The six arm motors from the shoulder roll down are now RobStride RS10P (42 N·m peak, 14 N·m rated turning and 9.5 N·m held still, 25:1, 0.46 kg, Ø57 × 60.6 mm; manual dated 2026-09-07 and specification sheet 2026-10-09), in place of the RS03 at shoulder roll and the RS06 at shoulder yaw and elbow. The human-form study (2026-10-31) named it worth carrying over; the motors come to 20.30 kg (was 21.82) and the robot to 39.64 kg bare and 40.47 kg with its shells (was 41.17 and 41.99), 1.5 kg under the limit. The arm parts end at 1.756 kg against 1.760 before. Parts cost rises about $140 (seven at $233.99 from a reseller listing, pre-order; RobStride lists it at ¥859 in China).
