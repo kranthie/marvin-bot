@@ -22,7 +22,7 @@ import '../../../guide/14-simulation/style.css';
 
 Marvin Bot exists today only in simulation. Every policy it has learned was trained in one physics engine and checked in another. This page opens the box: what a simulator computes every few milliseconds, how it fakes the contact between a foot and the floor, and why two simulators can disagree about the same robot.
 
-A simulator is a video game engine with honest physics: you give it the robot (the description from [page 13](../13-description/)) and the motor torques, and it tells you where every part of the robot will be a moment later, and the moment after that. A humanoid needs one because learning to walk takes millions of falls. Falling in a computer costs nothing; falling in real life can break a robot whose parts cost about $17,500 ([page 21](../21-bom-costs/)). The catch is that a simulator is only an approximation, so the robot can learn habits that only work in the game.
+A simulator is a video game engine with honest physics: you give it the robot (the description from [page 13](../13-description/)) and the motor torques, and it tells you where every part of the robot will be a moment later, and the moment after that. A humanoid needs one because learning to walk takes millions of falls. Falling in a computer costs nothing; falling in real life can break a robot whose parts cost about $17,700 ([page 21](../21-bom-costs/)). The catch is that a simulator is only an approximation, so the robot can learn habits that only work in the game.
 
 :::note[You will learn]
 - What a physics simulator does each step: integrate, detect contacts, solve constraints, and why the timestep and the integrator decide whether it stays stable.
@@ -144,7 +144,7 @@ Same robot, two different floors: does the outcome change? A sagittal (side-view
 
 :::caution[Where sources and the repo disagree]
 - The fact sheet and `docs/decisions.md` describe the second simulator as "MuJoCo", and training as "Isaac Lab". Since training runs on Newton's MuJoCo Warp solver, the training and cross-check simulators share the same contact formulation (soft constraints with solref/solimp), so the cross-check tests implementation and setting differences more than contact-model differences. Not a contradiction in the repo, but it weakens the "different contact model" argument; this page says so.
-- Rough v9 in the Isaac Lab README's check table was trained before the hands (39.13 kg on Newton vs 39.70 kg bare today); its MuJoCo cross-check is rerun on the current model, its training numbers are not.
+- Rough v9 in the Isaac Lab README's check table was trained before the hands (39.13 kg on Newton vs 39.71 kg bare today); its MuJoCo cross-check is rerun on the current model, its training numbers are not.
 :::
 
 ## Decisions you can make here

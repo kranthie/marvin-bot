@@ -42,7 +42,7 @@ uv run --no-sync python <repo>/sim/isaaclab/check_robot.py       # Newton
 uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --backend physx
 ```
 
-Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the current 40.35 kg model):
+Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the current 39.71 kg model):
 
 | Check | Newton (MuJoCo-Warp) | PhysX |
 | --- | --- | --- |
@@ -118,6 +118,6 @@ on the current model.
 | **flat v8** (2026-10-29, from flat v7 + 2000 iterations on the 1.44 m, 40.35 kg model) | survives 99.9% | **passes**: walk 0.53 for 0.5 m/s, turn 0.83 for 0.8 rad/s, walk-and-turn, fast walk 0.95 for 1.0 m/s (71 cm steps), stop; symmetric within 2% walking straight; pelvis 68.5 cm walking (stance 69.4), knees 38° on average through the stride; hottest joint a knee at 68% of rated in the fast walk |
 | rough v10 (2026-10-29, from rough v9 + 3000 iterations on the 1.44 m model) | survives 93.2%; terrain level 5.8 of 10 | passes flat ground, but **climbs worse than v9**: 15, 18 and 20 cm stairs pass in 6 of 15 runs over five noise seeds (falls on every height). Not used: rough v9 on the 1.44 m model passes 14 of 15 (one fall on 15 cm, seed 4) |
 | **flat v9** (2026-11-02, from flat v8 + 1000 iterations on the 39.70 kg model: RS10P arms, the new head) | survives 99.9% | **passes**: walk 0.56 for 0.5 m/s, turn 0.80 for 0.8 rad/s, walk-and-turn, fast walk 1.00 for 1.0 m/s (71 cm steps), stop; symmetric within 1% walking straight; pelvis 68.3 cm walking (stance 69.4), knees 38° on average through the stride; hottest joint a knee at 70% of rated in the fast walk |
-| rough v11 (2026-11-02, from rough v9 + 2000 iterations on the 39.70 kg model) | survives 90.3%; terrain level 5.8 of 10 | passes flat ground and 5-18 cm stairs on all five noise seeds, but on 20 cm stairs fails 3 of 5 (one fall, two stalls part way up). Not used: rough v9 run on the same model passes all 25 runs (5-20 cm, seeds 0-4), knees at 55-62% of rated (RMS) on 15-20 cm stairs |
+| rough v11 (2026-11-02, from rough v9 + 2000 iterations on the 39.70 kg model) | survives 90.3%; terrain level 5.8 of 10 | passes flat ground and 5-18 cm stairs on all five noise seeds, but on 20 cm stairs fails 3 of 5 (one fall, two stalls part way up). Not used: rough v9 run on the same model passes all 25 runs (5-20 cm, seeds 0-4), knees at 56-65% of rated (RMS) on 5-20 cm stairs |
 
 Policies are cross-checked against the current URDF, so rough v2 also coped with the CAD leg masses (0.66 kg heavier) it was not trained on.

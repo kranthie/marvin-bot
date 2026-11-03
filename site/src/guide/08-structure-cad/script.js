@@ -14,7 +14,7 @@ const MATS={
  petg:{n:'PETG printed (datasheet)',y:47,rho:1.27,E:2000},
 };
 const sel=$('mat'); Object.entries(MATS).forEach(([k,v])=>{ const o=document.createElement('option'); o.value=k; o.textContent=v.n; sel.appendChild(o); });
-const DEF={shape:'pocketed',b:59,t:9,f:2,rib:26,d:20,mat:'al6061r',mult:1,mass:40.3,L:115,bend:'out',Kt:1};
+const DEF={shape:'pocketed',b:59,t:9,f:2,rib:26,d:20,mat:'al6061r',mult:1,mass:39.7,L:115,bend:'out',Kt:1};
 const st={...DEF};
 const PRESETS={
  thigh:{...DEF},

@@ -66,7 +66,7 @@ HOLD_GAINS = {
     "ankle_pitch": (250.0, 6.0),
     "ankle_roll": (250.0, 6.0),
     "shoulder_pitch": (250.0, 5.0),
-    "shoulder_roll": (250.0, 5.0),
+    "shoulder_roll": (40.0, 1.5),  # an RS10P
 }
 
 

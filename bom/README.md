@@ -45,8 +45,8 @@ formulas still show the totals; a spreadsheet program recomputes them as you edi
 
 ## Cost
 
-At October 2026 prices the full robot comes to about **$17.5k** (`tools/bom/summary.py`). By group:
-actuators $6.2k, compute and sensors $4.7k (the Jetson AGX Orin 64 GB developer kit alone is
+At November 2026 prices the full robot comes to about **$17.7k** (`tools/bom/summary.py`). By group:
+actuators $6.3k, compute and sensors $4.7k (the Jetson AGX Orin 64 GB developer kit alone is
 $3,499, up from $1,999 before NVIDIA's July 2026 price rise), structure and materials $2.6k,
 power $1.6k, and the rest $2.4k. This is the cost of building the robot from nothing.
 

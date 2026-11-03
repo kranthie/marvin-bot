@@ -33,6 +33,7 @@ cap's end at -t/2, and the body's rear face at -(t/2 - cap length).
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import yaml
@@ -166,7 +167,12 @@ def stator_holes(model: str, centre, axis: str):
     from . import b3d  # noqa: PLC0415
 
     h = spec(model)["holes"]["stator"]
-    return b3d.circles(CLEAR[h["thread"]], b3d.circle_pts(h["n"], h["pcd"], _uvc(axis, centre)))
+    c = _uvc(axis, centre)
+    holes = b3d.circles(CLEAR[h["thread"]], b3d.circle_pts(h["n"], h["pcd"], c))
+    if p := h.get("pins"):  # the motor's locating dowels in the same face
+        pts = b3d.circle_pts(p["n"], p["pcd"], c, phase=math.radians(p.get("phase", 0.0)))
+        holes = b3d.union(holes, b3d.circles(p["d"], pts))
+    return holes
 
 
 def output_holes(model: str, centre, axis: str):

@@ -127,11 +127,17 @@ def build() -> str:
         return out
 
     def exit_xyz(m: dict) -> list[float]:
-        """Where a motor's cable comes out: a RobStride's driver cap, at its rear end."""
-        if not (m.get("shape") or {}).get("cap_d"):
-            return list(m["xyz"])
+        """Where a motor's cable comes out: a RobStride's driver cap, at its rear end, or the side
+        of a capless body `cable_back` mm in front of its rear face (on the axis here)."""
+        shape = m.get("shape") or {}
         t = m["envelope"][2]
-        return [x - o * t / 2 for x, o in zip(m["xyz"], m["output"], strict=True)]
+        if shape.get("cap_d"):
+            back = t / 2
+        elif shape.get("cable_back") is not None:
+            back = t / 2 - shape["cable_back"] / 1000
+        else:
+            return list(m["xyz"])
+        return [x - o * back for x, o in zip(m["xyz"], m["output"], strict=True)]
 
     bus_of = {m["name"]: m["bus"] for m in bu.expand(robot["motors"])}
 

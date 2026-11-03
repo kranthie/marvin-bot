@@ -77,10 +77,12 @@ _models = {
 }
 # the arm's motors (description/robot.yaml); the shoulder pitch is the torso's RS03
 ROLL_M, YAW_M, ELBOW_M = (_models[f"left_{n}"] for n in ("shoulder_roll", "shoulder_yaw", "elbow"))
-# stop and zero pins on a front ring (radius, angle): between the bore and the screws, midway
-# between two screws; the roll's on top
-PINS = {"RS06": (32.0, 22.5), "RS10P": (21.8, 30.0)}
-PIN_ROLL = {"RS03": (40.5, 90.0), "RS10P": (21.8, 90.0)}[ROLL_M]
+# stop and zero pins on a front ring (radius, angle; the zero pin half a turn round): between
+# the bore and the screws; the roll's near the top. On an RS10P the pins sit 19 deg from a
+# screw, clear of its counterbore (2.6 mm wall) and of the motor's dowels (2.3 mm), which take
+# every other gap between screws (actuators.yaml)
+PINS = {"RS06": (32.0, 22.5), "RS10P": (21.8, 19.0)}
+PIN_ROLL = {"RS03": (40.5, 90.0), "RS10P": (21.8, 79.0)}[ROLL_M]
 PIN_YAW, PIN_ELBOW = PINS[YAW_M], PINS[ELBOW_M]
 
 
@@ -253,7 +255,7 @@ def parts() -> list[Part]:
     top = cut(
         top,
         rect(face, face + 100, -100, 100, r=0),  # the front plate's (the strips end under it)
-        disc(24, (ym[0], ym[1])),  # the yaw motor's cable
+        *([] if rear else [disc(24, (ym[0], ym[1]))]),  # a capped yaw motor's cable
         lighten(top, keep=[*([] if rear else [y_pads]), disc(60, (ym[0], ym[1]))], pitch=20, rim=6),
     )
     top_ifaces = []

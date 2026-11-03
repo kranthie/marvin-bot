@@ -86,10 +86,12 @@ RS10P:
   envelope_mm: [57, 57, 60.6]  # RobStride STEP model (2026-10-30): 59.1 body + 1.5 output spigot
   # Outline (manual §1.1 and STEP model): a plain Ø57 cylinder, no driver cap (the cable leaves
   # the side near the rear); the output (Ø34.2 spigot) 1.5 mm proud of the front face.
-  shape: {body_d: 57, cap_d: null, cap_len: 0, output_d: 34.2}
+  shape: {body_d: 57, cap_d: null, cap_len: 0, output_d: 34.2, cable_back: 8}  # cable ~8 mm from the rear
   holes:
     # front face (the housing's ring round the output), 5 deep; 3 Ø3 dowel holes on the same circle
-    stator: {n: 6, thread: M4, pcd: 51, face: front, setback: 1.5, pins: {n: 3, d: 3, pcd: 51}}
+    # front face (the dowels sit midway between screws, every other gap: 90, 210 and 330 deg
+    # from a screw in the STEP model)
+    stator: {n: 6, thread: M4, pcd: 51, face: front, setback: 1.5, pins: {n: 3, d: 3, pcd: 51, phase: 90}}
     rear: {n: 4, thread: M3, pcd: 38}     # rear face, 4 deep
     output: {n: 6, thread: M4, pcd: 27, pins: {n: 3, d: 3, pcd: 27}}
   verified: manual

@@ -205,7 +205,7 @@ Two-node model above. Its constants are fitted so that (a) the rated torque give
 :::note[Try this]
 1. Press *Static 18 cm step hold*: 47 N·m held continuously, 118% of rated. The winding reaches 145 °C after about 6 minutes. Press *Same, thigh-sized heat sink* (87%, a 35 N·m rating): the limit comes about a minute sooner, and the steady state it is heading for is far higher.
 2. Press *Marvin Bot today*: an illustrative stair profile whose knee load averages about 74% of rated (RMS), the figure measured for the stair policy rough v5 on the earlier 1.29 m model. It warms up and levels off well below the limit: the duty cycle, not the peak, sets the temperature.
-3. Press *Knee while walking*: an illustrative profile set to 68% of rated (RMS), the hottest joint (a knee) in the flat policy v8's 1.0 m/s fast walk on the 1.44 m model (`sim/isaaclab/README.md`).
+3. Press *Knee while walking*: an illustrative profile set to 70% of rated (RMS), the hottest joint (a knee) in the flat policy v9's 1.0 m/s fast walk on the 1.41 m model (`sim/isaaclab/README.md`).
 4. Tick *Holding still* on the static hold. The same torque without rotation heats one phase √2 times faster.
 5. Set the RS04, constant profile, 120 N·m (peak). The model gives a few seconds: peak torque is for jumps, pushes and catching a fall, never for standing.
 :::
@@ -218,7 +218,7 @@ Four RobStride quasi-direct-drive models plus Feetech servos, specifications in 
 
 ### Playground 3: why each model sits at each joint
 
-Bars show the repo's worst static demand for each joint as a percentage of the actuator's continuous rating (filled) and peak (outline marker). Leg demands come from the static 18 cm step check (`sim/mujoco/check_step_up.py`, stance leg, current 1.44 m model); arm demands are the URDF's holding torques (arm straight out, 0.5 kg in the hand), against the RS10P's held-still rating where it holds a load. Change the robot's mass, the heat path or the knee stage and see which joints cross 100%.
+Bars show the repo's worst static demand for each joint as a percentage of the actuator's continuous rating (filled) and peak (outline marker). Leg demands come from the static 18 cm step check (`sim/mujoco/check_step_up.py`, stance leg, current 1.41 m model); arm demands are the URDF's holding torques (arm straight out, 0.5 kg in the hand), against the RS10P's held-still rating where it holds a load. Change the robot's mass, the heat path or the knee stage and see which joints cross 100%.
 
 <RawHtml html={widget3} />
 

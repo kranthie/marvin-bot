@@ -107,7 +107,7 @@ ISO 13850 covers the design of the e-stop function itself (a latching red actuat
 
 - **R50, hardware e-stop**, wired and wireless, cuts actuator power without rebooting the computer (must). <i>Why:</i> a stop must work even if all software has failed, and the logs that explain the fault must survive.
 - <b>R51, software safety:</b> command watchdog, joint and torque limits, fall detection with <a class="g" href="../glossary/#damping-mode">damping mode</a> (motors resist motion like thick oil instead of pushing) (must). <i>Why:</i> catches most faults gently, before the hardware has to cut power.
-- **R52, gantry and harness** for all early walking (must). <i>Why:</i> nothing in software can stop a 41 kg fall.
+- **R52, gantry and harness** for all early walking (must). <i>Why:</i> nothing in software can stop a 40 kg fall.
 - **R53, padding** at likely impact points (should).
 - **Power path** ([09 Power and battery](../09-power-battery/), `docs/design/assembly_wiring.md`): Class-T fuse, precharge and contactor, branch fuses, computer DC-DC ahead of the contactor.
 - <b>BOM safety group, $470:</b> fall padding, gantry with harness and hoist, latching e-stop and contactor driver, wireless e-stop with receiver and watchdog relay.

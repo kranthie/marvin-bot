@@ -35,7 +35,7 @@ Marvin Bot costs about $17,700 in parts to build from nothing at November 2026 p
 
 A <a class="g" href="../glossary/#bill-of-materials">bill of materials</a> is the complete shopping and making list for a product: every item, how many, what each costs and where the price came from. Engineering organisations treat it as a product-oriented tree that every cost estimate hangs from: if a part is not on the list, it is not in the budget.<sup class="cite">[\[1\]](#s1)</sup> For a one-off robot the BOM answers three practical questions: <i>what will this cost me?</i>, <i>what do I buy first?</i> and <i>which few lines matter?</i>
 
-Marvin Bot's BOM lives in one spreadsheet, `bom/bom.xlsx`, with one sheet per group and a Summary sheet. Its total, $17,706.86 for 63 lines, is the <a class="g" href="../glossary/#cost-to-replicate">full cost to replicate</a>: what someone starting from an empty bench would pay for parts. The bars below are that total split by group; the playground lets you change the assumptions.
+Marvin Bot's BOM lives in one spreadsheet, `bom/bom.xlsx`, with one sheet per group and a Summary sheet. Its total, $17,704.86 for 63 lines, is the <a class="g" href="../glossary/#cost-to-replicate">full cost to replicate</a>: what someone starting from an empty bench would pay for parts. The bars below are that total split by group; the playground lets you change the assumptions.
 
 Two ideas from elsewhere in the guide help here. The robot is built in seven **phases** ([page 22](../22-roadmap/)): 0 foundations and 1 simulation (both free in parts), 2 a bench test of two motors, 3 one leg, 4 the lower body, 5 torso, arms and head, 6 perception. And each **actuator** (a motor with its gearbox and electronics, [page 4](../04-actuators/)) is named by its RobStride model, from the large RS04 down to the small RS00.
 
@@ -44,8 +44,8 @@ Two ideas from elsewhere in the guide help here. The robot is built in seven **p
 <RawHtml html={widget1} />
 
 :::note[Try this]
-1. Press **Marvin Bot today**: the full cost reads $17,707. Switch to **By build phase**. Phases 0 and 1 cost nothing in parts: simulation is free once you have a training computer (which the BOM does not count).
-2. Choose **Everything in one order now**. Only the RS03 reaches ten units (9 + 1 spare), so the saving is 10 × $11 = $110. Now look at "Committed before the leg test": it rises by about $1,900, because the whole RS03 order (\~$2,100) is paid before the actuator bench has said whether the RS03 is any good. Then try **Staged**: the 9 RS03 for phase 3 fall one short of the tier, so staging keeps none of the $110 (ordering the spare with them would).
+1. Press **Marvin Bot today**: the full cost reads $17,705. Switch to **By build phase**. Phases 0 and 1 cost nothing in parts: simulation is free once you have a training computer (which the BOM does not count).
+2. Choose **Everything in one order now**. Only the RS03 reaches ten units (9 + 1 spare), so the saving is 10 × $11 = $110. Now look at "Committed before the leg test": it rises by about $1,900, because the whole RS03 order (\~$2,100) is paid before the actuator bench has said whether the RS03 is any good. Then try **Staged**: the 9 RS03 for phase 3 fall one short of the tier, because the tenth was bought alone for the phase 2 bench test, so staging keeps none of the $110.
 3. Tick the Orin. "Still to spend" drops by a fifth. That is why the repo once quoted "about $12k": it counted owned parts at $0 (`docs/decisions.md`, 2026-10-29).
 4. Drag the duty to 25%. Only about $6,400 of lines ship from China, so what you spend rises by about $1,600, not by a quarter.
 :::
@@ -87,7 +87,7 @@ Sort the table by line total and the shape is obvious: the top five lines (the O
 - <b>Actuators, $6,339 (36%).</b> 23 RobStride actuators plus 3 spares and 4 Feetech servos. RobStride's own datasheets give the torque figures;<sup class="cite">[\[5\]](#s5)</sup> Seeed Studio lists the RS00, RS03 and RS04 at RobStride's list price with about 5% off at ten or more of one model; the RS10P comes from another reseller's listing, a pre-order not yet confirmed.<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[4\]](#s4)</sup>
 - <b>Compute and sensors, $4,723 (27%).</b> The Jetson AGX Orin 64 GB developer kit alone is $3,499,<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[9\]](#s9)</sup> the Orbbec Gemini 335L depth camera $359 list,<sup class="cite">[\[10\]](#s10)</sup> and the primary IMU an estimated $730.
 
-Everything else (structure $2,582, power $1,633, electronics $808, tooling $710, safety $470, hands $224, fasteners $180) adds up to $6,607. Cutting 20% of the fasteners saves $36; finding a cheaper computer could save thousands. Cost work starts at the top of the sorted list.
+Everything else (structure $2,582, power $1,633, electronics $806, tooling $710, safety $470, hands $224, fasteners $180) adds up to $6,605. Cutting 20% of the fasteners saves $36; finding a cheaper computer could save thousands. Cost work starts at the top of the sorted list.
 
 ### What is not counted
 
@@ -118,9 +118,9 @@ Switch to rated torque. The RS04 stays cheapest per N·m, and the small RS00 and
 
 :::tip[In the repo]
 - `bom/bom.xlsx` is the single source of truth: Summary, one sheet per group, Sourcing (where each part is sold, with tiers, availability and the date checked) and two generated CAD sheets. Each line has a Status column (owned, ordered or empty for "to buy"); owned lines keep their price so the total stays the full cost to replicate.
-- `tools/bom/book.py` tidies the workbook and rebuilds the Summary formulas; `--check` runs in CI (the automatic checks run on every change to the repository); `tools/bom/summary.py` prints the totals ($17,706.86, 63 lines).
-- Groups: actuators $6,338.91; compute and sensors $4,723; structure and materials $2,582; power $1,633.05; electronics and wiring $845.90; tooling $710; safety $470; hands $224; fasteners $180.
-- Requirement R61 (`docs/requirements.md`): about $14k excluding the onboard computer, about $17.7k with it. $17,707 − $3,499 = $14,208.
+- `tools/bom/book.py` tidies the workbook and rebuilds the Summary formulas; `--check` runs in CI (the automatic checks run on every change to the repository); `tools/bom/summary.py` prints the totals ($17,704.86, 63 lines).
+- Groups: actuators $6,338.91; compute and sensors $4,723; structure and materials $2,582; power $1,633.05; electronics and wiring $843.90; tooling $710; safety $470; hands $224; fasteners $180.
+- Requirement R61 (`docs/requirements.md`): about $14k excluding the onboard computer, about $17.7k with it. $17,705 − $3,499 = $14,206.
 - One line per item with a spares column, not one line per purchase phase; `docs/plan.md` says what each phase needs (`docs/decisions.md`, 2026-10-29).
 :::
 

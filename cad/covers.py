@@ -355,9 +355,12 @@ def parts() -> list[Part]:
     # --- arm sleeves: the upper arm from the yaw output to above the elbow motor, the forearm
     # from below the elbow motor to the wrist output
     el = j["left_elbow"]
-    band = half("z", -1, -t_yaw / 2 - 8) ^ half("z", 1, el[2] + d_elbow / 2 + 6)
+    # the yaw motor's centre in the upper arm's frame (skeleton.yaml motor_mounts)
+    yaw_mount = skel.get("motor_mounts", {}).get("left_shoulder_yaw", {}).get("xyz")
+    um_z = (yaw_mount[2] * 1000 - j["left_shoulder_yaw"][2]) if yaw_mount else 0.0
+    band = half("z", -1, um_z - t_yaw / 2 - 8) ^ half("z", 1, el[2] + d_elbow / 2 + 6)
     # and down the back of the elbow motor: the forearm swings forward, never back
-    elbow_back = half("z", -1, -t_yaw / 2 - 8) ^ half("z", 1, el[2]) ^ half("x", -1, -24)
+    elbow_back = half("z", -1, um_z - t_yaw / 2 - 8) ^ half("z", 1, el[2]) ^ half("x", -1, -24)
     add(
         "left_upper_arm_cover",
         "left_upper_arm_link",
