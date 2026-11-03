@@ -6,7 +6,7 @@
 
 | ID | Requirement | Target | Level |
 |---|---|---|---|
-| R1 | Standing height | about 1.44 m (1.20–1.30 m until 2026-10-29, when the torso and legs grew for human proportions; decisions.md) | must |
+| R1 | Standing height | about 1.41 m (1.20–1.30 m until 2026-10-29, when the torso and legs grew for human proportions; 1.44 m with the helmet head until 2026-11-02; decisions.md) | must |
 | R2 | Total mass with battery | ≤35 kg target bare; ≤42 kg hard limit for the robot as it runs, hands and body shells included (history in decisions.md) | must |
 | R3 | Hip axis to sole | ≥0.65 m (needed for 17–18 cm stairs) | must |
 
@@ -25,7 +25,7 @@
 
 | ID | Requirement | Target | Level |
 |---|---|---|---|
-| R20 | Arm payload | 1 kg per hand at full reach, 2 kg close to the body. v1 deviation: about 0.5 kg with the bought hands (the wrist pitch servo is at 75% of its rating with 0.5 kg at the fingertips, and the finger servos are small); the requirement stands for later hands | must |
+| R20 | Arm payload | 1 kg per hand at full reach, 2 kg close to the body. v1 deviation: about 0.5 kg with the bought hands (the wrist pitch servo is at 75% of its rating with 0.5 kg at the fingertips, and the finger servos are small); the requirement stands for later hands; the RS10P shoulder roll holds 1 kg straight out sideways for about two minutes, 0.5 kg indefinitely (decisions 2026-11-02) | must |
 | R21 | Hands | open 8-DOF four-finger hands (bought kits) on a wrist pitch joint in v1; stronger hands later | must |
 | R22 | Task learning | fine-tune a VLA (GR00T N1.7) from teleoperation data | should |
 
@@ -60,6 +60,6 @@
 | ID | Requirement | Target | Level |
 |---|---|---|---|
 | R60 | Fabrication | parts fit a desktop CNC mill (about 200 × 150 mm usable) and a desktop FDM printer, or can be ordered from online machining services | must |
-| R61 | Parts cost | ≈$14k for one robot excluding the onboard computer (≈$17.5k with it, October 2026 prices; `bom/bom.xlsx`) | should |
+| R61 | Parts cost | ≈$14k for one robot excluding the onboard computer (≈$17.7k with it, November 2026 prices; `bom/bom.xlsx`) | should |
 | R62 | Openness | all designs, code and models in this repo under its licences; vendor CAD linked, not copied | must |
 | R63 | Serviceability | each actuator replaceable without disassembling more than one limb | should |

@@ -17,12 +17,12 @@
 <div class="ctl"><label>Contact point from the joint <output id="o_r"></output></label><input id="r" max="0.8" min="0.05" step="0.01" type="range" value="0.57"/><div class="hint">Where along the limb it hits; further out moves faster.</div></div>
 </div>
 <div id="g_fall">
-<div class="ctl"><label>Mass coming down on the contact <output id="o_fm"></output></label><input id="fm" max="42" min="2" step="0.5" type="range" value="20"/><div class="hint">Whole robot 41.3 kg; a fall rarely lands all of it on one spot.</div></div>
+<div class="ctl"><label>Mass coming down on the contact <output id="o_fm"></output></label><input id="fm" max="42" min="2" step="0.5" type="range" value="20"/><div class="hint">Whole robot 40.5 kg; a fall rarely lands all of it on one spot.</div></div>
 <div class="ctl"><label>Drop height of that mass <output id="o_h"></output></label><input id="h" max="1.2" min="0.05" step="0.05" type="range" value="0.6"/><div class="hint">Centre of mass ≈ 0.8 m up when standing (estimate).</div></div>
 </div>
 <div id="g_pinch">
 <div class="ctl"><label>Joint actuator <output id="o_act"></output></label>
-<select id="act"><option value="120">RS04, 120 N·m peak (hip, knee)</option><option value="60">RS03, 60 N·m peak (ankle, waist, shoulder)</option><option value="36">RS06, 36 N·m peak (elbow, shoulder yaw)</option><option value="14">RS00, 14 N·m peak (wrist yaw)</option><option value="4.9">STS3250 servo, 4.9 N·m stall (wrist pitch, neck)</option></select></div>
+<select id="act"><option value="120">RS04, 120 N·m peak (hip, knee)</option><option value="60">RS03, 60 N·m peak (ankle, waist, shoulder pitch)</option><option value="42">RS10P, 42 N·m peak (shoulder roll and yaw, elbow)</option><option value="14">RS00, 14 N·m peak (wrist yaw)</option><option value="4.9">STS3250 servo, 4.9 N·m stall (wrist pitch, neck)</option></select></div>
 <div class="ctl"><label>Torque limit set in software <output id="o_tl"></output></label><input id="tl" max="100" min="5" step="5" type="range" value="100"/><div class="hint">% of the actuator's peak torque that the software allows.</div></div>
 <div class="ctl"><label>Pinch point from the axis <output id="o_pr"></output></label><input id="pr" max="30" min="1" step="0.5" type="range" value="5"/><div class="hint">cm from the joint's axis; closer to the axis squeezes harder.</div></div>
 </div>

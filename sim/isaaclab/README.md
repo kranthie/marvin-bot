@@ -42,7 +42,7 @@ uv run --no-sync python <repo>/sim/isaaclab/check_robot.py       # Newton
 uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --backend physx
 ```
 
-Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the current 40.35 kg model):
+Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the current 39.71 kg model):
 
 | Check | Newton (MuJoCo-Warp) | PhysX |
 | --- | --- | --- |
@@ -84,17 +84,18 @@ Each run takes about 2.2-2.3 s an iteration on the GPU above (about 1.3 h for 20
 with rsl_rl's default seed (42). The training logs and checkpoints go to `logs/rsl_rl/` in the
 IsaacLab checkout (the rough runs take about 2 GB).
 
-**Reproducing the published policies.** The trained policies are not committed. Flat v7 and rough
-v9 were not trained from scratch: each run resumed the previous one (rsl_rl's `--resume`,
-`--load_run` and `--checkpoint` options) after a change to the rewards, as the results table below
-records (flat v7: about 6000 iterations in all; rough v9: about 14,000), and each stage's task
+**Reproducing the published policies.** The trained policies are not committed. Flat v9 and rough
+v9 were not trained from scratch: each run resumed the previous one (`--checkpoint` with the
+previous run's `model_*.pt`) after a change to the rewards or the model, as the results table below
+records (flat v9: about 9000 iterations in all; rough v9: about 14,000), and each stage's task
 config is in the git history at that date. Training from scratch with the current config has not
-been tried yet, and both policies were trained on the model before the hands (39.13 kg). The
-clips in the README replay them with `check_policy.py --render` on the current model.
+been tried yet. Flat v9 was trained on the current model (39.70 kg bare); rough v9 on the model
+before the hands (39.13 kg). The clips in the README replay them with `check_policy.py --render`
+on the current model.
 
 ## Results
 
-| Flat v7 in MuJoCo | Rough v9 on 15 cm stairs |
+| Flat v9 in MuJoCo | Rough v9 on 15 cm stairs |
 |---|---|
 | ![Flat-ground policy](../../docs/media/flat_walk.webp) | ![Stair policy](../../docs/media/stairs_15cm.webp) |
 
@@ -116,5 +117,7 @@ clips in the README replay them with `check_policy.py --render` on the current m
 | **rough v9** (2026-10-27, from rough v8 + 3000 iterations, same changes as flat v7) | survives 94.7%; terrain level 5.9 of 10 | **passes flat ground and 5, 10, 15, 18 and 20 cm stairs** (seed 0: 18 cm falls, other seeds pass); pelvis roll 6.0° (v8 22.5°), head sway 6.8 cm, step width 15.4 cm; walks and climbs at 62.7-62.8 cm (v8 60.7). Over seeds 0-4 it fails 2 of 15 stair runs from 15 to 20 cm, as v8 does. 2.7 steps/s at 0.5 m/s, 42 cm steps |
 | **flat v8** (2026-10-29, from flat v7 + 2000 iterations on the 1.44 m, 40.35 kg model) | survives 99.9% | **passes**: walk 0.53 for 0.5 m/s, turn 0.83 for 0.8 rad/s, walk-and-turn, fast walk 0.95 for 1.0 m/s (71 cm steps), stop; symmetric within 2% walking straight; pelvis 68.5 cm walking (stance 69.4), knees 38° on average through the stride; hottest joint a knee at 68% of rated in the fast walk |
 | rough v10 (2026-10-29, from rough v9 + 3000 iterations on the 1.44 m model) | survives 93.2%; terrain level 5.8 of 10 | passes flat ground, but **climbs worse than v9**: 15, 18 and 20 cm stairs pass in 6 of 15 runs over five noise seeds (falls on every height). Not used: rough v9 on the 1.44 m model passes 14 of 15 (one fall on 15 cm, seed 4) |
+| **flat v9** (2026-11-02, from flat v8 + 1000 iterations on the 39.70 kg model: RS10P arms, the new head) | survives 99.9% | **passes**: walk 0.56 for 0.5 m/s, turn 0.80 for 0.8 rad/s, walk-and-turn, fast walk 1.00 for 1.0 m/s (71 cm steps), stop; symmetric within 1% walking straight; pelvis 68.3 cm walking (stance 69.4), knees 38° on average through the stride; hottest joint a knee at 70% of rated in the fast walk |
+| rough v11 (2026-11-02, from rough v9 + 2000 iterations on the 39.70 kg model) | survives 90.3%; terrain level 5.8 of 10 | passes flat ground and 5-18 cm stairs on all five noise seeds, but on 20 cm stairs fails 3 of 5 (one fall, two stalls part way up). Not used: rough v9 run on the same model passes all 25 runs (5-20 cm, seeds 0-4), knees at 56-65% of rated (RMS) on 5-20 cm stairs |
 
 Policies are cross-checked against the current URDF, so rough v2 also coped with the CAD leg masses (0.66 kg heavier) it was not trained on.

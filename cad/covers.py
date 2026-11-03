@@ -3,7 +3,7 @@
 The robot is designed to look finished without them (graphite printed shells, aluminium
 plates, the actuators' own housings). The shells give it a finished body: a smooth light
 torso tapering to the waist, a dark hip girdle, long leg shells, arm sleeves, toe caps and a
-light neck sleeve under the helmet head, with the joints left visible between them. They add
+light neck sleeve under the head, with the joints left visible between them. They add
 some fall protection.
 
 Each shell is a 1.0 mm printed skin following its link's parts and motors at a 4 mm gap: the
@@ -222,8 +222,13 @@ def parts() -> list[Part]:
         return d, t
 
     d04, t04 = env("RS04")
-    d03, t03 = env("RS03")
-    d06, t06 = env("RS06")
+    models = {
+        m["name"].replace("{side}", "left"): m["model"]
+        for m in yaml.safe_load((ROOT / "description" / "robot.yaml").read_text())["motors"]
+    }
+    _, t_roll = env(models["left_shoulder_roll"])
+    _, t_yaw = env(models["left_shoulder_yaw"])
+    d_elbow, _ = env(models["left_elbow"])
     d00, t00 = env("RS00")
 
     # --- torso: a faceted shell from the waist to the shoulders, in a front half and a back half
@@ -262,7 +267,7 @@ def parts() -> list[Part]:
             add(f"torso_cover_{name}_{side}_waist", "torso_link", q ^ half("z", -1, seam_z))
 
     # --- neck sleeve (light, flexible print): from inside the torso shell's neck opening up
-    # into the helmet, turning with neck yaw; the head pitches over it
+    # into the head, turning with neck yaw; the head pitches over it
     nz = j["neck_pitch"][2]
     bot = -22.0  # just above the torso bridge; flaring towards the collar
 
@@ -271,8 +276,11 @@ def parts() -> list[Part]:
     def oval(w, d, z):
         return cyl(w, 2, "z").scale([d / w, 1.0, 1.0]).translate([0, 0, z])
 
-    sleeve = hull(cyl(92, 2, "z", (0, 0, bot)), oval(84, 60, nz + 14)) - hull(
-        cyl(88, 2, "z", (0, 0, bot - 2)), oval(80, 56, nz + 16)
+    # its top 5 mm up inside the head's open underside (cad/head.py: its rim 29 mm above the
+    # pitch axis), so no gap shows between them
+    top = nz + head.SIDE[0][0] + head.HEAD_RISE + 5.0
+    sleeve = hull(cyl(92, 2, "z", (0, 0, bot)), oval(84, 60, top)) - hull(
+        cyl(88, 2, "z", (0, 0, bot - 2)), oval(80, 56, top + 2)
     )
     add("neck_cover", "neck_link", sleeve)
 
@@ -340,16 +348,19 @@ def parts() -> list[Part]:
         "left_shoulder_pitch_link",
         wrap(
             on("left_shoulder_pitch_link"),
-            up ^ half("x", -1, t03 / 2 - 4) ^ half("x", 1, -40) ^ half("y", 1, 14),
+            up ^ half("x", -1, t_roll / 2 - 4) ^ half("x", 1, -40) ^ half("y", 1, 14),
         ),
     )
 
     # --- arm sleeves: the upper arm from the yaw output to above the elbow motor, the forearm
     # from below the elbow motor to the wrist output
     el = j["left_elbow"]
-    band = half("z", -1, -t06 / 2 - 8) ^ half("z", 1, el[2] + d06 / 2 + 6)
+    # the yaw motor's centre in the upper arm's frame (skeleton.yaml motor_mounts)
+    yaw_mount = skel.get("motor_mounts", {}).get("left_shoulder_yaw", {}).get("xyz")
+    um_z = (yaw_mount[2] * 1000 - j["left_shoulder_yaw"][2]) if yaw_mount else 0.0
+    band = half("z", -1, um_z - t_yaw / 2 - 8) ^ half("z", 1, el[2] + d_elbow / 2 + 6)
     # and down the back of the elbow motor: the forearm swings forward, never back
-    elbow_back = half("z", -1, -t06 / 2 - 8) ^ half("z", 1, el[2]) ^ half("x", -1, -24)
+    elbow_back = half("z", -1, um_z - t_yaw / 2 - 8) ^ half("z", 1, el[2]) ^ half("x", -1, -24)
     add(
         "left_upper_arm_cover",
         "left_upper_arm_link",
@@ -361,7 +372,9 @@ def parts() -> list[Part]:
         "left_forearm_link",
         wrap(
             on("left_forearm_link"),
-            half("z", -1, -d06 / 2 - 26) ^ half("z", 1, wr[2] - t00 / 2 + 2),
+            # its top no higher than below an RS06 (Ø85): a smaller elbow motor would let it
+            # reach up into the shoulder roll link with the arm forward and the elbow bent
+            half("z", -1, -max(d_elbow, 85.0) / 2 - 26) ^ half("z", 1, wr[2] - t00 / 2 + 2),
         ),
     )
 

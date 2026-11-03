@@ -9,6 +9,8 @@ const MODELS={
    tn:[[0,60],[120,60],[135,55],[150,47.5],[165,39],[180,29],[186,21],[187,10],[195,0]],th:{f:0.20,tw:20,th:1000}},
  RS06:{peak:36,rated:11,rpm:480,N:9,kg:0.621,Kt:1.09,Ir:14.3/Math.SQRT2,Ip:57/Math.SQRT2,ke:7.6,mitV:50,arm:0.01,price:210,
    tn:[[0,36],[280,36],[300,33],[320,30],[350,26],[380,22],[400,18],[420,12.5],[428,10],[430,5],[480,0]],th:{f:0.20,tw:20,th:1000}},
+ RS10P:{peak:42,rated:14,rpm:125,N:25,kg:0.46,Kt:3.73,Ir:5.3/Math.SQRT2,Ip:19/Math.SQRT2,ke:9.5,mitV:13,arm:0.00625,price:234,
+   tn:[[0,42],[30,42],[80,25],[100,14],[110,8],[120,3],[125,0]],th:{f:0.20,tw:20,th:1000}},
  RS00:{peak:14,rated:5,rpm:315,N:10,kg:0.31,Kt:1.48,Ir:4.7/Math.SQRT2,Ip:15.5/Math.SQRT2,ke:9.5,mitV:33,arm:0.005,price:139,
    tn:[[0,14],[100,14],[150,12],[200,9.3],[250,6.5],[300,2],[315,0.5],[318,0]],th:{f:0.20,tw:20,th:1000}}
 };
@@ -159,9 +161,9 @@ function renderTH(){
 function fmtT(s){ return s<120? `${fmt(s)} s` : `${fmt(s/60,1)} min`; }
 
 /* ---------- Playground 3: joint assignment ---------- */
-const JA_DEF={jaMass:40.35,jaSink:100,jaStage:false};
+const JA_DEF={jaMass:39.71,jaSink:100,jaStage:false};
 const ja={...JA_DEF};
-const JA_PRESETS={today:{jaMass:40.35,jaSink:100,jaStage:false},target:{jaMass:35,jaSink:100,jaStage:false},thigh:{jaMass:40.35,jaSink:85,jaStage:false},stage:{jaMass:40.35,jaSink:85,jaStage:true}};
+const JA_PRESETS={today:{jaMass:39.71,jaSink:100,jaStage:false},target:{jaMass:35,jaSink:100,jaStage:false},thigh:{jaMass:39.71,jaSink:85,jaStage:false},stage:{jaMass:39.71,jaSink:85,jaStage:true}};
 // demand (N·m), rated, peak of the actuator(s) at the joint; leg: scales with mass
 const JOINTS=[
  {n:'Knee',m:'RS04',d:47.1,r:40,p:120,leg:1,src:'static 18 cm step'},
@@ -170,9 +172,9 @@ const JOINTS=[
  {n:'Hip yaw',m:'RS03',d:17.7,r:20,p:60,leg:1,src:'static 18 cm step'},
  {n:'Ankle pitch (2×RS03)',m:'RS03',d:24.4,r:32,p:96,leg:1,src:'step vs worst pose'},
  {n:'Ankle roll (2×RS03)',m:'RS03',d:17.5,r:25,p:74,leg:1,src:'step vs worst pose'},
- {n:'Shoulder pitch',m:'RS03',d:9.4,r:20,p:60,leg:0,src:'arm out, 0.5 kg'},
- {n:'Shoulder roll',m:'RS03',d:9.4,r:20,p:60,leg:0,src:'arm out sideways, 0.5 kg'},
- {n:'Elbow',m:'RS06',d:3.4,r:11,p:36,leg:0,src:'forearm level, 0.5 kg'},
+ {n:'Shoulder pitch',m:'RS03',d:8.9,r:20,p:60,leg:0,src:'arm out, 0.5 kg'},
+ {n:'Shoulder roll',m:'RS10P',d:8.0,r:9.5,p:42,leg:0,src:'arm out sideways, 0.5 kg (held: 9.5 N·m)'},
+ {n:'Elbow',m:'RS10P',d:3.2,r:9.5,p:42,leg:0,src:'forearm level, 0.5 kg (held: 9.5 N·m)'},
  {n:'Wrist pitch (servo)',m:'STS3250',d:1.18,r:1.57,p:4.9,leg:0,src:'0.5 kg at fingertips (R20)'}
 ];
 function renderJA(){
@@ -180,7 +182,7 @@ function renderJA(){
  const W=640,L=170,R=60,T=26,rowH=38,pw=W-L-R; const maxPct=1.6;
  const X=p=>L+pw*Math.min(p,maxPct)/maxPct;
  [0,0.5,1,1.5].forEach(p=>{ el('line',{x1:X(p),x2:X(p),y1:T-8,y2:T+rowH*JOINTS.length,stroke:p===1?'#ffb454':'#1f2833','stroke-dasharray':p===1?'5 4':''},svg); el('text',{x:X(p),y:T-12,fill:p===1?'#ffb454':'#9aa7b4','font-size':11,'text-anchor':'middle'},svg,(p*100)+'%'+(p===1?' of rated':'')); });
- const scale=ja.jaMass/40.35, sink=ja.jaSink/100;
+ const scale=ja.jaMass/39.71, sink=ja.jaSink/100;
  JOINTS.forEach((j,i)=>{
    let d=j.d*(j.leg?scale:1), r=j.r, p=j.p;
    if(j.m!=='STS3250') r*=sink;
@@ -235,10 +237,10 @@ function updateNote(){
  }
  const jaChanged=Object.keys(JA_DEF).some(x=>ja[x]!==JA_DEF[x]);
  if(jaChanged){
-   const scale=ja.jaMass/40.35, r=40*ja.jaSink/100*(ja.jaStage?1.5:1); const kn=47.1*scale, hr=41.9*scale, hrr=40*ja.jaSink/100;
+   const scale=ja.jaMass/39.71, r=40*ja.jaSink/100*(ja.jaStage?1.5:1); const kn=47.1*scale, hr=41.9*scale, hrr=40*ja.jaSink/100;
    parts.push(`Joint assignment: at ${fmt(ja.jaMass,2)} kg bare, heat path ${ja.jaSink}%${ja.jaStage?' and the parked 1.5:1 knee stage':''}, the static 18 cm step puts the knee at ${fmt(kn,1)} N·m = ${fmt(kn/r*100)}% of its continuous rating and hip roll at ${fmt(hr/hrr*100)}% (repo rule: RMS within rating, peaks ≤ 70% of peak).`);
  }
- $('note').textContent = parts.length ? `For Marvin Bot (1.44 m, 40.35 kg bare humanoid with RobStride QDD actuators, 48 V), I explored the actuator limits:\n- ${parts.join('\n- ')}\nOpen question: confirm against the phase 2 bench test (RS04 thermal hold at 47 N·m in a thigh-sized mount, bench/actuator/bench_robstride.py) before deciding on the 1.5:1 knee stage.`
+ $('note').textContent = parts.length ? `For Marvin Bot (1.41 m, 39.71 kg bare humanoid with RobStride QDD actuators, 48 V), I explored the actuator limits:\n- ${parts.join('\n- ')}\nOpen question: confirm against the phase 2 bench test (RS04 thermal hold at 47 N·m in a thigh-sized mount, bench/actuator/bench_robstride.py) before deciding on the 1.5:1 knee stage.`
    : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });

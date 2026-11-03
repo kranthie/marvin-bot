@@ -14,7 +14,7 @@ const MATS={
  petg:{n:'PETG printed (datasheet)',y:47,rho:1.27,E:2000},
 };
 const sel=$('mat'); Object.entries(MATS).forEach(([k,v])=>{ const o=document.createElement('option'); o.value=k; o.textContent=v.n; sel.appendChild(o); });
-const DEF={shape:'pocketed',b:59,t:9,f:2,rib:26,d:20,mat:'al6061r',mult:1,mass:40.3,L:115,bend:'out',Kt:1};
+const DEF={shape:'pocketed',b:59,t:9,f:2,rib:26,d:20,mat:'al6061r',mult:1,mass:39.7,L:115,bend:'out',Kt:1};
 const st={...DEF};
 const PRESETS={
  thigh:{...DEF},
@@ -94,7 +94,7 @@ function renderBeam(){
 }
 
 /* ================= Playground 2: joint sweep ================= */
-const CDEF={phi:0,th:8,a:55,Rc:90,mR:42.5,gap:4};
+const CDEF={phi:0,th:8,a:55,Rc:90,mR:46,gap:4};  // mR: the shoulder yaw ring and legs (Ø92)
 const cs={...CDEF};
 const CPRE={today:{...CDEF},narrow:{...CDEF,Rc:30},out:{...CDEF,a:75},motor:{...CDEF,mR:55}};
 const FIX={armT:0.07,L:0.2,mC:0.06,mLen:0.05,W:0.12,Dh:0.09,ztop:0.06,zbot:-0.45};
@@ -174,7 +174,7 @@ function updateNote(){
     const at=f=>curveCache.find(c=>c[0]===f)[1];
     parts.push(`Shoulder sweep (2-D toy, not the CAD): roll axis ${cs.a} mm outboard of the torso side, chest corner radius ${cs.Rc} mm, shoulder yaw motor radius ${cs.mR} mm, ${cs.gap} mm clearance. Lowest roll before contact: ${fmt(at(0),1)}° with the arm hanging, ${fmt(at(45),1)}° at 45° pitch, ${fmt(at(90),1)}° at 90° pitch (repo coupled limit: 0°, −10°, −20°). Pose checked: pitch ${cs.phi}°, roll ${cs.th}°. Confirm with python -m cad.covers --check and tools/check_packaging.py.`);
   }
-  $('note').textContent = parts.length ? `For Marvin Bot (1.44 m, 40.3 kg bare, machined 6061 cores and printed PA-CF shells; strength target SF 2 by cad/strength.py, landing 3 × BW up, 0.5 fore-aft, 0.3 side):\n\n${parts.join('\n\n')}`
+  $('note').textContent = parts.length ? `For Marvin Bot (1.41 m, 39.7 kg bare, machined 6061 cores and printed PA-CF shells; strength target SF 2 by cad/strength.py, landing 3 × BW up, 0.5 fore-aft, 0.3 side):\n\n${parts.join('\n\n')}`
                                         : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });

@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/kranthie/marvin-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/kranthie/marvin-bot/actions/workflows/ci.yml) ![Software: Apache-2.0](https://img.shields.io/badge/software-Apache--2.0-blue) ![Hardware: CERN-OHL-S-2.0](https://img.shields.io/badge/hardware-CERN--OHL--S--2.0-blue) ![Stage: simulation](https://img.shields.io/badge/stage-simulation%20only-orange)
 
-An open humanoid robot, about 1.44 m tall and 41 kg, with 27 powered joints and two 8-servo four-finger hands. It is built from off-the-shelf quasi-direct-drive actuators and a CNC-machined aluminium frame of flat plates, drawn in code (build123d) and checked part by part with finite elements, with optional printed body shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
+An open humanoid robot, about 1.41 m tall and 40 kg, with 27 powered joints and two 8-servo four-finger hands. It is built from off-the-shelf quasi-direct-drive actuators and a CNC-machined aluminium frame of flat plates, drawn in code (build123d) and checked part by part with finite elements, with optional printed body shells, and uses an NVIDIA Jetson AGX Orin for onboard compute.
 
-**Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo (the stair policy falls in 1 of 15 runs on 15–20 cm stairs over five noise seeds); a motion-tracking policy follows 25 generated human motions (walking, turning, jogging, kicking, squatting, gestures; see the [skills page](docs/skills.md)), and replayed in MuJoCo it tracks as well as in training (every clip upright, hands within 0.7 cm of the training simulator's error). See [docs/roadmap.md](docs/roadmap.md).
+**Status:** phase 1, robot in simulation. Nothing has been built yet. The full robot is modelled in code-CAD, and walking and stair-climbing policies trained in Isaac Lab pass a cross-check in MuJoCo (the stair policy passes all 25 stair runs, 5–20 cm over five noise seeds); a motion-tracking policy follows 25 generated human motions (walking, turning, jogging, kicking, squatting, gestures; see the [skills page](docs/skills.md)), and replayed in MuJoCo it tracks as well as in training (every clip upright, hands 5.6 cm off on average, as in training). See [docs/roadmap.md](docs/roadmap.md).
 
 **Website:** <https://kranthie.github.io/marvin-bot/>, with the robot in 3-D, these docs and an [interactive guide](https://kranthie.github.io/marvin-bot/guide/) that teaches humanoid robotics through Marvin Bot.
 
@@ -30,9 +30,9 @@ An open humanoid robot, about 1.44 m tall and 41 kg, with 27 powered joints and 
 |---|---|---|
 | ![Walking: the tracker (solid) and its reference motion (blue)](docs/media/skills/walk.webp) | ![Squatting](docs/media/skills/squat.webp) | ![Bowing](docs/media/skills/bow.webp) |
 
-One motion-tracking policy plays 25 skills on the current 1.44 m model: the solid robot is the trained policy, the translucent blue robot the reference motion it follows (human motion generated with Kimodo and retargeted to Marvin Bot). It is trained on Newton in ProtoMotions and every clip stays upright; all 25, with their tracking errors, are on the [skills page](docs/skills.md), and the pipeline is in [sim/motion/README.md](sim/motion/README.md). Replayed in MuJoCo with sensor noise and the motors' torque-speed limits, every clip stays upright and tracks as closely as in training.
+One motion-tracking policy plays 25 skills on the current 1.41 m model: the solid robot is the trained policy, the translucent blue robot the reference motion it follows (human motion generated with Kimodo and retargeted to Marvin Bot). It is trained on Newton in ProtoMotions and every clip stays upright; all 25, with their tracking errors, are on the [skills page](docs/skills.md), and the pipeline is in [sim/motion/README.md](sim/motion/README.md). Replayed in MuJoCo with sensor noise and the motors' torque-speed limits, every clip stays upright and tracks as closely as in training.
 
-Separate walking and stair-climbing policies are trained in Isaac Lab and replayed in MuJoCo with sensor noise; their clips and results are in [sim/isaaclab/README.md](sim/isaaclab/README.md). The flat-ground policy is retrained on the current 1.44 m model (flat v8) and passes; it walks with the knees bent about 40° on average through the stride (15° standing). Retraining the stair policy on the new body made it worse (6 of 15 stair runs passed), so the stair policy is still rough v9, trained on the earlier 1.29 m body, which climbs 15-20 cm stairs on the current model in 14 of 15 runs.
+Separate walking and stair-climbing policies are trained in Isaac Lab and replayed in MuJoCo with sensor noise; their clips and results are in [sim/isaaclab/README.md](sim/isaaclab/README.md). The flat-ground policy is retrained on the current 1.41 m model with the RS10P arms (flat v9) and passes; it walks with the knees bent about 38° on average through the stride (15° standing). Retraining the stair policy on the new body made it worse twice (rough v10 and v11), so the stair policy is still rough v9, trained on the earlier 1.29 m body, which climbs 5-20 cm stairs on the current model in all 25 runs (five noise seeds).
 
 ## Goals
 
@@ -40,7 +40,7 @@ Separate walking and stair-climbing policies are trained in Isaac Lab and replay
 - Carry and manipulate light objects with two 6-DOF arms and four-finger hands (1–2 kg is the goal; the v1 hands manage about 0.5 kg), learned from teleoperated demonstrations with a vision-language-action model (GR00T N1.7).
 - Learn skills beyond walking by tracking human motion (gestures, whole-body teleoperation), trained in simulation before the robot is built ([roadmap](docs/roadmap.md#skills-beyond-walking-simulation-before-and-during-the-build)).
 - Look finished without its clip-on covers: the visible parts are the structure, and the covers are an optional add-on.
-- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $17.5k in parts at October 2026 prices (`bom/bom.xlsx`, totalled by `tools/bom/summary.py`). That includes the Jetson AGX Orin 64 GB developer kit ($3,499) and the two hand kits. Copy the workbook to track what you own and still need to buy. Not included: the desktop CNC mill, the 3D printer, shipping, import duties, and the desktop GPU for training (optional, see `bom/README.md`).
+- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $17.7k in parts at November 2026 prices (`bom/bom.xlsx`, totalled by `tools/bom/summary.py`). That includes the Jetson AGX Orin 64 GB developer kit ($3,499) and the two hand kits. Copy the workbook to track what you own and still need to buy. Not included: the desktop CNC mill, the 3D printer, shipping, import duties, and the desktop GPU for training (optional, see `bom/README.md`).
 - Be fully open: CAD, electronics, firmware, simulation and training code.
 
 The full list is in [docs/requirements.md](docs/requirements.md).
@@ -61,9 +61,9 @@ Every source, with its licence and what was used from it, is in [ACKNOWLEDGMENTS
 
 | | |
 |---|---|
-| Height, mass | ~1.44 m; 41.2 kg bare and 42.0 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 42 kg limit with the shells |
+| Height, mass | ~1.41 m; 39.7 kg bare and 40.5 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 42 kg limit with the shells |
 | Joints | 6 per leg, 6 per arm (wrist yaw and pitch), waist yaw, 2 neck, plus an 8-DOF four-finger hand per arm |
-| Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulder pitch and roll), RS06 (shoulder yaw, elbows), RS00 (wrists); serial-bus servos for the neck and wrist pitch; eight small servos in each hand |
+| Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulder pitch), RS10P (shoulder roll and yaw, elbows), RS00 (wrists); serial-bus servos for the neck and wrist pitch; eight small servos in each hand |
 | Compute | Jetson AGX Orin 64 GB; desktop GPU for training and, at first, for the vision-language-action model |
 | Sensing | Pelvis IMU, head-mounted active-stereo depth camera, joint encoders |
 | Power | 48 V nominal (13S Li-ion, ~630 Wh), quick-release pack with a keep-alive supply for the computer |

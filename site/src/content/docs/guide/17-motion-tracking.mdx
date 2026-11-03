@@ -23,7 +23,7 @@ import '../../../guide/17-motion-tracking/style.css';
 
 </div>
 
-Instead of writing a new reward for every skill, Marvin Bot learns one <a class="g" href="../glossary/#policy">policy</a> (a trained neural-network controller, [page 16](../16-rl-walking/)) that copies a reference motion. A new skill is then a new clip. This page follows a clip from a text prompt to a trained tracker, and lets you break the two steps that most often go wrong: scaling a human to a 1.44 m robot, and the shape of the reward.
+Instead of writing a new reward for every skill, Marvin Bot learns one <a class="g" href="../glossary/#policy">policy</a> (a trained neural-network controller, [page 16](../16-rl-walking/)) that copies a reference motion. A new skill is then a new clip. This page follows a clip from a text prompt to a trained tracker, and lets you break the two steps that most often go wrong: scaling a human to a 1.41 m robot, and the shape of the reward.
 
 Think of a dance class: rather than explaining in words what a good bow looks like, the teacher does it and you copy. A humanoid is expected to do many things besides walking, such as waving, bowing, squatting or clapping, and writing a separate scoring rule for each would take weeks per skill. With motion tracking the robot is shown a recording and scored on how closely it copies it. The hard parts are getting a good recording for a body that is not human-shaped, and deciding what "close enough" means.
 
@@ -46,7 +46,7 @@ Words in the pipeline: Kimodo is a <a class="g" href="../glossary/#diffusion-mod
 
 </div>
 
-Two of these steps hide most of the difficulty. <a class="g" href="../glossary/#retargeting">Retargeting</a> has to turn a 1.75 m person into a 1.44 m robot with different proportions and joint limits, and every compromise it makes becomes part of the "truth" the policy is trained to copy. The tracker's reward has to say how close is close enough. The two playgrounds below let you try both.
+Two of these steps hide most of the difficulty. <a class="g" href="../glossary/#retargeting">Retargeting</a> has to turn a 1.75 m person into a 1.41 m robot with different proportions and joint limits, and every compromise it makes becomes part of the "truth" the policy is trained to copy. The tracker's reward has to say how close is close enough. The two playgrounds below let you try both.
 
 ## Playground A: scaling a person to Marvin Bot
 
@@ -156,7 +156,7 @@ The policy sees one number per step: the weighted sum of all terms. Slide the er
 ## How Marvin Bot does it
 
 :::tip[In the repo]
-One tracker follows all 25 Kimodo clips on the 1.44 m model: trained for 4,800 epochs with 16,384 robots at once (an epoch is one round of collecting experience and updating the network; batch 65,536, about 5.6 s an epoch, about 7.5 hours on one RTX-class GPU), and every clip stays upright. Joint errors are 8–13° RMS on most clips and the hands 3–9 cm from the reference's; the two-hand wave is the weakest (34.6°, 12.1 cm). Nothing has been replayed in MuJoCo or run on hardware yet. <b>These results are provisional:</b> a new tracker (v4, with the head and joint-angle rewards below) is still training on the regenerated clips, so the per-clip numbers will change. Sources: `sim/motion/README.md`, `docs/skills.md`, `docs/decisions.md` (2026-10-27 to 2026-10-29).
+One tracker (v6) follows all 25 Kimodo clips on the current 1.41 m model with the RS10P arm motors: warm-started from tracker v5 (about 5,000 epochs on the 1.44 m model) and trained 1,800 more epochs with 16,384 robots at once (an epoch is one round of collecting experience and updating the network; batch 65,536, about 3 hours on one RTX-class GPU), and every clip stays upright. Averaged over the 25 clips the joints are 9.4° RMS off and the hands 5.6 cm from the reference's; the arm-heavy clips are the weakest (the two-hand wave: 34.1°, 12.8 cm). Replayed in MuJoCo with sensor noise and the motors' torque-speed limits it tracks as in training (joints 9.3°, hands 5.6 cm), with the clap's shoulder roll the hottest joint (78% of rated, RMS). Nothing has run on hardware. Sources: `sim/motion/README.md`, `docs/skills.md`.
 :::
 
 What Marvin Bot changed from upstream's BeyondMimic config in ProtoMotions, and why (each was found by a failed tracker):

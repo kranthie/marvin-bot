@@ -135,7 +135,10 @@ def build_fasteners():
         holes = acts[m["model"]].get("holes")
         if not holes:
             continue
-        for face in ("stator", "output"):
+        # a motor bolted by its rear face too (the shoulder yaw RS10P to the top plate, the wrist
+        # RS00's cup)
+        rear = "rear" in holes and m["name"].endswith(("shoulder_yaw", "wrist_yaw"))
+        for face in ("stator", "output", *(["rear"] if rear else [])):
             h = holes[face]
             k = (m["model"], face, h["thread"])
             count[k] = count.get(k, 0) + h["n"] * n_sides

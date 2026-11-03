@@ -294,7 +294,7 @@ def main() -> None:
                 f: acts[k][f]
                 for f in ("peak_torque", "rated_torque", "no_load_speed_rpm", "gear_ratio", "mass")
             }
-            for k in ("RS04", "RS03", "RS06", "RS00", "STS3250")
+            for k in dict.fromkeys(m["model"] for m in robot["motors"])
         },
         "motor_of": motor_of,
         "coupled": robot.get("coupled_limits", []),

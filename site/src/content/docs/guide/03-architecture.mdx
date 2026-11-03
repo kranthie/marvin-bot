@@ -16,7 +16,7 @@ import '../../../guide/03-architecture/style.css';
 
 <div class="guide-meta">
 
-**Stage 1 · Foundations** · \~30 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [02 Balance](../02-balance/) · numbers from the repository as of 2026-10-29
+**Stage 1 · Foundations** · \~30 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [02 Balance](../02-balance/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -139,7 +139,7 @@ Policies are trained on a desktop graphics card (GPU), never on the Orin. The to
 - <b>Human-like motion:</b> ProtoMotions, on Newton, trains a motion-tracking policy to copy human movements, which are generated from text with Kimodo and fitted to Marvin Bot's body with PyRoki, following the BeyondMimic method.<sup class="cite">[\[7\]](#s7)</sup><sup class="cite">[\[18\]](#s18)</sup>
 - <b>Cross-check:</b> every exported policy is replayed in MuJoCo, a different physics engine, with sensor noise: if it only works in the simulator it was trained in, it has learned that simulator's quirks.<sup class="cite">[\[8\]](#s8)</sup>
 
-As of the latest repo update, flat-ground policy v8, retrained on the 1.44 m body, passes that cross-check, and the stair policy (rough v9, still trained on the earlier 1.29 m body) passes 14 of 15 stair runs; the motion tracker's next version is still training.
+As of the latest repo update, flat-ground policy v9, retrained on the current 1.41 m body, passes that cross-check, and the stair policy (rough v9, still trained on the earlier 1.29 m body) passes all 25 stair runs.
 
 The exported network is an ONNX file plus a JSON file describing joint order, default pose, action scale and observation layout; on the robot, ONNX Runtime or TensorRT runs it.<sup class="cite">[\[9\]](#s9)</sup> Sim-to-real is then a loop: measure the real actuators on the bench (phase 2), fit the simulated motor model, retrain, and repeat. Page [20](../20-sim-to-real/) covers it.
 

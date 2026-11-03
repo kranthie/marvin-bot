@@ -17,7 +17,7 @@ import '../../../guide/20-sim-to-real/style.css';
 
 <div class="guide-meta">
 
-**Stage 6 · Toward hardware** · \~35 min · Before this: [04 Actuators](../04-actuators/), [15 PD control](../15-pd-control/), [16 RL for walking](../16-rl-walking/) · numbers from the repository as of 2026-10-29
+**Stage 6 · Toward hardware** · \~35 min · Before this: [04 Actuators](../04-actuators/), [15 PD control](../15-pd-control/), [16 RL for walking](../16-rl-walking/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -164,7 +164,7 @@ The step test uses the motor's own position mode (operation control with k<sub>p
 - Item 3: bus current and regen behaviour.
 - Item 4 and 13: real CAN timing with 3–5 motors per bus on the Orin, and whether a dual-channel adapter carries two 500 Hz buses.
 - Item 11: knee and hip-roll heating on slow stairs.
-- Stair robustness: the stair policy (rough v9, trained on the earlier 1.29 m body) falls in 1 of 15 runs on 15–20 cm stairs in simulation on the 1.44 m model, and a retrain on the new body did worse; the real robot will not do better than simulation ([page 16](../16-rl-walking/)).
+- Stair robustness: the stair policy (rough v9, trained on the earlier 1.29 m body) passes all 25 stair runs (5–20 cm, five noise seeds) in simulation on the current model, but two retrains on newer bodies did worse (rough v10, v11), so its margin is not well understood; the real robot will not do better than simulation ([page 16](../16-rl-walking/)).
 
 ## Trade-offs and alternatives
 

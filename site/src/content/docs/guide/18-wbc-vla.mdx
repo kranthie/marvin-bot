@@ -16,7 +16,7 @@ import '../../../guide/18-wbc-vla/style.css';
 
 <div class="guide-meta">
 
-**Stage 5 · Learning** · \~30 min · Before this: [16 Reinforcement learning for walking](../16-rl-walking/), [17 Motion tracking](../17-motion-tracking/) · Also useful: [03 System architecture](../03-architecture/), [11 Sensors and compute](../11-sensors-compute/) · numbers from the repository as of 2026-10-29
+**Stage 5 · Learning** · \~30 min · Before this: [16 Reinforcement learning for walking](../16-rl-walking/), [17 Motion tracking](../17-motion-tracking/) · Also useful: [03 System architecture](../03-architecture/), [11 Sensors and compute](../11-sensors-compute/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -134,7 +134,7 @@ Why does a hold not make the robot fall? Because the VLA never commands balance.
 - **Requirement R22** (`docs/requirements.md`, "should"): fine-tune a VLA (GR00T N1.7) from teleoperation data. README: carry and manipulate light objects (1–2 kg goal; the v1 hands manage about 0.5 kg).
 - **Phases** (`docs/plan.md`): phase 5 adds the whole-body controller and fall recovery; phase 6 adds teleoperation, data collection and GR00T N1.7 fine-tuning.
 - **Roadmap** (`docs/roadmap.md`): a general motion tracker for whole-body teleoperation (SONIC, TWIST, HOMIE), "which is how GR00T demonstrations get recorded"; walk, squat and reach with any arm pose (HOMIE), since "the waist only turns, so reaching low means squatting"; manipulation rehearsal in Isaac Sim with teleoperated demonstrations, GR00T-Mimic, Cosmos Transfer and N1.7 fine-tuning. Open item 10: GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
-- **Today**: none of this is built. What exists is in simulation only: the flat-ground walking policy (flat v8, retrained on the 1.44 m body and passing the MuJoCo cross-check), the stair policy (rough v9, trained on the 1.29 m body; 14 of 15 stair runs on the new model) and the 25-clip motion tracker ([page 17](../17-motion-tracking/), results provisional while tracker v4 trains).
+- **Today**: none of this is built. What exists is in simulation only: the flat-ground walking policy (flat v9, retrained on the current 1.41 m body and passing the MuJoCo cross-check), the stair policy (rough v9, trained on the 1.29 m body; all 25 stair runs on the current model) and the 25-clip motion tracker ([page 17](../17-motion-tracking/), results provisional while tracker v4 trains).
 :::
 
 Why this order makes sense: the decoupled split reuses the walking policy that already exists, and the VLA's job (arm and hand targets) matches what demonstrations of table-top tasks contain. Serving the model from a desktop GPU first avoids optimising for the Orin before anyone knows whether the fine-tuned model works; the measured numbers in Playground B (Orin TensorRT about 149 ms against about 35 ms on an L40-class GPU) show why moving it on board is a later, separate step. A general tracker is the bigger prize, since it gives whole-body teleoperation and squat-and-reach without new rewards, but SONIC-scale training is out of reach of one desktop GPU, and Marvin Bot's own tracker has seen only 25 clips.

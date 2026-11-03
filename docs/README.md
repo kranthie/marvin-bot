@@ -19,7 +19,7 @@
 
 - **DOF:** degree of freedom, one powered joint axis. Marvin Bot has 27, plus 8 in each hand.
 - **QDD (quasi-direct drive):** an actuator with a low gear ratio (about 9:1 here), so it can be back-driven and sense force through its current.
-- **RobStride RS00/RS03/RS04/RS06:** the actuator models used, from small (wrist) to large (hips, knees).
+- **RobStride RS00/RS10P/RS03/RS04:** the actuator models used, from small (wrist) to large (hips, knees).
 - **URDF, MJCF, USD:** robot description formats: URDF is generated here from `description/`; MuJoCo reads URDF or MJCF; Isaac Sim uses USD.
 - **Code-CAD:** parts written as Python code (`cad/`) instead of drawn in a CAD program, so they regenerate from the description.
 - **SF (safety factor):** yield strength divided by the calculated stress; the strength check targets 2.

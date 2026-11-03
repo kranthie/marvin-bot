@@ -16,7 +16,7 @@ import '../../../guide/19-hands/style.css';
 
 <div class="guide-meta">
 
-**Stage 5 · Learning** · \~25 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [04 Actuators](../04-actuators/), [18 Whole-body control and VLA models](../18-wbc-vla/) · numbers from the repository as of 2026-10-29
+**Stage 5 · Learning** · \~25 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [04 Actuators](../04-actuators/), [18 Whole-body control and VLA models](../18-wbc-vla/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -42,9 +42,9 @@ A side view of one arm in its pitch plane. The masses and lengths are Marvin Bot
 
 :::note[Try this]
 1. Load "Hand level, empty": the wrist servo spends about 0.35 N·m, roughly a quarter of its 1.57 N·m rating, just holding the hand out. Now set the payload to 0.5 kg ("Marvin Bot today"): about 1.2 N·m, 75% of rated. These are the repo's numbers.
-2. Load "R20: 1 kg at full reach". The shoulder RS03 and the elbow RS06 are comfortable; only the wrist pitch servo is over its rating. That is the whole of the v1 deviation from requirement R20.
+2. Load "R20: 1 kg at full reach". The shoulder pitch RS03 and the elbow RS10P (about 56% of the 9.5 N·m it holds still) are comfortable; only the wrist pitch servo is over its rating. That is the whole of the v1 deviation from requirement R20.
 3. With 1 kg in the hand, tilt the wrist to ±60°. The wrist torque falls as the hand points up or down, because the payload's moment arm about the wrist shrinks. Then bend the elbow to 90° with the shoulder at 0°: the forearm is level, the upper arm hangs straight down, and the shoulder carries exactly what the elbow does.
-4. Load "2 kg close to the body": the elbow RS06 sits near 80% of rated and the shoulder RS03 under half, but the wrist servo is at more than twice its rating. Pulling the payload in toward the wrist axis (the distance slider) helps more than anything else.
+4. Load "2 kg close to the body": the elbow RS10P sits at about 93% of the 9.5 N·m it holds still and the shoulder RS03 under half, but the wrist servo is at more than twice its rating. Pulling the payload in toward the wrist axis (the distance slider) helps more than anything else.
 :::
 
 ## Playground 2: finger force and holdable mass
@@ -158,6 +158,6 @@ Built from your settings above. Paste it into an issue, a design discussion or a
 5. <span id="s5"></span>[Christoph et al., ORCA: An Open-Source, Reliable, Cost-Effective, Anthropomorphic Robotic Hand, 2025](https://arxiv.org/abs/2504.04259) <span class="used">— used for: a tendon-driven open-source hand (17 DOF) as an alternative.</span>
 6. <span id="s6"></span>[Birglen, Laliberté and Gosselin, Underactuated Robotic Hands, Springer 2008](https://link.springer.com/book/10.1007/978-3-540-77459-4) <span class="used">— used for: underactuation and self-adapting grasps.</span>
 7. <span id="s7"></span>[Lynch and Park, Modern Robotics, 2017](https://hades.mech.northwestern.edu/index.php/Modern_Robotics) <span class="used">— used for: statics τ = JᵀF and friction in grasping.</span>
-8. <span id="s8"></span>[RobStride, Product\_Information](https://github.com/RobStride/Product_Information) <span class="used">— used for: RS00, RS06 and RS03 rated and peak torques (as in `description/actuators.yaml`).</span>
+8. <span id="s8"></span>[RobStride, Product\_Information](https://github.com/RobStride/Product_Information) <span class="used">— used for: RS00, RS10P (held 9.5 N·m) and RS03 rated and peak torques (as in `description/actuators.yaml`).</span>
 
 <PageScript code={script} />

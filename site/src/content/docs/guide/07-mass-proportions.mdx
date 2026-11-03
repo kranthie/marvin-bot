@@ -17,11 +17,11 @@ import '../../../guide/07-mass-proportions/style.css';
 
 <div class="guide-meta">
 
-**Stage 2 · Mechanics** · \~35 min · Before this: [04 Actuators](../04-actuators/), [05 Leg loads and stairs](../05-leg-loads-stairs/) · numbers from the repository as of 2026-10-29
+**Stage 2 · Mechanics** · \~35 min · Before this: [04 Actuators](../04-actuators/), [05 Leg loads and stairs](../05-leg-loads-stairs/) · numbers from the repository as of 2026-11-02
 
 </div>
 
-Every kilogram a humanoid carries has to be held up by its knees, cooled out of its motors, stopped when it falls and paid for in battery. This page shows where Marvin Bot's 41 kg goes, what would take it back towards the 35 kg target, why making a robot bigger is harder than it looks, and how its body compares with a person of the same height.
+Every kilogram a humanoid carries has to be held up by its knees, cooled out of its motors, stopped when it falls and paid for in battery. This page shows where Marvin Bot's 40 kg goes, what would take it back towards the 35 kg target, why making a robot bigger is harder than it looks, and how its body compares with a person of the same height.
 
 :::note[You will learn]
 - Why mass is the number that every other number depends on: joint torque, motor heat, fall energy and runtime.
@@ -50,7 +50,7 @@ That last point is the trap: mass begets mass. The playground below is the robot
 
 Each block is one item of `description/mass_budget.yaml`, plus the motors (counted from `description/robot.yaml` and `description/actuators.yaml`) and the add-on body shells (`description/cad_model.yaml`), exactly as `tools/check_description.py` sums them. Block area is proportional to mass (the full panel = 44 kg, so the treemap shrinks as you save). Tick a reduction idea to apply it.
 
-<b>Start here:</b> click the preset buttons one at a time and watch the five readouts under the picture. Names like RS04, RS03, RS06 and RS00 are RobStride motor models, from the largest (RS04, at the hips and knees) to the smallest (RS00, at the wrists); see [04 Actuators](../04-actuators/).
+<b>Start here:</b> click the preset buttons one at a time and watch the five readouts under the picture. Names like RS04, RS03, RS10P and RS00 are RobStride motor models, from the largest (RS04, at the hips and knees) to the smallest (RS00, at the wrists); see [04 Actuators](../04-actuators/).
 
 <RawHtml html={widget1} />
 
@@ -135,7 +135,7 @@ The playground's knee model: knee % = 118% × (mass / 41.30 kg) × (thigh / 0.32
 ## How Marvin Bot does it
 
 :::tip[In the repo]
-- <b>One budget, checked automatically.</b> The script `tools/check_description.py`, run automatically in CI (continuous integration: the tests that run on every change to the repo), sums the motors (from the motor list in `description/robot.yaml` and the masses in `description/actuators.yaml`: 21.82 kg) and every other item in `description/mass_budget.yaml` (18.53 kg): **40.35 kg bare**. The add-on body shells, whose masses the CAD writes into `description/cad_model.yaml`, add 0.95 kg: **41.30 kg**. It warns above the 35 kg target (bare) and fails above the 42 kg hard limit (with shells and hands).
+- <b>One budget, checked automatically.</b> The script `tools/check_description.py`, run automatically in CI (continuous integration: the tests that run on every change to the repo), sums the motors (from the motor list in `description/robot.yaml` and the masses in `description/actuators.yaml`: 20.30 kg) and every other item in `description/mass_budget.yaml` (19.41 kg): **39.71 kg bare**. The add-on body shells, whose masses the CAD writes into `description/cad_model.yaml`, add 0.84 kg: **40.55 kg**. It warns above the 35 kg target (bare) and fails above the 42 kg hard limit (with shells and hands).
 - **Each item says how it is known**: `estimate` (a guess), `cad` (computed from the code-CAD solids, see [08 Structure and code-CAD](../08-structure-cad/)), `datasheet` or `weighed`. Today 7 items come from the CAD, the hands from a datasheet, the computer is weighed, and the battery, keep-alive pack, padding, fasteners and limb harness are still estimates.
 - <b>The computer was weighed.</b> The Jetson AGX Orin developer kit weighs 0.877 kg without its power supply, against an earlier 1.5 kg estimate (`docs/decisions.md`, 2026-10-28). The same review added items the CAD did not have: fasteners (0.4 kg, about 4% of the frame) and 7 m of limb harness (0.5 kg). An honest budget went up, not down.
 - <b>Motors are more than half the robot.</b> 23 RobStride actuators and 4 servos are 21.8 kg; the 6 RS04 (hip pitch, hip roll, knee) alone are 8.5 kg. The motors were chosen for torque, so their mass is the price of the stair requirement.
@@ -150,7 +150,7 @@ At 1.29 m the robot's heights were already close to human fractions at the shoul
 - legs 50 mm longer: thigh 0.300 → 0.325 m (the extra 25 mm above the hip yaw motor, so the thigh plate still fits the desktop mill), shin 0.290 → 0.315 m;
 - result: 1.438 m, fingertips 0.556 m (person 0.542), elbows 0.934 m (person 0.906), hip axis at 0.487 of the height (0.700 / 1.438; the log rounds it to 0.48).
 
-The costs, all from the decision log: +0.64 kg; the static stair knee from 109% to 118% of rated and hip roll from 103% to 105%; the <a class="g" href="../glossary/#centre-of-mass">centre of mass</a> 78 mm higher (a taller <a class="g" href="../glossary/#linear-inverted-pendulum">inverted pendulum</a>, like a broom balanced on a hand, falls more slowly but needs bigger corrections, see [02 Balance](../02-balance/)); and the policies trained on the old body need retraining. The flat-ground policy has been retrained on the 1.44 m model (flat v8, with its knees bent more than intended through the stride); the stair policy is still the one trained on the 1.29 m body, which on the new model falls in 1 of 15 stair runs (`sim/isaaclab/README.md`).
+The costs, all from the decision log: +0.64 kg; the static stair knee from 109% to 118% of rated and hip roll from 103% to 105%; the <a class="g" href="../glossary/#centre-of-mass">centre of mass</a> 78 mm higher (a taller <a class="g" href="../glossary/#linear-inverted-pendulum">inverted pendulum</a>, like a broom balanced on a hand, falls more slowly but needs bigger corrections, see [02 Balance](../02-balance/)); and the policies trained on the old body need retraining. The flat-ground policy has since been retrained twice, on the 1.44 m model (flat v8) and on today's 1.41 m model with the RS10P arms and the rounded head (flat v9), both with their knees bent more than intended through the stride; the stair policy is still the one trained on the 1.29 m body, which passes all 25 stair runs on today's model (`sim/isaaclab/README.md`).
 
 ## Trade-offs and alternatives
 
@@ -159,10 +159,11 @@ The costs, all from the decision log: +0.64 kg; the static stair knee from 109% 
 | Orin module on a compact <a class="g" href="../glossary/#carrier-board">carrier board</a> instead of the developer kit | −0.4 kg | needs its own heatsink, fan and carrier; the developer kit's I/O is convenient<sup class="cite">[\[8\]](#s8)</sup> | listed in <code>mass\_budget.yaml</code> (was −1.0 kg when the kit was estimated at 1.5 kg) |
 | Lighter leg cores once real loads are known | −0.5 kg | needs simulated and measured loads first | listed in <code>mass\_budget.yaml</code> |
 | 13S2P battery instead of 13S3P (13 cells in series, 2 or 3 in parallel; see [09 Power](../09-power-battery/)) | ≈ −1.1 kg | runtime about 1 h instead of 1.5 h: exactly at the requirement | not taken (2026-10-28) |
-| Shoulder pitch and roll RS03 → RS06 | −1.1 kg | shoulder peak 60 → 36 N·m; less margin for push-ups and getting up | option in <code>stairs.md</code> |
+| RS10P at shoulder roll and yaw and the elbow (in place of RS03 and RS06) | −1.52 kg | 13 rad/s top speed; holds 9.5 N·m still (1 kg held out sideways for about two minutes) | **done** 2026-11-02 |
+| RS10P at shoulder pitch and the waist too | −1.32 kg | shoulder pitch over its held rating with 1 kg at full reach; the waist's bearing and hub are built round the RS03 | checked and declined (2026-11-02) |
 | 7075 leg plates thinned to the same stiffness | −0.3 to −0.5 kg | cost and sourcing (note: same stiffness needs the same thickness, since 7075 is barely stiffer than 6061; the saving comes from strength-limited parts only) | option in <code>stairs.md</code> |
 | Carbon-fibre tube cores for thigh and shin | ≈ −0.5 kg | design work, bonded joints | option in <code>stairs.md</code> |
-| Body shells off | −0.95 kg | looks unfinished, less fall protection; the policies already train on the bare robot | shells are an add-on by design |
+| Body shells off | −0.84 kg | looks unfinished, less fall protection; the policies already train on the bare robot | shells are an add-on by design |
 | Waist roll and pitch joints (2-DOF waist) | ≈ +2.5 kg | more reach and bending; about +$630 | to try in simulation first (2026-10-28) |
 | 1.5:1 knee reduction stage | ≈ +0.2 kg per knee | 60 N·m continuous, some backlash, thigh redesign | parked; decided after the bench test |
 | Legs +90 mm instead of +50 mm | small | hips at 0.50 of height (human-like) but knee at 127% of rated | rejected 2026-10-29; would need the knee stage |
@@ -176,7 +177,7 @@ The costs, all from the decision log: +0.64 kg; the static stair knee from 109% 
 
 ## Decisions you can make here
 
-- <b>Which savings to pursue first.</b> The battery, the RS03 set and the leg structure are the biggest blocks. Trade: the 13S2P battery saves about 1.1 kg but cuts runtime from about 1.5 h to the 1 h minimum; RS06 shoulders save 1.1 kg but drop shoulder peak torque from 60 to 36 N·m.
+- <b>Which savings to pursue first.</b> The battery, the RS03 set and the leg structure are the biggest blocks. Trade: the 13S2P battery saves about 1.1 kg but cuts runtime from about 1.5 h to the 1 h minimum; RS10P at the shoulder pitch and waist would save 1.3 kg more, but the shoulder pitch could not hold 1 kg at full reach.
 - **Whether 35 kg is still the right target**, or whether the knee's measured continuous rating (phase 2 bench test) should set the limit instead. Trade: chasing 35 kg costs runtime and margin elsewhere; a measured limit may allow today's mass, or may demand more cuts.
 - <b>Whether to add a 2-DOF waist.</b> Trade: more reach and bending, but about +2.5 kg (over the 42 kg limit unless something else goes) and about +$630.
 - <b>Where to put mass on the leg.</b> Trade: the knee motor up the thigh cuts leg inertia by about 12% (an easier, quicker swing), but adds a linkage of about 0.2 kg and design work.

@@ -222,7 +222,7 @@ function drawFrame(i){
   [0,1].forEach(k=>{const e=norm(sub(r.arms[k].wr,t.arms[k].wr));if(e>0.02)line(r.arms[k].wr,t.arms[k].wr,'#ff6b6b',2,cxR,'3 3');
     const ea=norm(sub(r.legs[k].ank,t.legs[k].ank));if(ea>0.02)line(r.legs[k].ank,t.legs[k].ank,'#ff6b6b',2,cxR,'3 3');});
   el('text',{x:12,y:22,fill:'#cfd8e3','font-size':13},svg).textContent=`Human source, ${HH.toFixed(2)} m`;
-  el('text',{x:392,y:22,fill:'#ffb454','font-size':13},svg).textContent=`Marvin Bot, 1.44 m · ${side?'side':'front'} view`;
+  el('text',{x:392,y:22,fill:'#ffb454','font-size':13},svg).textContent=`Marvin Bot, 1.41 m · ${side?'side':'front'} view`;
   el('text',{x:392,y:40,fill:'#9aa7b4','font-size':11},svg).textContent=state.fixSole?`foot-on-floor fix: clip moved ${(CLIP.dz*100>=0?'+':'')}${(CLIP.dz*100).toFixed(1)} cm`:'no foot-on-floor fix (pelvis pinned to its target)';
   $('o_time').textContent=(i/FPS).toFixed(1)+' s';
   drawCoupled(i);
@@ -383,7 +383,7 @@ function updateNote(){
   if(state.nb!==DEFAULTS.nb)kparts.push(`${state.nb} scored bodies (repo 15)`);
   const changedTerms=TERMS.filter(t=>tv[t.k]!==t.v);
   if(!parts.length&&!kparts.length&&!changedTerms.length&&state.motion===DEFAULTS.motion){$('note').textContent='Change a control above to build a note.';return;}
-  let s=`Marvin Bot (1.44 m, 27-DOF humanoid) motion-tracking pipeline: Kimodo clips retargeted with PyRoki (sim/motion/retarget_marvin_bot.py), tracked BeyondMimic-style in ProtoMotions.\n`;
+  let s=`Marvin Bot (1.41 m, 27-DOF humanoid) motion-tracking pipeline: Kimodo clips retargeted with PyRoki (sim/motion/retarget_marvin_bot.py), tracked BeyondMimic-style in ProtoMotions.\n`;
   s+=`Retargeting test, "${motionName}" from a ${HH} m source`+(parts.length?`, with ${parts.join('; ')}`:' with the repo\'s current per-part scales')+`:\n`;
   s+=`- hands ${(c.handMean*100).toFixed(1)} cm from their scaled targets on average (max ${(c.handMax*100).toFixed(1)} cm); stance sole ${(c.soleMed*100).toFixed(1)} cm from the floor; foot sliding ${(c.slide*100).toFixed(1)} cm/s in contact; standing knee bend ${c.knee0.toFixed(0)}°; pelvis target ${(c.pelT*100).toFixed(0)} cm vs the robot's 70 cm hip axis.\n`;
   s+=c.worst.length?`- the motion asks for: ${c.worst.map(w=>`${w[0]} ${w[1].toFixed(0)}° (limit ${w[2].toFixed(0)}°${w[3]?', coupled':''})`).join('; ')}.\n`:'- no joint limit is asked to be broken.\n';

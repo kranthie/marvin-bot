@@ -1,7 +1,8 @@
 """Robstride actuator CAN protocol (the motors' default "private" protocol), and a SocketCAN bus.
 
 Frame layout and scaling are from RobStride's English user manuals (CAN 2.0 versions, section 4
-"Driver protocol and instructions", RS00/RS04/RS06 revised 2026-07-13, RS03 2026-10-13):
+"Driver protocol and instructions", RS00/RS04/RS06 revised 2026-07-13, RS03 2026-10-13,
+RS10P 2026-09-07):
 https://github.com/RobStride/Product_Information
 
 Classic CAN 2.0B at 1 Mbit/s with 29-bit identifiers:
@@ -74,6 +75,7 @@ MODELS = {
     "RS03": Limits(4 * math.pi, 20.0, 60.0, 5000.0, 100.0),
     "RS04": Limits(4 * math.pi, 15.0, 120.0, 5000.0, 100.0),
     "RS06": Limits(4 * math.pi, 50.0, 36.0, 5000.0, 100.0),
+    "RS10P": Limits(4 * math.pi, 13.0, 42.0, 500.0, 5.0),
 }
 
 

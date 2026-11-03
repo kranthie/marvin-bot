@@ -10,7 +10,7 @@
 </div>
 <h4>Actuator</h4>
 <div class="ctl"><label for="tsModel">RobStride model</label>
-<select id="tsModel"><option value="RS04">RS04 (120 N·m peak, hips and knee)</option><option value="RS03">RS03 (60 N·m, hip yaw, ankles, waist, shoulders)</option><option value="RS06">RS06 (36 N·m, shoulder yaw, elbow)</option><option value="RS00">RS00 (14 N·m, wrist yaw)</option></select></div>
+<select id="tsModel"><option value="RS04">RS04 (120 N·m peak, hips and knee)</option><option value="RS03">RS03 (60 N·m, hip yaw, ankles, waist, shoulder pitch)</option><option value="RS10P">RS10P (42 N·m, shoulder roll and yaw, elbow)</option><option value="RS00">RS00 (14 N·m, wrist yaw)</option></select></div>
 <div class="ctl"><label for="tsRatio">Total gear ratio <output id="o_tsRatio"></output></label>
 <input id="tsRatio" max="60" min="3" step="0.5" type="range" value="9"/>
 <div class="hint">Rescales the chosen motor as if it had a different gearbox (plus an extra stage). Native: 9:1 (RS00 10:1).</div></div>

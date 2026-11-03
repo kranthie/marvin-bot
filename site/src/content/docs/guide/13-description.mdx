@@ -17,7 +17,7 @@ import '../../../guide/13-description/style.css';
 
 <div class="guide-meta">
 
-**Stage 4 · Model and simulation** · \~30 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [04 Actuators](../04-actuators/), [07 Mass budget](../07-mass-proportions/) · numbers from the repository as of 2026-10-29
+**Stage 4 · Model and simulation** · \~30 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [04 Actuators](../04-actuators/), [07 Mass budget](../07-mass-proportions/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -146,7 +146,7 @@ What the less obvious fields mean: *model* is which motor drives the joint ([pag
 - <b>MuJoCo.</b> There is no hand-written MJCF. The MuJoCo checks load the URDF with `mujoco.MjSpec` and add, in code, a floor, a free base, the motors and the armature and friction from `sim/mujoco/joint_specs.py`, which reads `robot_cfg.py`'s GAINS table. For motion tracking, `sim/motion/setup_protomotions.py` writes an MJCF file the same way.
 - <b>Isaac Lab.</b> `sim/isaaclab/convert_urdf.py` runs Isaac Lab's `UrdfConverter` (merging fixed joints, free base, drive gains 0, because Isaac Lab's explicit DC motor models compute the torques). `check_robot.py` compares the result on Newton and on PhysX: joint order, ranges, effort and velocity limits match; link positions agree with MuJoCo to 0.25 mm (Newton) and 0.17 mm (PhysX) over 8 random poses (`sim/isaaclab/README.md`, 2026-10-26).
 - <b>CI.</b> `tools/check_all.sh` runs, among others, `check_description.py` (ranges increasing, one motor per joint or a linkage pair, model and bus exist, CAN load ≤ 60%, mass under the 42 kg limit, BOM motor counts), `build_urdf.py --check` (the committed URDFs equal a fresh build), `check_standing.py`, `check_step_up.py --heights 0.18` and `check_symmetry.py`.
-- <b>Today's numbers.</b> 27 body DOF, 40.35 kg bare and 41.30 kg with shells (`check_description.py`).
+- <b>Today's numbers.</b> 27 body DOF, 39.71 kg bare and 40.55 kg with shells (`check_description.py`).
 :::
 
 ## Trade-offs and alternatives

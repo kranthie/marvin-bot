@@ -404,6 +404,19 @@ def cases(name: str, group: list, mass: float, peak: dict, joints: dict, origin:
         if link in ("pelvis", "left_hip_roll_link", "left_hip_pitch_link", "left_thigh_link"):
             knee = origin["left_shin_link"] - o
             out.append(("side", held, [path], np.array([0, 1.0, 0]) * w, np.zeros(3), knee))
+    elif link == "head_link":
+        # the head dropping onto its face: its 0.467 kg (mass_budget.yaml) at 10 g, from the
+        # camera arm and the top bar (the shell hangs from it) into the pitch servo
+        out.append(
+            (
+                "head drop (10 g)",
+                held,
+                ["head_camera", "head_shell"],
+                np.array([0, 0, -46.0]),
+                np.zeros(3),
+                np.array([0.0, 0.0, 90.0]),
+            )
+        )
     elif link == "neck_link":
         head = origin["head_link"] - o
         out.append(

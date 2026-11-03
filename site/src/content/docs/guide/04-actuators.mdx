@@ -17,7 +17,7 @@ import '../../../guide/04-actuators/style.css';
 
 <div class="guide-meta">
 
-**Stage 2 · Mechanics** · \~40 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [03 System architecture](../03-architecture/) · numbers from the repository as of 2026-10-29
+**Stage 2 · Mechanics** · \~40 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [03 System architecture](../03-architecture/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -124,7 +124,7 @@ A gearbox with ratio N (for example 9:1: the motor turns 9 times for each turn o
 - <b><a class="g" href="../glossary/#backdrivability">Backdrivability</a> falls.</b> Gear friction scales roughly with N, and at high ratios you cannot turn the output by hand. A backdrivable actuator lets the leg "give" on impact, and lets the driver estimate the joint torque from the motor current alone, without a torque sensor.<sup class="cite">[\[6\]](#s6)</sup>
 - <b>Impact tolerance falls.</b> A gear tooth must stop the rotor's reflected inertia in an impact; high-ratio gears are where humanoid legs break.
 
-The playground reports reflected inertia from the armature values Marvin Bot's simulation uses (0.03 kg·m² for an RS04 joint, 0.02 for RS03, 0.01 for RS06, 0.005 for RS00, placeholders until the bench test) and divides it by the square of the knee-to-sole distance (0.315 m shin + 0.06 m ankle) to show the "mass" a foot strike feels.
+The playground reports reflected inertia from the armature values Marvin Bot's simulation uses (0.03 kg·m² for an RS04 joint, 0.02 for RS03, 0.00625 for RS10P (RobStride's figure at the output<sup class="cite">[\[15\]](#s15)</sup>), 0.005 for RS00; the others placeholders until the bench test) and divides it by the square of the knee-to-sole distance (0.315 m shin + 0.06 m ankle) to show the "mass" a foot strike feels.
 
 ### Quasi-direct drive
 
@@ -205,7 +205,7 @@ Two-node model above. Its constants are fitted so that (a) the rated torque give
 :::note[Try this]
 1. Press *Static 18 cm step hold*: 47 N·m held continuously, 118% of rated. The winding reaches 145 °C after about 6 minutes. Press *Same, thigh-sized heat sink* (87%, a 35 N·m rating): the limit comes about a minute sooner, and the steady state it is heading for is far higher.
 2. Press *Marvin Bot today*: an illustrative stair profile whose knee load averages about 74% of rated (RMS), the figure measured for the stair policy rough v5 on the earlier 1.29 m model. It warms up and levels off well below the limit: the duty cycle, not the peak, sets the temperature.
-3. Press *Knee while walking*: an illustrative profile set to 68% of rated (RMS), the hottest joint (a knee) in the flat policy v8's 1.0 m/s fast walk on the 1.44 m model (`sim/isaaclab/README.md`).
+3. Press *Knee while walking*: an illustrative profile set to 70% of rated (RMS), the hottest joint (a knee) in the flat policy v9's 1.0 m/s fast walk on the 1.41 m model (`sim/isaaclab/README.md`).
 4. Tick *Holding still* on the static hold. The same torque without rotation heats one phase √2 times faster.
 5. Set the RS04, constant profile, 120 N·m (peak). The model gives a few seconds: peak torque is for jumps, pushes and catching a fall, never for standing.
 :::
@@ -213,36 +213,36 @@ Two-node model above. Its constants are fitted so that (a) the rated torque give
 ## How Marvin Bot does it
 
 :::tip[In the repo]
-Four RobStride quasi-direct-drive models plus Feetech servos, specifications in `description/actuators.yaml` (from RobStride's manuals<sup class="cite">[\[1\]](#s1)</sup>) and placement in `description/robot.yaml`: RS04 at hip pitch, hip roll and knee (6), RS03 at hip yaw, both ankle motors, the waist and shoulder pitch and roll (11 + 1 spare), RS06 at shoulder yaw and elbow (4), RS00 at wrist yaw (2), STS3250 servos at the neck and wrist pitch (4). All on 48 V, MIT mode over CAN at 500 Hz (legs) and 250 Hz (arms). The rule is: peak torques at most 70% of peak rating; continuous (RMS) torque within rating (`docs/design/stairs.md`).
+Four RobStride quasi-direct-drive models plus Feetech servos, specifications in `description/actuators.yaml` (from RobStride's manuals<sup class="cite">[\[1\]](#s1)</sup>) and placement in `description/robot.yaml`: RS04 at hip pitch, hip roll and knee (6), RS03 at hip yaw, both ankle motors, the waist and shoulder pitch (9 + 1 spare), RS10P at shoulder roll, shoulder yaw and elbow (6 + 1 spare), RS00 at wrist yaw (2), STS3250 servos at the neck and wrist pitch (4). All on 48 V, MIT mode over CAN at 500 Hz (legs) and 250 Hz (arms). The rule is: peak torques at most 70% of peak rating; continuous (RMS) torque within rating (`docs/design/stairs.md`).
 :::
 
 ### Playground 3: why each model sits at each joint
 
-Bars show the repo's worst static demand for each joint as a percentage of the actuator's continuous rating (filled) and peak (outline marker). Leg demands come from the static 18 cm step check (`sim/mujoco/check_step_up.py`, stance leg, current 1.44 m model); arm demands are hand calculations (arm straight out, 0.5 kg in the hand). Change the robot's mass, the heat path or the knee stage and see which joints cross 100%.
+Bars show the repo's worst static demand for each joint as a percentage of the actuator's continuous rating (filled) and peak (outline marker). Leg demands come from the static 18 cm step check (`sim/mujoco/check_step_up.py`, stance leg, current 1.41 m model); arm demands are the URDF's holding torques (arm straight out, 0.5 kg in the hand), against the RS10P's held-still rating where it holds a load. Change the robot's mass, the heat path or the knee stage and see which joints cross 100%.
 
 <RawHtml html={widget3} />
 
 | Model | Peak N·m | Rated N·m | No-load rpm | Mass kg | Price | kg per 10 N·m peak | $ per N·m peak | $ per N·m rated | Joints |
 |---|---|---|---|---|---|---|---|---|---|
 | RS04 | 120 | 40 | 200 | 1.42 | $255 | 0.12 | 2.13 | 6.4 | hip pitch, hip roll, knee |
-| RS03 | 60 | 20 | 195 | 0.90 | $225 | 0.15 | 3.75 | 11.3 | hip yaw, ankle ×2, waist, shoulder pitch and roll |
-| RS06 | 36 | 11 | 480 | 0.621 | $210 | 0.17 | 5.83 | 19.1 | shoulder yaw, elbow |
+| RS03 | 60 | 20 | 195 | 0.90 | $225 | 0.15 | 3.75 | 11.3 | hip yaw, ankle ×2, waist, shoulder pitch |
+| RS10P | 42 | 14 (9.5 held) | 125 | 0.46 | $234 | 0.11 | 5.57 | 16.7 | shoulder roll, shoulder yaw, elbow |
 | RS00 | 14 | 5 | 315 | 0.31 | $139 | 0.22 | 9.93 | 27.8 | wrist yaw |
 
 <div class="small">
 
-Prices: Seeed Studio, October 2026 (`bom/bom.xlsx`). Torque and mass: `description/actuators.yaml`. Bigger actuators are cheaper and lighter per N·m, which is one reason the design uses the RS04 wherever the joint is heavily loaded, and why it stops at four sizes.
+Prices: Seeed Studio, October 2026; RS10P a reseller listing, November 2026 (`bom/bom.xlsx`). Torque and mass: `description/actuators.yaml`. Bigger actuators are cheaper and lighter per N·m, which is one reason the design uses the RS04 wherever the joint is heavily loaded, and why it stops at four sizes.
 
 </div>
 
 Reading the chart, the joint-by-joint story:
 
-- <b>Knee (RS04):</b> the hardest working joint. In the static 18 cm step it holds 47 N·m: 39% of peak (fine) but 118% of continuous rating. The trained stair policy rough v5 loaded it only part of each step, 73-75% of rated RMS (measured on the earlier 1.29 m model; the current stair policy, rough v9, has no published knee RMS on the 1.44 m body). The real rating in a thigh-sized mount may be 30-35 N·m rather than 40, which would push the stair RMS to 85-100% (`docs/design/stairs.md`). The phase 2 bench test (`bench/actuator/bench_robstride.py thermal --torque 47`) measures it.
+- <b>Knee (RS04):</b> the hardest working joint. In the static 18 cm step it holds 47 N·m: 39% of peak (fine) but 118% of continuous rating. The trained stair policy rough v5 loaded it only part of each step, 73-75% of rated RMS (measured on the earlier 1.29 m model); the current stair policy, rough v9, replayed on today's 1.41 m model keeps the knees at 56-65% of rated (RMS over each stairs run, which includes the flat walk before and after). The real rating in a thigh-sized mount may be 30-35 N·m rather than 40, which would push the stair RMS to 85-100% (`docs/design/stairs.md`). The phase 2 bench test (`bench/actuator/bench_robstride.py thermal --torque 47`) measures it.
 - <b>Hip roll (RS04):</b> 42 N·m on one leg, 105% of rated; about 60% RMS on stairs in simulation (rough v5, 1.29 m model).
 - <b>Hip pitch (RS04):</b> lightly loaded in a static step (at most 12 N·m, in the swing-over-the-edge pose) but takes large dynamic peaks in walking and when standing up; the RS04 also keeps one model for the three big hip and knee joints.
 - <b>Hip yaw (RS03):</b> 17.7 N·m in the static step, 89% of the RS03's 20 N·m. It swings with the leg, so a lighter, smaller motor here also reduces leg inertia.
 - <b>Ankles (2 × RS03 through a linkage):</b> 24 N·m pitch and 17.5 N·m roll needed against 32 and 25 N·m continuous available at the worst pose (`tools/ankle_linkage.py`; page [06](../06-ankle-linkage/)). RS06 ankles were tried in v0.2 and rejected: 22 / 11 N·m continuous was not enough for slow stairs and one-foot standing (`docs/decisions.md`, 2026-10-26).
-- <b>Shoulders (RS03 pitch and roll, RS06 yaw) and elbow (RS06):</b> holding the arm straight out takes about 6.7 N·m at the shoulder and 1.8 N·m at the elbow (9.4 and 3.4 N·m with 0.5 kg in the hand, from the URDF link masses). The margin is for push-ups and getting up after a fall, not for holding.
+- <b>Shoulders (RS03 pitch, RS10P roll and yaw) and elbow (RS10P):</b> holding the arm straight out takes about 6.5 N·m at the shoulder pitch, 5.7 at the roll and 1.8 at the elbow (8.9, 8.0 and 3.2 N·m with 0.5 kg in the hand, from the URDF link masses). The RS10P's 25:1 gear makes it light (0.46 kg) and strong for its size (42 N·m peak), but it holds only 9.5 N·m indefinitely while still (14 N·m while turning) and turns at most 13 rad/s: enough for the v1 hands' 0.5 kg held out sideways, the 1 kg of requirement R20 for about two minutes, and every arm motion in the reference clips but a jog's arm swing, which reaches its top speed. Shoulder pitch stays an RS03: 1 kg at full forward reach takes 11.3 N·m (`docs/decisions.md`, 2026-11-02).
 - <b>Waist yaw (RS03):</b> not loaded by gravity; sized for the reaction of swinging arms and turning the torso. No static check in the repo.
 - <b>Wrist yaw (RS00) and wrist pitch / neck (STS3250 servos):</b> light loads; the wrist pitch servo is at 75% of its rating with 0.5 kg at the fingertips (`docs/requirements.md` R20).
 
@@ -252,18 +252,19 @@ The simulator sees these actuators as peak torque and no-load speed per joint (`
 
 | Option | For | Against | Status |
 |---|---|---|---|
-| RobStride RS04 / RS03 / RS06 / RS00 (QDD) | most torque per dollar of the QDD actuators compared; public manuals and STEP models; Python, Rust and ROS 2 drivers | ratings depend on the heat sink; some figures differ between README and manual | chosen (<code>docs/decisions.md</code>, 2026-10-25) |
+| RobStride RS04 / RS03 / RS10P / RS00 (QDD) | most torque per dollar of the QDD actuators compared; public manuals and STEP models; Python, Rust and ROS 2 drivers | ratings depend on the heat sink; some figures differ between README and manual | chosen (<code>docs/decisions.md</code>, 2026-10-25) |
 | Other QDD brands (CubeMars, Damiao, Encos, MyActuator) | second sources; the Damiao DM-J10010L matches the RS04 class | 2-3× the price per N·m or fewer verified specs | DM-J10010L kept as second source |
 | Self-built cycloidal actuators | cheap, open (as in Berkeley Humanoid Lite<sup class="cite">[\[9\]](#s9)</sup>) | more work, lower torque, wear | rejected |
 | Parked 1.5:1 knee stage (belt or linkage after the RS04) | 60 N·m continuous, 180 peak | \~14 rad/s top speed, \~0.2 kg, some backlash, thigh redesign | parked until the bench test; also needed if legs grow longer (127% of rated at +90 mm legs) |
 | Better heat path (thigh plate as heat sink, paste, small fan) | +10-20% continuous, cheap | to be measured | first option to try |
-| RS06 instead of RS03 at shoulder pitch and roll | saves \~1.1 kg | shoulder peak 60 → 36 N·m, less margin for push-ups | listed as a mass saving |
+| RS06 at shoulder yaw and elbow, RS03 at shoulder roll (until 2026-11-02) | more speed (50 and 20 rad/s) and peak torque at the shoulder roll | 1.52 kg heavier | replaced by RS10P |
+| RS10P at shoulder pitch and waist yaw too | saves \~0.9 and 0.44 kg | shoulder pitch over its held rating with 1 kg at full reach; the waist's bearing and hub are built round the RS03 | checked and declined (2026-11-02) |
 
 :::caution[Where sources and the repo disagree]
 - <b>RS03 no-load speed and mass:</b> RobStride's specification README says 195 rpm and 900 g; the RS03 manual (CAN 2.0, revision 261013) says 200 rpm and 880 g. `actuators.yaml` uses the README's 195 rpm and 0.90 kg and records both.<sup class="cite">[\[1\]](#s1)</sup><sup class="cite">[\[3\]](#s3)</sup>
 - <b>RS03 rated torque:</b> README 21 N·m, manual 20 N·m (215 × 220 mm plate); the repo uses 20.
-- <b>Voltage range:</b> the README gives 15-60 V for the RS03, RS04 and RS06; the RS03 and RS04 manuals say 24-60 V. The repo uses 24-60 V for those two (15-60 V for the RS06, matching its manual).
-- <b>RS06 test plate:</b> the RS06 manual says 130 × 160 mm in its service conditions and 130 × 155 mm in its overload test.
+- <b>Voltage range:</b> the README gives 15-60 V for the RS03 and RS04; their manuals say 24-60 V, which the repo uses (15-60 V for the RS10P, matching its manual).
+- <b>RS10P torque constant and speed:</b> the RS10P manual prints K<sub>t</sub> 7.73 N·m/A and its specification sheet 3.73; the repo uses 3.73. Its manual's 48 V T-N curve runs to about 315 rpm, against 125 rpm no-load speed in the same manual and the specification sheet's table (14 N·m at 100 rpm, 3 at 120); the repo uses 125 rpm.<sup class="cite">[\[15\]](#s15)</sup>
 - <b>Torque-speed model:</b> the manuals' T-N curves keep near-peak torque up to about half the no-load speed; the simulation's straight-line DC-motor model (saturation torque = peak) is much more conservative at mid speeds. Not an error, but a modelling choice to revisit with bench data.
 - <b>Ankle demand:</b> `docs/design/stairs.md` says the ankle needs "\~22 and \~14 N·m" (pitch, roll); running `check_step_up.py` on today's 1.44 m model gives 24.4 and 17.5 N·m, still within the 32 / 25 N·m available.
 :::
@@ -299,7 +300,7 @@ Built from your settings above. Paste it into an issue, a design discussion or a
 1. <span id="s1"></span>[RobStride, Product\_Information repository, specification README](https://github.com/RobStride/Product_Information) <span class="used">— used for: peak, rated, no-load speed, ratio, mass and voltage per model; README-versus-manual differences.</span>
 2. <span id="s2"></span>[RobStride, RS04 User Manual (CAN 2.0, rev. 260713)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS04) <span class="used">— used for: K<sub>t</sub> 2.1 N·m/A, rated/peak currents, back-EMF, T-N curve, 345 / 220 mm plate ratings, 145 °C limit, overload and stall tables, operation-control (MIT) formula, field-weakening parameter.</span>
 3. <span id="s3"></span>[RobStride, RS03 User Manual (CAN 2.0, rev. 261013)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS03) <span class="used">— used for: RS03 K<sub>t</sub>, 17 V/krpm back-EMF, 200 rpm and 880 g, T-N curve, 215 × 220 mm plate, overload table.</span>
-4. <span id="s4"></span>[RobStride, RS06 User Manual (CAN 2.0, rev. 260713)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS06) <span class="used">— used for: RS06 K<sub>t</sub>, currents, back-EMF, T-N curve, test plate.</span>
+4. <span id="s4"></span>[RobStride, RS06 User Manual (CAN 2.0, rev. 260713)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS06) <span class="used">— used for: RS06 K<sub>t</sub>, currents, back-EMF, T-N curve, test plate (the arm motor until 2026-11-02).</span>
 5. <span id="s5"></span>[RobStride, RS00 User Manual (CAN 2.0, rev. 260713)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/RS00) <span class="used">— used for: RS00 K<sub>t</sub>, currents, back-EMF, T-N curve.</span>
 6. <span id="s6"></span>[P. M. Wensing, A. Wang, S. Seok, D. Otten, J. Lang, S. Kim, "Proprioceptive Actuator Design in the MIT Cheetah: Impact Mitigation and High-Bandwidth Physical Interaction for Dynamic Legged Robots," IEEE T-RO 33(3), 2017](https://dspace.mit.edu/handle/1721.1/119863) <span class="used">— used for: proprioceptive actuation, reflected inertia and impact mitigation, backdrivability.</span>
 7. <span id="s7"></span>[S. Seok et al., "Design Principles for Energy-Efficient Legged Locomotion and Implementation on the MIT Cheetah Robot," IEEE/ASME T-Mech, 2015](https://doi.org/10.1109/TMECH.2014.2339013) <span class="used">— used for: large-gap motors with a single low-ratio stage.</span>
@@ -310,5 +311,6 @@ Built from your settings above. Paste it into an issue, a design discussion or a
 12. <span id="s12"></span>[maxon, catalogue motor data page (thermal data block)](https://www.maxongroup.com/medias/sys_master/root/9399155752990/Cataloge-Page-EN-173.pdf) <span class="used">— used for: the convention of two thermal resistances and two time constants (winding, motor).</span>
 13. <span id="s13"></span>[Texas Instruments, TIDUF56 design guide (field weakening and MTPA)](https://www.ti.com/document-viewer/lit/html/TIDUF56/GUID-8DA8E6AB-DFB2-40D3-89BE-4CE6D0397309) <span class="used">— used for: field weakening extends operation above base speed.</span>
 14. <span id="s14"></span>[NBS Handbook 100, Copper Wire Tables (1966)](https://nvlpubs.nist.gov/nistpubs/Legacy/hb/nbshandbook100.pdf) <span class="used">— used for: copper's temperature coefficient of resistance, 0.00393 per K at 20 °C.</span>
+15. <span id="s15"></span>[RobStride, RS10P User Manual (CAN 2.0, rev. 260907) and RS series specification sheet (2026-10-09)](https://github.com/RobStride/Product_Information/tree/main/Product%20Literature/CAN2.0/10P) <span class="used">— used for: RS10P 42 / 14 N·m (9.5 N·m stalled), 125 rpm, 25:1, 0.46 kg, K<sub>t</sub>, currents, back-EMF, T-N table, overload and stall tables, output-side inertia 0.00625 kg·m², mounting holes, MIT ranges.</span>
 
 <PageScript code={script} />

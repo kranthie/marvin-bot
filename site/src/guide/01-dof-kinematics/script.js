@@ -72,9 +72,9 @@ function addLeg(side,sx){ const S=side[0].toUpperCase()+side.slice(1);
 }
 function addArm(side,sx){ const S=side[0].toUpperCase()+side.slice(1);
   J.push({n:`${side}_shoulder_pitch`,g:`${S} arm`,ax:'pitch (y)',r:'−60° … 180°',act:'RS03',bus:`${side}_arm`,p:[sx*0.11,1.165],d:'Swings the arm forward and back.'});
-  J.push({n:`${side}_shoulder_roll`,g:`${S} arm`,ax:'roll (x)',r:'−20° … 120° (below 0° only with the arm forward)',act:'RS03',bus:`${side}_arm`,p:[sx*0.158,1.14],d:'Coupled limit: its minimum depends on shoulder pitch.'});
-  J.push({n:`${side}_shoulder_yaw`,g:`${S} arm`,ax:'yaw (along upper arm)',r:'−150° … 150°',act:'RS06',bus:`${side}_arm`,p:[sx*0.158,1.055],d:''});
-  J.push({n:`${side}_elbow`,g:`${S} arm`,ax:'pitch (y)',r:'0° … 135°',act:'RS06',bus:`${side}_arm`,p:[sx*0.158,0.94],d:''});
+  J.push({n:`${side}_shoulder_roll`,g:`${S} arm`,ax:'roll (x)',r:'−20° … 120° (below 0° only with the arm forward)',act:'RS10P',bus:`${side}_arm`,p:[sx*0.158,1.14],d:'Coupled limit: its minimum depends on shoulder pitch.'});
+  J.push({n:`${side}_shoulder_yaw`,g:`${S} arm`,ax:'yaw (along upper arm)',r:'−150° … 150°',act:'RS10P',bus:`${side}_arm`,p:[sx*0.158,1.055],d:''});
+  J.push({n:`${side}_elbow`,g:`${S} arm`,ax:'pitch (y)',r:'0° … 135°',act:'RS10P',bus:`${side}_arm`,p:[sx*0.158,0.94],d:''});
   J.push({n:`${side}_wrist_yaw`,g:`${S} arm`,ax:'yaw (along forearm)',r:'−90° … 90°',act:'RS00',bus:`${side}_arm`,p:[sx*0.158,0.815],d:''});
   J.push({n:`${side}_wrist_pitch`,g:`${S} arm`,ax:'pitch (y)',r:'−60° … 60°',act:'STS3250 servo',bus:'servo',p:[sx*0.158,0.752],d:'Carries the bought four-finger hand (its 8 finger servos are not counted in the 27).'});
 }
@@ -184,7 +184,7 @@ function updateNote(){
     const sing=Math.abs(Math.abs(hstate.hpch)-90)<15;
     parts.push(`For the hip-order comparison I used roll ${hstate.hr}°, pitch ${hstate.hpch}°, yaw ${hstate.hy}°.${sing?' Near 90° hip pitch, Marvin Bot\'s roll-pitch-yaw hip is close to gimbal lock (roll and yaw axes parallel), so a controller or IK solver must avoid needing thigh rotation there.':''}`);
   }
-  $('note').textContent = parts.length ? `Marvin Bot (1.44 m, 41 kg, 27-DOF humanoid; legs 0.325 m thigh, 0.315 m shin, 0.060 m ankle; hip order roll-pitch-yaw; ranges from description/robot.yaml).\n`+parts.join('\n')+`\nQuestion to resolve: does any planned task (stairs, sitting, getting up) need a pose outside these ranges or near the hip singularity?`
+  $('note').textContent = parts.length ? `Marvin Bot (1.41 m, 40 kg, 27-DOF humanoid; legs 0.325 m thigh, 0.315 m shin, 0.060 m ankle; hip order roll-pitch-yaw; ranges from description/robot.yaml).\n`+parts.join('\n')+`\nQuestion to resolve: does any planned task (stairs, sitting, getting up) need a pose outside these ranges or near the hip singularity?`
     : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });

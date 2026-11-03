@@ -40,8 +40,8 @@ function finishOf(p) {
   if (p.kind === 'cyl' || p.cat === 'actuator') return 'motor';
   if (p.kind === 'box') return 'box';
   const n = p.name || '';
-  if (n === 'head_visor') return 'gloss';
-  if (n === 'head_shell' || n === 'neck_cover' || n === 'head_camera_frame') return 'cover';
+  if (n === 'head_visor' || n === 'head_camera_frame') return 'gloss';
+  if (n.startsWith('head_shell') || n === 'neck_cover') return 'cover';
   if (n === 'pelvis_cover' || n.includes('glute')) return 'dark';
   if (p.process === 'cover') return 'cover';
   if (p.process === 'cnc' || p.process === 'service') return 'alu';
