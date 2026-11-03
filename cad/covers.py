@@ -92,7 +92,7 @@ def _ngon(n: int, phase: float, squash: float) -> np.ndarray:
     a = np.radians(phase + 360.0 * np.arange(n) / n)
     x, y = np.cos(a), np.sin(a)
     pts = np.column_stack([np.sign(x) * np.abs(x) ** squash, np.sign(y) * np.abs(y) ** squash])
-    return pts[np.argsort(np.arctan2(pts[:, 1], pts[:, 0]))]
+    return pts[np.argsort(np.arctan2(pts[:, 1], pts[:, 0]), kind="stable")]
 
 
 def _inside(poly: np.ndarray, p) -> bool:

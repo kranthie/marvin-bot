@@ -209,7 +209,8 @@ def clip_spot(sk, target, avoid=(), min_r: float = 45.0, d: float = 14.0, step: 
     pts = np.column_stack([xs.ravel(), ys.ravel()])
     r = np.hypot(pts[:, 0] - target[0], pts[:, 1] - target[1])
     dot = mf.CrossSection.circle(0.3, 8)
-    for k in np.argsort(np.where(r < min_r, np.inf, r)):
+    # a stable sort: equal distances (a symmetric plate) keep a fixed order on every machine
+    for k in np.argsort(np.where(r < min_r, np.inf, r), kind="stable"):
         if r[k] < min_r:
             break
         if (allowed ^ dot.translate(pts[k].tolist())).area() > 0.2:

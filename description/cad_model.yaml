@@ -978,9 +978,9 @@ torso_base:
   material: al7075
   process: cnc
   budget: torso
-  mass: 0.11268
-  com: [-0.0131142, 8.25e-05, 0.03555]
-  inertia: [0.00014512, 0.000193582, 0.000338585, -5.137e-07, 0.0, 0.0]
+  mass: 0.11272
+  com: [-0.0129614, 6.92e-05, 0.03555]
+  inertia: [0.000145168, 0.000194196, 0.000339246, 1.818e-07, 0.0, 0.0]
   size_mm: [150.0, 122.0, 2.5]
 torso_battery_shelf:
   link: torso_link

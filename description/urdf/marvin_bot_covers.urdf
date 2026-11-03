@@ -121,7 +121,7 @@
     <collision><origin xyz="0.03 0 -0.045"/><geometry><box size="0.24 0.11 0.03"/></geometry></collision>
   </link>
   <link name="torso_link">
-    <inertial><origin xyz="-0.0254988 0.00074634 0.222201"/><mass value="9.3948"/><inertia ixx="0.127273" ixy="-0.000489417" ixz="-0.00757955" iyy="0.119913" iyz="-0.000165974" izz="0.045639"/></inertial>
+    <inertial><origin xyz="-0.0254969 0.000746177 0.2222"/><mass value="9.39484"/><inertia ixx="0.127275" ixy="-0.000488691" ixz="-0.00757625" iyy="0.119915" iyz="-0.000166259" izz="0.0456401"/></inertial>
     <visual><origin xyz="0.01 0 0.1"/><geometry><box size="0.072 0.11 0.11"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><origin xyz="-0.062 0 0.2055"/><geometry><box size="0.06 0.14 0.17"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><origin xyz="-0.068 0 0.07"/><geometry><box size="0.05 0.08 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
