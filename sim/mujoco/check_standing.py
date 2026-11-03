@@ -40,7 +40,7 @@ GAINS = {
     "RS04": (400.0, 8.0, 0.03),
     "RS03": (250.0, 5.0, 0.02),
     "RS06": (40.0, 1.5, 0.01),
-    "RS10P": (40.0, 1.5, 0.006),  # 25:1: the specification sheet's output-side inertia, 0.00625
+    "RS10P": (40.0, 1.5, 0.00625),  # 25:1: the specification sheet's output-side inertia
     "RS00": (20.0, 1.0, 0.005),
     "STS3250": (10.0, 0.5, 0.002),
 }

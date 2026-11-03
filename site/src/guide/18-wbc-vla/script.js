@@ -179,7 +179,7 @@ function updateNote(){
   for(const k in DEFAULTS)if(state[k]!==DEFAULTS[k])parts.push(k);
   if(A.arch==='dec'&&A.task==='table'&&!parts.length){$('note').textContent='Change a control above to build a note.';return;}
   const s=SIM;const a=ARCH[A.arch];
-  let t=`Marvin Bot (1.44 m, 41 kg, 27-DOF humanoid; Jetson AGX Orin 64 GB, 50 Hz policy, CAN to RobStride actuators at 500 Hz legs / 250 Hz arms). Plan (docs/decisions.md 2026-10-25): decoupled RL legs + IK arms first, GR00T N1.7 served from a desktop GPU then moved to the Orin with TensorRT, motion-tracking controller later.\n`;
+  let t=`Marvin Bot (1.41 m, 40 kg, 27-DOF humanoid; Jetson AGX Orin 64 GB, 50 Hz policy, CAN to RobStride actuators at 500 Hz legs / 250 Hz arms). Plan (docs/decisions.md 2026-10-25): decoupled RL legs + IK arms first, GR00T N1.7 served from a desktop GPU then moved to the Orin with TensorRT, motion-tracking controller later.\n`;
   t+=`Control split I looked at: ${a.name}, for the task "${$('task').selectedOptions[0].textContent}". ${VERDICT[A.task][A.arch]}\n`;
   t+=`VLA timing I explored: ${state.lat} ms model + ${state.rtt} ms network + up to ${state.jit} ms jitter; chunks of ${state.H} actions at ${state.fa} Hz, ${Math.min(state.E,state.H)} executed per chunk, ${state.mode==='async'?'inference while executing':'waiting for each chunk'}${state.mode==='async'?(state.skip?', stale actions skipped':', chunks played from their first action'):''}.\n`;
   t+=`Result: arms hold their last target ${(s.holdFrac*100).toFixed(0)}% of the time; executed actions are planned from images ${(s.mean*1000).toFixed(0)} ms old on average (max ${(s.max*1000).toFixed(0)} ms); ${s.keep?'the pipeline keeps up':'the pipeline does not keep up'}.\n`;

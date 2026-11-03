@@ -231,7 +231,7 @@ function updateNote(best, results){
   const ch = TERMS.filter(t=>state.w[t[0]]!==ONE).map(t=>`${t[0]} ${fmtW(t[1])} → ${fmtW(weight(t[0]))}`);
   const pp = []; for(const k of ['eps','gamma','lam']) if(state[k]!==PPO_DEF[k]) pp.push(`${k==='eps'?'clip ε':k==='gamma'?'γ':'λ'} ${PPO_DEF[k]} → ${state[k]}`);
   if(!ch.length && !pp.length){ $('note').textContent='Change a weight or a PPO setting above to build a note.'; return; }
-  let s = `Marvin Bot (1.44 m, 41 kg humanoid; walking policy trained with PPO in Isaac Lab, tasks in sim/isaaclab/marvin_bot/tasks/velocity_env_cfg.py). `;
+  let s = `Marvin Bot (1.41 m, 40 kg humanoid; walking policy trained with PPO in Isaac Lab, tasks in sim/isaaclab/marvin_bot/tasks/velocity_env_cfg.py). `;
   if(ch.length){
     s += `In a reward-shaping sandbox (illustrative gait features, walking at 0.5 m/s on flat ground) I changed these flat-task weights: ${ch.join('; ')}. `;
     s += best==='upright' ? `The upright walk still wins, by ${(results.upright.R - Math.max(...GKEYS.filter(k=>k!=='upright').map(k=>results[k].R))).toFixed(1)} return units per 20 s episode. `

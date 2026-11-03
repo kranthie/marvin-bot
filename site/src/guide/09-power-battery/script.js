@@ -6,9 +6,9 @@ const PRESETS={today:{...DEFAULTS},s2p:{...DEFAULTS,P:2},full42:{...DEFAULTS,Vch
 const FMT={S:v=>v+'S',P:v=>v+'P',Q:v=>(+v).toFixed(1)+' Ah',Vc:v=>(+v).toFixed(2)+' V',Vch:v=>v+' V',stop:v=>v+'%',mStand:v=>v+'%',mWalk:v=>v+'%',mStair:v=>v+'%',orin:v=>(+v===60?'MAXN':v+' W'),pk:v=>v+'%'};
 const MASS=41.3, G=9.81, CELL_G=70, OVERHEAD=0.25, CELL_A=45, CELL_R=0.0138;
 // rated copper loss per motor model, W (RS04 from 0.16 ohm line-line; others scaled by mass: estimates)
-const RS04=1.5*Math.pow(40/2.1,2)*0.16, RS03=RS04*0.90/1.42, RS06=RS04*0.621/1.42, RS00=RS04*0.31/1.42;
+const RS04=1.5*Math.pow(40/2.1,2)*0.16, RS03=RS04*0.90/1.42, RS10P=1.5*Math.pow(14/3.73,2)*1.41, RS00=RS04*0.31/1.42;
 const LEG_CU=6*RS04+6*RS03;                 // 12 leg motors at rated
-const ARM_CU=(5*RS03+4*RS06+2*RS00)*0.15*0.15; // waist + arms at 15% RMS
+const ARM_CU=(3*RS03+6*RS10P+2*RS00)*0.15*0.15; // waist + arms at 15% RMS
 const ELEC=30;
 function modePower(f, mech){ // f = leg RMS fraction
   const comp=state.orin/0.9, cu=LEG_CU*f*f+ARM_CU, m=mech/0.85; const base=comp+ELEC+cu+m; const loss=0.10*base;
@@ -199,7 +199,7 @@ function updateNote(){
   const rparts=[]; const rl={src:'bus source',soc:'state of charge',vb:'bench voltage',J:'limb inertia',w:'joint speed',n:'limbs braking',tb:'braking time',eta:'regen share',C:'bus capacitance',R:'pack resistance',clamp:'clamp',Vcl:'clamp voltage'};
   for(const k in RDEF) if(String(rs[k])!==String(RDEF[k])) rparts.push(`${rl[k]} ${k==='clamp'?(rs[k]?'fitted':'none'):RFMT[k](rs[k])}`);
   if(!parts.length && !rparts.length && !topo.estop && !topo.pulled){ $('note').textContent='Change a control above to build a note. (Defaults: Marvin Bot\'s 13S3P pack of Molicel P45B cells, 4.1 V daily charge, 15% reserve, 30/60/10 standing/walking/stairs.)'; return; }
-  let t=`For Marvin Bot (1.44 m, 41 kg humanoid; 48 V nominal 13S3P 21700 pack in the repo, ~630 Wh, 4.1 V/cell daily charge, actuators limited to 60 V, R30 runtime ≥ 1 h, R32 regen margin), I explored`;
+  let t=`For Marvin Bot (1.41 m, 40 kg humanoid; 48 V nominal 13S3P 21700 pack in the repo, ~630 Wh, 4.1 V/cell daily charge, actuators limited to 60 V, R30 runtime ≥ 1 h, R32 regen margin), I explored`;
   if(parts.length) t+=` a pack/load variant with ${parts.join(', ')}: ${s.S}S${s.P}P, ${r.E.toFixed(0)} Wh nominal, ${r.usable.toFixed(0)} Wh usable, ${r.Pavg.toFixed(0)} W average (first-principles estimate), runtime ${r.T.toFixed(2)} h, pack ~${r.mass.toFixed(2)} kg, peak ~${r.Ipk.toFixed(0)} A against a ${r.Ilim} A cell limit.`;
   else t+=` the default pack (${r.T.toFixed(2)} h estimated runtime).`;
   if(rparts.length){ const V0=rs.src==2?rs.vb:13*ocv(rs.soc); t+=` Regen case: ${rparts.join(', ')}; the peak bus voltage readout was ${$('g_Vp').querySelector('.v').textContent} from ${V0.toFixed(1)} V.`; }

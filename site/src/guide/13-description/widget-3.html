@@ -1,5 +1,5 @@
 <div class="presets" id="jpresets">
-<button data-j="knee">Knee (RS04)</button><button data-j="hip_pitch">Hip pitch (RS04)</button><button data-j="shoulder_roll">Shoulder roll (RS03)</button><button data-j="elbow">Elbow (RS06)</button><button data-j="wrist_yaw">Wrist yaw (RS00)</button>
+<button data-j="knee">Knee (RS04)</button><button data-j="hip_pitch">Hip pitch (RS04)</button><button data-j="shoulder_roll">Shoulder roll (RS10P)</button><button data-j="elbow">Elbow (RS10P)</button><button data-j="wrist_yaw">Wrist yaw (RS00)</button>
 <button data-j="broken">A broken one</button>
 </div>
 <div class="grid2">
@@ -8,7 +8,7 @@
 <span class="c"># description/robot.yaml · joints</span><br/>
 - {name: "{side}_<input id="y_name" type="text"/>", axis: <select id="y_axis"><option>pitch</option><option>roll</option><option>yaw</option></select>, range: [<input id="y_lo" type="number"/>, <input id="y_hi" type="number"/>]}<br/>
 <span class="c"># description/robot.yaml · motors</span><br/>
-- {name: "{side}_…", model: <select id="y_model"><option>RS04</option><option>RS03</option><option>RS06</option><option>RS00</option><option>STS3250</option><option>RS05</option></select>, bus: <select id="y_bus"><option>{side}_hip</option><option>{side}_shank</option><option>{side}_arm</option><option>servo</option></select>, drives: [this joint]}<br/>
+- {name: "{side}_…", model: <select id="y_model"><option>RS04</option><option>RS03</option><option>RS10P</option><option>RS00</option><option>STS3250</option><option>RS05</option></select>, bus: <select id="y_bus"><option>{side}_hip</option><option>{side}_shank</option><option>{side}_arm</option><option>servo</option></select>, drives: [this joint]}<br/>
 <span class="c"># description/skeleton.yaml · joints (left side; right is mirrored)</span><br/>
 left_…: {parent: <span id="y_parent"></span>, xyz: <span id="y_xyz"></span>, axis: <select id="y_vec"><option>[1, 0, 0]</option><option>[-1, 0, 0]</option><option>[0, 1, 0]</option><option>[0, -1, 0]</option><option>[0, 0, 1]</option><option>[0, 0, -1]</option></select>}<br/>
 <span class="c"># sim/isaaclab/marvin_bot/robot_cfg.py · GAINS (kp, kd, armature, friction)</span><br/>

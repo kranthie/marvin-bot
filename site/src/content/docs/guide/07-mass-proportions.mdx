@@ -17,7 +17,7 @@ import '../../../guide/07-mass-proportions/style.css';
 
 <div class="guide-meta">
 
-**Stage 2 · Mechanics** · \~35 min · Before this: [04 Actuators](../04-actuators/), [05 Leg loads and stairs](../05-leg-loads-stairs/) · numbers from the repository as of 2026-10-29
+**Stage 2 · Mechanics** · \~35 min · Before this: [04 Actuators](../04-actuators/), [05 Leg loads and stairs](../05-leg-loads-stairs/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -50,7 +50,7 @@ That last point is the trap: mass begets mass. The playground below is the robot
 
 Each block is one item of `description/mass_budget.yaml`, plus the motors (counted from `description/robot.yaml` and `description/actuators.yaml`) and the add-on body shells (`description/cad_model.yaml`), exactly as `tools/check_description.py` sums them. Block area is proportional to mass (the full panel = 44 kg, so the treemap shrinks as you save). Tick a reduction idea to apply it.
 
-<b>Start here:</b> click the preset buttons one at a time and watch the five readouts under the picture. Names like RS04, RS03, RS06 and RS00 are RobStride motor models, from the largest (RS04, at the hips and knees) to the smallest (RS00, at the wrists); see [04 Actuators](../04-actuators/).
+<b>Start here:</b> click the preset buttons one at a time and watch the five readouts under the picture. Names like RS04, RS03, RS10P and RS00 are RobStride motor models, from the largest (RS04, at the hips and knees) to the smallest (RS00, at the wrists); see [04 Actuators](../04-actuators/).
 
 <RawHtml html={widget1} />
 
@@ -159,10 +159,11 @@ The costs, all from the decision log: +0.64 kg; the static stair knee from 109% 
 | Orin module on a compact <a class="g" href="../glossary/#carrier-board">carrier board</a> instead of the developer kit | −0.4 kg | needs its own heatsink, fan and carrier; the developer kit's I/O is convenient<sup class="cite">[\[8\]](#s8)</sup> | listed in <code>mass\_budget.yaml</code> (was −1.0 kg when the kit was estimated at 1.5 kg) |
 | Lighter leg cores once real loads are known | −0.5 kg | needs simulated and measured loads first | listed in <code>mass\_budget.yaml</code> |
 | 13S2P battery instead of 13S3P (13 cells in series, 2 or 3 in parallel; see [09 Power](../09-power-battery/)) | ≈ −1.1 kg | runtime about 1 h instead of 1.5 h: exactly at the requirement | not taken (2026-10-28) |
-| Shoulder pitch and roll RS03 → RS06 | −1.1 kg | shoulder peak 60 → 36 N·m; less margin for push-ups and getting up | option in <code>stairs.md</code> |
+| RS10P at shoulder roll and yaw and the elbow (in place of RS03 and RS06) | −1.52 kg | 13 rad/s top speed; holds 9.5 N·m still (1 kg held out sideways for about two minutes) | **done** 2026-11-02 |
+| RS10P at shoulder pitch and the waist too | −1.32 kg | shoulder pitch over its held rating with 1 kg at full reach; the waist's bearing and hub are built round the RS03 | checked and declined (2026-11-02) |
 | 7075 leg plates thinned to the same stiffness | −0.3 to −0.5 kg | cost and sourcing (note: same stiffness needs the same thickness, since 7075 is barely stiffer than 6061; the saving comes from strength-limited parts only) | option in <code>stairs.md</code> |
 | Carbon-fibre tube cores for thigh and shin | ≈ −0.5 kg | design work, bonded joints | option in <code>stairs.md</code> |
-| Body shells off | −0.95 kg | looks unfinished, less fall protection; the policies already train on the bare robot | shells are an add-on by design |
+| Body shells off | −0.84 kg | looks unfinished, less fall protection; the policies already train on the bare robot | shells are an add-on by design |
 | Waist roll and pitch joints (2-DOF waist) | ≈ +2.5 kg | more reach and bending; about +$630 | to try in simulation first (2026-10-28) |
 | 1.5:1 knee reduction stage | ≈ +0.2 kg per knee | 60 N·m continuous, some backlash, thigh redesign | parked; decided after the bench test |
 | Legs +90 mm instead of +50 mm | small | hips at 0.50 of height (human-like) but knee at 127% of rated | rejected 2026-10-29; would need the knee stage |
@@ -176,7 +177,7 @@ The costs, all from the decision log: +0.64 kg; the static stair knee from 109% 
 
 ## Decisions you can make here
 
-- <b>Which savings to pursue first.</b> The battery, the RS03 set and the leg structure are the biggest blocks. Trade: the 13S2P battery saves about 1.1 kg but cuts runtime from about 1.5 h to the 1 h minimum; RS06 shoulders save 1.1 kg but drop shoulder peak torque from 60 to 36 N·m.
+- <b>Which savings to pursue first.</b> The battery, the RS03 set and the leg structure are the biggest blocks. Trade: the 13S2P battery saves about 1.1 kg but cuts runtime from about 1.5 h to the 1 h minimum; RS10P at the shoulder pitch and waist would save 1.3 kg more, but the shoulder pitch could not hold 1 kg at full reach.
 - **Whether 35 kg is still the right target**, or whether the knee's measured continuous rating (phase 2 bench test) should set the limit instead. Trade: chasing 35 kg costs runtime and margin elsewhere; a measured limit may allow today's mass, or may demand more cuts.
 - <b>Whether to add a 2-DOF waist.</b> Trade: more reach and bending, but about +2.5 kg (over the 42 kg limit unless something else goes) and about +$630.
 - <b>Where to put mass on the leg.</b> Trade: the knee motor up the thigh cuts leg inertia by about 12% (an easier, quicker swing), but adds a linkage of about 0.2 kg and design work.

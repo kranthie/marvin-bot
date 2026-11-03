@@ -150,7 +150,7 @@ function updateNote(){
   const changed=Object.keys(DEFAULTS).some(k=>+s[k]!==+DEFAULTS[k]);
   const ftChanged= fs.fault!=='hang' || fs.off.size || !fs.gantry;
   if(!changed && !ftChanged){ $('note').textContent='Change a control above to build a note. (Defaults: a 3 kg arm swung at 5 rad/s hitting the chest; the fault tree on "control process hangs" with all layers fitted.)'; return; }
-  let t='For Marvin Bot (1.44 m, 41 kg humanoid, 48 V pack, joints up to 120 N·m; safety design in docs/safety.md, nothing built or verified yet), ';
+  let t='For Marvin Bot (1.41 m, 40 kg humanoid, 48 V pack, joints up to 120 N·m; safety design in docs/safety.md, nothing built or verified yet), ';
   if(changed){
     const sc=['a limb swing','a fall','a pinch'][s.sc];
     const det= s.sc==0? `${s.lm} kg limb, ${s.ll} m long, at ${s.w} rad/s, contact ${Math.min(s.r,s.ll)} m from the joint`

@@ -29,7 +29,7 @@ It is written for readers with school maths and physics and no robotics backgrou
 - [**04 · Actuators: quasi-direct drive, torque, speed and heat**](/marvin-bot/guide/04-actuators/): Gear ratios, torque–speed curves, rated vs peak torque, motor heating, and why each RobStride model sits where it does.
 - [**05 · Leg loads and stairs**](/marvin-bot/guide/05-leg-loads-stairs/): Bend a leg on a stair and watch the knee torque climb past its rating.
 - [**06 · The parallel-linkage ankle**](/marvin-bot/guide/06-ankle-linkage/): Two motors on the shin push rods that tilt the foot; see how they share pitch and roll.
-- [**07 · Mass budget and proportions**](/marvin-bot/guide/07-mass-proportions/): Where the 41 kg goes, how scaling changes torque, and the 1.44 m redesign.
+- [**07 · Mass budget and proportions**](/marvin-bot/guide/07-mass-proportions/): Where the 40 kg goes, how scaling changes torque, and the 1.44 m redesign.
 - [**08 · Structure and code-CAD**](/marvin-bot/guide/08-structure-cad/): Aluminium or plastic, safety factors, pocketed plates, and sweeping joints for collisions.
 
 ## Stage 3: Electrical, sensing and safety
@@ -55,7 +55,7 @@ It is written for readers with school maths and physics and no robotics backgrou
 ## Stage 6: Toward hardware
 
 - [**20 · Sim-to-real and system identification**](/marvin-bot/guide/20-sim-to-real/): Fit a motor model to bench data and see why randomisation ranges matter.
-- [**21 · Bill of materials and costs**](/marvin-bot/guide/21-bom-costs/): Explore the ≈$17.5k bill of materials by group, phase and cost per newton-metre.
+- [**21 · Bill of materials and costs**](/marvin-bot/guide/21-bom-costs/): Explore the ≈$17.7k bill of materials by group, phase and cost per newton-metre.
 - [**22 · Build phases and roadmap**](/marvin-bot/guide/22-roadmap/): Seven phases from foundations to perception, what each must prove, and which risks it retires.
 
 ## Reference pages

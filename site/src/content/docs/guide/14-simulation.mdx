@@ -16,7 +16,7 @@ import '../../../guide/14-simulation/style.css';
 
 <div class="guide-meta">
 
-**Stage 4 · Model and simulation** · \~35 min · Before this: [02 Balance](../02-balance/), [13 The robot description](../13-description/) · numbers from the repository as of 2026-10-29
+**Stage 4 · Model and simulation** · \~35 min · Before this: [02 Balance](../02-balance/), [13 The robot description](../13-description/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -129,10 +129,10 @@ Same robot, two different floors: does the outcome change? A sagittal (side-view
 - <b>Two backends, one robot:</b> `sim/isaaclab/check_robot.py` loads the same USD on Newton and on PhysX: joint order, ranges and limits match the description, link positions match MuJoCo to 0.25 mm (Newton) and 0.17 mm (PhysX), the default stance holds (Newton: pelvis 0.644 m, tilt 0.0°, worst joint 4% of peak). PhysX is configured with 8 position and 4 velocity solver iterations and self-collision on (`robot_cfg.py`).
 - **MuJoCo checks** (plain MuJoCo, 2 ms, `implicitfast`, floor friction 1.0):
   - `sim/mujoco/check_standing.py`: holds the crouch, straight or stance pose for a few seconds with stiff position servos; passes if the robot stays up, average holding torque is within each joint's rated torque, and no joint peaks above 70% of peak.
-  - `sim/mujoco/check_step_up.py`: static feasibility of stepping up a stair (CI runs 18 cm): searches pelvis positions for three poses of a slow step with the feet flat and the centre of mass over the supporting foot; reports stance-leg torques (knee 47 N·m = 118% of rated on the 1.44 m model).
+  - `sim/mujoco/check_step_up.py`: static feasibility of stepping up a stair (CI runs 18 cm): searches pelvis positions for three poses of a slow step with the feet flat and the centre of mass over the supporting foot; reports stance-leg torques (knee 47 N·m = 118% of rated on the current model).
   - `sim/mujoco/check_symmetry.py`: the left-right mirror rule, 20 random poses, 1 µm tolerance.
   - `sim/mujoco/check_policy.py`: runs an exported ONNX policy (ONNX: a standard file format for a trained network) through stand, walk, turn, stop (or 5 stairs up and down), with the same DC motor model and gains as training, and sensor noise at half the training level (IMU gyro 0.2 rad/s, gravity 0.05, joint angle 0.01 rad, joint speed 0.5 rad/s, uniform), because "without any, a mirror-symmetric policy standing in a mirror-symmetric pose has nothing to pick the first foot with". Fails on a fall, poor command tracking, sliding feet, or any joint's RMS torque (root-mean-square, a kind of average that tracks motor heating) above its continuous rating.
-- **What the cross-check has caught** (`sim/isaaclab/README.md`): flat v2 trained fine but only stood and turned in MuJoCo (the clearance reward paid planted feet); rough v4 collapsed in training (an uncapped progress reward). Flat v8, retrained on the 1.44 m, 40.35 kg model, passes: walk 0.53 m/s for 0.5 commanded, turn 0.83 for 0.8 rad/s, fast walk 0.95 for 1.0 m/s, symmetric within 2%, hottest joint a knee at 68% of rated. The stair policy is still rough v9 (trained on the 1.29 m body); on the 1.44 m model it passes 14 of 15 stair runs (15, 18 and 20 cm, five noise seeds). A retrain on the new body, rough v10, passed only 6 of 15 and is not used: the cross-check, not the training curve, decided that.
+- **What the cross-check has caught** (`sim/isaaclab/README.md`): flat v2 trained fine but only stood and turned in MuJoCo (the clearance reward paid planted feet); rough v4 collapsed in training (an uncapped progress reward). Flat v9, retrained on the current 1.41 m model (RS10P arms, new head), passes: walk 0.56 m/s for 0.5 commanded, turn 0.80 for 0.8 rad/s, fast walk 1.00 for 1.0 m/s, symmetric within 1%, hottest joint a knee at 70% of rated. The stair policy is still rough v9 (trained on the 1.29 m body); on the current model it passes all 25 stair runs (5-20 cm, five noise seeds). Retrains on newer bodies, rough v10 (6 of 15) and rough v11 (fails 3 of 5 on 20 cm), did worse and are not used: the cross-check, not the training curve, decided that.
 :::
 
 ## Trade-offs and alternatives
@@ -144,7 +144,7 @@ Same robot, two different floors: does the outcome change? A sagittal (side-view
 
 :::caution[Where sources and the repo disagree]
 - The fact sheet and `docs/decisions.md` describe the second simulator as "MuJoCo", and training as "Isaac Lab". Since training runs on Newton's MuJoCo Warp solver, the training and cross-check simulators share the same contact formulation (soft constraints with solref/solimp), so the cross-check tests implementation and setting differences more than contact-model differences. Not a contradiction in the repo, but it weakens the "different contact model" argument; this page says so.
-- The Isaac Lab README's check table (2026-10-26) predates the hands and the 1.44 m body (39.13 kg on Newton vs 40.35 kg today) and has not been rerun.
+- Rough v9 in the Isaac Lab README's check table was trained before the hands (39.13 kg on Newton vs 39.70 kg bare today); its MuJoCo cross-check is rerun on the current model, its training numbers are not.
 :::
 
 ## Decisions you can make here

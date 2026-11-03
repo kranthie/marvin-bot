@@ -236,7 +236,7 @@ function updateNote(){
     const {a,b,gap}=lastB;
     parts.push(`Sim-to-sim gap study (sagittal foot + inverted pendulum, 41 kg, ankle PD, push for 0.15 s): ${chB.join(', ')}. Model A (${B.fA==='reg'?'regularised friction':'stick-slip'}, k ${B.kA.toExponential(1)} N/m, μ ${B.muA}) ${a.fell?'falls':'recovers'} with max lean ${a.maxLean.toFixed(1)}°, heel lift ${a.maxHeel.toFixed(1)} mm, slide ${a.slideEnd.toFixed(1)} mm; model B (${B.fB==='reg'?'regularised':'stick-slip'}, k ${B.kB.toExponential(1)} N/m, μ ${B.muB}) ${b.fell?'falls':'recovers'} with ${b.maxLean.toFixed(1)}°, ${b.maxHeel.toFixed(1)} mm, ${b.slideEnd.toFixed(1)} mm. Largest lean difference ${isFinite(gap)?gap.toFixed(2)+'°':'one falls, the other does not'}. Implication: contact parameters (stiffness, friction law, μ) should be randomised in training or checked in a second simulator before trusting the policy near this regime.`);
   }
-  $('note').textContent = parts.length? 'Marvin Bot (1.44 m, 41 kg humanoid, simulation stage), physics simulation. '+parts.join('\n\n') : 'Change a control above to build a note.';
+  $('note').textContent = parts.length? 'Marvin Bot (1.41 m, 40 kg humanoid, simulation stage), physics simulation. '+parts.join('\n\n') : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
 renderA(); renderB();

@@ -335,7 +335,7 @@ const ASM = [
   {t:'Torso core', d:'Frame, shoulder pitch RS03s, neck yaw servo, electronics bay, the Orin and the battery cradle with the e-stop chain. Powered up without limbs. The battery slides in from the back.', show:['pelvis', 'leg', 'torso', 'battery'], hi:['torso', 'battery'], anim:{torsoLift:true, battery:true}},
   {t:'Join torso to pelvis', d:'The torso core bolts to the waist motor’s output flange; the trunk harness (power plus five CAN pairs) is plugged in through its service loop.', show:['pelvis', 'leg', 'torso', 'battery'], hi:['torso'], anim:{torsoJoin:true}},
   {t:'Arms and head', d:'Each arm bolts to its shoulder pitch motor’s output flange with one power and one signal connector; the head goes onto the neck yaw servo with the camera’s USB-C cable.', show:['pelvis', 'leg', 'torso', 'battery', 'arm', 'head'], hi:['arm', 'head'], anim:{arms:true}},
-  {t:'Calibrate, then shells', d:'Hung from the gantry, every joint’s zero is calibrated. Then, if wanted, the 24 clip-on shells go on.', show:['pelvis', 'leg', 'torso', 'battery', 'arm', 'head', 'cover'], hi:['cover'], anim:{covers:true}},
+  {t:'Calibrate, then shells', d:'Hung from the gantry, every joint’s zero is calibrated. Then, if wanted, the 25 clip-on shells go on.', show:['pelvis', 'leg', 'torso', 'battery', 'arm', 'head', 'cover'], hi:['cover'], anim:{covers:true}},
 ];
 let asmT0 = 0;
 function asmOffsets(now) {
@@ -575,7 +575,7 @@ function updateNote() {
     parts.push(`${what}; the highest quasi-static loads ${state.tab === 'skills' ? 'over the loop' : 'in this pose'} were ` + rows.map(o => `${o.n.replace(/_/g, ' ')} ${o.pk.toFixed(1)} N·m (${Math.round(o.f * 100)}% of its ${o.r.model}'s continuous rating)`).join(', '));
   }
   $('note').textContent = parts.length
-    ? `In the Marvin Bot 3-D playground (the 1.44 m, 41 kg open humanoid, model generated from its code-CAD) I was ${parts.join('; ')}. These loads are quasi-static estimates (gravity only, no accelerations or impacts). Questions I want to explore next: which of these joints needs more margin, and what would moving mass or changing a motor do to it?`
+    ? `In the Marvin Bot 3-D playground (the 1.41 m, 40 kg open humanoid, model generated from its code-CAD) I was ${parts.join('; ')}. These loads are quasi-static estimates (gravity only, no accelerations or impacts). Questions I want to explore next: which of these joints needs more margin, and what would moving mass or changing a motor do to it?`
     : 'Change something in the playground to build a note.';
 }
 $('copy').addEventListener('click', () => navigator.clipboard.writeText($('note').textContent).then(() => { $('copy').textContent = 'Copied!'; setTimeout(() => $('copy').textContent = 'Copy', 1200); }));

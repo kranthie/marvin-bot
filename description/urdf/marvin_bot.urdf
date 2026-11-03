@@ -174,7 +174,7 @@
     <visual><origin xyz="0 -0.0121 0.0235" rpy="0 0 0"/><geometry><box size="0.0248 0.0358 0.0453"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
   </link>
   <link name="head_link">
-    <inertial><origin xyz="0.0343616 -0.00133893 0.091286"/><mass value="0.40755"/><inertia ixx="0.00122909" ixy="-1.87633e-05" ixz="4.77717e-05" iyy="0.0020682" iyz="-1.38698e-05" izz="0.00240827"/></inertial>
+    <inertial><origin xyz="0.0361828 -0.00142562 0.0910889"/><mass value="0.41687"/><inertia ixx="0.00123876" ixy="-2.12489e-05" ixz="4.63284e-05" iyy="0.0021617" iyz="-1.44905e-05" izz="0.00250704"/></inertial>
     <visual><geometry><mesh filename="../meshes/head_frame_side_horn.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame_side_idler.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame_bridge.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>

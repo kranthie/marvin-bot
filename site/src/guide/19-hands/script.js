@@ -4,9 +4,9 @@ function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in
 function ro(id,v,c){const r=$(id);r.querySelector('.v').textContent=v;r.className='ro '+(c||'');}
 const G=9.81, D2R=Math.PI/180;
 /* Arm from the URDF (description/urdf/marvin_bot.urdf), distances along each segment from its proximal joint */
-const UA=[{m:0.832,r:0.098,k:'shoulder roll link + RS03'},{m:0.870,r:0.214,k:'upper arm + RS06s'}], L_UA=0.225; // shoulder pitch axis to elbow
-const FA=[{m:0.522,r:0.089,k:'forearm + RS00'},{m:0.115,r:0.179,k:'wrist link + STS3250'}], L_FA=0.188; // elbow to wrist pitch
-const ACT={wr:{n:'Wrist pitch (STS3250)',rated:1.57,peak:4.9},elb:{n:'Elbow (RS06)',rated:11,peak:36},sh:{n:'Shoulder pitch (RS03)',rated:20,peak:60}};
+const UA=[{m:0.778,r:0.094,k:'shoulder roll link + yaw RS10P'},{m:0.712,r:0.207,k:'upper arm + elbow RS10P'}], L_UA=0.225; // shoulder pitch axis to elbow
+const FA=[{m:0.506,r:0.091,k:'forearm + RS00'},{m:0.119,r:0.180,k:'wrist link + STS3250'}], L_FA=0.188; // elbow to wrist pitch
+const ACT={wr:{n:'Wrist pitch (STS3250)',rated:1.57,peak:4.9},elb:{n:'Elbow (RS10P, held)',rated:9.5,peak:42},sh:{n:'Shoulder pitch (RS03)',rated:20,peak:60}};
 const DEF={sp:90,el:0,wp:0,pm:0.5,pd:0.17,hm:0.418,hc:0.086};
 const state={...DEF};
 const FMT={sp:v=>v+'°',el:v=>v+'°',wp:v=>v+'°',pm:v=>(+v).toFixed(2)+' kg',pd:v=>(+v).toFixed(3)+' m',hm:v=>(+v).toFixed(3)+' kg',hc:v=>(+v).toFixed(3)+' m'};
@@ -51,7 +51,7 @@ function render(){
   const seg=(a,b,w,c)=>el('line',{x1:X(a[0]),y1:Y(a[1]),x2:X(b[0]),y2:Y(b[1]),stroke:c,'stroke-width':w,'stroke-linecap':'round'},sv);
   seg(R.S,R.E,16,'#3a4656'); seg(R.E,R.W,13,'#3a4656'); seg(R.W,R.tip,18,'#4a5a6c');
   // joints
-  [[R.S,'shoulder pitch (RS03)',-1],[R.E,'elbow (RS06)',1],[R.W,'wrist pitch (STS3250)',-1]].forEach(([p,t,u],i)=>{ el('circle',{cx:X(p[0]),cy:Y(p[1]),r:9,fill:'#0c1015',stroke:'#4fb3ff','stroke-width':2.5},sv); el('text',{x:X(p[0])+(i===0?-12:10),y:Y(p[1])+(u<0?-16:30),'text-anchor':i===0?'end':'start',fill:'#cfe3f5'},sv,t); });
+  [[R.S,'shoulder pitch (RS03)',-1],[R.E,'elbow (RS10P)',1],[R.W,'wrist pitch (STS3250)',-1]].forEach(([p,t,u],i)=>{ el('circle',{cx:X(p[0]),cy:Y(p[1]),r:9,fill:'#0c1015',stroke:'#4fb3ff','stroke-width':2.5},sv); el('text',{x:X(p[0])+(i===0?-12:10),y:Y(p[1])+(u<0?-16:30),'text-anchor':i===0?'end':'start',fill:'#cfe3f5'},sv,t); });
   // CoMs
   R.pts.forEach(p=>{ if(p.m<=0) return; const isP=p.k==='payload';
     if(isP){ el('rect',{x:X(p.x)-11,y:Y(p.y)-11,width:22,height:22,rx:3,fill:'#ffb454',opacity:.9},sv); }
@@ -113,10 +113,10 @@ function updateNote(){
   const parts=[];
   for(const k in DEF) if(state[k]!==DEF[k]) parts.push(k);
   let s='';
-  if(parts.length){ s+=`Arm pose shoulder pitch ${state.sp}°, elbow ${state.el}°, wrist pitch ${state.wp}°, payload ${state.pm} kg at ${state.pd} m from the wrist pitch axis, hand ${state.hm} kg with its centre ${state.hc} m out: wrist pitch STS3250 ${Math.abs(R.T.wr).toFixed(2)} N·m (${(Math.abs(R.T.wr)/1.57*100).toFixed(0)}% of 1.57 rated), elbow RS06 ${Math.abs(R.T.elb).toFixed(2)} N·m (${(Math.abs(R.T.elb)/11*100).toFixed(0)}% of 11), shoulder pitch RS03 ${Math.abs(R.T.sh).toFixed(2)} N·m (${(Math.abs(R.T.sh)/20*100).toFixed(0)}% of 20). In this pose the wrist holds ${isFinite(R.mmax)?Math.max(0,R.mmax).toFixed(2)+' kg':'any payload'} at its continuous rating. `; }
+  if(parts.length){ s+=`Arm pose shoulder pitch ${state.sp}°, elbow ${state.el}°, wrist pitch ${state.wp}°, payload ${state.pm} kg at ${state.pd} m from the wrist pitch axis, hand ${state.hm} kg with its centre ${state.hc} m out: wrist pitch STS3250 ${Math.abs(R.T.wr).toFixed(2)} N·m (${(Math.abs(R.T.wr)/1.57*100).toFixed(0)}% of 1.57 rated), elbow RS10P ${Math.abs(R.T.elb).toFixed(2)} N·m (${(Math.abs(R.T.elb)/9.5*100).toFixed(0)}% of 9.5 held), shoulder pitch RS03 ${Math.abs(R.T.sh).toFixed(2)} N·m (${(Math.abs(R.T.sh)/20*100).toFixed(0)}% of 20). In this pose the wrist holds ${isFinite(R.mmax)?Math.max(0,R.mmax).toFixed(2)+' kg':'any payload'} at its continuous rating. `; }
   const fp=[]; for(const k in FD) if(fs[k]!==FD[k]) fp.push(k);
   if(fp.length){ s+=`Fingers: ${FR.s.n} at ${fs.tu}% of stall, two servos per finger, ${fs.L} m lever, efficiency ${fs.eta}, μ = ${fs.mu}: about ${FR.F.toFixed(1)} N at the fingertip and ${FR.m.toFixed(2)} kg in a pinch (${FR.msf.toFixed(2)} kg with a safety factor of ${fs.sf}); the lever and efficiency are estimates, as Pollen publishes no grip force. `; }
-  $('note').textContent = s ? `For Marvin Bot (1.44 m, 41 kg humanoid; AmazingHand kits on an RS00 wrist yaw and STS3250 wrist pitch; requirement R20 asks 1 kg per hand at full reach, v1 deviation ~0.5 kg): ${s}Static holding only, no accelerations; check against docs/decisions.md 2026-10-27.` : 'Change a control above to build a note.';
+  $('note').textContent = s ? `For Marvin Bot (1.41 m, 40 kg humanoid; AmazingHand kits on an RS00 wrist yaw and STS3250 wrist pitch; requirement R20 asks 1 kg per hand at full reach, v1 deviation ~0.5 kg): ${s}Static holding only, no accelerations; check against docs/decisions.md 2026-10-27.` : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{navigator.clipboard.writeText($('note').textContent).then(()=>{const b=$('copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1200);});});
 render(); frender();

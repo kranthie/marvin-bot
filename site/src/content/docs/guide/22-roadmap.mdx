@@ -17,7 +17,7 @@ import '../../../guide/22-roadmap/style.css';
 
 <div class="guide-meta">
 
-**Stage 6 · Toward hardware** · \~25 min · Before this: [21 Bill of materials and costs](../21-bom-costs/) · [20 Sim-to-real](../20-sim-to-real/) · numbers from the repository as of 2026-10-29
+**Stage 6 · Toward hardware** · \~25 min · Before this: [21 Bill of materials and costs](../21-bom-costs/) · [20 Sim-to-real](../20-sim-to-real/) · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -100,12 +100,12 @@ Of the 30 checklist items in the roadmap's phase 1 section, 26 are ticked. Highl
 
 - URDF generated from the description; MuJoCo standing check (worst holding torque 40% of rated); static step-up check.
 - Ankle linkage geometry and push-rod loads; Isaac Lab package on Newton and PhysX; MuJoCo cross-checks.
-- Flat policy v8, retrained on the 1.44 m model, passes the MuJoCo cross-check (0.53 m/s for 0.5 commanded, fast walk 0.95 for 1.0 m/s, hottest joint a knee at 68% of rated). Stair policies (rough v5-v9, trained on the earlier 1.29 m body) climb 5-20 cm stairs up and down; on that body rough v5 kept the knees at 73-75% of rated (RMS).
+- Flat policy v9, retrained on the current 1.41 m model, passes the MuJoCo cross-check (0.56 m/s for 0.5 commanded, fast walk 1.00 for 1.0 m/s, hottest joint a knee at 70% of rated). Stair policies (rough v5-v9, trained on the earlier 1.29 m body) climb 5-20 cm stairs up and down; on that body rough v5 kept the knees at 73-75% of rated (RMS).
 - Code-CAD of legs, pelvis, torso, arms and head; strength check (worst <a class="g" href="../glossary/#safety-factor">safety factor</a> 2.4 after the second pass); covers and harness; battery cradle and electronics bay.
-- Stair robustness: rough v9 (still the stair policy) falls in 1 of 15 runs on 15-20 cm stairs on the 1.44 m model (2 of 15 on the old body); a retrained rough v10 did worse (6 of 15) and is not used.
+- Stair robustness: rough v9 (still the stair policy) passes all 25 stair runs (5-20 cm, five seeds) on the current model (2 of 15 failed on the old body); retrains rough v10 (6 of 15) and v11 (3 of 5 failed on 20 cm) did worse and are not used.
 - Motion tracking: one tracker follows all 25 Kimodo clips upright on the 1.44 m model; five weak clips were regenerated and all 25 now pass the skill checks. A new tracker (v4) is still training, so tracking results are provisional; next a jog with a flight phase, a closer two-hand wave and a MuJoCo replay.
 - Leg CAD fasteners, bearing seats and hip-yaw far-side support; fasteners, clips and connector footprints in the CAD.
-- Retrain the walking and stair policies on the 1.44 m body with hands (listed under the roadmap's hands section): flat v8 is done and passing; the stair policy is still rough v9 until a retrain beats it.
+- Retrain the walking and stair policies on the current body: done; flat v9 passes, and rough v9 stays the stair policy because no retrain has beaten it.
 
 Phase 2 preparation has also started: a RobStride CAN driver written from the official manuals, with unit-tested frame encoding (`robot/drivers/robstride.py`), and bench scripts for scan, latency, step response and thermal tests (`bench/`, untested on hardware).
 
@@ -116,7 +116,7 @@ The roadmap lists 13 items to verify before ordering. Each is a <a class="g" hre
 <RawHtml html={widget3} />
 
 :::note[Example: how the knee-heating risk retires]
-In the static 18 cm step check on the 1.44 m model the stance knee holds 47 N·m, 118% of the RS04's continuous rating (item 11). Phase 1 shrank the risk: a trained stair policy (on the old 1.29 m model) loads the knees at 73-75% of rated RMS, because a dynamic gait loads each knee for only part of each step (`docs/design/stairs.md`). The stair policy in use (rough v9) was trained on the 1.29 m body, and no knee RMS on the 1.44 m body is published yet, so this still has to be re-measured. Phase 2's bench thermal test then measures the RS04's real continuous rating in a thigh-sized mount; if it is 30-35 N·m instead of 40, stair RMS rises to roughly 85-100%. Phase 3 confirms it on one leg under gait-like loads ("nothing overheats"). Only if those fail does the parked 1.5:1 knee stage come back.
+In the static 18 cm step check on the current model the stance knee holds 47 N·m, 118% of the RS04's continuous rating (item 11). Phase 1 shrank the risk: a trained stair policy (on the old 1.29 m model) loads the knees at 73-75% of rated RMS, because a dynamic gait loads each knee for only part of each step (`docs/design/stairs.md`). The stair policy in use (rough v9), replayed on today's 1.41 m model, keeps the knees at 56-65% of rated (RMS over each stairs run, which includes the flat walk before and after). Phase 2's bench thermal test then measures the RS04's real continuous rating in a thigh-sized mount; if it is 30-35 N·m instead of 40, stair RMS rises to roughly 85-100%. Phase 3 confirms it on one leg under gait-like loads ("nothing overheats"). Only if those fail does the parked 1.5:1 knee stage come back.
 :::
 
 ## Skills beyond walking
@@ -146,7 +146,7 @@ Out of scope for this robot: parkour and tall jumps (past the 70%-of-peak torque
 :::caution[Where sources and the repo disagree]
 - <b>Inside the repo:</b> `docs/plan.md` lists the Orin and IMU as phase 4 work, but phase 2's pass check is "CAN at the planned rates works on the Orin", and roadmap items 4 and 13 need it on the bench. This page's spend puts the Orin in phase 2. The project already owns one, so in practice it does not matter.
 - <b>Pace:</b> the plan gives phase 1 three to five weeks part-time; the roadmap already shows 26 of 30 phase 1 items ticked four days after it started (2026-10-25 to 2026-10-29). The indicative times are a planning baseline, not a measured rate.
-- <b>Walking requirement vs phase 1's current model:</b> the stair heat figures (73-75% knee RMS) come from a policy trained on the 1.29 m body; the static check on the 1.44 m body is worse (118% vs 112%). Flat walking has been re-checked on the current model (flat v8 passes); the stair heat figure has not.
+- <b>Walking requirement vs phase 1's current model:</b> the stair heat figures (73-75% knee RMS) come from a policy trained on the 1.29 m body; the static check on the 1.44 m body is worse (118% vs 112%). Both have been re-checked on the current model: flat v9 passes, and rough v9 keeps the knees at 56-65% RMS on stairs.
 :::
 
 ## Decisions you can make here

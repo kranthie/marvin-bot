@@ -88,9 +88,10 @@ GAINS = {
     ".*_ankle_roll": (40.0, 2.0, 0.02, 0.2),
     "waist_yaw": (150.0, 5.0, 0.02, 0.2),
     ".*_shoulder_pitch": (40.0, 2.0, 0.02, 0.2),
-    ".*_shoulder_roll": (40.0, 2.0, 0.02, 0.2),
-    ".*_shoulder_yaw": (30.0, 1.5, 0.01, 0.1),
-    ".*_elbow": (30.0, 1.5, 0.01, 0.1),
+    # RS10P (25:1): armature from RobStride's specification sheet, 0.00625 kg·m² at the output
+    ".*_shoulder_roll": (40.0, 2.0, 0.00625, 0.2),
+    ".*_shoulder_yaw": (30.0, 1.5, 0.00625, 0.1),
+    ".*_elbow": (30.0, 1.5, 0.00625, 0.1),
     ".*_wrist_yaw": (15.0, 0.8, 0.005, 0.05),
     "neck_.*": (10.0, 0.5, 0.002, 0.02),
     ".*_wrist_pitch": (10.0, 0.5, 0.002, 0.02),

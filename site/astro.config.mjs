@@ -19,7 +19,7 @@ export default defineConfig({
     starlight({
       title: 'Marvin Bot',
       description:
-        'An open-source 1.44 m humanoid robot on RobStride actuators and a Jetson AGX Orin, designed in code and trained in simulation.',
+        'An open-source 1.41 m humanoid robot on RobStride actuators and a Jetson AGX Orin, designed in code and trained in simulation.',
       logo: { src: './src/assets/logo.svg', replacesTitle: false },
       favicon: '/favicon.svg',
       social: [{ icon: 'github', label: 'GitHub', href: repo }],

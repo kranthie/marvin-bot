@@ -11,7 +11,7 @@ const PH=[
   work:'Code-CAD of the frame, URDF and masses generated from it; standing, step-up and torque/thermal checks; walking and stair policies in Isaac Lab, cross-checked in MuJoCo.',
   pass:'Walks and climbs 15-18 cm steps in simulation; peak torques ≤70% of rating; continuous torques within rating.',
   buys:'Nothing in parts (a training GPU, not counted in the BOM, or a rented one).',
-  risks:'Can this body walk and climb at all with these actuators? Knee heating partly (a stair policy on the old 1.29 m body at 73-75% RMS; flat v8 on the 1.44 m body at most 68%); ankle push-rod loads (item 9); mass and strength on paper.',
+  risks:'Can this body walk and climb at all with these actuators? Knee heating partly (a stair policy on the old 1.29 m body at 73-75% RMS; rough v9 on today's body 56-65%; flat v9 at most 70%); ankle push-rod loads (item 9); mass and strength on paper.',
   study:['13-description','14-simulation','15-pd-control','16-rl-walking','05-leg-loads-stairs','06-ankle-linkage','08-structure-cad','17-motion-tracking']},
  {n:'Actuator bench',lo:2,hi:3,status:'todo',
   work:'One RS04 and one RS03, CAN adapter, bench supply with regen clamp. Measure torque constant, speed, heating, CAN timing, built-in position control; fit actuator models and feed them back into simulation.',
@@ -34,7 +34,7 @@ const PH=[
  {n:'Torso, arms, head',lo:4,hi:6,status:'todo',
   work:'Waist, arms, wrist pitch and hands, neck, camera; whole-body controller; fall recovery.',
   pass:'Walks while carrying objects; gets up after a fall.',
-  buys:'RS06 ×5, RS00 ×2, four STS3250 servos, hand kits and converters, depth camera, waist crossed-roller bearing, torso machining, upper-body materials.',
+  buys:'RS10P ×7, RS00 ×2, four STS3250 servos, hand kits and converters, depth camera, waist crossed-roller bearing, torso machining, upper-body materials.',
   risks:'Camera driver on JetPack 7.2 (item 5); hand mass, wrist pattern and servo-bus timing (12); arm torques for getting up.',
   study:['18-wbc-vla','19-hands','17-motion-tracking','11-sensors-compute','07-mass-proportions']},
  {n:'Perception and intelligence',lo:12,hi:12,status:'todo',ongoing:true,
@@ -56,7 +56,7 @@ const RISKS=[
  [8,'Desktop-CNC feeds and accuracy in 6061 (coupon cuts)','3','Coupon cuts before machining the first leg*'],
  [9,'Ankle push-rod loads and rod-end sizing','1 → 3','Simulation with gait loads (phase 1), then linkage range on the leg jig (phase 3)*'],
  [10,'GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs','6','When manipulation moves onto the robot*'],
- [11,'Knee and hip-roll heating on slow stairs (static check: knee 118%, hip roll 105% of rated)','1 → 2 → 3','Stair policy RMS on the 1.44 m model (phase 1), RS04 thermal test in a thigh-sized mount (phase 2), gait-like loads on one leg (phase 3)'],
+ [11,'Knee and hip-roll heating on slow stairs (static check: knee 118%, hip roll 105% of rated)','1 → 2 → 3','Stair policy RMS on the current model (phase 1: 56-65%), RS04 thermal test in a thigh-sized mount (phase 2), gait-like loads on one leg (phase 3)'],
  [12,'Hands: weigh the kits, confirm the 6 × M3 on Ø42 wrist pattern, servo-bus timing with 8 servos per hand','5','The kits are owned, so this can be done any time; needed before the arms are built*'],
  [13,'CAN interfaces: does a dual-channel adapter carry two 500 Hz buses on one USB link? Find a US price','2','With the CAN timing test (item 4); otherwise 5 single-channel adapters and room for 2 more in the bay'],
 ];
@@ -163,7 +163,7 @@ function updateNote(S){
   if(state.sel!==DEFAULTS.sel) parts.push(`a focus on phase ${state.sel} (${PH[state.sel].n})`);
   if(!parts.length){ $('note').textContent='Change a control above to build a note.'; return; }
   const i=state.sel;
-  $('note').textContent=`For Marvin Bot (1.44 m, 41 kg, 27-DOF humanoid; currently in phase 1, robot in simulation, since 2026-10-25), I planned the build with ${parts.join(', ')}.
+  $('note').textContent=`For Marvin Bot (1.41 m, 40 kg, 27-DOF humanoid; currently in phase 1, robot in simulation, since 2026-10-25), I planned the build with ${parts.join(', ')}.
 Projected: actuator bench (phase 2) starts ${fmtD(S[2].s)}; lower body walking (end of phase 4) ${fmtD(S[4].e)}; whole robot (end of phase 5) ${fmtD(S[5].e)}.
 Phase ${i} pass check: ${PH[i].pass} Approximate parts spend: ${money(SPEND[i])} (single prices; guide's mapping of bom/bom.xlsx to phases). Risks it retires: ${PH[i].risks}
 Before ordering, verify the docs/roadmap.md open items settled in or before this phase. Durations are indicative, from docs/plan.md, scaled by hours; not a forecast.`;

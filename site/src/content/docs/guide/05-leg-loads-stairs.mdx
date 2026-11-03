@@ -16,7 +16,7 @@ import '../../../guide/05-leg-loads-stairs/style.css';
 
 <div class="guide-meta">
 
-**Stage 2 · Mechanics** · \~35 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [02 Balance](../02-balance/), [04 Actuators](../04-actuators/) · Maths: torque = force × distance · numbers from the repository as of 2026-10-29
+**Stage 2 · Mechanics** · \~35 min · Before this: [01 Degrees of freedom](../01-dof-kinematics/), [02 Balance](../02-balance/), [04 Actuators](../04-actuators/) · Maths: torque = force × distance · numbers from the repository as of 2026-11-02
 
 </div>
 
@@ -124,7 +124,8 @@ Press **Static hold** (118%), then **stair policy-like**: the peak is higher (54
 - **Static step-up check** (`sim/mujoco/check_step_up.py`): three poses of a slow step, pelvis upright, feet flat, CoM at least 2 cm inside the supporting foot; stance torques from the weight of everything above each joint. On the 1.44 m model, 10–20 cm stairs are all possible; the worst stance knee is **47 N·m = 39% of peak, 118% of continuous**, hip roll 42 N·m = 105% (`docs/design/stairs.md`; `docs/decisions.md`, 2026-10-29).
 - We ran the check read-only: the worst pose is pose 3 (standing on the stair, rear toe over the edge) with the stance knee at 35°, hip pitch 24°, ankle pitch 11°, the CoM 0.122 m behind the knee and 0.062 m behind the ankle. It is the same for every riser from 10 to 20 cm, because that pose is set by the walking crouch and the reach of the rear foot, not by the riser.
 - **Trained stair policies** (policies are named by the ground they were trained on, "flat" or "rough", plus a version number; MuJoCo cross-check, `sim/mujoco/check_policy.py`): rough v5 on the earlier 1.29 m model measured the knees at <b>73–75% of continuous (RMS)</b> on 10–20 cm stairs, hip roll \~60%. The stair policy in use today, rough v9 (also trained on the 1.29 m body), passes 14 of 15 stair runs (15, 18 and 20 cm, five noise seeds) on the 1.44 m model; a retrained rough v10 did worse (6 of 15) and is not used. The repo does not yet give v9's knee RMS on the new body (`sim/isaaclab/README.md`).
-- **Flat walking on the 1.44 m model** (flat v8, retrained): knees bent about 38–40° on average through the stride (15° standing); hottest joint a knee at 68% of continuous in the 1.0 m/s fast walk.
+- **Flat walking on the current 1.41 m model** (flat v9, retrained): knees bent about 38–40° on average through the stride (15° standing); hottest joint a knee at 70% of continuous in the 1.0 m/s fast walk.
+- **Stairs on the current model** (rough v9, replayed): knees at 56-65% of rated (RMS over each stairs run, which includes the flat walk before and after) on 5–20 cm stairs.
 - <b>Rule:</b> peak ≤ 70% of the peak rating; continuous (RMS) within the rating. Each extra kilogram adds about 1.1 N·m at the knee in the worst pose.
 - <b>Open question:</b> the RS04's real continuous rating on a thigh-sized plate. If it is 30–35 N·m, stair RMS would be about 85–100% (`docs/design/stairs.md`). A phase 2 bench test (`bench/actuator/bench_robstride.py thermal`) will measure it.
 - <b>Parked option:</b> a 1.5:1 belt or linkage stage at the knee: 60 N·m continuous, 180 N·m peak, \~14 rad/s, \~0.2 kg, some backlash, thigh redesign. Added only if the measured stair RMS exceeds the measured rating by more than better cooling can cover.
@@ -148,18 +149,18 @@ Press **Static hold** (118%), then **stair policy-like**: the peak is higher (54
 | 1.5:1 knee stage | 60 / 180 N·m, \~14 rad/s, 2.25 × reflected inertia | \~0.2 kg, backlash, thigh redesign |
 | Larger actuator from another vendor | Maybe 55 N·m continuous or more | Second protocol, cost, mass |
 | Shorter or less bent legs | Shorter lever arms | Stairs need ≥0.65 m hip height (R3); a straighter walk needs retraining |
-| Less mass | \~1.1 N·m per kg at the knee | Shoulder RS03 → RS06 saves \~1.1 kg but halves shoulder peak |
+| Less mass | \~1.1 N·m per kg at the knee | RS10P in the arms saved 1.5 kg (2026-11-02); shoulder pitch and waist stay RS03 |
 
 The repo's decision (`docs/decisions.md`, 2026-10-26, kept on 2026-10-29): keep the RS04 knee with no stage, and settle it from the trained stair policy's knee RMS (done on the 1.29 m model: 73–75%; to be repeated on the 1.44 m body), the bench thermal test, and the final mass. Making the legs 90 mm longer instead of 50 mm was rejected partly because the knee would reach 127% of rated and need the stage.
 
 :::caution[Where sources and the repo disagree]
-No source disagreement; two repo notes. (1) The 73–75% stair RMS was measured on the 1.29 m model (rough v5); the 1.44 m body's static figure rose from 109% to 118%, and the stair policy now used (rough v9, 14 of 15 runs passed on the 1.44 m model) has no published knee RMS on the new body, so the stair RMS on today's robot is not yet known. `docs/design/stairs.md` still quotes the rough v5 figure and the flat v3 walk. (2) The rated torque is quoted on the manual's large heat sink; the repo itself flags that the real figure in the leg may be 30–35 N·m.
+No source disagreement; two repo notes. (1) The 73–75% stair RMS was measured on the 1.29 m model (rough v5); the 1.44 m body's static figure rose from 109% to 118%, and the stair policy now used (rough v9) keeps the knees at 56-65% of rated (RMS over each stairs run, which includes the flat walk before and after) on today's 1.41 m model, so the 73–75% figure is not exceeded. `docs/design/stairs.md` still quotes the rough v5 figure and the flat v3 walk. (2) The rated torque is quoted on the manual's large heat sink; the repo itself flags that the real figure in the leg may be 30–35 N·m.
 :::
 
 ## Decisions you can make here
 
-- Whether the knee needs the 1.5:1 stage: measure the stair policy's knee RMS on the 1.44 m body (not yet reported for rough v9) and compare it with the bench-measured continuous rating.
-- Walking height and stance: flat v8 walks with its knees bent \~38–40° on average, not the 15° stance; a straighter gait shortens lever arms at the cost of push robustness (page [02](../02-balance/)) and stair reach.
+- Whether the knee needs the 1.5:1 stage: compare the stair policy's knee RMS on today's body (56–65% for rough v9) with the bench-measured continuous rating.
+- Walking height and stance: flat v9 walks with its knees bent \~38–40° on average, not the 15° stance; a straighter gait shortens lever arms at the cost of push robustness (page [02](../02-balance/)) and stair reach.
 - Mass: every kilogram saved is about 1.1 N·m less at the knee on stairs; the price is usually a smaller part somewhere else (for example lighter shoulder motors, which save about 1.1 kg but halve the shoulder's peak torque).
 - Cooling before gearing: a better heat path is cheap and changes nothing else, so try it before the 1.5:1 stage, which costs speed, mass and a thigh redesign.
 

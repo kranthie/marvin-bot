@@ -14,9 +14,10 @@ servos (STS3250, 45.3 x 35.8 x 24.8 mm) and the depth camera (Orbbec Gemini 335L
   printed as five light panels split where the concept's are (crown, chin, two cheeks, a rear
   cap) and a dark visor band across the face, at eye height;
 - camera frame: a dark printed sleeve round the camera, in an opening in the visor band, so
-  the camera reads as part of the band. The camera's front is level with the face's front on
-  the centre line and nothing is ahead of its lenses (a window behind the curved face let
-  through only about a third of its view). The sleeve is only the part outside the shell,
+  the camera reads as part of the band. The camera's front stands 4 mm proud of the face on
+  the centre line, so nothing is ahead of its lenses (a window behind the curved face let
+  through only about a third of its view; level with the face, the band cut a fifth of
+  the colour camera's). The sleeve is only the part outside the shell,
   glued into its opening; the camera slides in from the front and screws to an arm from the
   head frame by its tripod thread underneath;
 - the camera, as a bought part, with the outline of Orbbec's model of it (OrbbecSDK_ROS2,
@@ -123,8 +124,13 @@ EYE = 20.0  # the visor band's middle, outline height
 CROWN_Z, CHIN_Z, VISOR_X, REAR_X = 52.0, -11.0, 60.0, -40.0
 CAMERA = (124.0, 29.0, 27.0, 133.0)  # width, height, depth (mm), mass (g)
 CAMERA_Z = EYE + HEAD_RISE  # at eye height, in the middle of the visor band
-# its front level with the head's front on the centre line
-CAMERA_FRONT = float(np.interp(EYE, [z for z, _, _ in SIDE], [x for _, _, x in SIDE]))
+# its front 4 mm proud of the head's front on the centre line: level with it, the visor band
+# round the opening cut the colour camera's view by a fifth; 4 mm out, a ray cast from both IR
+# cameras and the colour camera over the full 90 x 65 deg view clears 100%
+CAMERA_PROUD = 4.0
+CAMERA_FRONT = (
+    float(np.interp(EYE, [z for z, _, _ in SIDE], [x for _, _, x in SIDE])) + CAMERA_PROUD
+)
 CAMERA_AT = (CAMERA_FRONT - CAMERA[2] / 2, 0.0, CAMERA_Z)  # its centre
 FRAME_RIM = 3.0  # the camera frame's wall
 FRAME_GAP = 0.3  # round the camera, and round the frame where it passes through the shell
@@ -196,20 +202,26 @@ def parts() -> list[Part]:
             "head_link",
             "al7075",
             plate(rect(-10, back, -5, 105), "y", y, 3.0),
+            # for cad/fea.py: held on the pitch servo's horn and its idler pin
+            ifaces=[contact("neck_pitch", (0, y - g * 1.5, 0), "y", 0, r)],
         )
-        for n, y in (("horn", y_horn), ("idler", y_idler))
+        for n, y, g, r in (("horn", y_horn, 1, 10.0), ("idler", y_idler, -1, 4.0))
     ]
+    arm_top = cz - ch / 2 - FRAME_GAP  # under the camera, to just past its tripod thread
+    # the bridge reaches down past the camera arm's underside, so the arm bolts to its face
     hf.append(
         made(
             "head_frame_bridge",
             "head_link",
             "al7075",
             plate(
-                rect(y_idler + 1.5, y_horn - 1.5, cz - 11, min(cz + 11, 101.0)), "x", back - 2, 4.0
+                rect(y_idler + 1.5, y_horn - 1.5, arm_top - 6, min(cz + 11, 101.0)),
+                "x",
+                back - 2,
+                4.0,
             ),
         )
     )
-    arm_top = cz - ch / 2 - FRAME_GAP  # under the camera, to just past its tripod thread
     arm_end = CAMERA_FRONT - TRIPOD_BACK + 8
     hf.append(
         made(
@@ -217,6 +229,8 @@ def parts() -> list[Part]:
             "head_link",
             "al7075",
             plate(rect(back - 4, arm_end, -8, 8), "z", arm_top - 3, 6.0),
+            # the camera's tripod screw (cad/fea.py loads the head's mass here and on the top bar)
+            ifaces=[contact("head_camera", (CAMERA_FRONT - TRIPOD_BACK, 0, arm_top), "z", 0, 6)],
         )
     )
     hf.append(
@@ -225,6 +239,7 @@ def parts() -> list[Part]:
             "head_link",
             "al7075",
             plate(rect(-10, back, y_idler + 1.5, y_horn - 1.5), "z", 103, 4.0),
+            ifaces=[contact("head_shell", (-1.25, (y_idler + y_horn) / 2, 105), "z", 0, 8)],
         )
     )
     out.extend(hf)

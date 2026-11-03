@@ -42,9 +42,10 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Lighten to the 42 kg limit with covers: 41.95 kg (41.16 bare), every metal part at SF 2.3 or better
 - [x] Wiring paths for the new layout (the hip yaw motor on the thigh, the front-ring joints), measured from the motors' driver caps; harness clip points in the parts: push-in mount holes on pads, TPU edge clips, a P-clip (decisions 2026-10-31)
 - [x] Shells brought up to the new frame: a faceted torso shell, grilles over the arm motors, room for the harness loops; 41.99 kg with shells, no shell contacts (decisions 2026-10-31)
-- [x] RS10P at shoulder roll, shoulder yaw and elbow: 40.47 kg with shells, every arm part at SF 2.7 or better (decisions 2026-11-02); the arm policies to be retrained for its 13 rad/s
+- [x] RS10P at shoulder roll, shoulder yaw and elbow: 40.54 kg with shells (with the new head), every arm part at SF 2.7 or better (decisions 2026-11-02); walking retrained on it (flat v9)
+- [x] Head: a rounded box (156 × 203 × 121 mm) with a dark visor band, the depth camera in the band 4 mm proud of the face (100% clear view); the head frame in `cad/fea.py` (head drop SF 99+); the robot stands 1.41 m (decisions 2026-11-02)
 - [ ] Shells redrawn in build123d as designed panels (lofted, even wall, filleted, chosen seams, clips), starting with a thigh pilot
-- [ ] Pelvis back plate: SF 2.1-2.3 between runs at the 6 mm mesh; firm up its margin
+- [x] Pelvis back plate: SF 2.4 at a 4 mm mesh (2.1-2.3 at 6 mm; decisions 2026-11-02)
 - [ ] Retrain the walking, stair and tracking policies on the front-ring model
 - [ ] Leg CAD: fasteners, bearing seats, hip yaw far-side support
 - [x] Pelvis and torso CAD, first pass (`cad/torso.py`): 0.86 + 1.46 kg (estimates were 1.0 + 1.8); pelvis frame SF 37 in the landing case; robot 39.06 kg
@@ -90,7 +91,7 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 - [x] Real hand meshes (AmazingHand, CC-BY-4.0, `description/third_party/`) in the CAD, URDF and renders; mount plate drilled to its wrist interface (6 × M3 on Ø42)
 - [ ] Weigh the hands; fit a 12 V to 5 V converter at each wrist
 - [ ] A hand model for manipulation in simulation (the kit's MJCF has placeholder masses and closed linkages; reduce each finger to its two servo joints)
-- [ ] Retrain the walking and stair policies on the current model (the hands and the 1.44 m body): flat v8 done and passing; rough v10 climbed worse than v9 (6 of 15 stair runs against 14 of 15 for v9 on the new body), so v9 stays until a retrain beats it
+- [x] Retrain the walking and stair policies on the current model: flat v9 (RS10P arms, new head) passes; rough v10 and v11 climbed worse than v9 (v11 fails 3 of 5 runs on 20 cm), and rough v9 passes all 25 stair runs (5-20 cm, five seeds) on the current model, so v9 stays
 - Later upgrades, in order: compliant fingertips or pads; the kit's stronger-servo variant (STS3032 at 6 V, same protocol as the STS3250s); a second wrist servo for side-to-side tilt; tactile fingertips
 
 ## Open items to verify before ordering
@@ -105,6 +106,6 @@ The 1-DOF grippers are replaced by two bought 8-servo four-finger hand kits (own
 8. Desktop-CNC feeds and achievable accuracy in 6061 (coupon cuts).
 9. Ankle push-rod loads and rod-end sizing (simulation with gait loads).
 10. GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs.
-11. Knee and hip-roll heating on slow stairs (knee 47 N·m, 118% of rated, and hip roll 105% in the static check on the 1.44 m model, decisions 2026-10-29; the parked 1.5:1 knee stage would also cover longer legs): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
+11. Knee and hip-roll heating on slow stairs (knee 47 N·m, 118% of rated, and hip roll 105% in the static check on the 1.44 m model, decisions 2026-10-29; knee 118% and hip roll 103% on the 1.41 m model; rough v9 keeps the knees at 56-65% RMS on stairs; the parked 1.5:1 knee stage would also cover longer legs): see [design/stairs.md](design/stairs.md) for the issue, options and how it gets settled.
 12. Hand: weigh the kits, confirm the 6 × M3 on Ø42 wrist pattern on the real part, and measure serial bus timing with 8 servos per hand.
 13. CAN interfaces: robot.yaml has 7 CAN buses (4 leg, 2 arm, battery). The BOM now covers them with the Orin's 2 on-board ports (arms), one dual-channel isolated USB-CAN adapter per leg and a single-channel one for the battery, which fit the electronics bay's 3 adapter outlines. Confirm with the CAN timing test (item 4) that a dual-channel adapter carries two 500 Hz buses on one USB link, and find a live US price for it (none was found in October 2026); otherwise use 5 single-channel adapters and make room for 2 more in the bay.

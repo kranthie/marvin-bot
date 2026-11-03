@@ -105,14 +105,14 @@ document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click'
 /* ---------------- Playground B: YAML -> URDF -> MJCF ---------------- */
 const ACTS = { // description/actuators.yaml
   RS04:{peak:120,rated:40,rpm:200,iface:'can'}, RS03:{peak:60,rated:20,rpm:195,iface:'can'},
-  RS06:{peak:36,rated:11,rpm:480,iface:'can'}, RS00:{peak:14,rated:5,rpm:315,iface:'can'},
+  RS10P:{peak:42,rated:14,rpm:125,iface:'can'}, RS00:{peak:14,rated:5,rpm:315,iface:'can'},
   STS3250:{peak:4.9,rated:1.57,rpm:75,iface:'serial'} };
 const BUSES = {'{side}_hip':{type:'can',rate:500,n:3}, '{side}_shank':{type:'can',rate:500,n:3}, '{side}_arm':{type:'can',rate:250,n:5}, 'servo':{type:'serial'}};
 const JP = { // from robot.yaml, skeleton.yaml and robot_cfg.py
   knee:{name:'knee',axis:'pitch',lo:0,hi:130,model:'RS04',bus:'{side}_shank',parent:'left_thigh_link',child:'left_shin_link',xyz:[0,0,-0.155],vec:'[0, 1, 0]',kp:150,kd:5,arm:0.03,fr:0.3,cad:{hi:130,why:'beyond 130° the upper ankle motor meets the thigh shell'}},
   hip_pitch:{name:'hip_pitch',axis:'pitch',lo:-30,hi:120,model:'RS04',bus:'{side}_hip',parent:'left_hip_roll_link',child:'left_hip_pitch_link',xyz:[0,-0.025,0],vec:'[0, -1, 0]',kp:150,kd:5,arm:0.03,fr:0.3,cad:{lo:-30,why:'beyond −30° the hip pitch yoke meets the hip roll motor'}},
-  shoulder_roll:{name:'shoulder_roll',axis:'roll',lo:-20,hi:120,model:'RS03',bus:'{side}_arm',parent:'left_shoulder_pitch_link',child:'left_shoulder_roll_link',xyz:[0,0.048,-0.025],vec:'[1, 0, 0]',kp:40,kd:2,arm:0.02,fr:0.2,cad:{lo:-20,why:'below −20° the shoulder yaw motor meets the chest shell'}},
-  elbow:{name:'elbow',axis:'pitch',lo:0,hi:135,model:'RS06',bus:'{side}_arm',parent:'left_upper_arm_link',child:'left_forearm_link',xyz:[0,0,-0.115],vec:'[0, -1, 0]',kp:30,kd:1.5,arm:0.01,fr:0.1},
+  shoulder_roll:{name:'shoulder_roll',axis:'roll',lo:-20,hi:120,model:'RS10P',bus:'{side}_arm',parent:'left_shoulder_pitch_link',child:'left_shoulder_roll_link',xyz:[0,0.048,-0.025],vec:'[1, 0, 0]',kp:40,kd:2,arm:0.00625,fr:0.2,cad:{lo:-20,why:'below −20° the shoulder yaw motor meets the chest shell'}},
+  elbow:{name:'elbow',axis:'pitch',lo:0,hi:135,model:'RS10P',bus:'{side}_arm',parent:'left_upper_arm_link',child:'left_forearm_link',xyz:[0,0,-0.115],vec:'[0, -1, 0]',kp:30,kd:1.5,arm:0.00625,fr:0.1},
   wrist_yaw:{name:'wrist_yaw',axis:'yaw',lo:-90,hi:90,model:'RS00',bus:'{side}_arm',parent:'left_forearm_link',child:'left_wrist_link',xyz:[0,0,-0.125],vec:'[0, 0, -1]',kp:15,kd:0.8,arm:0.005,fr:0.05},
 };
 JP.broken = {...JP.knee, lo:130, hi:0, model:'STS3250', vec:'[1, 0, 0]', kp:150, eff:150, arm:-0.01};
@@ -179,7 +179,7 @@ function drawB(){
   <motor name="${nameL}" joint="${nameL}" ctrlrange="${isNaN(eff)?'?':f6(-eff)} ${effS}"/>
 </actuator>
 <!-- MuJoCo has no joint velocity limit: the ${velS} rad/s from the URDF is used only in the motor model -->`;
-  const sg = {RS04:[400,8,0.03],RS03:[250,5,0.02],RS06:[40,1.5,0.01],RS00:[20,1,0.005],STS3250:[10,0.5,0.002]}[B.model]||[NaN,NaN,NaN];
+  const sg = {RS04:[400,8,0.03],RS03:[250,5,0.02],RS10P:[40,1.5,0.00625],RS00:[20,1,0.005],STS3250:[10,0.5,0.002]}[B.model]||[NaN,NaN,NaN];
   const mjpos =
 `<!-- check_standing.py: a position servo per joint, stiff holding gains by motor model -->
 <joint name="${nameL}" type="hinge" axis="${fv(ax)}" range="${f6(lo)} ${f6(hi)}" armature="${f6(sg[2])}"/>
@@ -259,7 +259,7 @@ function note(){
   if(diffs.length||B.base!=='knee'){
     parts.push(`Description edit for the ${base.name} joint (starting from the ${B.base==='broken'?'deliberately broken example':'repo values'}): ${diffs.length?diffs.join('; '):'no changes'}. ${B.nfail?`${B.nfail} check(s) would fail: ${B.fails.join(' | ')}.`:'All modelled checks pass (check_description.py, build_urdf.py --check, check_symmetry.py, cad.covers --check).'} Remember the URDF, MuJoCo model and USD are generated: edit description/*.yaml (and robot_cfg.py GAINS for kp, kd, armature, friction), then rerun tools/build_urdf.py and sim/isaaclab/convert_urdf.py.`);
   }
-  $('note').textContent = parts.length? 'Marvin Bot (1.44 m, 41 kg, 27-DOF humanoid in simulation), robot description. '+parts.join('\n\n') : 'Change a control above to build a note.';
+  $('note').textContent = parts.length? 'Marvin Bot (1.41 m, 40 kg, 27-DOF humanoid in simulation), robot description. '+parts.join('\n\n') : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
 writeB(); drawA(); drawB();
