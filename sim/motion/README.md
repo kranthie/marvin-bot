@@ -1,10 +1,12 @@
 # Motion pipeline: human motion to a Marvin Bot tracking policy
 
 Status: one tracker follows all 25 clips generated with Kimodo (locomotion, sidesteps, turns,
-a jog, a march, a kick, squatting and picking up, a bow, a dance and arm gestures) on the 1.44 m
-model. Trained for about 5,000 epochs (16,384 environments, batch 65,536, about 9 hours on one
-GPU), every clip stays upright; the hands are 3-9 cm and the feet 2.5-7 cm from the reference's on
-most clips, with the two-handed clips the weakest (clap, two-hand wave, arms raise: hands 12-16 cm).
+a jog, a march, a kick, squatting and picking up, a bow, a dance and arm gestures) on the 1.41 m
+model with the RS10P arm motors. Tracker v6: warm-started from v5 (about 5,000 epochs on the 1.44 m
+model) and trained 1,800 more epochs on the current one (16,384 environments, batch 65,536, about
+3 hours on one GPU); every clip stays upright, the hands are 3-8 cm and the feet 2-6.5 cm from the
+reference's on most clips, with the arm-heavy clips the weakest (two-hand wave, reach forward,
+clap, arms raise: hands 9-13 cm).
 The clips with the reference as a ghost are on the [skills page](../../docs/skills.md).
 Replayed in MuJoCo (`replay_mujoco.py`), it tracks as in training: see
 [the MuJoCo check](#the-mujoco-check).
@@ -183,12 +185,13 @@ $P $M/sim/motion/render_tracking.py export <Newton rollout> $W/marvin_bot_motion
     --mujoco $W/mujoco.pt    # then render: MuJoCo is drawn as a translucent orange robot
 ```
 
-(`pip install onnx onnxruntime` in the ProtoMotions environment first.) Tracker v5 in MuJoCo, at
-half and at full walking-check noise: every clip upright, and the averages over the 25 clips
-match training (joints 11.0° against 11.2° in Newton, hands 6.7 cm against 6.8, feet 4.5 against
-4.8); no clip's hands differ by more than 0.7 cm between the two. Peak torque stays under 75% of
-each motor's peak except the two-hand wave's left shoulder yaw, which reaches its 36 N·m, and the
-hottest joint in any clip runs at 56% of its continuous rating (the jog's knee).
+(`pip install onnx onnxruntime` in the ProtoMotions environment first.) Tracker v6 in MuJoCo: every
+clip upright, and the averages over the 25 clips match training (joints 9.3° against 9.4° in
+Newton, hands 5.6 cm against 5.6, feet 4.2 against 4.6; tracker v5 on the 1.44 m model: 11.0°,
+6.7 cm, 4.5 cm). Peak torque stays under 75% of each motor's peak except the two-hand wave's left
+shoulder yaw, which touches the RS10P's 42 N·m (the RS06 there hit its 36 N·m in v5). The hottest
+joint in any clip is the clap's left shoulder roll at 78% of the RS10P's 14 N·m rating (RMS); the
+legs stay under 56%.
 
 The tracker reads the torso's position in the world (how far the reference is ahead of it). In
 simulation that is exact; on the robot it has to come from odometry (legged odometry or the
