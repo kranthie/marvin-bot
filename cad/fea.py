@@ -42,8 +42,8 @@ from pathlib import Path
 
 import numpy as np
 
-E_MPA = {"al6061": 68900.0, "al7075": 71700.0, "pa_cf": 6000.0}
-NU = {"al6061": 0.33, "al7075": 0.33, "pa_cf": 0.35}
+E_MPA = {"al6061": 68900.0, "al7075": 71700.0, "pa_cf": 6000.0, "petg": 2100.0}
+NU = {"al6061": 0.33, "al7075": 0.33, "pa_cf": 0.35, "petg": 0.38}
 
 
 @dataclass
@@ -315,6 +315,8 @@ YIELD_MPA = {
     # printed carbon-fibre nylon: the strength between layers (25-40 MPa in published
     # tests), the weak direction for a part printed standing up; conservative
     "pa_cf": 25.0,
+    # printed PETG (the shells): between layers, about half its 50 MPa bulk yield
+    "petg": 25.0,
 }
 TARGET = 2.2  # SF on yield: 2, plus the mesh's 5-9% under-read in bending
 RS03_PEAK = 60.0  # N·m, the ankle motors (they drive the ankle through the linkage)
@@ -427,6 +429,16 @@ def cases(name: str, group: list, mass: float, peak: dict, joints: dict, origin:
         path = "left_shoulder_pitch" if link == "torso_link" else child.get(link)
         if path in ifaces:
             out.append(("hand", held, [path], np.array([0.25, 0.15, 0.5]) * w, np.zeros(3), hand))
+            # a sideways fall onto the arm: half the body weight into the elbow, inward
+            if link in (
+                "left_shoulder_pitch_link",
+                "left_shoulder_roll_link",
+                "left_upper_arm_link",
+            ):
+                elbow = origin["left_forearm_link"] - o
+                out.append(
+                    ("side fall", held, [path], np.array([0, -0.5, 0]) * w, np.zeros(3), elbow)
+                )
     for j in loaded:
         if j in peak and j in joints:
             axis = np.array(joints[j]["axis"], float)
@@ -478,6 +490,11 @@ def main() -> int:
     ap.add_argument("--link", help="one link or group")
     ap.add_argument("--size", type=float, default=3.0, help="mesh size, mm")
     ap.add_argument("--where", action="store_true", help="where each part's peak is (link frame)")
+    ap.add_argument(
+        "--no-idler",
+        action="store_true",
+        help="the yokes' idler bearings carry nothing (a loose idler): the motor output alone",
+    )
     args = ap.parse_args()
     mass, peak, joints, origin, parts = _setup()
     worst_sf = np.inf
@@ -494,6 +511,8 @@ def main() -> int:
         own = model.owner
         patches = {}
         for p in group:
+            if args.no_idler and p.name.endswith("_yoke"):
+                continue
             for i in p.extra.get("ifaces", []):
                 kw = {k: i[k] for k in ("r0", "r1", "span", "rigid") if k in i}
                 patches.setdefault(i["joint"], []).append(

@@ -275,9 +275,9 @@ def parts() -> list[Part]:
         "head_shell_cheek_r": zone(REAR_X, VISOR_X, lo, CROWN_Z, -big, 0.0),
     }
     for name, z in panels.items():
-        out.append(Part(name, "head_link", "pa_cf", skin ^ z, "print"))
+        out.append(Part(name, "head_link", "petg", skin ^ z, "print"))
     frame = (sleeve_out - socket) - inner  # only the part outside the shell
-    out.append(Part("head_camera_frame", "head_link", "pa_cf", frame, "print"))
+    out.append(Part("head_camera_frame", "head_link", "petg", frame, "print"))
     cam = stadium(cw, ch, cd, cx, cz)
     out.append(Part("head_camera", "head_link", "bought", cam, "bought", mass_g=cmass))
     return out

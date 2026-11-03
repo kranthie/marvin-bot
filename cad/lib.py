@@ -15,7 +15,7 @@ import manifold3d as mf
 import numpy as np
 
 # material densities, g/cm³ (printed parts: effective, walls plus infill)
-DENSITY = {"al6061": 2.70, "al7075": 2.81, "pa_cf": 1.10, "tpu": 1.15, "steel": 7.85}
+DENSITY = {"al6061": 2.70, "al7075": 2.81, "pa_cf": 1.10, "petg": 1.27, "tpu": 1.15, "steel": 7.85}
 SEGMENTS = 64
 
 

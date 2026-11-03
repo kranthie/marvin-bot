@@ -2,6 +2,18 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-11-02: arm yokes at the shoulder roll and elbow; shells in white PETG
+
+**Why.** Each RS10P hung from a ring on its front face, so its own output bearing took the arm's bending. Under the hand-catch case (0.5 × body weight at the palm) that is about 38 N·m at the shoulder roll and the shoulder yaw and 9 N·m at the elbow, against a 42 N·m peak torque; RobStride's manual gives no bearing moment rating. A sideways fall onto the elbow (0.5 × body weight, a new case in `cad/fea.py`) gives 6-18 N·m; it governs no part.
+
+**Yokes.** At the shoulder roll and the elbow the driven link now also rides on the motor's rear end: a hollow 7075 stub on the motor's rear face (its 4 × M3) carries a 6805-2RS ball bearing (25 × 37 × 7 mm, 22 g), and a plate on the driven link holds it, so a hand load reaches the stator through two bearings a motor length apart. The shoulder roll's plate stands on the roll link's top plate behind the motor; the elbow's plate joins the forearm frame by a box-section bridge under the motor, behind the forearm's centre line so it stays clear of the upper arm cover at 135°. `cad.covers --check` finds no contacts.
+
+**Shoulder yaw: no yoke yet.** Its rear end is already bolted to the roll link's top plate (the stator side), so the upper arm cannot reach round to it without passing through the roll link. The options (a crossed-roller ring at its output, as at the hip yaw, or turning the motor over) are open.
+
+**Thinned.** With the idler taking the arm's back end the roll link's front plate goes from 10 to 7 mm and the yaw ring from 4 to 3 mm. Because a ball-bearing idler with play may carry less than the check's rigid hold, `cad/fea.py --no-idler` reruns a link with the idlers carrying nothing; the thinned parts must pass the 2.2 target with the idler and stay at 1.5 or better without it (front plate: 10.8 and 1.6; yaw ring 10.7 and 4.8). The forearm frame stays 5 mm (the wrist yaw's torque governs it: 4 mm read SF 1.9); the upper arm and shoulder pitch parts carry the same load as before (the motor body still passes it to them). Net: +0.13 kg per arm (yokes, stubs and bearings 0.21 kg, thinning −0.08), 2.016 kg for both arms' structure.
+
+**Shells in white PETG.** The body shells and head panels are printed in white PETG (density 1.27 against 1.10; carbon-fibre nylon only comes dark): shells 0.98 kg, head 0.499 kg. Robot 40.00 kg bare and 40.97 kg with shells, inside the 42 kg limit. Carbon-fibre nylon stays for hidden functional prints. The fastener and snap-fit pass follows.
+
 ## 2026-11-02: follow-ups to the arm and head changes
 
 - **Shoulder pitch and waist yaw stay RS03.** Holding 1 kg at full forward reach takes 11.3 N·m at the shoulder pitch, over the RS10P's 9.5 N·m held rating; the waist carries little torque (99th percentile 6.3 N·m by inverse dynamics over the 25 reference clips) and would suit an RS10P, but its crossed-roller bearing and hub are built round the RS03 and the 0.44 kg it would save is not needed with 1.46 kg in hand under the limit.

@@ -48,6 +48,7 @@ BUDGET = {
     "upper_arm": "arm_structure",
     "forearm": "arm_structure",
     "wrist": "arm_structure",
+    "elbow": "arm_structure",
     "hand_mount": "arm_structure",
     "hand_arm": "arm_structure",
     "hand": "hands",

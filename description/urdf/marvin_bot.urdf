@@ -174,52 +174,58 @@
     <visual><origin xyz="0 -0.0121 0.0235" rpy="0 0 0"/><geometry><box size="0.0248 0.0358 0.0453"/></geometry><material name="STS3250"><color rgba="0.88 0.66 0.0 1"/></material></visual>
   </link>
   <link name="head_link">
-    <inertial><origin xyz="0.0361828 -0.00142562 0.0910889"/><mass value="0.41687"/><inertia ixx="0.00123876" ixy="-2.12489e-05" ixz="4.63284e-05" iyy="0.0021617" iyz="-1.44905e-05" izz="0.00250704"/></inertial>
+    <inertial><origin xyz="0.0339416 -0.00132547 0.0916511"/><mass value="0.44837"/><inertia ixx="0.00138602" ixy="-1.99168e-05" ixz="6.03695e-05" iyy="0.00238647" iyz="-1.48245e-05" izz="0.0027742"/></inertial>
     <visual><geometry><mesh filename="../meshes/head_frame_side_horn.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame_side_idler.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame_bridge.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_frame_top.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_visor.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_shell_crown.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_shell_chin.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_shell_rear.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_shell_cheek_l.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_shell_cheek_r.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
-    <visual><geometry><mesh filename="../meshes/head_camera_frame.stl"/></geometry><material name="pa_cf"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_visor.stl"/></geometry><material name="petg"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_crown.stl"/></geometry><material name="petg"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_chin.stl"/></geometry><material name="petg"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_rear.stl"/></geometry><material name="petg"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_cheek_l.stl"/></geometry><material name="petg"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_shell_cheek_r.stl"/></geometry><material name="petg"><color rgba="0.17 0.18 0.20 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/head_camera_frame.stl"/></geometry><material name="petg"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/head_camera.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
     <collision><origin xyz="0.004 0 0.099"/><geometry><box size="0.16 0.142 0.158"/></geometry></collision>
   </link>
   <link name="left_shoulder_pitch_link">
-    <inertial><origin xyz="0.00288935 0.0373416 -0.0205695"/><mass value="0.65411"/><inertia ixx="0.000619174" ixy="-6.17227e-06" ixz="1.0571e-05" iyy="0.000495918" iyz="0.000110321" izz="0.000629498"/></inertial>
+    <inertial><origin xyz="0.00165018 0.037703 -0.0207198"/><mass value="0.67707"/><inertia ixx="0.000628004" ixy="2.46695e-06" ixz="6.97985e-06" iyy="0.000529114" iyz="0.000111369" izz="0.000664778"/></inertial>
     <visual><geometry><mesh filename="../meshes/left_shoulder_hub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_shoulder_flange.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_shoulder_roll_ring.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/left_shoulder_roll_idler_stub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><origin xyz="0 0.048 -0.025" rpy="0 1.5708 0"/><geometry><cylinder radius="0.0285" length="0.0606"/></geometry><material name="RS10P"><color rgba="0.18 0.66 0.70 1"/></material></visual>
   </link>
   <link name="left_shoulder_roll_link">
-    <inertial><origin xyz="0.0110306 -0.000118464 -0.0688522"/><mass value="0.78078"/><inertia ixx="0.00136117" ixy="2.71531e-06" ixz="-0.000274339" iyy="0.00140811" iyz="3.16691e-06" izz="0.000763743"/></inertial>
+    <inertial><origin xyz="0.00390892 -0.000116495 -0.065583"/><mass value="0.7665"/><inertia ixx="0.00129027" ixy="3.13497e-06" ixz="-2.98699e-05" iyy="0.0014479" iyz="2.79074e-06" izz="0.000747046"/></inertial>
     <visual><geometry><mesh filename="../meshes/left_shoulder_roll_hub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_shoulder_roll_front.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_shoulder_roll_front_clip.stl"/></geometry><material name="tpu"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_shoulder_roll_top.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/left_shoulder_roll_idler.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/left_shoulder_roll_yoke.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_shoulder_yaw_ring.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><origin xyz="0 0 -0.08" rpy="0 0 0"/><geometry><cylinder radius="0.0285" length="0.0606"/></geometry><material name="RS10P"><color rgba="0.18 0.66 0.70 1"/></material></visual>
   </link>
   <link name="left_upper_arm_link">
-    <inertial><origin xyz="-0.00266627 0.000207812 -0.0973232"/><mass value="0.71168"/><inertia ixx="0.00117368" ixy="2.01194e-06" ixz="7.04462e-05" iyy="0.00115145" iyz="-3.98453e-05" izz="0.000504617"/></inertial>
+    <inertial><origin xyz="-0.00259556 -0.0009845 -0.0979229"/><mass value="0.73331"/><inertia ixx="0.00122068" ixy="4.43318e-06" ixz="7.18369e-05" iyy="0.00116744" iyz="-5.59564e-05" izz="0.000541878"/></inertial>
     <visual><geometry><mesh filename="../meshes/left_upper_arm_hub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_upper_arm_ring.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_upper_arm_strap.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/left_elbow_idler_stub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><origin xyz="0 -0.005 -0.115" rpy="1.5708 0 0"/><geometry><cylinder radius="0.0285" length="0.0606"/></geometry><material name="RS10P"><color rgba="0.18 0.66 0.70 1"/></material></visual>
     <collision><origin xyz="0 0 -0.06"/><geometry><box size="0.08 0.08 0.14"/></geometry></collision>
   </link>
   <link name="left_forearm_link">
-    <inertial><origin xyz="-0.00585549 0.00493015 -0.0910471"/><mass value="0.50588"/><inertia ixx="0.00147576" ixy="-1.42258e-05" ixz="0.000180154" iyy="0.00149184" iyz="-0.000170581" izz="0.000326922"/></inertial>
+    <inertial><origin xyz="-0.00679528 -0.000789061 -0.0808469"/><mass value="0.60312"/><inertia ixx="0.00203373" ixy="-1.53536e-05" ixz="0.000183507" iyy="0.00191762" iyz="5.1315e-05" izz="0.000508822"/></inertial>
     <visual><origin xyz="-0.035 0 -0.01"/><geometry><box size="0.02 0.06 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_forearm_hub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_forearm_frame.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/left_wrist_bracket.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/left_elbow_idler.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/left_forearm_yoke.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/><geometry><cylinder radius="0.0285" length="0.0514"/></geometry><material name="RS00"><color rgba="0.56 0.36 0.82 1"/></material></visual>
     <collision><origin xyz="0 0 -0.08"/><geometry><box size="0.07 0.07 0.17"/></geometry></collision>
   </link>
@@ -321,35 +327,41 @@
     <collision><origin xyz="0.03 0 -0.045"/><geometry><box size="0.24 0.11 0.03"/></geometry></collision>
   </link>
   <link name="right_shoulder_pitch_link">
-    <inertial><origin xyz="0.00288935 -0.0373416 -0.0205695"/><mass value="0.65411"/><inertia ixx="0.000619174" ixy="6.17227e-06" ixz="1.0571e-05" iyy="0.000495918" iyz="-0.000110321" izz="0.000629498"/></inertial>
+    <inertial><origin xyz="0.00165018 -0.037703 -0.0207198"/><mass value="0.67707"/><inertia ixx="0.000628004" ixy="-2.46695e-06" ixz="6.97985e-06" iyy="0.000529114" iyz="-0.000111369" izz="0.000664778"/></inertial>
     <visual><geometry><mesh filename="../meshes/right_shoulder_hub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_shoulder_flange.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_shoulder_roll_ring.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/right_shoulder_roll_idler_stub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><origin xyz="0 -0.048 -0.025" rpy="0 1.5708 0"/><geometry><cylinder radius="0.0285" length="0.0606"/></geometry><material name="RS10P"><color rgba="0.18 0.66 0.70 1"/></material></visual>
   </link>
   <link name="right_shoulder_roll_link">
-    <inertial><origin xyz="0.0110306 0.000118464 -0.0688522"/><mass value="0.78078"/><inertia ixx="0.00136117" ixy="-2.71531e-06" ixz="-0.000274339" iyy="0.00140811" iyz="-3.16691e-06" izz="0.000763743"/></inertial>
+    <inertial><origin xyz="0.00390892 0.000116495 -0.065583"/><mass value="0.7665"/><inertia ixx="0.00129027" ixy="-3.13497e-06" ixz="-2.98699e-05" iyy="0.0014479" iyz="-2.79074e-06" izz="0.000747046"/></inertial>
     <visual><geometry><mesh filename="../meshes/right_shoulder_roll_hub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_shoulder_roll_front.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_shoulder_roll_front_clip.stl"/></geometry><material name="tpu"><color rgba="0.17 0.18 0.20 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_shoulder_roll_top.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/right_shoulder_roll_idler.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/right_shoulder_roll_yoke.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_shoulder_yaw_ring.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><origin xyz="0 0 -0.08" rpy="0 0 0"/><geometry><cylinder radius="0.0285" length="0.0606"/></geometry><material name="RS10P"><color rgba="0.18 0.66 0.70 1"/></material></visual>
   </link>
   <link name="right_upper_arm_link">
-    <inertial><origin xyz="-0.00266627 -0.000207812 -0.0973232"/><mass value="0.71168"/><inertia ixx="0.00117368" ixy="-2.01194e-06" ixz="7.04462e-05" iyy="0.00115145" iyz="3.98453e-05" izz="0.000504617"/></inertial>
+    <inertial><origin xyz="-0.00259556 0.0009845 -0.0979229"/><mass value="0.73331"/><inertia ixx="0.00122068" ixy="-4.43318e-06" ixz="7.18369e-05" iyy="0.00116744" iyz="5.59564e-05" izz="0.000541878"/></inertial>
     <visual><geometry><mesh filename="../meshes/right_upper_arm_hub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_upper_arm_ring.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_upper_arm_strap.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/right_elbow_idler_stub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><origin xyz="0 0.005 -0.115" rpy="1.5708 0 0"/><geometry><cylinder radius="0.0285" length="0.0606"/></geometry><material name="RS10P"><color rgba="0.18 0.66 0.70 1"/></material></visual>
     <collision><origin xyz="0 0 -0.06"/><geometry><box size="0.08 0.08 0.14"/></geometry></collision>
   </link>
   <link name="right_forearm_link">
-    <inertial><origin xyz="-0.00585549 -0.00493015 -0.0910471"/><mass value="0.50588"/><inertia ixx="0.00147576" ixy="1.42258e-05" ixz="0.000180154" iyy="0.00149184" iyz="0.000170581" izz="0.000326922"/></inertial>
+    <inertial><origin xyz="-0.00679528 0.000789061 -0.0808469"/><mass value="0.60312"/><inertia ixx="0.00203373" ixy="1.53536e-05" ixz="0.000183507" iyy="0.00191762" iyz="-5.1315e-05" izz="0.000508822"/></inertial>
     <visual><origin xyz="-0.035 0 -0.01"/><geometry><box size="0.02 0.06 0.05"/></geometry><material name="body"><color rgba="0.19 0.20 0.23 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_forearm_hub.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_forearm_frame.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><geometry><mesh filename="../meshes/right_wrist_bracket.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/right_elbow_idler.stl"/></geometry><material name="bought"><color rgba="0.45 0.45 0.47 1"/></material></visual>
+    <visual><geometry><mesh filename="../meshes/right_forearm_yoke.stl"/></geometry><material name="al7075"><color rgba="0.72 0.74 0.77 1"/></material></visual>
     <visual><origin xyz="0 0 -0.125" rpy="0 0 0"/><geometry><cylinder radius="0.0285" length="0.0514"/></geometry><material name="RS00"><color rgba="0.56 0.36 0.82 1"/></material></visual>
     <collision><origin xyz="0 0 -0.08"/><geometry><box size="0.07 0.07 0.17"/></geometry></collision>
   </link>

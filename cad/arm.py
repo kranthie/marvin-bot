@@ -52,6 +52,7 @@ from .lib import Part, cyl
 from .mounts import (
     CLIP_HOLE,
     CLIP_PAD,
+    bore,
     cage,
     ear_face,
     front_ring,
@@ -84,6 +85,138 @@ ROLL_M, YAW_M, ELBOW_M = (_models[f"left_{n}"] for n in ("shoulder_roll", "shoul
 PINS = {"RS06": (32.0, 22.5), "RS10P": (21.8, 19.0)}
 PIN_ROLL = {"RS03": (40.5, 90.0), "RS10P": (21.8, 79.0)}[ROLL_M]
 PIN_YAW, PIN_ELBOW = PINS[YAW_M], PINS[ELBOW_M]
+
+
+# the idler bearing of a yoke on a motor's rear end (a thin-section deep-groove ball bearing)
+IDLER = dict(name="6805-2RS", d=25.0, D=37.0, B=7.0, shoulder=29.0, mass_g=22.0)
+YOKE_T = 6.0  # the yoke plate (7075), round the bearing and down to its bridge
+# the elbow yoke's bridge under the motor (forearm frame, x and z): outside the strap's 48 mm
+# disc, and behind the forearm's centre line so it stays below the upper arm cover with the
+# elbow folded to 135 deg
+YOKE_BRIDGE = (-34.0, -16.0, -63.0, -53.0)
+
+
+def idler_stub(model: str, centre, axis: str, sign: int, joint: str, link: str, name: str):
+    """A stub on a motor's rear face (its rear screws), carrying the idler bearing; returns the
+    part and the bearing's (near, far) faces along the axis, from the motor centre outward."""
+    s = spec(model)
+    i = "xyz".index(axis)
+    rear = s["rear"]  # the rear face, from the centre
+    r = s["holes"]["rear"]
+    flange_t = 3.0
+    c = centre[i] - sign * rear  # on the rear face
+    uv = [centre[k] for k in range(3) if k != i]
+    flange = bplate(
+        cut(disc(r["pcd"] + 12, uv), circles(3.4, circle_pts(r["n"], r["pcd"], uv, np.pi / 4))),
+        axis,
+        c - sign * flange_t / 2,
+        flange_t,
+    )
+    near, far = c - sign * (flange_t + 1.0), c - sign * (flange_t + 1.0 + IDLER["B"])
+    shoulder = bprism(disc(IDLER["shoulder"], uv), axis, c - sign * flange_t, near)
+    shaft = bprism(disc(IDLER["d"], uv), axis, near, far)
+    # hollow: the rear face is plain in the middle (the cable leaves the side)
+    stub = flange.fuse(shoulder).fuse(shaft) - bprism(disc(14.0, uv), axis, c + sign, far - sign)
+    rear_face = contact(joint, tuple(centre[k] if k != i else c for k in range(3)), axis, 10, 25)
+    # (left out of cad/fea.py: it hangs on the motor body, which the check does not mesh)
+    part = made(name, link, "al7075", stub, ifaces=[rear_face], extra={"fea": False})
+    return part, near, far
+
+
+def elbow_yoke(em, fm, fy0: float) -> list[Part]:
+    """The elbow's idler stub (upper arm), its bearing and the forearm's yoke plate."""
+    out = []
+    stub, near, far = idler_stub(
+        ELBOW_M, em, "y", 1, "left_elbow", "left_upper_arm_link", "left_elbow_idler_stub"
+    )
+    out.append(stub)
+    dy = fm[1] - em[1]  # upper arm frame to forearm frame, along y (both on the elbow axis)
+    near_f, far_f = near + dy, far + dy
+    y_mid = (near_f + far_f) / 2
+    out.append(
+        Part(
+            "left_elbow_idler",
+            "left_forearm_link",
+            "bought",
+            cyl(IDLER["D"], IDLER["B"], "y", (0, y_mid, 0))
+            - cyl(IDLER["d"], IDLER["B"] + 1, "y", (0, y_mid, 0)),
+            "bought",
+            mass_g=IDLER["mass_g"],
+            notes=f"{IDLER['name']} ball bearing: the elbow yoke's idler on the motor's rear stub",
+        )
+    )
+    # the plate: the bearing in a bore with a 1 mm lip on its outer face, then down to a bridge
+    # across under the motor to the frame
+    y0, y1 = far_f - 1.0, near_f  # the plate spans the bearing and its lip (y0 < y1)
+    b_sk = rect(*YOKE_BRIDGE)
+    plate_sk = rounded(hull(disc(IDLER["D"] + 2 * YOKE_T), b_sk))
+    plate_sk = cut(plate_sk, lighten(plate_sk, keep=[disc(IDLER["D"] + 4), b_sk], pitch=14, rim=5))
+    plate = bplate(cut(plate_sk, disc(IDLER["D"] - 6)), "y", (y0 + y1) / 2, y1 - y0)
+    plate = plate - bprism(disc(IDLER["D"]), "y", far_f, y1 + 1)  # the bearing's seat
+    bridge = bprism(b_sk, "y", y0, fy0)
+    # a box section: hollow along y but for its ends (2.5 mm walls)
+    x0, x1, z0, z1 = YOKE_BRIDGE
+    bridge = bridge - bprism(
+        rect(x0 + 2.5, x1 - 2.5, z0 + 2.5, z1 - 2.5, r=1.0), "y", y1 + 4, fy0 - 4
+    )
+    yoke = plate.fuse(bridge)
+    out.append(
+        made(
+            "left_forearm_yoke",
+            "left_forearm_link",
+            "al7075",
+            yoke,
+            ifaces=[bore("left_elbow", (0, y_mid, 0), "y", IDLER["D"], IDLER["B"])],
+            # for cad/fea.py: 1 mm into the frame it is screwed to
+            extra={"fea_solid": to_manifold(plate.fuse(bprism(b_sk, "y", y0, fy0 + 1)))},
+        )
+    )
+    return out
+
+
+def roll_yoke(roll, top_z0: float, tt: float) -> list[Part]:
+    """The shoulder roll's idler stub (shoulder pitch link), its bearing and the roll link's
+    yoke plate, which stands on the top plate behind the roll motor."""
+    out = []
+    stub, near, far = idler_stub(
+        ROLL_M,
+        roll,
+        "x",
+        1,
+        "left_shoulder_roll",
+        "left_shoulder_pitch_link",
+        "left_shoulder_roll_idler_stub",
+    )
+    out.append(stub)
+    x_mid = (near + far) / 2  # the roll link's frame is on the roll motor's centre: x as is
+    out.append(
+        Part(
+            "left_shoulder_roll_idler",
+            "left_shoulder_roll_link",
+            "bought",
+            cyl(IDLER["D"], IDLER["B"], "x", (x_mid, 0, 0))
+            - cyl(IDLER["d"], IDLER["B"] + 1, "x", (x_mid, 0, 0)),
+            "bought",
+            mass_g=IDLER["mass_g"],
+            notes=f"{IDLER['name']} ball bearing: the shoulder roll yoke's idler",
+        )
+    )
+    x0, x1 = far - 1.0, near  # the plate spans the bearing and its lip (x0 < x1)
+    foot = rect(-20.0, 20.0, top_z0, top_z0 + tt + 6)  # (y, z): down onto the top plate
+    plate_sk = rounded(hull(disc(IDLER["D"] + 2 * YOKE_T), foot))
+    plate_sk = cut(plate_sk, lighten(plate_sk, keep=[disc(IDLER["D"] + 4), foot], pitch=14, rim=5))
+    plate = bplate(cut(plate_sk, disc(IDLER["D"] - 6)), "x", (x0 + x1) / 2, x1 - x0)
+    plate = plate - bprism(disc(IDLER["D"]), "x", far, x1 + 1)  # the bearing's seat
+    out.append(
+        made(
+            "left_shoulder_roll_yoke",
+            "left_shoulder_roll_link",
+            "al7075",
+            plate,
+            ifaces=[bore("left_shoulder_roll", (x_mid, 0, 0), "x", IDLER["D"], IDLER["B"])],
+        )
+    )
+    return out
 
 
 def hub_d(model: str, d: float) -> float:
@@ -217,7 +350,7 @@ def parts() -> list[Part]:
     rear = spec(YAW_M)["holes"].get("rear")  # an RS10P is tapped on its rear face too
     # the yaw motor's ring; with the motor's rear bolted up to the top plate, its body joins the
     # two and the cage strips behind it go (they read SF 68 with it)
-    yt = 4.0 if rear else 5.0
+    yt = 3.0 if rear else 5.0
     tt = 2.5  # (4 mm meets the torso with the arm raised forward and rolled in)
     top_z0 = ym[2] + t_yaw / 2  # the top plate's underside, on the yaw motor's rear end
     # two strips behind the yaw motor; in front, the front plate's two legs come down to its ring
@@ -227,7 +360,9 @@ def parts() -> list[Part]:
     legs = [rect(s * 30.0, s * 46.0, ring_z, top_z0 + 8) for s in (1, -1)]
     legs += [rect(s * 30.0, s * 56.0, ring_z, ring_z + 14) for s in (1, -1)]
     legs.append(rect(-46.0, 46.0, top_z0, top_z0 + 8))  # joined along the plate's lower edge
-    fb = 10.0  # the front plate (7075): its legs stand on the yaw ring (cad/fea.py)
+    # the front plate (7075): its legs stand on the yaw ring (cad/fea.py); 7 mm with the roll
+    # yoke carrying the arm's back end (10 without; SF 1.2 at 6 mm if the idler carried nothing)
+    fb = 7.0 if spec(ROLL_M)["holes"].get("rear") else 10.0
     # (86 mm: clear of the shoulder flange, 44 mm from the roll axis)
     front = rounded(union2(disc(86), rect(-28, 28, top_z0, 0), *legs), inside=8.0)
     front = cut(front, lighten(front, keep=[disc(86)], hole=14, pitch=20, rim=7))
@@ -285,6 +420,10 @@ def parts() -> list[Part]:
             },
         )
     )
+    # the shoulder roll yoke: the roll link also rides on the roll motor's rear end, an idler
+    # on a stub there, the yoke plate standing on the top plate behind the motor
+    if spec(ROLL_M)["holes"].get("rear"):
+        out += roll_yoke(roll, top_z0, tt)
     if not rear:
         out.append(
             made("left_shoulder_yaw_cage", L, "al7075", y_strips, extra={"fea_solid": y_fea})
@@ -412,15 +551,23 @@ def parts() -> list[Part]:
     )
     # the frame: a 6 mm strap on the hub, down the outside of the forearm (outboard of the upper
     # arm's strap) to a bracket on the wrist RS00's rear face, by its 4 x M3 rear holes
-    ft = 5.0
+    ft = 5.0  # (4 mm with the elbow yoke: SF 1.9 under the wrist yaw's torque)
     cup_top = wr[2] + t00 / 2  # the wrist motor's rear face
     bt = 3.5  # the bracket
     fy0, fy1 = fm[1] + out_y, fm[1] + out_y + ft
     foot = rect(-22, 22, cup_top + bt, cup_top + bt + 16)
-    frame = rounded(union2(disc(72), slot(30, (0, -10), (0, cup_top + bt + 12)), foot), inside=8.0)
+    # (and a lobe under the elbow motor where the yoke's bridge lands, with a yoke)
+    lobe = (
+        [hull(rect(*YOKE_BRIDGE), rect(-15.0, 15.0, YOKE_BRIDGE[2] - 25, YOKE_BRIDGE[2] - 15))]
+        if spec(ELBOW_M)["holes"].get("rear")
+        else []
+    )
+    frame = rounded(
+        union2(disc(72), slot(30, (0, -10), (0, cup_top + bt + 12)), foot, *lobe), inside=8.0
+    )
     _, groove, zh, zpads = zero_stop(ELBOW_M, fm, "y", "left_elbow", True, *PIN_ELBOW)
     # harness clips: the elbow loop's, below the elbow, and the wrist yaw loop's, low down
-    f_avoid = [disc(76), zpads, foot]
+    f_avoid = [disc(76), zpads, foot, *lobe]
     fcs = [
         clip_spot(frame, (0.0, 0.0), f_avoid, min_r=46),
         clip_spot(frame, (0.0, cup_top + bt + 16), f_avoid, min_r=0),
@@ -454,6 +601,14 @@ def parts() -> list[Part]:
             extra={"fea_solid": to_manifold(bracket.fuse(tab))},
         )
     )
+
+    # --- the elbow yoke: the forearm also rides on the elbow motor's rear end, so a hand load
+    # reaches the upper arm through two bearings a motor length apart instead of bending the
+    # motor's own output bearing. A stub on the motor's rear face (its 4 x M3) carries an idler
+    # ball bearing; a plate on the forearm holds the bearing and joins the frame by a bridge
+    # under the motor, outside the strap's disc (the strap stays behind the folding forearm).
+    if spec(ELBOW_M)["holes"].get("rear"):
+        out += elbow_yoke(em, fm, fy0)
 
     # --- wrist: frame on the wrist yaw joint (RS00 centred here, output face down). The pitch
     # servo hangs from the RS00's output in a printed cradle, its case running up from its shaft

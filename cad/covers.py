@@ -212,7 +212,7 @@ def parts() -> list[Part]:
     out: list[Part] = []
 
     def add(name, link, solid):
-        out.append(Part(name, link, "pa_cf", solid, "cover"))
+        out.append(Part(name, link, "petg", solid, "cover"))  # white PETG
 
     j = {k: [x * 1000 for x in v["xyz"]] for k, v in skel["joints"].items()}
     acts = yaml.safe_load((ROOT / "description" / "actuators.yaml").read_text())
