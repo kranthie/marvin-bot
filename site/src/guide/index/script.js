@@ -28,7 +28,7 @@ const PAGES=[
  ['18-wbc-vla',5,'Whole-body control and VLA models','Decoupled control versus one general tracker, and how vision-language-action models drive the arms.'],
  ['19-hands',5,'Hands','The four-finger hands, the wrist, and how much the arm can actually hold.'],
  ['20-sim-to-real',6,'Sim-to-real and system identification','Fit a motor model to bench data and see why randomisation ranges matter.'],
- ['21-bom-costs',6,'Bill of materials and costs','Explore the ≈$17.7k bill of materials by group, phase and cost per newton-metre.'],
+ ['21-bom-costs',6,'Bill of materials and costs','Explore the ≈$17.6k bill of materials by group, phase and cost per newton-metre.'],
  ['22-roadmap',6,'Build phases and roadmap','Seven phases from foundations to perception, what each must prove, and which risks it retires.']];
 const INFO={
  head:['Head and neck','A printed rounded-box head with a dark visor band holds the Orbbec Gemini 335L depth camera at eye height, on a 2-DOF neck driven by two small serial-bus servos.',['00-3d-model#view=xelec','11-sensors-compute','13-description']],
@@ -43,7 +43,7 @@ const INFO={
  feet:['Feet','Shoe-shaped plates, 0.24 × 0.11 m, with a rubbery (TPU) sole. The foot outline defines the support polygon the robot balances over.',['00-3d-model#tab=skills&skill=walk','02-balance','08-structure-cad']],
  yaml:['robot.yaml: the single source of truth','Joints, ranges, sizes, motors and CAN buses are written once in description/robot.yaml; everything else is generated or checked from it.',['13-description']],
  cad:['Code-CAD','Python (manifold3d) generates every part, computes masses and inertias for the models, checks strength, and sweeps parts through every joint range looking for collisions.',['00-3d-model#view=made','08-structure-cad','07-mass-proportions']],
- bom:['Bill of materials','One workbook lists every bought part, with price, source and spares: about $17.7k to replicate the robot.',['21-bom-costs']],
+ bom:['Bill of materials','One workbook lists every bought part, with price, source and spares: about $17.6k to replicate the robot.',['21-bom-costs']],
  urdf:['Generated models','The URDF (robot model format) is generated from the description; Isaac Lab converts it to USD, and MuJoCo builds its model from the URDF in memory (an MJCF file is written only for the motion-tracking tools).',['00-3d-model','13-description','14-simulation']],
  isaac:['Isaac Lab training','Thousands of simulated robots learn to walk and climb stairs with PPO, on the Newton or PhysX physics engines.',['16-rl-walking','14-simulation','15-pd-control']],
  motion:['Motion tracking','Human motions generated from text (Kimodo) are retargeted onto Marvin Bot (PyRoki) and tracked by one policy (BeyondMimic-style, in ProtoMotions); its results are provisional while a new version trains.',['17-motion-tracking']],

@@ -44,8 +44,9 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [x] Shells brought up to the new frame: a faceted torso shell, grilles over the arm motors, room for the harness loops; 41.99 kg with shells, no shell contacts (decisions 2026-10-31)
 - [x] RS10P at shoulder roll, shoulder yaw and elbow: 40.55 kg with shells (with the new head), every arm part at SF 2.6 or better (decisions 2026-11-02); walking retrained on it (flat v9)
 - [x] Arm yokes: idlers on the shoulder roll and elbow RS10Ps' rear ends; roll front plate 7 mm, yaw ring 3 mm; `cad/fea.py --no-idler`; shells in white PETG (40.97 kg with shells; decisions 2026-11-02)
-- [ ] Shoulder yaw output support: a crossed-roller ring at its output or the motor turned over (decisions 2026-11-02)
-- [ ] Fastener and snap-fit pass: bolted joints between parts with bolt checks, PETG snap fits for the shells, tool access, assembly order
+- [x] Arm choice: the yoke arm kept; a tube upper arm (all three RS10Ps held at both ends) prototyped on branch `arm-v2-prototype` as the fallback (decisions 2026-11-03)
+- [ ] RS10P output-bearing bench test: 10 kg at 0.38 m (about 37 N·m), check for play; the shoulder yaw relies on it (decisions 2026-11-03)
+- [ ] Fastener and snap-fit pass: bolted joints between parts with bolt checks, PETG snap fits for the shells, tool access, assembly order (the bolt checker, snap-hook sizing and stiffness check from `arm-v2-prototype` to port)
 - [x] Head: a rounded box (156 × 203 × 121 mm) with a dark visor band, the depth camera in the band 4 mm proud of the face (100% clear view); the head frame in `cad/fea.py` (head drop SF 99+); the robot stands 1.41 m (decisions 2026-11-02)
 - [ ] Shells redrawn in build123d as designed panels (lofted, even wall, filleted, chosen seams, clips), starting with a thigh pilot
 - [x] Pelvis back plate: SF 2.4 at a 4 mm mesh (2.1-2.3 at 6 mm; decisions 2026-11-02)

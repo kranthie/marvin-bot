@@ -4,13 +4,13 @@ const D2R=Math.PI/180, G=9.81, L1=0.325, L2=0.315, HA=0.06, TOE=0.15, HEEL=0.09,
 const M_PL=1.51, F_PL=0.52, M_TH=2.0, F_TH=0.95, M_SH=2.78, F_SH=0.54, M_FT=0.64;
 const RS04={rated:40,peak:120,rpm:200,inertia:0.03};
 const ANK={rated:32,peak:96}; // two RS03 through the linkage at its worst pose (tools/ankle_linkage.py; page 06). Neutral pose: 39.6 / 118.8.
-const DEF={mode:'manual',qh:24.3,qk:35.3,h:0.18,prog:1,hb:0.665,xc:-0.062,mass:39.71,share:1,stage:false,rate:40, duty:0.6,tp:54,tb:0,tsw:5,tc:1.2};
+const DEF={mode:'manual',qh:24.3,qk:35.3,h:0.18,prog:1,hb:0.665,xc:-0.062,mass:40.00,share:1,stage:false,rate:40, duty:0.6,tp:54,tb:0,tsw:5,tc:1.2};
 const S={...DEF};
-const PRE={today:{mode:'manual',qh:24.3,qk:35.3,h:0.18,mass:39.71,share:1,stage:false,rate:40},
-  start:{mode:'auto',h:0.18,prog:0,hb:0.665,xc:-0.20,share:0.5,mass:39.71,stage:false,rate:40},
-  mid:{mode:'auto',h:0.18,prog:0.5,hb:0.665,xc:-0.03,share:1,mass:39.71,stage:false,rate:40},
-  stance:{mode:'manual',qh:6,qk:15,h:0.18,share:1,mass:39.71,stage:false,rate:40},
-  stage:{mode:'manual',qh:24.3,qk:35.3,h:0.18,mass:39.71,share:1,stage:true,rate:40}};
+const PRE={today:{mode:'manual',qh:24.3,qk:35.3,h:0.18,mass:40.00,share:1,stage:false,rate:40},
+  start:{mode:'auto',h:0.18,prog:0,hb:0.665,xc:-0.20,share:0.5,mass:40.00,stage:false,rate:40},
+  mid:{mode:'auto',h:0.18,prog:0.5,hb:0.665,xc:-0.03,share:1,mass:40.00,stage:false,rate:40},
+  stance:{mode:'manual',qh:6,qk:15,h:0.18,share:1,mass:40.00,stage:false,rate:40},
+  stage:{mode:'manual',qh:24.3,qk:35.3,h:0.18,mass:40.00,share:1,stage:true,rate:40}};
 const RPRE={hold:{duty:1,tp:47,tb:47,tsw:0},policy:{duty:0.6,tp:54,tb:0,tsw:5},flat:{duty:0.6,tp:49,tb:0,tsw:5},slow:{duty:0.8,tp:60,tb:30,tsw:5}};
 function knee(){ const N=S.stage?1.5:1; return {rated:S.rate*N, peak:RS04.peak*N, w:RS04.rpm*2*Math.PI/60/N, I:RS04.inertia*N*N}; }
 function solve(){

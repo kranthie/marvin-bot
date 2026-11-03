@@ -37,7 +37,7 @@ How comparable robots avoid it (neither publishes a stair heat analysis):
 |---|---|---|---|---|
 | Asimov 1 | 35.5 kg | 45 N·m limit in its simulation model, knee range 0–86° | ~0.25 m | never bends the knee deeply, so the lever arm stays short |
 | Roboto Origin | 33.8 kg | Damiao DM-10010L, 120 / 40 N·m (same class as the RS04) | 0.25 m | ~6.5 kg lighter than Marvin Bot; trained for dynamic walking and running |
-| Marvin Bot | 39.71 kg | Robstride RS04, 120 / 40 N·m | 0.325 m | |
+| Marvin Bot | 40.00 kg | Robstride RS04, 120 / 40 N·m | 0.325 m | |
 
 ## Issue 2: the stair policy stops at the first step
 
@@ -83,6 +83,6 @@ Keep the current design (RS04 knee, no reduction stage). Settle it from three me
 
 1. **Trained stair policy:** done (rough v5): knees at 73–75% of rated (RMS) on 10–20 cm stairs.
 2. **Phase 2 bench test:** an RS04 holding 40–47 N·m, bolted to a plate the size of the thigh plate (`bench/actuator/bench_robstride.py thermal`), to measure its real continuous rating in the leg.
-3. **Mass:** done: torso, arm, hand and electronics CAD replace the estimates (39.71 kg bare on the 1.41 m model; 40.35 kg on the 1.44 m model).
+3. **Mass:** done: torso, arm, hand and electronics CAD replace the estimates (40.00 kg bare on the 1.41 m model; 40.35 kg on the 1.44 m model).
 
 If the knee's measured RMS on stairs exceeds its measured continuous rating by more than the cooling options cover, add the 1.5:1 knee stage before ordering the leg actuators (phase 3).

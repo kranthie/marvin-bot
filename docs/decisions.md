@@ -2,6 +2,16 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-11-03: the yoke arm, not the tube upper arm; an RS10P output-bearing bench test
+
+**Decision.** The arm stays as the yoke version (2026-11-02): yokes with idlers at the shoulder roll and the elbow, and the shoulder yaw RS10P held by its output alone.
+
+**Alternative.** A tube upper arm was prototyped (git branch `arm-v2-prototype`, design note `docs/design/arm_v2.md` on that branch): a 70 × 1.5 mm 6061 tube round the shoulder yaw motor, driven by a bulkhead on its output and turning on an acetal bushing round a collar at its rear end, so all three arm RS10Ps are held at both ends. It passed every check (lowest SF 3.5; 1.5 with the idlers carrying nothing; palm deflection under a 10 N side load 0.68 mm against 3.54 mm; 33 designed screws and dowels per arm; snap-fit PETG sleeves), but its structure is 0.10 kg heavier per arm (0.26 kg in all with its sleeves: 41.23 kg with shells against 40.97 kg) and it adds a tube, a collar and a bushing.
+
+**Why.** The open question is whether the shoulder yaw motor's output bearing takes the arm's bending. RobStride publishes no bearing type or load rating for any of its actuators (none in the manuals or specification sheets revised 2026-07 to 2026-10; the STEP models are outer shells). The bending there is small in use and large only in a fall: static, from the arm's own 2.0 kg and a load in the hand, 4 N·m with the arm out level, 11 N·m with 2 kg in the hand, 22 N·m with 5 kg at full forward reach; about 38 N·m in the hand-catch case (0.5 × body weight at the palm). The hand catch is near the most the arm can apply: a larger push at the hand turns the shoulder pitch and roll motors past their peak torques (60 and 42 N·m), so they give way first, provided their torque limits are set; a joint against its end stop or a sharp impact can still exceed it.
+
+**Bench test.** When the RS10Ps arrive: clamp one by its body, hang 10 kg on a bar 0.38 m from the output face (about 37 N·m) in a few orientations, and check the output for play and smooth rotation before and after. If it develops play, the tube upper arm is the fallback.
+
 ## 2026-11-02: arm yokes at the shoulder roll and elbow; shells in white PETG
 
 **Why.** Each RS10P hung from a ring on its front face, so its own output bearing took the arm's bending. Under the hand-catch case (0.5 × body weight at the palm) that is about 38 N·m at the shoulder roll and the shoulder yaw and 9 N·m at the elbow, against a 42 N·m peak torque; RobStride's manual gives no bearing moment rating. A sideways fall onto the elbow (0.5 × body weight, a new case in `cad/fea.py`) gives 6-18 N·m; it governs no part.

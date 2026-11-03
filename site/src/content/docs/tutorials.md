@@ -55,7 +55,7 @@ It is written for readers with school maths and physics and no robotics backgrou
 ## Stage 6: Toward hardware
 
 - [**20 · Sim-to-real and system identification**](/marvin-bot/guide/20-sim-to-real/): Fit a motor model to bench data and see why randomisation ranges matter.
-- [**21 · Bill of materials and costs**](/marvin-bot/guide/21-bom-costs/): Explore the ≈$17.7k bill of materials by group, phase and cost per newton-metre.
+- [**21 · Bill of materials and costs**](/marvin-bot/guide/21-bom-costs/): Explore the ≈$17.6k bill of materials by group, phase and cost per newton-metre.
 - [**22 · Build phases and roadmap**](/marvin-bot/guide/22-roadmap/): Seven phases from foundations to perception, what each must prove, and which risks it retires.
 
 ## Reference pages

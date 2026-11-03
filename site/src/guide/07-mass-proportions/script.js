@@ -35,7 +35,7 @@ const IDEAS=[
  {k:'al7075',n:'7075 leg plates, thinned',d:'≈ −0.40 kg',f:I=>{I.leg.m-=0.4;}},
  {k:'cftube',n:'Carbon-fibre tube thigh/shin cores',d:'≈ −0.50 kg',f:I=>{I.leg.m-=0.5;}},
  {k:'shoulder',n:'Shoulder pitch and waist RS03 → RS10P (checked, declined)',d:'−1.32 kg',f:I=>{I.rs03.m-=3*0.9; I.rs03.n='RS03 × 6'; I.rs10p.m+=3*0.46; I.rs10p.n='RS10P × 9 (shoulders, elbows, waist)';}},
- {k:'shellsoff',n:'Body shells off',d:'−0.84 kg',f:I=>{I.shells.m=0;}},
+ {k:'shellsoff',n:'Body shells off',d:'−0.98 kg',f:I=>{I.shells.m=0;}},
  {k:'waist',n:'Add waist roll + pitch (2-DOF)',d:'≈ +2.5 kg',f:I=>{I.waist2={k:'waist2',n:'Waist roll + pitch (2 RS03 + structure)',g:'motor',m:2.5};}},
  {k:'kneestage',n:'1.5:1 knee stage (rated 40 → 60 N·m)',d:'≈ +0.4 kg',f:I=>{I.kstage={k:'kstage',n:'Knee reduction stages (two)',g:'struct',m:0.4};}},
 ];
@@ -174,7 +174,7 @@ document.querySelectorAll('[data-lpreset]').forEach(b=>b.addEventListener('click
 // Winter (2009) Fig. 4.1 fractions of height
 const HUM={chin:0.870,shoulder:0.818,elbow:0.630,wrist:0.485,tip:0.377,hip:0.530,knee:0.285,ankle:0.039,shW:0.259,hipW:0.191,chestW:0.174,footL:0.152};
 const DESIGNS={
- today:{name:'Marvin Bot today',H:1.41,hip:0.700,thigh:0.325,shin:0.315,ankle:0.060,shoulder:1.165,rollDrop:0.025,upper:0.200,fore:0.188,hand:0.181,shW:0.416,mass:40.55,repoKnee:118,repoTip:0.556,repoElb:0.934},
+ today:{name:'Marvin Bot today',H:1.41,hip:0.700,thigh:0.325,shin:0.315,ankle:0.060,shoulder:1.165,rollDrop:0.025,upper:0.200,fore:0.188,hand:0.181,shW:0.416,mass:40.97,repoKnee:118,repoTip:0.556,repoElb:0.934},
  old:{name:'Before 2026-10-29',H:1.288,hip:0.650,thigh:0.300,shin:0.290,ankle:0.060,shoulder:1.015,rollDrop:0.050,upper:0.200,fore:0.188,hand:0.181,shW:0.416,mass:40.66,repoKnee:109,repoTip:0.38,repoElb:null},
  legs90:{name:'Alternative: legs +90 mm',H:1.478,hip:0.740,thigh:0.345,shin:0.335,ankle:0.060,shoulder:1.205,rollDrop:0.025,upper:0.200,fore:0.188,hand:0.181,shW:0.416,mass:41.6,repoKnee:127,repoTip:null,repoElb:null},
 };
@@ -280,14 +280,14 @@ function renderProp(){
 function updateNote(){
   const parts=[];
   const on=IDEAS.filter(i=>ms[i.k]);
-  if(on.length && lastMass.total!==undefined) parts.push(`Mass budget: applying ${on.map(i=>i.n+' ('+i.d+')').join('; ')} gives ${fmt(lastMass.bare)} kg bare (target 35) and ${fmt(lastMass.total)} kg with shells (limit 42), against 39.71 / 40.55 kg today. First-order stair consequence (repo's 47 N·m knee at 41.3 kg scaled by mass): knee ${fmt(lastMass.knee,1)} N·m = ${fmt(lastMass.kp,0)}% of ${ms.kneestage?'60 N·m (with 1.5:1 stage)':'the RS04\'s 40 N·m'} continuous rating.`);
+  if(on.length && lastMass.total!==undefined) parts.push(`Mass budget: applying ${on.map(i=>i.n+' ('+i.d+')').join('; ')} gives ${fmt(lastMass.bare)} kg bare (target 35) and ${fmt(lastMass.total)} kg with shells (limit 42), against 40.00 / 40.97 kg today. First-order stair consequence (repo's 47 N·m knee at 41.3 kg scaled by mass): knee ${fmt(lastMass.knee,1)} N·m = ${fmt(lastMass.kp,0)}% of ${ms.kneestage?'60 N·m (with 1.5:1 stage)':'the RS04\'s 40 N·m'} continuous rating.`);
   if(ms.kneeRef!==MDEF.kneeRef) parts.push(`I assumed a reference stair knee torque of ${ms.kneeRef} N·m at 41.3 kg instead of the repo's 47 N·m.`);
   const lch=['rKnee','rAnk','mFoot','alpha'].filter(k=>ls[k]!==LDEF[k]);
   if(lch.length && ls.I) parts.push(`Leg inertia (point-mass estimate): knee motor ${fmt(ls.rKnee,3)} m from the hip pitch axis (today 0.325), low ankle motor at ${fmt(ls.rAnk,3)} m (today 0.575), foot ${fmt(ls.mFoot,2)} kg: I ≈ ${fmt(ls.I,3)} kg·m² about the hip (today ≈ 1.13), so a ${ls.alpha} rad/s² swing needs ≈ ${fmt(ls.I*ls.alpha,1)} N·m.`);
   if(ps.R && (ps.design!=='today' || Math.abs(ps.H-1.438)>0.001 || ps.motScale)){
     const R=ps.R; parts.push(`Proportions: ${DESIGNS[ps.design].name} at ${fmt(ps.H,3)} m${Math.abs(R.s-1)>0.002?' (uniformly scaled, fixed parts unchanged'+(ps.motScale?', motors imagined to scale as s³':'')+')':''}: hip axis ${fmt(R.hip/ps.H,3)} of height, fingertips ${fmt(R.tip)} m vs a person's ${fmt(0.377*ps.H)} m, estimated mass ${fmt(R.mass,1)} kg, static stair knee ≈ ${fmt(R.knee,0)}% of rated (model: 118% × mass/41.3 × thigh/0.325).`);
   }
-  $('note').textContent = parts.length ? `For Marvin Bot (1.41 m, 40.5 kg with shells, 27-DOF humanoid; target 35 kg bare, limit 42 kg with shells; knee RS04 rated 40 N·m):\n\n${parts.join('\n\n')}\n\nThese are first-order estimates from the guide's playground; check against tools/check_description.py and sim/mujoco/check_step_up.py before deciding.`
+  $('note').textContent = parts.length ? `For Marvin Bot (1.41 m, 41.0 kg with shells, 27-DOF humanoid; target 35 kg bare, limit 42 kg with shells; knee RS04 rated 40 N·m):\n\n${parts.join('\n\n')}\n\nThese are first-order estimates from the guide's playground; check against tools/check_description.py and sim/mujoco/check_step_up.py before deciding.`
                                         : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });

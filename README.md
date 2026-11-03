@@ -40,7 +40,7 @@ Separate walking and stair-climbing policies are trained in Isaac Lab and replay
 - Carry and manipulate light objects with two 6-DOF arms and four-finger hands (1–2 kg is the goal; the v1 hands manage about 0.5 kg), learned from teleoperated demonstrations with a vision-language-action model (GR00T N1.7).
 - Learn skills beyond walking by tracking human motion (gestures, whole-body teleoperation), trained in simulation before the robot is built ([roadmap](docs/roadmap.md#skills-beyond-walking-simulation-before-and-during-the-build)).
 - Look finished without its clip-on covers: the visible parts are the structure, and the covers are an optional add-on.
-- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $17.7k in parts at November 2026 prices (`bom/bom.xlsx`, totalled by `tools/bom/summary.py`). That includes the Jetson AGX Orin 64 GB developer kit ($3,499) and the two hand kits. Copy the workbook to track what you own and still need to buy. Not included: the desktop CNC mill, the 3D printer, shipping, import duties, and the desktop GPU for training (optional, see `bom/README.md`).
+- Stay buildable by one person with a desktop CNC mill and a desktop 3D printer, for about $17.6k in parts at November 2026 prices (`bom/bom.xlsx`, totalled by `tools/bom/summary.py`). That includes the Jetson AGX Orin 64 GB developer kit ($3,499) and the two hand kits. Copy the workbook to track what you own and still need to buy. Not included: the desktop CNC mill, the 3D printer, shipping, import duties, and the desktop GPU for training (optional, see `bom/README.md`).
 - Be fully open: CAD, electronics, firmware, simulation and training code.
 
 The full list is in [docs/requirements.md](docs/requirements.md).
@@ -61,7 +61,7 @@ Every source, with its licence and what was used from it, is in [ACKNOWLEDGMENTS
 
 | | |
 |---|---|
-| Height, mass | ~1.41 m; 39.7 kg bare and 40.5 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 42 kg limit with the shells |
+| Height, mass | ~1.41 m; 40.0 kg bare and 41.0 kg with the body shells (estimate, `tools/check_description.py`); 35 kg target bare, 42 kg limit with the shells |
 | Joints | 6 per leg, 6 per arm (wrist yaw and pitch), waist yaw, 2 neck, plus an 8-DOF four-finger hand per arm |
 | Actuators | Robstride RS04 (hip pitch and roll, knees), RS03 (hip yaw, ankles, waist, shoulder pitch), RS10P (shoulder roll and yaw, elbows), RS00 (wrists); serial-bus servos for the neck and wrist pitch; eight small servos in each hand |
 | Compute | Jetson AGX Orin 64 GB; desktop GPU for training and, at first, for the vision-language-action model |

@@ -174,7 +174,7 @@ function updateNote(){
     const at=f=>curveCache.find(c=>c[0]===f)[1];
     parts.push(`Shoulder sweep (2-D toy, not the CAD): roll axis ${cs.a} mm outboard of the torso side, chest corner radius ${cs.Rc} mm, shoulder yaw motor radius ${cs.mR} mm, ${cs.gap} mm clearance. Lowest roll before contact: ${fmt(at(0),1)}° with the arm hanging, ${fmt(at(45),1)}° at 45° pitch, ${fmt(at(90),1)}° at 90° pitch (repo coupled limit: 0°, −10°, −20°). Pose checked: pitch ${cs.phi}°, roll ${cs.th}°. Confirm with python -m cad.covers --check and tools/check_packaging.py.`);
   }
-  $('note').textContent = parts.length ? `For Marvin Bot (1.41 m, 39.7 kg bare, machined 6061 cores and printed PA-CF shells; strength target SF 2 by cad/strength.py, landing 3 × BW up, 0.5 fore-aft, 0.3 side):\n\n${parts.join('\n\n')}`
+  $('note').textContent = parts.length ? `For Marvin Bot (1.41 m, 40.0 kg bare, machined 6061 cores and printed PETG shells; strength target SF 2 by cad/strength.py, landing 3 × BW up, 0.5 fore-aft, 0.3 side):\n\n${parts.join('\n\n')}`
                                         : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });

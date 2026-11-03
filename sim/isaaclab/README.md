@@ -42,7 +42,7 @@ uv run --no-sync python <repo>/sim/isaaclab/check_robot.py       # Newton
 uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --backend physx
 ```
 
-Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the current 39.71 kg model):
+Results (2026-10-26, RTX PRO 6000 Blackwell; before the hands were added, not rerun on the current 40.00 kg model):
 
 | Check | Newton (MuJoCo-Warp) | PhysX |
 | --- | --- | --- |

@@ -40,7 +40,7 @@ const PH=[
  {n:'Perception and intelligence',lo:12,hi:12,status:'todo',ongoing:true,
   work:'Terrain map from the depth camera for stairs, teleoperation, data collection, GR00T N1.7 fine-tuning; finish the shells.',
   pass:'Climbs real stairs using vision; picks up objects on command.',
-  buys:'The last kilogram of carbon-fibre nylon for the shells; a training GPU if you have none (not in the BOM).',
+  buys:'The last kilogram of white PETG for the shells; a training GPU if you have none (not in the BOM).',
   risks:'GR00T N1.7 closed-loop latency on the Orin while the 50 Hz controller runs (item 10); vision-based stairs.',
   study:['11-sensors-compute','18-wbc-vla','17-motion-tracking','16-rl-walking']},
 ];

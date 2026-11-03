@@ -1,6 +1,6 @@
 ---
 title: "Bill of materials and costs"
-description: "Marvin Bot costs about $17,700 in parts to build from nothing at November 2026 prices."
+description: "Marvin Bot costs about $17,600 in parts to build from nothing at November 2026 prices."
 sidebar:
   label: "21 · Bill of materials and costs"
   order: 22
@@ -22,7 +22,7 @@ import '../../../guide/21-bom-costs/style.css';
 
 </div>
 
-Marvin Bot costs about $17,700 in parts to build from nothing at November 2026 prices. This page takes that number apart: which 63 lines make it up, which few lines dominate it, what it leaves out, and how buying one phase at a time changes when the money leaves your account and how much is at risk if a test fails.
+Marvin Bot costs about $17,600 in parts to build from nothing at November 2026 prices. This page takes that number apart: which 65 lines make it up, which few lines dominate it, what it leaves out, and how buying one phase at a time changes when the money leaves your account and how much is at risk if a test fails.
 
 :::note[You will learn]
 - What a <a class="g" href="../glossary/#bill-of-materials">bill of materials</a> (BOM) is, how bought and made parts differ, and why every price carries a date and a basis.
@@ -35,7 +35,7 @@ Marvin Bot costs about $17,700 in parts to build from nothing at November 2026 p
 
 A <a class="g" href="../glossary/#bill-of-materials">bill of materials</a> is the complete shopping and making list for a product: every item, how many, what each costs and where the price came from. Engineering organisations treat it as a product-oriented tree that every cost estimate hangs from: if a part is not on the list, it is not in the budget.<sup class="cite">[\[1\]](#s1)</sup> For a one-off robot the BOM answers three practical questions: <i>what will this cost me?</i>, <i>what do I buy first?</i> and <i>which few lines matter?</i>
 
-Marvin Bot's BOM lives in one spreadsheet, `bom/bom.xlsx`, with one sheet per group and a Summary sheet. Its total, $17,704.86 for 63 lines, is the <a class="g" href="../glossary/#cost-to-replicate">full cost to replicate</a>: what someone starting from an empty bench would pay for parts. The bars below are that total split by group; the playground lets you change the assumptions.
+Marvin Bot's BOM lives in one spreadsheet, `bom/bom.xlsx`, with one sheet per group and a Summary sheet. Its total, $17,574.86 for 65 lines, is the <a class="g" href="../glossary/#cost-to-replicate">full cost to replicate</a>: what someone starting from an empty bench would pay for parts. The bars below are that total split by group; the playground lets you change the assumptions.
 
 Two ideas from elsewhere in the guide help here. The robot is built in seven **phases** ([page 22](../22-roadmap/)): 0 foundations and 1 simulation (both free in parts), 2 a bench test of two motors, 3 one leg, 4 the lower body, 5 torso, arms and head, 6 perception. And each **actuator** (a motor with its gearbox and electronics, [page 4](../04-actuators/)) is named by its RobStride model, from the large RS04 down to the small RS00.
 
@@ -44,13 +44,13 @@ Two ideas from elsewhere in the guide help here. The robot is built in seven **p
 <RawHtml html={widget1} />
 
 :::note[Try this]
-1. Press **Marvin Bot today**: the full cost reads $17,705. Switch to **By build phase**. Phases 0 and 1 cost nothing in parts: simulation is free once you have a training computer (which the BOM does not count).
+1. Press **Marvin Bot today**: the full cost reads $17,575. Switch to **By build phase**. Phases 0 and 1 cost nothing in parts: simulation is free once you have a training computer (which the BOM does not count).
 2. Choose **Everything in one order now**. Only the RS03 reaches ten units (9 + 1 spare), so the saving is 10 × $11 = $110. Now look at "Committed before the leg test": it rises by about $1,900, because the whole RS03 order (\~$2,100) is paid before the actuator bench has said whether the RS03 is any good. Then try **Staged**: the 9 RS03 for phase 3 fall one short of the tier, because the tenth was bought alone for the phase 2 bench test, so staging keeps none of the $110.
 3. Tick the Orin. "Still to spend" drops by a fifth. That is why the repo once quoted "about $12k": it counted owned parts at $0 (`docs/decisions.md`, 2026-10-29).
 4. Drag the duty to 25%. Only about $6,400 of lines ship from China, so what you spend rises by about $1,600, not by a quarter.
 :::
 
-### All 63 lines
+### All 65 lines
 
 Every line of the workbook, with its quantity, spares, unit price, line total (quantity plus spares, times unit price) and the price basis exactly as recorded. The phase column is this guide's mapping of each line to the build phase that first needs it (see [below](#spend-per-build-phase)). Click a heading to sort.
 
@@ -62,7 +62,7 @@ Every line of the workbook, with its quantity, spares, unit price, line total (q
 
 A robot's parts come in two kinds. <a class="g" href="../glossary/#bought-part">Bought parts</a> arrive finished: actuators, the computer, the camera, battery cells, bearings, connectors. Their cost is a price on a listing. <a class="g" href="../glossary/#made-part">Made parts</a> are designed in the project and produced from raw material: Marvin Bot's code-CAD generates 97 CNC-machined aluminium parts (about 6.4 kg of finished 6061 and 7075), 20 printed structural parts and 24 printed body-shell pieces, plus 12 plates too large for a desktop mill that go to an online machining service (the `Made parts (CAD)` sheet, generated by `python -m cad.export`). Made parts appear in the costed BOM only as their inputs: aluminium stock, filament, end mills, and the three "online machining" lines. Their real extra cost is machine time and your time, which the BOM does not price.
 
-That split explains why the structure is cheap ($2,582, 15%) even though it is most of the part count, and why the bought groups dominate.
+That split explains why the structure is cheap ($2,452, 14%) even though it is most of the part count, and why the bought groups dominate.
 
 ### Line totals, spares and the sum
 
@@ -87,7 +87,7 @@ Sort the table by line total and the shape is obvious: the top five lines (the O
 - <b>Actuators, $6,339 (36%).</b> 23 RobStride actuators plus 3 spares and 4 Feetech servos. RobStride's own datasheets give the torque figures;<sup class="cite">[\[5\]](#s5)</sup> Seeed Studio lists the RS00, RS03 and RS04 at RobStride's list price with about 5% off at ten or more of one model; the RS10P comes from another reseller's listing, a pre-order not yet confirmed.<sup class="cite">[\[3\]](#s3)</sup><sup class="cite">[\[4\]](#s4)</sup>
 - <b>Compute and sensors, $4,723 (27%).</b> The Jetson AGX Orin 64 GB developer kit alone is $3,499,<sup class="cite">[\[2\]](#s2)</sup><sup class="cite">[\[9\]](#s9)</sup> the Orbbec Gemini 335L depth camera $359 list,<sup class="cite">[\[10\]](#s10)</sup> and the primary IMU an estimated $730.
 
-Everything else (structure $2,582, power $1,633, electronics $806, tooling $710, safety $470, hands $224, fasteners $180) adds up to $6,605. Cutting 20% of the fasteners saves $36; finding a cheaper computer could save thousands. Cost work starts at the top of the sorted list.
+Everything else (structure $2,452, power $1,633, electronics $844, tooling $710, safety $470, hands $224, fasteners $180) adds up to $6,513. Cutting 20% of the fasteners saves $36; finding a cheaper computer could save thousands. Cost work starts at the top of the sorted list.
 
 ### What is not counted
 
@@ -118,9 +118,9 @@ Switch to rated torque. The RS04 stays cheapest per N·m, and the small RS00 and
 
 :::tip[In the repo]
 - `bom/bom.xlsx` is the single source of truth: Summary, one sheet per group, Sourcing (where each part is sold, with tiers, availability and the date checked) and two generated CAD sheets. Each line has a Status column (owned, ordered or empty for "to buy"); owned lines keep their price so the total stays the full cost to replicate.
-- `tools/bom/book.py` tidies the workbook and rebuilds the Summary formulas; `--check` runs in CI (the automatic checks run on every change to the repository); `tools/bom/summary.py` prints the totals ($17,704.86, 63 lines).
-- Groups: actuators $6,338.91; compute and sensors $4,723; structure and materials $2,582; power $1,633.05; electronics and wiring $843.90; tooling $710; safety $470; hands $224; fasteners $180.
-- Requirement R61 (`docs/requirements.md`): about $14k excluding the onboard computer, about $17.7k with it. $17,705 − $3,499 = $14,206.
+- `tools/bom/book.py` tidies the workbook and rebuilds the Summary formulas; `--check` runs in CI (the automatic checks run on every change to the repository); `tools/bom/summary.py` prints the totals ($17,574.86, 65 lines).
+- Groups: actuators $6,338.91; compute and sensors $4,723; structure and materials $2,452; power $1,633.05; electronics and wiring $843.90; tooling $710; safety $470; hands $224; fasteners $180.
+- Requirement R61 (`docs/requirements.md`): about $14k excluding the onboard computer, about $17.6k with it. $17,575 − $3,499 = $14,076.
 - One line per item with a spares column, not one line per purchase phase; `docs/plan.md` says what each phase needs (`docs/decisions.md`, 2026-10-29).
 :::
 
@@ -132,7 +132,7 @@ The workbook has no phase column, so the phase view in the playground is this gu
 
 - <b>Inference:</b> the Orin, NVMe drive and on-board CAN transceivers are put in phase 2 because phase 2's pass check is "CAN at the planned rates works on the Orin", although the plan's work column lists the Orin under phase 4. If you already own one (the repo's builder did), this does not matter.
 - <b>Inference:</b> the wired e-stop and hand tools are put in phase 2 because `docs/safety.md` applies its rules "from the first actuator bench test onward".
-- <b>Inference:</b> lump-sum lines that serve several phases (harness, CAN cable, fasteners, 6061 stock, leg machining, carbon-fibre nylon) are split between them in rough proportions; the split is illustrative.
+- <b>Inference:</b> lump-sum lines that serve several phases (harness, CAN cable, fasteners, 6061 stock, leg machining, filament) are split between them in rough proportions; the split is illustrative.
 - From the decision log: two bench actuators bought singly in phase 2; the other 11 RS03 in one order in phase 3; the remaining RS04 as the legs need them.
 
 ## Trade-offs and alternatives

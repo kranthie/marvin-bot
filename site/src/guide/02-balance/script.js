@@ -66,7 +66,7 @@ document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click'
 })();
 
 // ---------- Playground B ----------
-const DB={mass:40.55,z:0.71,J:30,dir:'fwd',strat:'step',ts:0.30,smax:0.40};
+const DB={mass:40.97,z:0.71,J:30,dir:'fwd',strat:'step',ts:0.30,smax:0.40};
 const B={...DB};
 const PB={today:{...DB}, ankle:{...DB,strat:'ankle'}, max:{...DB,J:20,strat:'ankle'}, train:{...DB,J:20.65,strat:'ankle'}, side:{...DB,dir:'side'}};
 // distances from the CoM (stance default) to the sole edges, in the push direction
@@ -171,7 +171,7 @@ function updateNote(){
   const chB=Object.keys(DB).filter(k=>B[k]!==DB[k]);
   if(chB.length && traj){ const off=traj.v0/traj.w;
     parts.push(`Push check (linear inverted pendulum): ${B.J} N·s ${B.dir==='side'?'sideways':B.dir==='back'?'backward':'forward'} on ${B.mass} kg with the CoM at ${B.z} m gives ${traj.v0.toFixed(2)} m/s and a capture point ${(off*1000).toFixed(0)} mm ahead of the CoM, against ${(traj.E.front*1000).toFixed(0)} mm to the sole edge. Strategy: ${B.strat==='ankle'?'ankle only':`one step landing after ${B.ts} s, at most ${B.smax} m`}. Result: ${traj.status==='captured'?'recovers':'falls'}${traj.stepLen?`, step ${(traj.stepLen*100).toFixed(0)} cm`:''}. For comparison, R14 asks for 30 N·s and training pushes reach 0.5 m/s (~21 N·s).`); }
-  $('note').textContent = parts.length ? `Marvin Bot balance (40.55 kg with shells, CoM ~0.71 m in the stance, feet 0.24 × 0.11 m, hips 0.20 m apart).\n`+parts.join('\n') : 'Change a control above to build a note.';
+  $('note').textContent = parts.length ? `Marvin Bot balance (40.97 kg with shells, CoM ~0.71 m in the stance, feet 0.24 × 0.11 m, hips 0.20 m apart).\n`+parts.join('\n') : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });
 renderA(); renderB(false);

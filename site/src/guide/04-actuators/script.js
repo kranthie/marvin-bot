@@ -161,9 +161,9 @@ function renderTH(){
 function fmtT(s){ return s<120? `${fmt(s)} s` : `${fmt(s/60,1)} min`; }
 
 /* ---------- Playground 3: joint assignment ---------- */
-const JA_DEF={jaMass:39.71,jaSink:100,jaStage:false};
+const JA_DEF={jaMass:40.00,jaSink:100,jaStage:false};
 const ja={...JA_DEF};
-const JA_PRESETS={today:{jaMass:39.71,jaSink:100,jaStage:false},target:{jaMass:35,jaSink:100,jaStage:false},thigh:{jaMass:39.71,jaSink:85,jaStage:false},stage:{jaMass:39.71,jaSink:85,jaStage:true}};
+const JA_PRESETS={today:{jaMass:40.00,jaSink:100,jaStage:false},target:{jaMass:35,jaSink:100,jaStage:false},thigh:{jaMass:40.00,jaSink:85,jaStage:false},stage:{jaMass:40.00,jaSink:85,jaStage:true}};
 // demand (N·m), rated, peak of the actuator(s) at the joint; leg: scales with mass
 const JOINTS=[
  {n:'Knee',m:'RS04',d:47.1,r:40,p:120,leg:1,src:'static 18 cm step'},
@@ -240,7 +240,7 @@ function updateNote(){
    const scale=ja.jaMass/39.71, r=40*ja.jaSink/100*(ja.jaStage?1.5:1); const kn=47.1*scale, hr=41.9*scale, hrr=40*ja.jaSink/100;
    parts.push(`Joint assignment: at ${fmt(ja.jaMass,2)} kg bare, heat path ${ja.jaSink}%${ja.jaStage?' and the parked 1.5:1 knee stage':''}, the static 18 cm step puts the knee at ${fmt(kn,1)} N·m = ${fmt(kn/r*100)}% of its continuous rating and hip roll at ${fmt(hr/hrr*100)}% (repo rule: RMS within rating, peaks ≤ 70% of peak).`);
  }
- $('note').textContent = parts.length ? `For Marvin Bot (1.41 m, 39.71 kg bare humanoid with RobStride QDD actuators, 48 V), I explored the actuator limits:\n- ${parts.join('\n- ')}\nOpen question: confirm against the phase 2 bench test (RS04 thermal hold at 47 N·m in a thigh-sized mount, bench/actuator/bench_robstride.py) before deciding on the 1.5:1 knee stage.`
+ $('note').textContent = parts.length ? `For Marvin Bot (1.41 m, 40.00 kg bare humanoid with RobStride QDD actuators, 48 V), I explored the actuator limits:\n- ${parts.join('\n- ')}\nOpen question: confirm against the phase 2 bench test (RS04 thermal hold at 47 N·m in a thigh-sized mount, bench/actuator/bench_robstride.py) before deciding on the 1.5:1 knee stage.`
    : 'Change a control above to build a note.';
 }
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('note').textContent).then(()=>{ const b=$('copy'); b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',1200); }); });

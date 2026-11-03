@@ -6,7 +6,7 @@ Marvin Bot is built in stages. Each stage ends with a pass check that decides wh
 
 1. **Simulation before hardware.** The robot must stand, walk and climb stairs in simulation, with torques inside the actuators' ratings, before more than two test actuators are bought.
 2. **Test the riskiest part with the smallest build:** one actuator, then one leg, then the lower body, then the full robot.
-3. **Buy in stages.** Spend is committed one phase at a time: the work column below says what each phase needs, and `bom/bom.xlsx` lists and prices every part (about $17.7k in all at November 2026 prices).
+3. **Buy in stages.** Spend is committed one phase at a time: the work column below says what each phase needs, and `bom/bom.xlsx` lists and prices every part (about $17.6k in all at November 2026 prices).
 4. **Measure, then update the model.** Every hardware stage measures the real thing (torque, speed, heat, latency, mass) and feeds it back into `description/` and the simulation.
 
 ## Phases
