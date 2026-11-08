@@ -77,7 +77,7 @@ decisions 2026-11-07).
 - [x] Lite in the description and its URDF (`robot.yaml` / `skeleton.yaml` `variants.lite`); description check, CAN load and BOM counts (`tools/check_description.py`)
 - [x] On its wheels in MuJoCo, in CI (`sim/mujoco/check_lite.py`): margin 88-163 mm, the base controller's braking limit 0.8-2.5 m/s², a 10 mm bar crossed sideways
 - [x] Stress check of the wheel pod (SF 6.3) and column head (SF 17) (`cad/fea.py --variant lite`)
-- [ ] Stress check of the base frame (plates, collar, clevis blocks)
+- [ ] Stress check of the base frame: at a 6 mm mesh the deck plate, foot, collar, standoffs, clevis blocks and post bases are at SF 13 or more, but the floor plate did not join the mesh (a 4 mm mesh outgrows 200 GB); check it on its own
 - [x] Skills: upper-body clips with written base paths and column heights, played on the wheels (`sim/motion/lite_clips.py`; 15 clips on the [skills page](skills.md#lite))
 - [x] Renders and animation (`tools/render_lite.py`); BOM Lite qty column (about $13.4k)
 - [ ] Isaac Lab: convert Lite's USD (the base fixed) and train `MarvinLite-Reach` (written, untested)

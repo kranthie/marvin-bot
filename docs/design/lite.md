@@ -123,6 +123,10 @@ and loads it at its interfaces. Results so far:
 - **Base frame** (floor and deck plates, standoffs, foot, collar, clevis blocks, post bases):
   held at the pods, loaded at the column. Cases: a 2 g kerb drop of everything on the column, and
   1.5 × the largest moment the floor can put on Lite before it tips, fore-aft and sideways.
+  - At a 6 mm mesh, everything but the floor plate checks at SF 13 or more: deck plate 22,
+    column foot 27, collar 54, standoffs 13, clevis blocks and post bases 13.5.
+  - The floor plate did not mesh into one solid with the rest at 6 mm. A 4 mm mesh of the whole
+    frame outgrew 200 GB, so the floor plate still needs a check of its own, finer or alone.
 
 **The column.** The column is bought, so it is checked against its rating. The worst static
 moment at its foot is 52 N·m with the arms forward and 2 kg in each hand, against the DL6's
