@@ -6,10 +6,10 @@ floor_plate:
   material: al6061
   process: service
   budget: lite_base
-  mass: 2.22988
-  com: [0.0, 2.0e-07, 0.033]
-  inertia: [0.0355951, 0.035691, 0.0712727, -7.4177e-06, 0.0, 0.0]
-  size_mm: [524.0, 524.0, 6.0]
+  mass: 2.20969
+  com: [0.0, 1.0e-07, 0.033]
+  inertia: [0.0348721, 0.034968, 0.0698269, -7.4143e-06, 0.0, 0.0]
+  size_mm: [523.4, 523.4, 6.0]
 deck_plate:
   link: lite_base
   material: al6061
@@ -17,7 +17,7 @@ deck_plate:
   budget: lite_base
   mass: 1.2193
   com: [-0.0012479, 2.0e-07, 0.164]
-  inertia: [0.0197344, 0.0201105, 0.0398416, 4.08e-08, 0.0, 0.0]
+  inertia: [0.0197155, 0.0201293, 0.0398416, 4.08e-08, 0.0, 0.0]
   size_mm: [489.5, 490.0, 4.0]
 standoff_0:
   link: lite_base
@@ -132,27 +132,27 @@ column_foot:
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.65348
-  com: [0.0, 0.0, 0.041]
-  inertia: [0.00114484, 0.00182389, 0.00295784, 1.77e-08, 0.0, 0.0]
-  size_mm: [190.0, 144.0, 10.0]
+  mass: 1.17526
+  com: [0.0, 0.0, 0.045]
+  inertia: [0.0020826, 0.003329, 0.00534814, 3.19e-08, 0.0, 0.0]
+  size_mm: [190.0, 144.0, 18.0]
 column_collar:
   link: lite_base
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.27342
-  com: [-0.0002872, 0.0, 0.172]
-  inertia: [0.000286117, 0.000548017, 0.000827573, 0.0, 0.0, 0.0]
-  size_mm: [136.0, 96.0, 12.0]
+  mass: 0.27346
+  com: [-0.0001898, 0.0, 0.172]
+  inertia: [0.000552436, 0.000284122, 0.000829995, 0.0, 0.0, 0.0]
+  size_mm: [96.0, 136.0, 12.0]
 pod_inner_45:
   link: lite_base
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.11771
-  com: [0.141329, 0.151393, 0.0899047]
-  inertia: [0.000200505, 0.000200481, 0.000232864, 0.00011608, -3.28832e-05, 3.28506e-05]
+  mass: 0.12464
+  com: [0.143518, 0.149205, 0.0886132]
+  inertia: [0.00021009, 0.000210077, 0.000253498, 0.000126376, -2.59195e-05, 2.58899e-05]
   size_mm: [122.3, 122.3, 103.0]
 pod_outer_45:
   link: lite_base
@@ -250,7 +250,7 @@ pod_spring_tab_45:
   process: cnc
   budget: lite_base
   mass: 0.02026
-  com: [0.179922, 0.0950688, 0.119303]
+  com: [0.179922, 0.0950688, 0.0953028]
   inertia: [2.5276e-06, 2.5276e-06, 3.0537e-06, 3.59e-08, 4.745e-07, 4.745e-07]
   size_mm: [39.8, 39.8, 25.0]
 pod_post_45:
@@ -267,28 +267,28 @@ pod_post_base_45:
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.02279
-  com: [0.175363, 0.0905097, 0.071]
-  inertia: [9.6431e-06, 9.6431e-06, 6.775e-07, 0.0, 0.0, 0.0]
-  size_mm: [14.0, 14.0, 70.0]
+  mass: 0.01497
+  com: [0.175363, 0.0905097, 0.059]
+  inertia: [2.863e-06, 2.863e-06, 4.452e-07, 0.0, 0.0, 0.0]
+  size_mm: [14.0, 14.0, 46.0]
 pod_spring_45:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
   mass: 0.015
-  com: [0.175389, 0.0905359, 0.138]
-  inertia: [8.576e-07, 8.576e-07, 7.359e-07, -1.9e-09, -3.81e-08, 3.81e-08]
-  size_mm: [16.0, 16.0, 21.8]
+  com: [0.175239, 0.0905726, 0.126]
+  inertia: [2.7712e-06, 2.7679e-06, 6.288e-07, -2.3e-09, 9.4e-09, 1.86e-08]
+  size_mm: [14.8, 14.8, 46.0]
 pod_bump_stop_45:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
-  mass: 0.002
-  com: [0.175363, 0.0905097, 0.131]
-  inertia: [3.1e-08, 3.1e-08, 4.07e-08, 0.0, 0.0, 0.0]
-  size_mm: [11.0, 11.0, 8.0]
+  mass: 0.003
+  com: [0.175363, 0.0905097, 0.119]
+  inertia: [2.826e-07, 2.826e-07, 5.33e-08, 0.0, 0.0, 0.0]
+  size_mm: [10.0, 10.0, 32.0]
 pod_spring_cap_45:
   link: lite_base
   material: steel
@@ -303,9 +303,9 @@ pod_inner_135:
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.11771
-  com: [-0.151393, 0.141329, 0.0899047]
-  inertia: [0.000200481, 0.000200505, 0.000232864, -0.00011608, -3.28506e-05, -3.28832e-05]
+  mass: 0.12464
+  com: [-0.149205, 0.143518, 0.0886132]
+  inertia: [0.000210077, 0.00021009, 0.000253498, -0.000126376, -2.58899e-05, -2.59195e-05]
   size_mm: [122.3, 122.3, 103.0]
 pod_outer_135:
   link: lite_base
@@ -403,7 +403,7 @@ pod_spring_tab_135:
   process: cnc
   budget: lite_base
   mass: 0.02026
-  com: [-0.0950688, 0.179922, 0.119303]
+  com: [-0.0950688, 0.179922, 0.0953028]
   inertia: [2.5276e-06, 2.5276e-06, 3.0537e-06, -3.59e-08, -4.745e-07, 4.745e-07]
   size_mm: [39.8, 39.8, 25.0]
 pod_post_135:
@@ -420,28 +420,28 @@ pod_post_base_135:
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.02279
-  com: [-0.0905097, 0.175363, 0.071]
-  inertia: [9.6431e-06, 9.6431e-06, 6.775e-07, 0.0, 0.0, 0.0]
-  size_mm: [14.0, 14.0, 70.0]
+  mass: 0.01497
+  com: [-0.0905097, 0.175363, 0.059]
+  inertia: [2.863e-06, 2.863e-06, 4.452e-07, 0.0, 0.0, 0.0]
+  size_mm: [14.0, 14.0, 46.0]
 pod_spring_135:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
   mass: 0.015
-  com: [-0.0905359, 0.175389, 0.138]
-  inertia: [8.576e-07, 8.576e-07, 7.359e-07, 1.9e-09, -3.81e-08, -3.81e-08]
-  size_mm: [16.0, 16.0, 21.8]
+  com: [-0.0905726, 0.175239, 0.126]
+  inertia: [2.7679e-06, 2.7712e-06, 6.288e-07, 2.3e-09, -1.86e-08, 9.4e-09]
+  size_mm: [14.8, 14.8, 46.0]
 pod_bump_stop_135:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
-  mass: 0.002
-  com: [-0.0905097, 0.175363, 0.131]
-  inertia: [3.1e-08, 3.1e-08, 4.07e-08, 0.0, 0.0, 0.0]
-  size_mm: [11.0, 11.0, 8.0]
+  mass: 0.003
+  com: [-0.0905097, 0.175363, 0.119]
+  inertia: [2.826e-07, 2.826e-07, 5.33e-08, 0.0, 0.0, 0.0]
+  size_mm: [10.0, 10.0, 32.0]
 pod_spring_cap_135:
   link: lite_base
   material: steel
@@ -456,9 +456,9 @@ pod_inner_225:
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.11771
-  com: [-0.141329, -0.151393, 0.0899047]
-  inertia: [0.000200505, 0.000200481, 0.000232864, 0.00011608, 3.28832e-05, -3.28506e-05]
+  mass: 0.12464
+  com: [-0.143518, -0.149205, 0.0886132]
+  inertia: [0.00021009, 0.000210077, 0.000253498, 0.000126376, 2.59195e-05, -2.58899e-05]
   size_mm: [122.3, 122.3, 103.0]
 pod_outer_225:
   link: lite_base
@@ -556,7 +556,7 @@ pod_spring_tab_225:
   process: cnc
   budget: lite_base
   mass: 0.02026
-  com: [-0.179922, -0.0950688, 0.119303]
+  com: [-0.179922, -0.0950688, 0.0953028]
   inertia: [2.5276e-06, 2.5276e-06, 3.0537e-06, 3.59e-08, -4.745e-07, -4.745e-07]
   size_mm: [39.8, 39.8, 25.0]
 pod_post_225:
@@ -573,28 +573,28 @@ pod_post_base_225:
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.02279
-  com: [-0.175363, -0.0905097, 0.071]
-  inertia: [9.6431e-06, 9.6431e-06, 6.775e-07, 0.0, 0.0, 0.0]
-  size_mm: [14.0, 14.0, 70.0]
+  mass: 0.01497
+  com: [-0.175363, -0.0905097, 0.059]
+  inertia: [2.863e-06, 2.863e-06, 4.452e-07, 0.0, 0.0, 0.0]
+  size_mm: [14.0, 14.0, 46.0]
 pod_spring_225:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
   mass: 0.015
-  com: [-0.175389, -0.0905359, 0.138]
-  inertia: [8.576e-07, 8.576e-07, 7.359e-07, -1.9e-09, 3.81e-08, -3.81e-08]
-  size_mm: [16.0, 16.0, 21.8]
+  com: [-0.175239, -0.0905726, 0.126]
+  inertia: [2.7712e-06, 2.7679e-06, 6.288e-07, -2.3e-09, -9.4e-09, -1.86e-08]
+  size_mm: [14.8, 14.8, 46.0]
 pod_bump_stop_225:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
-  mass: 0.002
-  com: [-0.175363, -0.0905097, 0.131]
-  inertia: [3.1e-08, 3.1e-08, 4.07e-08, 0.0, 0.0, 0.0]
-  size_mm: [11.0, 11.0, 8.0]
+  mass: 0.003
+  com: [-0.175363, -0.0905097, 0.119]
+  inertia: [2.826e-07, 2.826e-07, 5.33e-08, 0.0, 0.0, 0.0]
+  size_mm: [10.0, 10.0, 32.0]
 pod_spring_cap_225:
   link: lite_base
   material: steel
@@ -609,9 +609,9 @@ pod_inner_315:
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.11771
-  com: [0.151393, -0.141329, 0.0899047]
-  inertia: [0.000200481, 0.000200505, 0.000232864, -0.00011608, 3.28506e-05, 3.28832e-05]
+  mass: 0.12464
+  com: [0.149205, -0.143518, 0.0886132]
+  inertia: [0.000210077, 0.00021009, 0.000253498, -0.000126376, 2.58899e-05, 2.59195e-05]
   size_mm: [122.3, 122.3, 103.0]
 pod_outer_315:
   link: lite_base
@@ -709,7 +709,7 @@ pod_spring_tab_315:
   process: cnc
   budget: lite_base
   mass: 0.02026
-  com: [0.0950688, -0.179922, 0.119303]
+  com: [0.0950688, -0.179922, 0.0953028]
   inertia: [2.5276e-06, 2.5276e-06, 3.0537e-06, -3.59e-08, 4.745e-07, -4.745e-07]
   size_mm: [39.8, 39.8, 25.0]
 pod_post_315:
@@ -726,28 +726,28 @@ pod_post_base_315:
   material: al6061
   process: cnc
   budget: lite_base
-  mass: 0.02279
-  com: [0.0905097, -0.175363, 0.071]
-  inertia: [9.6431e-06, 9.6431e-06, 6.775e-07, 0.0, 0.0, 0.0]
-  size_mm: [14.0, 14.0, 70.0]
+  mass: 0.01497
+  com: [0.0905097, -0.175363, 0.059]
+  inertia: [2.863e-06, 2.863e-06, 4.452e-07, 0.0, 0.0, 0.0]
+  size_mm: [14.0, 14.0, 46.0]
 pod_spring_315:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
   mass: 0.015
-  com: [0.0905359, -0.175389, 0.138]
-  inertia: [8.576e-07, 8.576e-07, 7.359e-07, 1.9e-09, 3.81e-08, 3.81e-08]
-  size_mm: [16.0, 16.0, 21.8]
+  com: [0.0905726, -0.175239, 0.126]
+  inertia: [2.7679e-06, 2.7712e-06, 6.288e-07, 2.3e-09, 1.86e-08, -9.4e-09]
+  size_mm: [14.8, 14.8, 46.0]
 pod_bump_stop_315:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
-  mass: 0.002
-  com: [0.0905097, -0.175363, 0.131]
-  inertia: [3.1e-08, 3.1e-08, 4.07e-08, 0.0, 0.0, 0.0]
-  size_mm: [11.0, 11.0, 8.0]
+  mass: 0.003
+  com: [0.0905097, -0.175363, 0.119]
+  inertia: [2.826e-07, 2.826e-07, 5.33e-08, 0.0, 0.0, 0.0]
+  size_mm: [10.0, 10.0, 32.0]
 pod_spring_cap_315:
   link: lite_base
   material: steel
@@ -772,8 +772,8 @@ shell_1:
   process: print
   budget: lite_base
   mass: 0.16973
-  com: [0.163492, 0.169642, 0.13227]
-  inertia: [0.000912539, 0.000885937, 0.000830765, 0.000113059, 0.000161467, 0.000194607]
+  com: [0.163274, 0.169423, 0.13227]
+  inertia: [0.000925112, 0.000898054, 0.000855456, 0.000127628, 0.000158418, 0.000191559]
   size_mm: [208.1, 209.6, 163.0]
 shell_2:
   link: lite_base
@@ -790,8 +790,8 @@ shell_3:
   process: print
   budget: lite_base
   mass: 0.17601
-  com: [-0.169077, 0.165674, 0.13037]
-  inertia: [0.000927699, 0.000935134, 0.000860334, -0.000121432, -0.000189502, 0.000181188]
+  com: [-0.168867, 0.165463, 0.13037]
+  inertia: [0.000939979, 0.000947666, 0.000885145, -0.00013594, -0.000186524, 0.000178209]
   size_mm: [209.6, 208.1, 163.0]
 shell_4:
   link: lite_base
@@ -808,8 +808,8 @@ shell_5:
   process: print
   budget: lite_base
   mass: 0.17601
-  com: [-0.165674, -0.169077, 0.13037]
-  inertia: [0.000935134, 0.000927699, 0.000860334, 0.000121432, -0.000181188, -0.000189502]
+  com: [-0.165463, -0.168867, 0.13037]
+  inertia: [0.000947666, 0.000939979, 0.000885145, 0.00013594, -0.000178209, -0.000186524]
   size_mm: [208.1, 209.6, 163.0]
 shell_6:
   link: lite_base
@@ -826,8 +826,8 @@ shell_7:
   process: print
   budget: lite_base
   mass: 0.16973
-  com: [0.167022, -0.166112, 0.13227]
-  inertia: [0.000905705, 0.000895909, 0.000833903, -0.000114629, 0.000170921, -0.000185154]
+  com: [0.166803, -0.165894, 0.13227]
+  inertia: [0.000918017, 0.000908289, 0.000858595, -0.000129197, 0.000167872, -0.000182105]
   size_mm: [209.6, 208.1, 163.0]
 bumper_0:
   link: lite_base
@@ -1006,8 +1006,8 @@ deck_cover_front:
   process: print
   budget: lite_base
   mass: 0.08961
-  com: [0.054055, 0.0, 0.18175]
-  inertia: [0.000353459, 8.8157e-05, 0.000441433, 0.0, 0.0, 0.0]
+  com: [0.0548988, 0.0, 0.18175]
+  inertia: [0.000349981, 8.33971e-05, 0.000433195, 0.0, 0.0, 0.0]
   size_mm: [119.5, 239.0, 3.5]
 deck_cover_back:
   link: lite_base
@@ -1015,8 +1015,8 @@ deck_cover_back:
   process: print
   budget: lite_base
   mass: 0.08961
-  com: [-0.054055, 0.0, 0.18175]
-  inertia: [0.000353459, 8.8157e-05, 0.000441433, 0.0, 0.0, 0.0]
+  com: [-0.0548988, 0.0, 0.18175]
+  inertia: [0.000349981, 8.33971e-05, 0.000433195, 0.0, 0.0, 0.0]
   size_mm: [119.5, 239.0, 3.5]
 column_trim:
   link: lite_base
@@ -1025,8 +1025,8 @@ column_trim:
   budget: lite_base
   mass: 0.03799
   com: [0.0, 0.0, 0.1885]
-  inertia: [2.71242e-05, 4.81654e-05, 7.46564e-05, 0.0, 0.0, 0.0]
-  size_mm: [102.0, 72.0, 10.0]
+  inertia: [4.81654e-05, 2.71242e-05, 7.46564e-05, 0.0, 0.0, 0.0]
+  size_mm: [72.0, 102.0, 10.0]
 battery_l:
   link: lite_base
   material: bought
@@ -1122,18 +1122,18 @@ desk_column:
   material: bought
   process: bought
   budget: lite_base
-  mass: 4.5
-  com: [0.0, 0.0, 0.319516]
-  inertia: [0.12206, 0.123553, 0.00344341, 0.0, 0.0, 0.0]
-  size_mm: [120.0, 80.0, 558.0]
+  mass: 2.5
+  com: [0.0, 0.0, 0.303]
+  inertia: [0.0529816, 0.0521813, 0.00182784, 0.0, 0.0, 0.0]
+  size_mm: [50.0, 80.0, 498.0]
 screws_pod_45:
   link: lite_base
   material: bought
   process: bought
   budget: lite_base
   mass: 0.06
-  com: [0.151034, 0.160437, 0.0936373]
-  inertia: [0.000157413, 0.000184634, 0.000184443, 6.48984e-05, -4.77358e-05, 1.22421e-05]
+  com: [0.151034, 0.160437, 0.0920498]
+  inertia: [0.000156049, 0.000183271, 0.000184443, 6.48984e-05, -4.41258e-05, 6.874e-06]
   size_mm: [163.6, 143.4, 111.0]
 screws_pod_135:
   link: lite_base
@@ -1141,8 +1141,8 @@ screws_pod_135:
   process: bought
   budget: lite_base
   mass: 0.06
-  com: [-0.160437, 0.151034, 0.0936373]
-  inertia: [0.000184634, 0.000157413, 0.000184443, -6.48984e-05, -1.22421e-05, -4.77358e-05]
+  com: [-0.160437, 0.151034, 0.0920498]
+  inertia: [0.000183271, 0.000156049, 0.000184443, -6.48984e-05, -6.874e-06, -4.41258e-05]
   size_mm: [143.4, 163.6, 111.0]
 screws_pod_225:
   link: lite_base
@@ -1150,8 +1150,8 @@ screws_pod_225:
   process: bought
   budget: lite_base
   mass: 0.06
-  com: [-0.151034, -0.160437, 0.0936373]
-  inertia: [0.000157413, 0.000184634, 0.000184443, 6.48984e-05, 4.77358e-05, -1.22421e-05]
+  com: [-0.151034, -0.160437, 0.0920498]
+  inertia: [0.000156049, 0.000183271, 0.000184443, 6.48984e-05, 4.41258e-05, -6.874e-06]
   size_mm: [163.6, 143.4, 111.0]
 screws_pod_315:
   link: lite_base
@@ -1159,8 +1159,8 @@ screws_pod_315:
   process: bought
   budget: lite_base
   mass: 0.06
-  com: [0.160437, -0.151034, 0.0936373]
-  inertia: [0.000184634, 0.000157413, 0.000184443, -6.48984e-05, 1.22421e-05, 4.77358e-05]
+  com: [0.160437, -0.151034, 0.0920498]
+  inertia: [0.000183271, 0.000156049, 0.000184443, -6.48984e-05, 6.874e-06, 4.41258e-05]
   size_mm: [143.4, 163.6, 111.0]
 screws_frame:
   link: lite_base
@@ -1168,18 +1168,36 @@ screws_frame:
   process: bought
   budget: lite_base
   mass: 0.12
-  com: [0.0008979, 0.0, 0.084541]
-  inertia: [0.00202251, 0.00204999, 0.00318136, 0.0, -9.424e-06, 0.0]
+  com: [0.0007328, 0.0001019, 0.0826802]
+  inertia: [0.00201108, 0.00194034, 0.00304011, -4.557e-07, -7.8549e-06, -1.0921e-06]
   size_mm: [486.8, 490.7, 155.3]
 column_head_plate:
   link: column_link
   material: al7075
   process: cnc
   budget: lite_column
-  mass: 0.15836
-  com: [7.4e-06, 3.2e-06, 0.003]
-  inertia: [0.000256245, 0.00030064, 0.000555935, 2.84e-08, 0.0, 0.0]
-  size_mm: [130.0, 124.0, 6.0]
+  mass: 0.20889
+  com: [-0.0419848, 2.8e-06, 0.003]
+  inertia: [0.000310861, 0.000748196, 0.0010578, -3.0e-09, 0.0, 0.0]
+  size_mm: [209.6, 123.9, 6.0]
+column_head_cheek_l:
+  link: column_link
+  material: al6061
+  process: cnc
+  budget: lite_column
+  mass: 0.12394
+  com: [-0.0590833, 0.053, -0.017]
+  inertia: [1.271e-05, 0.000309091, 0.000297704, 0.0, 0.0, 0.0]
+  size_mm: [171.0, 8.0, 34.0]
+column_head_cheek_r:
+  link: column_link
+  material: al6061
+  process: cnc
+  budget: lite_column
+  mass: 0.12394
+  com: [-0.0590833, -0.053, -0.017]
+  inertia: [1.271e-05, 0.000309091, 0.000297704, 0.0, 0.0, 0.0]
+  size_mm: [171.0, 8.0, 34.0]
 column_head_waist_ring:
   link: column_link
   material: al7075
@@ -1212,16 +1230,16 @@ column_head_shroud:
   material: petg
   process: print
   budget: lite_column
-  mass: 0.14194
-  com: [0.0, 0.0, 0.0283152]
-  inertia: [0.000589486, 0.000589486, 0.00100605, 0.0, 0.0, 0.0]
-  size_mm: [199.0, 199.0, 86.0]
+  mass: 0.24185
+  com: [-0.0338962, 0.0, 0.0075498]
+  inertia: [0.00100984, 0.00182583, 0.00227139, 0.0, -8.89493e-05, 0.0]
+  size_mm: [233.6, 137.0, 122.5]
 desk_column_inner:
   link: column_link
   material: bought
   process: bought
   budget: lite_column
-  mass: 3.0
-  com: [0.0, 0.0, -0.244993]
-  inertia: [0.0799411, 0.0807452, 0.00223106, 0.0, 0.0, 0.0]
-  size_mm: [130.0, 120.0, 530.0]
+  mass: 5.0
+  com: [-0.020384, 0.0, -0.192014]
+  inertia: [0.138595, 0.144715, 0.0117115, 0.0, 0.0172259, 0.0]
+  size_mm: [177.0, 97.0, 516.0]

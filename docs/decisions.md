@@ -2,6 +2,18 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-11-07: Lite, design pass 2: the column from its data sheet, open wheel slots, pod springs, lidar
+
+**Column mounting from LINAK's data sheet.** The first pass assumed a 130 × 120 mm top plate and an 8 mm foot bracket. The DL6 has neither: its top is its motor housing (177 × 97 × 46 mm, the column's axis 29.4 mm from one end, six M6 holes in its sides) and its outer profile ends in a bottom plate with 4 × M6 and 2 × M8. The column now bolts straight to an 18 mm foot plate (the bracket's height, so the column top and every height stay put), and is turned so its 80 mm side runs across the robot and the housing overhangs to the back, under the torso, not out to one side. The head plate sits on the housing, and two cheeks bolted to its long sides keep it on; a printed cover goes round the housing. The column's 7.5 kg is now split 2.5 kg on the base and 5.0 kg on the moving link (the motor and spindle ride at the top), by estimate. Lite: 39.96 kg bare, 40.60 kg with the shells; the stability figures moved by a few per cent (tables in the entry below).
+
+**Floor plate: open wheel slots.** The wheel slots, 144 mm along the rim and 8 mm past the wheel's outer face, put their corners outside the 262 mm plate, so the rim outside each was a loose sliver and the plate was five pieces (found when its own stress check reported it unattached). The slots now run out through the rim. The four shell segments over the wheels lost the rim their hooks caught; their hooks moved to ±18.5° from the segment's centre, clear of the slot, and the slots shortened from ±74 to ±72 mm (6 mm clear of the wheel's chord). The plate checks at SF 3.5 or more on its own.
+
+**Pod springs.** The first layout's 22 mm spring pocket was too short for any spring: the tab, 1.75 × as far from the pivot as the wheel, moves ±14 mm, and the smallest steel spring that stores the work over that travel (about 1.6 J) with the wire at a safe stress needs a solid length of about 17 mm or more. The spring tab moved down 24 mm, giving a 46 mm pocket, and the spring is music wire 1.8 mm on a 13 mm mean diameter, 11.6 active coils, 60 mm free: 12.5 N/mm at the wheel, 100 N at mid travel, 200 N at the bump stop, 782 MPa (42% of the wire's strength). `cad/lite_base.py --check` fails if a change breaks it. Alternative: an extension spring in the 70 mm under the tab (more room, but hooks are the weak point and it needed a new post).
+
+**Lidar: a 360°, 12 m 2-D unit with an open ROS 2 driver** (RPLIDAR C1 class, about $100). Fits the existing 70 mm bracket.
+
+**Isaac Lab: a speed-limited column.** Training showed the stiff implicit drive moving the column at 0.8 m/s (the motor's 0.038): the drive's velocity limit did not bind. Lite's column is now a `Spindle` actuator whose target moves at the rated speed, and `check_robot.py --variant lite` checks it (37 mm in 1 s). The reach task also stopped ending episodes as soon as the hand was within 5 cm (Isaac Lab's base reach task does): its policies never learned to hold a target.
+
 ## 2026-11-07: Lite, a second variant: the upper body on a lifting column on a wheeled base
 
 **Decision.** The repository describes two robots. **Max** is the full humanoid and stays the default everywhere. **Lite** is Max from the waist motor up (waist, torso, arms, hands, neck, head), unchanged, on a bought standing-desk lifting column on a round omnidirectional base. Lite needs no legs, so it can be built and used for manipulation long before the walking robot.
@@ -10,14 +22,14 @@ Newest first. Each entry gives the decision, the reason and the alternatives con
 
 **Column at the centre, facing forward.** Turning the torso 180° by default to reach further would cut the tipping margin to about 29 mm, and the waist turns only ±150°. A column set forward of the centre was rejected for the same reason.
 
-**Stability, from `sim/mujoco/check_lite.py`** (Lite on its four wheels with free-turning rollers; 40.2 kg):
+**Stability, from `sim/mujoco/check_lite.py`** (Lite on its four wheels with free-turning rollers; 41.1 kg):
 
 | Case | Column | Tipping margin | Braking limit | Sideways push that tips it, at the shoulders |
 |---|---|---|---|---|
-| Arms down | down / up | 163 mm | 2.5 / 1.7 m/s² | 64 / 45 N |
-| Arms forward, 2 kg in each hand | down / up | 88 mm | 1.1 / 0.8 m/s² | 71 / 49 N |
+| Arms down | down / up | 163 mm | 2.4 / 1.6 m/s² | 66 / 46 N |
+| Arms forward, 2 kg in each hand | down / up | 92 mm | 1.1 / 0.8 m/s² | 72 / 50 N |
 
-The braking limit is what the base controller allows: 0.6 of the deceleration that would tip Lite statically, ramped in over 0.3 s. At 0.8 of it, the rear wheels unloaded with the column up and the arms forward, because the upper body sways forward on its joints' servos as the base slows. With the column up, Lite tips over at a sideways push of about 45 N at the shoulders, so the column comes down when people are close or Lite drives. Lite crosses a 10 mm bar sideways, an omni wheel's worst direction.
+The braking limit is what the base controller allows: 0.6 of the deceleration that would tip Lite statically, ramped in over 0.3 s. At 0.8 of it, the rear wheels unloaded with the column up and the arms forward, because the upper body sways forward on its joints' servos as the base slows. With the column up, Lite tips over at a sideways push of about 46 N at the shoulders, so the column comes down when people are close or Lite drives. Lite crosses a 10 mm bar sideways, an omni wheel's worst direction.
 
 **Column: LINAK DL6.** 560 mm retracted and used over 450 mm of its 650 mm stroke (shoulder 1.01–1.46 m); 50 × 80 mm, 800 N, 38 mm/s, 7.5 kg, about $161, with a published dynamic bending rating of 150 N·m. The worst static moment at its foot is 52 N·m with the arms forward and 2 kg in each hand (SF 2.9), and about 60 N·m while braking at the limit (SF 2.5). It is driven through its own 24 V motor and Hall sensor by an H-bridge and a microcontroller, the way an open mobile-manipulator project drives a desk leg, not through LINAK's control box, whose interface is not public. That is the first thing to bench-test when the column arrives.
 

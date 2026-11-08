@@ -33,7 +33,8 @@ It is built with [Astro Starlight](https://starlight.astro.build) (MIT). Depende
   new pages.
 - **The 3-D model:** `scripts/build_model.py` packs the generated URDF, `description/cad_model.yaml` and
   the code-CAD meshes into `public/guide/model/marvin_model.js` (git-ignored), used by the home page and
-  playground 00. Both viewers share `src/scripts/marvin-render.js`: smooth shading that keeps sharp
+  playground 00, and Lite's into `marvin_model_lite.js`, which the home page loads when its Lite button
+  is pressed. Both viewers share `src/scripts/marvin-render.js`: smooth shading that keeps sharp
   edges (crease-angle normals), image-based lighting and soft shadows. The Pages workflow rebuilds it on every deploy, so it always matches the design.
 
 ## Building and previewing locally

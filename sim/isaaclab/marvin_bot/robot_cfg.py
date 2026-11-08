@@ -27,7 +27,7 @@ from pathlib import Path
 import isaaclab.sim as sim_utils
 import torch
 import yaml
-from isaaclab.actuators import DCMotor, DCMotorCfg
+from isaaclab.actuators import DCMotor, DCMotorCfg, ImplicitActuator, ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
 from isaaclab.utils import DelayBuffer, configclass
 from isaaclab_newton.sim.schemas import NewtonArticulationCfg
@@ -235,7 +235,8 @@ MARVIN_BOT_CFG = ArticulationCfg(
 
 # --- Lite (robot.yaml variants.lite): the upper body on a column on a wheeled base. For training
 # its base is fixed to the world (convert_urdf.py --variant lite): the wheels are left passive,
-# and sim/mujoco/check_lite.py covers the base on its rollers. Untested: not yet converted or run.
+# and sim/mujoco/check_lite.py covers the base on its rollers. check_robot.py --variant lite
+# checks it.
 _lite = _robot["variants"]["lite"]
 URDF_LITE_PATH = DESC / "urdf" / "marvin_bot_lite.urdf"
 USD_LITE_PATH = USD_DIR / "marvin_bot_lite" / "marvin_bot_lite" / "marvin_bot_lite.usda"
@@ -247,19 +248,51 @@ LITE_JOINT_ORDER = ("column_lift", *LITE_ARM_JOINTS) + tuple(
 )
 
 
-def _lite_actuators() -> dict:
-    from isaaclab.actuators import ImplicitActuatorCfg
+class Spindle(ImplicitActuator):
+    """A self-locking spindle at its rated speed: an implicit position drive whose target moves
+    toward the command at no more than `speed` (m/s). The drive's own velocity limit does not
+    bind on every backend, and without this the stiff drive moves the column many times faster
+    than its motor can (0.8 m/s against the DL6's 0.038)."""
 
+    def __init__(self, cfg, *args, **kwargs):
+        super().__init__(cfg, *args, **kwargs)
+        self._pos = None
+
+    def reset(self, env_ids):
+        super().reset(env_ids)
+        if self._pos is not None:
+            self._pos[env_ids if env_ids is not None else slice(None)] = float("nan")
+
+    def compute(self, control_action, joint_pos, joint_vel):
+        if self._pos is None:
+            self._pos = joint_pos.clone()
+        self._pos = torch.where(torch.isnan(self._pos), joint_pos, self._pos)
+        step = self.cfg.speed * self.cfg.dt
+        self._pos = self._pos + torch.clamp(control_action.joint_positions - self._pos, -step, step)
+        control_action.joint_positions = self._pos.clone()
+        return super().compute(control_action, joint_pos, joint_vel)
+
+
+@configclass
+class SpindleCfg(ImplicitActuatorCfg):
+    class_type: type = Spindle
+    speed: float = 0.038  # m/s
+    dt: float = 1 / 120  # s: the physics step it runs at (the reach task's)
+
+
+def _lite_actuators() -> dict:
     col = _acts["DL6"]
     wheel = _acts["RS00"]
     out = _actuators(LITE_ARM_JOINTS)
-    # the column: a stiff, self-locking spindle at the DL6's force and speed
-    out["column"] = ImplicitActuatorCfg(
+    # the column: a stiff, self-locking spindle at the DL6's force and speed (the gains of
+    # sim/mujoco/check_lite.py: under 1 mm of sag under the upper body)
+    out["column"] = SpindleCfg(
         joint_names_expr=["column_lift"],
+        speed=col["speed"],
         effort_limit_sim=col["peak_force"],
         velocity_limit_sim=col["speed"],
-        stiffness=2.0e4,
-        damping=2.0e3,
+        stiffness=2.0e5,
+        damping=4.0e3,
     )
     out["wheels"] = ImplicitActuatorCfg(
         joint_names_expr=["wheel_.*"],

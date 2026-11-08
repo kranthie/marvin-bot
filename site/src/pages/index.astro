@@ -42,7 +42,7 @@ const phases = [
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Marvin Bot, an open humanoid robot you can build, shown as its 3-D model">
 <meta name="twitter:card" content="summary_large_image">
-<script is:inline src={u('guide/model/marvin_model.js')}></script>
+<script is:inline data-model src={u('guide/model/marvin_model.js')}></script>
 </head>
 <body>
 <nav class="top" aria-label="Main">
@@ -63,13 +63,20 @@ const phases = [
       <a href={repo}>GitHub</a>
     </div>
   </div>
+  <div class="variants" id="variants" role="group" aria-label="Which robot to show">
+    <button data-v="max" class="on">Max</button><button data-v="lite">Lite</button>
+  </div>
   <div class="looks" id="looks" role="group" aria-label="How to show the model">
     <button data-l="shells" class="on">Finished</button><button data-l="bare">Bare frame</button><button data-l="motors">X-ray motors</button><button data-l="electronics">X-ray electronics</button>
   </div>
   <a class="explore" href={u('guide/00-3d-model/')}>Explore every part, the assembly order and the skills in 3-D →</a>
-  <dl class="stats">
+  <dl class="stats" id="stats-max">
     <div><dt>height</dt><dd>1.41 m</dd></div><div><dt>with shells</dt><dd>40.5 kg</dd></div><div><dt>powered joints</dt><dd>27</dd></div>
     <div><dt>motors + servos</dt><dd>23 + 4</dd></div><div><dt>48 V battery</dt><dd>630 Wh</dd></div><div><dt>to replicate</dt><dd>≈ $17.7k</dd></div>
+  </dl>
+  <dl class="stats" id="stats-lite" hidden>
+    <div><dt>height (column down–up)</dt><dd>1.25–1.70 m</dd></div><div><dt>with shells</dt><dd>40.6 kg</dd></div><div><dt>powered joints</dt><dd>15 + column</dd></div>
+    <div><dt>wheels</dt><dd>4 omni</dd></div><div><dt>48 V battery</dt><dd>630 Wh</dd></div><div><dt>to replicate</dt><dd>≈ $13.4k</dd></div>
   </dl>
 </header>
 
@@ -97,11 +104,31 @@ const phases = [
 
 <script>
   import { mountMarvin } from '../scripts/marvin-viewer.js';
-  const v = mountMarvin(document.getElementById('viewer')!, { look: 'shells', animate: 'idle', target: 0.74, dist: 3.3, camera: 'iso', zoom: false, offsetX: 0.2 });
+  const host = document.getElementById('viewer')!;
+  const opts = { look: 'shells', animate: 'idle', target: 0.74, dist: 3.3, camera: 'iso', zoom: false, offsetX: 0.2 };
+  let v = mountMarvin(host, opts);
   document.querySelectorAll<HTMLButtonElement>('#looks button').forEach((b) =>
     b.addEventListener('click', () => {
       document.querySelectorAll('#looks button').forEach((x) => x.classList.toggle('on', x === b));
-      v?.setLook(b.dataset.l!);
+      opts.look = b.dataset.l!;
+      v?.setLook(opts.look);
+    }),
+  );
+  // Lite's model is loaded the first time its button is pressed
+  const liteSrc = document.querySelector<HTMLScriptElement>('script[data-model]')!.src.replace('marvin_model.js', 'marvin_model_lite.js');
+  const loadLite = () => new Promise<void>((ok, fail) => {
+    if ((window as any).MARVIN_MODEL_LITE) return ok();
+    const s = document.createElement('script'); s.src = liteSrc; s.onload = () => ok(); s.onerror = fail; document.head.appendChild(s);
+  });
+  document.querySelectorAll<HTMLButtonElement>('#variants button').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const lite = b.dataset.v === 'lite';
+      document.querySelectorAll('#variants button').forEach((x) => x.classList.toggle('on', x === b));
+      if (lite) await loadLite();
+      v?.destroy();
+      v = mountMarvin(host, { ...opts, model: lite ? (window as any).MARVIN_MODEL_LITE : undefined, target: lite ? 0.85 : 0.74 });
+      document.getElementById('stats-max')!.hidden = lite;
+      document.getElementById('stats-lite')!.hidden = !lite;
     }),
   );
 </script>
@@ -128,8 +155,12 @@ const phases = [
   .looks { position:absolute; bottom:118px; left:50%; transform:translateX(-50%); display:flex; gap:4px; z-index:2; background:#0d1117cc; border:1px solid var(--line); border-radius:99px; padding:5px; }
   .looks button { font:inherit; font-size:13px; background:none; border:0; color:var(--muted); padding:6px 14px; border-radius:99px; cursor:pointer; white-space:nowrap; }
   .looks button.on { background:#1b2330; color:var(--text); }
+  .variants { position:absolute; bottom:162px; left:50%; transform:translateX(-50%); display:flex; gap:4px; z-index:2; background:#0d1117cc; border:1px solid var(--line); border-radius:99px; padding:4px; }
+  .variants button { font:inherit; font-size:13px; font-weight:600; background:none; border:0; color:var(--muted); padding:5px 16px; border-radius:99px; cursor:pointer; }
+  .variants button.on { background:var(--accent); color:#120d05; }
   .explore { position:absolute; bottom:86px; left:50%; transform:translateX(-50%); z-index:2; font-size:13px; color:var(--accent); text-decoration:none; white-space:nowrap; }
   .stats { position:absolute; bottom:0; left:0; right:0; display:grid; grid-template-columns:repeat(6,1fr); margin:0; border-top:1px solid var(--line); background:#07090ce6; z-index:2; }
+  .stats[hidden] { display:none; }
   .stats div { padding:12px 18px; border-right:1px solid var(--line); display:flex; flex-direction:column-reverse; }
   .stats dd { margin:0; font-size:22px; font-weight:700; } .stats dt { font-size:12px; color:var(--muted); }
   main { max-width:1120px; margin:0 auto; padding:24px 24px 40px; }
@@ -150,7 +181,7 @@ const phases = [
   @media (max-width:860px) {
     .stats { grid-template-columns:repeat(3,1fr); } .cards { grid-template-columns:1fr; } .built { grid-template-columns:1fr 1fr; }
     .phases { grid-template-columns:repeat(4,1fr); } .copy { top:11vh; left:20px; right:20px; } nav.top { gap:14px; padding:12px 16px; overflow-x:auto; }
-    .viewer { inset:auto 0 150px 0; height:46vh; } .looks { bottom:150px; } .explore { bottom:126px; white-space:normal; text-align:center; width:90%; } .hero { min-height:720px; }
+    .viewer { inset:auto 0 150px 0; height:46vh; } .looks { bottom:150px; } .variants { bottom:194px; } .explore { bottom:126px; white-space:normal; text-align:center; width:90%; } .hero { min-height:720px; }
   }
 </style>
 </body>

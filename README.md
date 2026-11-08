@@ -41,7 +41,7 @@ unchanged, on a bought standing-desk lifting column on a round omni-wheel base: 
 39.7 kg with its shells, about $13.4k in parts. Lite has no legs, so it can be built and used for
 manipulation long before the walking robot. Both are described in the same files
 (`description/robot.yaml` `variants:`), so a change to the torso, arms or head reaches both. Lite
-is a first design pass in code-CAD and simulation: on its wheels in MuJoCo it holds 88 mm of
+is a first design pass in code-CAD and simulation: on its wheels in MuJoCo it holds 92 mm of
 tipping margin with its arms forward and 2 kg in each hand. Its design is in
 [docs/design/lite.md](docs/design/lite.md) and its skills on the
 [skills page](docs/skills.md#lite).

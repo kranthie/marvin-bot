@@ -7,7 +7,8 @@ Marvin Bot's Isaac Lab 3.0 package: the articulation config (`marvin_bot/robot_c
 | `marvin_bot/robot_cfg.py` | `MARVIN_BOT_CFG`: USD path, DC motor models from `description/actuators.yaml` (the ankles in joint space through the linkage ratios), training gains, joint order and default stance from `robot.yaml`, IMU mount |
 | `convert_urdf.py` | Converts `description/urdf/marvin_bot.urdf` to `usd/` (git-ignored) with Isaac Sim's URDF importer |
 | `check_robot.py` | Checks mass, joint order and limits, kinematics against MuJoCo, and the default stance |
-| `marvin_bot/tasks/` | `MarvinBot-Velocity-Flat` and `MarvinBot-Velocity-Rough`; `MarvinLite-Reach` (Lite, untested) |
+| `marvin_bot/tasks/` | `MarvinBot-Velocity-Flat` and `MarvinBot-Velocity-Rough`; `MarvinLite-Reach` (Lite) |
+| `eval_reach.py` | Scores a `MarvinLite-Reach` policy: the palm's error at the end of each target, by zone; the centre of mass; joint torque while holding |
 | `../mujoco/check_policy.py` | The MuJoCo cross-check of an exported policy: walk, turn, stop, fast walk or stairs, with posture, sway, heat and gait figures; `--render` saves a video |
 | `export_policy.py` | Exports a checkpoint to `policy.onnx` plus `policy.json` (joint order, default pose, action scale, observation layout, height-map layout) |
 
@@ -93,23 +94,45 @@ been tried yet. Flat v9 was trained on the current model (39.70 kg bare); rough 
 before the hands (39.13 kg). The clips in the README replay them with `check_policy.py --render`
 on the current model.
 
-## Lite's reach task (untested)
+## Lite's reach task
 
 [Lite](../../docs/design/lite.md) has its own articulation, `MARVIN_LITE_CFG`. It is converted
 from `description/urdf/marvin_bot_lite.urdf` with its base fixed to the world. Its wheels are
-passive, and `sim/mujoco/check_lite.py` covers the base on its rollers.
+passive, and `sim/mujoco/check_lite.py` covers the base on its rollers. The column is a `Spindle`
+actuator: a stiff implicit drive whose target moves at the DL6's rated 38 mm/s (the drive's own
+velocity limit did not bind, and the column moved at 0.8 m/s).
 
 `MarvinLite-Reach` builds on Isaac Lab's reach task. The left palm reaches position targets
-around Lite, from table height in front to above the shoulder at the side. The policy moves the
-column, the waist and the left arm's six joints. On top of Isaac Lab's tracking rewards, it is
+around Lite, from table height in front to above the shoulder at the side, each held for 4 s.
+The policy moves the column, the waist and the left arm's six joints; the column's target is
+clipped to its travel. On top of Isaac Lab's tracking rewards (the fine one at 5 cm), it is
 penalised for moving the whole robot's centre of mass more than 60 mm off the column's axis.
-
-Both are written but not yet converted or trained:
+Unlike the base task, an episode does not end when the hand is within 5 cm: with that, policies
+never learned to stay on a target (they stopped about 6 cm short).
 
 ```bash
 uv run --no-sync python <repo>/sim/isaaclab/convert_urdf.py --variant lite
+uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --variant lite            # Newton
+uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --variant lite --backend physx
 uv run --no-sync isaaclab train --rl_library rsl_rl --task MarvinLite-Reach --num_envs 4096 --max_iterations 1500
+uv run --no-sync python <repo>/sim/isaaclab/eval_reach.py --checkpoint logs/rsl_rl/marvin_lite_reach/<run>/model_1499.pt
 ```
+
+Results (2026-11-07, RTX PRO 6000 Blackwell, Newton):
+
+- **Robot check** (Newton and PhysX): 39.957 kg as the URDF; joint order, ranges, effort and
+  velocity limits as the URDF; link positions within 0.7 mm of MuJoCo's over 8 random poses;
+  the stance holds with the column 1 mm under its target and the column rises 37 mm in 1 s.
+- **Training:** 1500 iterations in about 12 minutes (0.5 s an iteration), rsl_rl's default seed.
+- **Score** (`eval_reach.py`, 512 robots, 2048 targets): the palm ends a median 1.0 cm from its
+  target, 73% of targets within 5 cm and 82% within 10 cm. Within 0.40 m in front, 95% are
+  reached; 0.50-0.60 m in front, 35% (many of those are likely beyond the arm, not checked). The
+  error keeps falling through each 4 s window as the column climbs. The centre of mass stays
+  within 16 mm of the column's axis, and every joint, the column included, holds at 46% of its
+  limit or less (95th percentile of the robots).
+- **Earlier runs:** with the episode ending at 5 cm the palm stopped about 6 cm short of every
+  target; with the column unlimited it reached as well (median 0.7 cm) but by moving the column
+  20 times too fast.
 
 ## Results
 

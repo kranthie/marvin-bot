@@ -306,3 +306,85 @@ limbs:
       current_a: 0.0
       power_awg: 20
       signals: [servo]
+lite:
+  main: {current_a: 23.7, power_awg: 12, fuse_a: 30}
+  wheels:
+    hub: base_pdb
+    buses: [wheels]
+    branch_current_a: 4.3
+    branch_fuse_a: 10
+    total_length_m: 1.55
+    segments:
+    - frm: base_pdb
+      to: wheel_rear_left
+      length_m: 0.29
+      crosses: []
+      service_loop_m: 0.05
+      clips:
+      - [pod_clevis_135, pod_inner_135]
+      current_a: 4.3
+      power_awg: 16
+      signals: [wheels]
+    - frm: wheel_rear_left
+      to: wheel_front_left
+      length_m: 0.42
+      crosses: []
+      service_loop_m: 0.05
+      clips:
+      - [pod_clevis_45, pod_inner_45]
+      current_a: 3.2
+      power_awg: 16
+      signals: [wheels]
+    - frm: wheel_front_left
+      to: wheel_front_right
+      length_m: 0.42
+      crosses: []
+      service_loop_m: 0.05
+      clips:
+      - [pod_clevis_315, pod_inner_315]
+      current_a: 2.1
+      power_awg: 16
+      signals: [wheels]
+    - frm: wheel_front_right
+      to: wheel_rear_right
+      length_m: 0.42
+      crosses: []
+      service_loop_m: 0.05
+      clips:
+      - [pod_clevis_225, pod_inner_225]
+      current_a: 1.1
+      power_awg: 16
+      signals: [wheels]
+  column_driver:
+    frm: base_pdb
+    to: column
+    length_m: 0.28
+    crosses: []
+    service_loop_m: 0.0
+    clips: []
+    current_a: 2.1
+    power_awg: 16
+    signals: [column (Hall)]
+  riser:
+  - frm: base_pdb
+    to: waist_yaw
+    length_m: 1.29
+    crosses: [column_lift]
+    service_loop_m: 0.45
+    clips:
+    - [column_collar, column_head_plate]
+    current_a: 17.3
+    power_awg: 14
+    signals: [left_arm, right_arm, servo (12 V + serial), camera USB-C]
+    fuse_a: 25
+  - frm: waist_yaw
+    to: torso_pdb
+    length_m: 0.55
+    crosses: [waist_yaw]
+    service_loop_m: 0.18
+    clips:
+    - [column_head_waist_cage, torso_base]
+    current_a: 14.6
+    power_awg: 16
+    signals: [left_arm, right_arm, servo (12 V + serial), camera USB-C]
+  arms_and_head: as Max's left_arm, right_arm and head, from the torso PDB

@@ -1,12 +1,14 @@
 // A light Marvin Bot viewer for the home page: the generated model at its stance, orbit controls,
 // slow auto-rotation, a few looks (finished, bare, X-ray motors, X-ray electronics) and an idle
-// animation. Needs window.MARVIN_MODEL, written by site/scripts/build_model.py.
+// animation. Needs window.MARVIN_MODEL (or opts.model: Lite's is window.MARVIN_MODEL_LITE),
+// written by site/scripts/build_model.py.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { codeColour, decodeBin, partGeometry, partMaterial, setupLighting, shadowFloor } from './marvin-render.js';
 
 export function mountMarvin(host, opts = {}) {
-  const M = window.MARVIN_MODEL;
+  const M = opts.model || window.MARVIN_MODEL;
+  const lite = M && M.variant === 'lite';
   if (!M) { host.insertAdjacentHTML('beforeend', '<div class="vmsg">The 3-D model data has not been built (see site/README.md).</div>'); return null; }
   const o = {look:'shells', rotate:true, animate:'idle', bg:null, camera:'iso', target:0.72, dist:3.0, ...opts};
   const AB = decodeBin(M);
@@ -30,7 +32,9 @@ export function mountMarvin(host, opts = {}) {
     const r = new THREE.Group(); f.add(r); r.add(linkG[j.child]); linkG[j.parent].add(f);
     J[j.name] = {...j, rot:r, axis:new THREE.Vector3(...j.axis).normalize()};
   }
-  const setDeg = (n, d) => { const j = J[n]; if (!j) return; const q = Math.min(j.upper, Math.max(j.lower, d * Math.PI / 180)); j.rot.quaternion.setFromAxisAngle(j.axis, q); };
+  const setDeg = (n, d) => { const j = J[n]; if (!j) return;
+    if (j.type === 'prismatic') { j.rot.position.copy(j.axis).multiplyScalar(Math.min(j.upper, Math.max(j.lower, d))); return; }  // metres
+    const q = Math.min(j.upper, Math.max(j.lower, d * Math.PI / 180)); j.rot.quaternion.setFromAxisAngle(j.axis, q); };
   const meshes = [];
   for (const p of M.parts) {
     const g = partGeometry(p, AB), mat = partMaterial(p);
@@ -40,8 +44,9 @@ export function mountMarvin(host, opts = {}) {
   const ST = M.stance, stance = {};
   for (const s of ['left', 'right']) Object.assign(stance, {[`${s}_hip_pitch`]:ST.hip_pitch, [`${s}_knee`]:ST.knee, [`${s}_ankle_pitch`]:ST.ankle_pitch, [`${s}_shoulder_roll`]:ST.shoulder_roll, [`${s}_elbow`]:ST.elbow, [`${s}_wrist_yaw`]:90});  // palms in, as in tools/render_robot.py
   const pose = d => { for (const n in J) setDeg(n, (d[n] ?? stance[n] ?? 0)); };
+  if (lite) stance.column_lift = ST.column_lift;  // Lite stands on its wheels: its root is on the floor
   pose({}); base.position.set(0, 0, M.pelvis_height); scene.updateMatrixWorld(true);
-  const sole = new THREE.Vector3(0.03, 0, -0.06).applyMatrix4(linkG.left_foot_link.matrixWorld).z; base.position.z -= sole;
+  if (!lite) { const sole = new THREE.Vector3(0.03, 0, -0.06).applyMatrix4(linkG.left_foot_link.matrixWorld).z; base.position.z -= sole; }
 
   const XR = {motors:['actuator'], electronics:['electronics', 'sensors', 'compute', 'battery']};
   function setLook(look) {
@@ -56,7 +61,8 @@ export function mountMarvin(host, opts = {}) {
   }
   setLook(o.look);
   const ANIM = {
-    idle:t => ({neck_yaw:20 * Math.sin(t * 0.5), neck_pitch:5 * Math.sin(t * 0.8), waist_yaw:8 * Math.sin(t * 0.35)}),
+    idle:t => ({neck_yaw:20 * Math.sin(t * 0.5), neck_pitch:5 * Math.sin(t * 0.8), waist_yaw:8 * Math.sin(t * 0.35),
+      ...(lite ? {column_lift:0.2 + 0.18 * Math.sin(t * 0.25)} : {})}),
     wave:t => { const u = Math.min(1, Math.max(0, Math.sin(t * 0.4) * 2)); return {right_shoulder_roll:8 + 95 * u, right_shoulder_pitch:20 * u, right_shoulder_yaw:-20 * u, right_elbow:20 + 70 * u + 28 * Math.sin(t * 8) * u, neck_yaw:-15 * u}; },
     none:() => ({}),
   };
@@ -67,7 +73,10 @@ export function mountMarvin(host, opts = {}) {
     if (o.offsetX && w > 800) camera.setViewOffset(w, h, -w * o.offsetX, 0, w, h); else camera.clearViewOffset(); camera.updateProjectionMatrix(); };
   new ResizeObserver(resize).observe(host); resize();
   const t0 = performance.now();
-  (function frame(now) { pose(ANIM[o.animate]((now - t0) / 1000)); controls.update(); renderer.render(scene, camera); requestAnimationFrame(frame); })(t0);
+  let alive = true;
+  (function frame(now) { if (!alive) return; pose(ANIM[o.animate]((now - t0) / 1000)); controls.update(); renderer.render(scene, camera); requestAnimationFrame(frame); })(t0);
   renderer.domElement.addEventListener('pointerdown', () => { controls.autoRotate = false; });
-  return {setLook, setAnim:a => { o.animate = a; }, setCam};
+  const destroy = () => { alive = false; controls.dispose(); renderer.dispose(); renderer.domElement.remove();
+    scene.traverse(x => { if (x.geometry) x.geometry.dispose(); if (x.material) x.material.dispose(); }); };
+  return {setLook, setAnim:a => { o.animate = a; }, setCam, destroy};
 }

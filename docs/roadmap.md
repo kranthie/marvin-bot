@@ -73,16 +73,17 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 Max's upper body on a desk column on an omni-wheel base ([design/lite.md](design/lite.md),
 decisions 2026-11-07).
 
-- [x] Base and column head in code-CAD, design pass 1 (`cad/lite_base.py`, `cad/lite_column.py`): 0.55 m base, four sprung omni-wheel pods on RS00s, snap-on printed shell, the waist mount shared with the pelvis; 39.70 kg with the shells
+- [x] Base and column head in code-CAD, design pass 1 (`cad/lite_base.py`, `cad/lite_column.py`): 0.55 m base, four sprung omni-wheel pods on RS00s, snap-on printed shell, the waist mount shared with the pelvis; 40.60 kg with the shells
 - [x] Lite in the description and its URDF (`robot.yaml` / `skeleton.yaml` `variants.lite`); description check, CAN load and BOM counts (`tools/check_description.py`)
-- [x] On its wheels in MuJoCo, in CI (`sim/mujoco/check_lite.py`): margin 88-163 mm, the base controller's braking limit 0.8-2.5 m/s², a 10 mm bar crossed sideways
-- [x] Stress check of the wheel pod (SF 6.3) and column head (SF 17) (`cad/fea.py --variant lite`)
-- [ ] Stress check of the base frame: at a 6 mm mesh the deck plate, foot, collar, standoffs, clevis blocks and post bases are at SF 13 or more, but the floor plate did not join the mesh (a 4 mm mesh outgrows 200 GB); check it on its own
+- [x] On its wheels in MuJoCo, in CI (`sim/mujoco/check_lite.py`): margin 92-163 mm, the base controller's braking limit 0.8-2.4 m/s², a 10 mm bar crossed sideways
+- [x] Stress check of the wheel pod (SF 5.6) and column head (SF 12.4) (`cad/fea.py --variant lite`)
+- [x] Stress check of the base frame: deck plate, foot, collar, standoffs, clevis blocks and post bases at SF 13 or more (6 mm mesh); the floor plate on its own SF 3.5-5.5 (2.5-4 mm meshes). Its first layout was five pieces: the wheel slots cut through the rim, now open
 - [x] Skills: upper-body clips with written base paths and column heights, played on the wheels (`sim/motion/lite_clips.py`; 15 clips on the [skills page](skills.md#lite))
 - [x] Renders and animation (`tools/render_lite.py`); BOM Lite qty column (about $13.4k)
-- [ ] Isaac Lab: convert Lite's USD (the base fixed) and train `MarvinLite-Reach` (written, untested)
-- [ ] Lite's harness in `electrical/harness.yaml`, and the column's drag chain
-- [ ] Bench: drive the DL6's motor and Hall sensor directly (TiMOTION TL18 the fallback); confirm the column's and wheels' hole patterns; size the pod springs; choose the lidar
+- [x] Isaac Lab: Lite's USD (the base fixed) checked on Newton and PhysX; `MarvinLite-Reach` trained: palm a median 1.0 cm from its target, 73% within 5 cm (`sim/isaaclab/eval_reach.py`)
+- [x] Lite's harness in `electrical/harness.yaml` (`tools/build_harness.py`): base board, wheel chain, column driver, riser over the stroke
+- [x] Column mounting from LINAK's data sheet (bottom plate 4 × M6 + 2 × M8; the motor housing on top, held by cheeks on its side M6s); pod springs sized (`spring_rates()`, the spring tab lowered 24 mm to fit one); lidar chosen (RPLIDAR C1 class)
+- [ ] Bench: drive the DL6's motor and Hall sensor directly (TiMOTION TL18 the fallback); confirm the omni wheel's hub pattern; check a spring near the sized one
 - [ ] Decide whether Lite is built before Max's legs (a phase between 2 and 3)
 
 ## Phase 2 preparation

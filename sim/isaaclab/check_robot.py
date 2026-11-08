@@ -16,6 +16,12 @@ Usage (from an Isaac Lab 3.0 checkout, with this package installed and the USD c
 convert_urdf.py; see README.md):
   uv run --no-sync python <repo>/sim/isaaclab/check_robot.py                    # Newton
   uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --backend physx
+  uv run --no-sync python <repo>/sim/isaaclab/check_robot.py --variant lite
+
+With --variant lite it checks MARVIN_LITE_CFG, whose base is fixed: the same spec, mass and
+kinematics checks (limits read from the Lite URDF, which takes them from the description files),
+and, in place of standing, that the stance holds with the training gains, the column within 5 mm
+of its target and no joint above 70% of its peak, and that the column rises at its rated speed.
 """
 
 import argparse
@@ -32,6 +38,7 @@ parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 parser.add_argument("--backend", choices=["newton", "physx"], default="newton")
 parser.add_argument("--seconds", type=float, default=5.0)
 parser.add_argument("--fk-samples", type=int, default=8)
+parser.add_argument("--variant", choices=["lite"])
 add_launcher_args(parser)
 args = parser.parse_args()
 
@@ -50,10 +57,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from marvin_bot.robot_cfg import (  # noqa: E402
     DESC,
     JOINT_ORDER,
+    LITE_JOINT_ORDER,
     MARVIN_BOT_CFG,
+    MARVIN_LITE_CFG,
+    URDF_LITE_PATH,
     URDF_PATH,
     joint_limits,
 )
+
+LITE = args.variant == "lite"
+ROOT_BODY = "lite_base" if LITE else "pelvis"
 
 DT = 0.005  # the tasks step physics at 200 Hz
 # holding gains (kp, kd) as in sim/mujoco/check_standing.py, by actuator group of MARVIN_BOT_CFG
@@ -96,6 +109,41 @@ class CheckSceneCfg(InteractiveSceneCfg):
     fixed: ArticulationCfg = _fixed_base(MARVIN_BOT_CFG)
 
 
+@configclass
+class LiteSceneCfg(InteractiveSceneCfg):
+    """Lite on its fixed base, with its training gains."""
+
+    ground = AssetBaseCfg(prim_path="/World/ground", spawn=sim_utils.GroundPlaneCfg())
+    light = AssetBaseCfg(prim_path="/World/light", spawn=sim_utils.DomeLightCfg(intensity=2000.0))
+    robot: ArticulationCfg = replace(
+        MARVIN_LITE_CFG,
+        prim_path="{ENV_REGEX_NS}/MarvinLite",
+        actuators={
+            k: replace(a, dt=DT) if k == "column" else a
+            for k, a in MARVIN_LITE_CFG.actuators.items()
+        },
+    )
+
+
+def _no_self_collision(cfg: ArticulationCfg) -> ArticulationCfg:
+    """For the kinematics check: random poses may put an arm inside the torso, and PhysX then
+    pushes it out within the step."""
+    props = [
+        replace(p, enabled_self_collisions=False)
+        if hasattr(p, "enabled_self_collisions")
+        else replace(p, self_collision_enabled=False)
+        for p in cfg.spawn.articulation_props
+    ]
+    spawn = replace(cfg.spawn, articulation_props=props)
+    init_state = replace(cfg.init_state, pos=(2.0, 0.0, 0.0))
+    return replace(cfg, prim_path="{ENV_REGEX_NS}/LiteFk", spawn=spawn, init_state=init_state)
+
+
+@configclass
+class LiteFkSceneCfg(LiteSceneCfg):
+    fixed: ArticulationCfg = _no_self_collision(MARVIN_LITE_CFG)
+
+
 def physics_cfg(name: str):
     if name == "physx":
         from isaaclab_physx.physics import PhysxCfg
@@ -113,9 +161,23 @@ def physics_cfg(name: str):
 
 def mujoco_model() -> mujoco.MjModel:
     """The URDF in MuJoCo with a free base (the loader would weld the root to the world)."""
-    spec = mujoco.MjSpec.from_string(URDF_PATH.read_text())
-    spec.body("pelvis").add_freejoint(name="root")
+    spec = mujoco.MjSpec.from_string((URDF_LITE_PATH if LITE else URDF_PATH).read_text())
+    spec.body(ROOT_BODY).add_freejoint(name="root")
     return spec.compile()
+
+
+def urdf_limits() -> dict[str, tuple[float, float, float, float]]:
+    """(lower, upper, effort, velocity) per joint from the Lite URDF's <limit> elements."""
+    import xml.etree.ElementTree as ET
+
+    out = {}
+    for j in ET.fromstring(URDF_LITE_PATH.read_text()).iter("joint"):
+        lim = j.find("limit")
+        if lim is not None and j.get("type") != "fixed":
+            out[j.get("name")] = tuple(
+                float(lim.get(k, "nan")) for k in ("lower", "upper", "effort", "velocity")
+            )
+    return out
 
 
 def mujoco_fk(qs: dict[str, float]) -> dict[str, np.ndarray]:
@@ -125,11 +187,78 @@ def mujoco_fk(qs: dict[str, float]) -> dict[str, np.ndarray]:
     for name, q in qs.items():
         data.qpos[model.jnt_qposadr[model.joint(name).id]] = q
     mujoco.mj_kinematics(model, data)
-    base = model.body("pelvis").id
+    base = model.body(ROOT_BODY).id
     rot = data.xmat[base].reshape(3, 3)
     return {
         model.body(b).name: rot.T @ (data.xpos[b] - data.xpos[base]) for b in range(1, model.nbody)
     }
+
+
+def check_spec_lite(robot: Articulation, failures: list[str]) -> None:
+    names = robot.joint_names
+    if tuple(names) != LITE_JOINT_ORDER:
+        failures.append(f"joint order {names} != {list(LITE_JOINT_ORDER)}")
+        return
+    want = urdf_limits()
+    limits = robot.data.joint_pos_limits.torch[0].cpu().numpy()
+    effort = robot.data.joint_effort_limits.torch[0].cpu().numpy()
+    vel = robot.data.joint_vel_limits.torch[0].cpu().numpy()
+    print(f"{'joint':24} {'range':>18} {'effort':>7} {'vel':>6}")
+    for i, name in enumerate(names):
+        lo, hi, eff, v = want[name]
+        print(
+            f"{name:24} [{limits[i, 0]:7.3f}, {limits[i, 1]:7.3f}] {effort[i]:7.1f} {vel[i]:6.2f}"
+        )
+        if not name.startswith("wheel_") and not np.allclose(limits[i], [lo, hi], atol=1e-3):
+            failures.append(f"{name}: range {limits[i].tolist()} != URDF {[lo, hi]}")
+        if not np.isclose(effort[i], eff, rtol=1e-3):
+            failures.append(f"{name}: effort limit {effort[i]:.2f} != URDF {eff:.2f}")
+        if not np.isclose(vel[i], v, rtol=1e-3):
+            failures.append(f"{name}: velocity limit {vel[i]:.3f} != URDF {v:.3f}")
+
+
+def check_hold_lite(sim, robot: Articulation, failures: list[str]) -> None:
+    q0 = robot.data.default_joint_pos.torch.clone()
+    robot.write_joint_position_to_sim_index(position=q0)
+    robot.actuators.target_command.set_position_index(value=q0)
+    effort = robot.data.joint_effort_limits.torch[0]
+    col = robot.joint_names.index("column_lift")
+    steps, settle = int(args.seconds / DT), int(1.0 / DT)
+    peak = torch.zeros_like(effort)
+    for k in range(steps):
+        robot.actuators.target_command.set_position_index(value=q0)
+        robot.write_data_to_sim()
+        sim.step(render=False)
+        robot.update(DT)
+        if k >= settle:
+            peak = torch.maximum(peak, robot.data.applied_torque.torch[0].abs())
+    q = robot.data.joint_pos.torch[0]
+    sag = float(q0[0, col] - q[col])
+    err = (q - q0[0]).abs()
+    err[col] = 0.0
+    frac = (peak / effort).cpu().numpy()
+    print(f"\nstance, {args.seconds:.0f} s, training gains")
+    print(f"column {float(q[col]):.4f} m for {float(q0[0, col]):.4f} m (sag {sag * 1000:.1f} mm)")
+    print(f"worst joint error {math.degrees(float(err.max())):.1f} deg")
+    for i in np.argsort(-frac)[:6]:
+        print(f"  {robot.joint_names[i]:24} peak {float(peak[i]):7.2f}  {frac[i]:4.0%}")
+    if abs(sag) > 0.005:
+        failures.append(f"column off its target by {sag * 1000:.1f} mm")
+    # the column asked to rise 0.1 m: it moves at its rated speed, not the drive's
+    q1 = q0.clone()
+    q1[0, col] += 0.1
+    z0 = float(robot.data.joint_pos.torch[0, col])
+    for _ in range(int(1.0 / DT)):
+        robot.actuators.target_command.set_position_index(value=q1)
+        robot.write_data_to_sim()
+        sim.step(render=False)
+        robot.update(DT)
+    rise = float(robot.data.joint_pos.torch[0, col]) - z0
+    print(f"column asked up 100 mm: {rise * 1000:.0f} mm in 1 s (rated 38 mm/s)")
+    if not 0.030 < rise < 0.045:
+        failures.append(f"column rose {rise * 1000:.0f} mm in 1 s, not about 38")
+    if frac.max() > PEAK_LIMIT:
+        failures.append("a joint is over 70% of its peak")
 
 
 def check_spec(robot: Articulation, failures: list[str]) -> None:
@@ -228,10 +357,11 @@ def main() -> None:
     sim_cfg.use_newton_actuators = False  # the delayed DC motors run in the Python actuator path
     with launch_simulation(sim_cfg, args):
         sim = SimulationContext(sim_cfg)
-        scene = instantiate(CheckSceneCfg(num_envs=1, env_spacing=4.0))
+        scene_cfg = LiteFkSceneCfg if LITE else CheckSceneCfg
+        scene = instantiate(scene_cfg(num_envs=1, env_spacing=4.0))
         sim.reset()
         scene.update(DT)
-        floating, fixed = scene["robot"], scene["fixed"]
+        floating = scene["robot"]
 
         failures: list[str] = []
         mass = float(floating.data.body_mass.torch[0].sum())
@@ -239,9 +369,14 @@ def main() -> None:
         print(f"physics: {args.backend}, total mass {mass:.3f} kg (URDF {urdf_mass:.3f} kg)\n")
         if abs(mass - urdf_mass) > 0.01:
             failures.append(f"mass {mass:.3f} kg != URDF {urdf_mass:.3f} kg")
-        check_spec(floating, failures)
-        check_standing(sim, floating, failures)
-        check_fk(sim, fixed, failures)
+        if LITE:
+            check_spec_lite(floating, failures)
+            check_hold_lite(sim, floating, failures)
+            check_fk(sim, scene["fixed"], failures)
+        else:
+            check_spec(floating, failures)
+            check_standing(sim, floating, failures)
+            check_fk(sim, scene["fixed"], failures)
 
         if failures:
             print("\nFAIL:\n  " + "\n  ".join(failures[:20]))

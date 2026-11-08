@@ -62,17 +62,27 @@ DECK_Z, DECK_T, DECK_R = 162.0, 4.0, 245.0
 POST_D = 16.0
 PLATE_T = 6.0
 # the column: a LINAK DL6-size three-stage desk column, 80 x 50 mm base stage (80 fore-aft)
-COL = (80.0, 50.0)
-COL_FOOT = (120.0, 80.0, 8.0)  # its bottom bracket, assumed: confirm against the datasheet
+# the DL6's outer profile (x, y): its 80 mm side across the robot, so its motor housing (along
+# the 50 mm side; cad/lite_column.py) overhangs to the back, under the torso
+COL = (50.0, 80.0)
+COL_OUTER_LEN = 498.0  # the outer profile's length (data sheet)
+# its bottom plate's tapped holes (data sheet): 4 x M6 on a 34 x 50 rectangle, 2 x M8 58 apart,
+# both along the 80 mm side
+COL_M6 = [(sx * 17.0, sy * 25.0) for sx in (1, -1) for sy in (1, -1)]
+COL_M8 = [(0.0, 29.0), (0.0, -29.0)]
 COL_RETRACTED, COL_STROKE = 560.0, 450.0  # DL6: 560 retracted, 650 stroke, used to 450 (overlap)
-FOOT_T = 10.0
-TOP = FLOOR_Z + FLOOR_T + FOOT_T + COL_FOOT[2] + COL_RETRACTED  # the column top, retracted
+FOOT_T = 18.0  # the column bolts straight to it (counterbored from below)
+TOP = FLOOR_Z + FLOOR_T + FOOT_T + COL_RETRACTED  # the column top, retracted
 
 # pod frame: the wheel's axle along +x (radially out), u = y (the rolling direction), z up
 X_IN = RC - WHEEL_W / 2 - 8.5  # the inner plate's outer face (the hub between it and the wheel)
 X_OUT = RC + WHEEL_W / 2 + 4.5  # the outer plate's inner face
 PIVOT = (80.0, 62.0)  # (u, z) of the pod's pivot pin
-SPRING = (-60.0, 124.0)  # (u, z) of the spring tab (a bracket on the inner plate's inner face)
+SPRING = (-60.0, 100.0)  # (u, z) of the spring tab (a bracket on the inner plate's inner face)
+# the pod spring (music wire), sized by spring_rates(): mean diameter, wire, active coils, free
+# length (mm). Its pocket runs from the tab up to a cap under the deck.
+COIL_D, COIL_WIRE, COIL_N, COIL_FREE = 13.0, 1.8, 11.6, 60.0
+BUMP_H = 32.0  # the urethane bump stop inside it: it meets the cap when the tab has risen 14 mm
 TAB_X = 16.0  # the spring post, inboard of the inner plate's inner face
 CORNER = 64.0  # the two spacers joining the plates, at (+-CORNER, ZW + 58)
 
@@ -281,24 +291,22 @@ def pod_fixed_parts() -> list[tuple[str, object, str, str, dict]]:
     # spring above the tab, pressing the pod down; urethane bump stop on the tab inside it
     z0, z1 = sz + 3, DECK_Z - 13
     coil = []
-    turns, n = 6, 120
+    turns, n, rc, hw = COIL_N + 2, 240, COIL_D / 2, COIL_WIRE / 2
     for i in range(n):
         a0, a1 = 2 * math.pi * turns * i / n, 2 * math.pi * turns * (i + 1) / n
-        p0 = (xp + 7 * math.cos(a0), su + 7 * math.sin(a0), z0 + 1.2 + (z1 - z0 - 2.4) * i / n)
-        p1 = (
-            xp + 7 * math.cos(a1),
-            su + 7 * math.sin(a1),
-            z0 + 1.2 + (z1 - z0 - 2.4) * (i + 1) / n,
-        )
-        coil.append(capsule(p0, p1, 1.1))
+        h0, h1 = (z0 + hw + (z1 - z0 - 2 * hw) * k / n for k in (i, i + 1))
+        p0 = (xp + rc * math.cos(a0), su + rc * math.sin(a0), h0)
+        p1 = (xp + rc * math.cos(a1), su + rc * math.sin(a1), h1)
+        coil.append(capsule(p0, p1, hw))
     out.append(("pod_spring", union(*coil), "bought", "bought", {"mass_g": 15.0}))
     out.append(
         (
             "pod_bump_stop",
-            cyl(11, 8, "z", (xp, su, z0 + 4)) - cyl(6.5, 10, "z", (xp, su, z0 + 4)),
+            cyl(10, BUMP_H, "z", (xp, su, z0 + BUMP_H / 2))
+            - cyl(6.5, BUMP_H + 2, "z", (xp, su, z0 + BUMP_H / 2)),
             "bought",
             "bought",
-            {"mass_g": 2.0},
+            {"mass_g": 3.0},
         )
     )
     out.append(
@@ -313,17 +321,50 @@ def pod_fixed_parts() -> list[tuple[str, object, str, str, dict]]:
     return out
 
 
+def spring_rates(mass: float = 40.0) -> dict:
+    """The pod spring against the pod's geometry: its rate at the tab and at the wheel (the tab is
+    1.75x as far from the pivot as the wheel), the wheel load at mid travel and at the ends, the
+    wire's shear stress at the bump stop and the spring's length there against its solid length.
+    `mass`: Lite's (kg), shared by four wheels."""
+    g_mod = 79.3e3  # MPa, music wire
+    pu, sz = PIVOT[0], SPRING[1]
+    ratio = (pu - SPRING[0]) / pu
+    k = g_mod * COIL_WIRE**4 / (8 * COIL_D**3 * COIL_N)  # N/mm at the tab
+    installed = (DECK_Z - 13) - (sz + 3)
+    up = installed - BUMP_H  # tab travel to the bump stop
+    down = 15.0  # to the post base (pod_parts)
+    f_mid = k * (COIL_FREE - installed)
+    c = COIL_D / COIL_WIRE
+    wahl = (4 * c - 1) / (4 * c - 4) + 0.615 / c
+    f_max = f_mid + k * up
+    return dict(
+        rate_tab=k,
+        rate_wheel=k * ratio**2,
+        wheel_mid=f_mid * ratio,
+        wheel_bump=f_max * ratio,
+        wheel_droop=max(0.0, f_mid - k * down) * ratio,
+        share=mass * 9.81 / 4,
+        travel_wheel=(up / ratio, down / ratio),
+        stress=8 * f_max * COIL_D / (math.pi * COIL_WIRE**3) * wahl,
+        length_bump=installed - up,
+        solid=(COIL_N + 2) * COIL_WIRE,
+    )
+
+
 # ---- skeleton ----
 def wheel_cutout(ang: float) -> bd.Sketch:
-    """The floor plate's opening for a wheel and its travel (z: the wheel's chord at the plate)."""
+    """The floor plate's opening for a wheel and its travel (z: the wheel's chord at the plate).
+    Open at the rim: a closed slot this long would leave the rim outside it as a loose sliver
+    (its corners are outside the plate)."""
     c = np.array([math.cos(math.radians(ang)), math.sin(math.radians(ang))])
     t = np.array([-c[1], c[0]])
     pts = []
+    out = FLOOR_R - RC + 10
     for dx, du in (
-        (-WHEEL_W / 2 - 8, -74),
-        (WHEEL_W / 2 + 8, -74),
-        (WHEEL_W / 2 + 8, 74),
-        (-WHEEL_W / 2 - 8, 74),
+        (-WHEEL_W / 2 - 8, -72),
+        (out, -72),
+        (out, 72),
+        (-WHEEL_W / 2 - 8, 72),
     ):
         p = c * (RC + dx) + t * du
         pts.append((float(p[0]), float(p[1])))
@@ -341,7 +382,16 @@ POSTS = [
     for a in (14, 78, 102, 166, 194, 258, 282, 346)
 ]
 POSTS += [(125.0 * math.cos(math.radians(a)), 125.0 * math.sin(math.radians(a))) for a in POD_ANG]
-SNAPS = [a for k in range(8) for a in (22.5 + 45 * k + 12, 22.5 + 45 * k + 33)]  # floor-edge hooks
+# floor-edge hooks, two per segment; over a wheel, clear of the floor plate's open wheel slot
+SNAPS = [
+    a
+    for k in range(8)
+    for a in (
+        (22.5 + 45 * k + 4, 22.5 + 45 * k + 41)
+        if k % 2 == 0
+        else (22.5 + 45 * k + 12, 22.5 + 45 * k + 33)
+    )
+]
 WINDOWS = [(-45.0, -25.0), (-20.0, 20.0), (25.0, 45.0)]  # lidar openings (degrees)
 GROMMETS = [a for k in range(8) for a in (22.5 + 45 * k + 15, 22.5 + 45 * k + 30)]  # deck pins
 
@@ -378,7 +428,7 @@ def skeleton_parts():
         ((DECK_R - 9) * math.cos(math.radians(a)), (DECK_R - 9) * math.sin(math.radians(a)))
         for a in GROMMETS
     ]
-    collar_pts = [(x, y) for x in (-55, 55) for y in (-38, 0, 38)]
+    collar_pts = [(x, y) for x in (-38, 0, 38) for y in (-55, 55)]
     estop = (-200.0, 0.0)
     dk_holes = [
         op,
@@ -398,11 +448,11 @@ def skeleton_parts():
         out.append(
             (f"standoff_{k}", b3d.prism(sk, "z", FLOOR_Z + FLOOR_T, DECK_Z), "al6061", "cnc")
         )
-    # column foot plate: the column's bracket (4 x M8, assumed) to the floor plate (8 x M5)
+    # column foot plate: the column's bottom plate (4 x M6, 2 x M8, screws counterbored from
+    # below) to the floor plate (8 x M5)
     fp = rect(-95, 95, -72, 72, r=8.0)
     fp_holes = circles(CLEAR["M5"], [(x, y) for x in (-80, -27, 27, 80) for y in (-60, 60)])
-    m8 = circles(8.6, [(x, y) for x in (-48, 48) for y in (-28, 28)])
-    fp = cut(fp, fp_holes, m8)
+    fp = cut(fp, fp_holes, circles(6.6, COL_M6), circles(8.6, COL_M8))
     fp = cut(
         fp,
         lighten(
@@ -420,7 +470,7 @@ def skeleton_parts():
     # column collar on the deck: a 12 mm block round the column, split at the front so a screw
     # across it clamps it (printed TPU shims take up the column's tolerance)
     zc0 = DECK_Z + DECK_T
-    cl = rect(-68, 68, -48, 48, r=10.0)
+    cl = rect(-48, 48, -68, 68, r=10.0)
     cl = cut(
         cl,
         rect(-COL[0] / 2 - 1.5, COL[0] / 2 + 1.5, -COL[1] / 2 - 1.5, COL[1] / 2 + 1.5, r=3.0),
@@ -748,26 +798,12 @@ def inside_parts() -> list[Part]:
 
 
 def column_solid(top: float, outer_only: bool = False) -> mf.Manifold:
-    """The desk column (bought), from its bracket on the foot plate to `top`; with `outer_only`,
-    its bracket and outer stage, the part that stays on the base."""
-    z0 = FLOOR_Z + FLOOR_T + FOOT_T
-    brk = box((COL_FOOT[0], COL_FOOT[1], COL_FOOT[2]), (0, 0, z0 + COL_FOOT[2] / 2))
-    stages = []
-    sizes = [(80, 50), (71, 41), (62, 32)]
-    n = len(sizes)
-    zb = z0 + COL_FOOT[2]
-    L = (top - zb) / n + 30
-    for k, (dx, dy) in enumerate(sizes):
-        a = zb + k * (L - 45)
-        b = min(a + L, top - 10) if k < n - 1 else top - 10
-        stages.append(
-            mf.Manifold.extrude(mf.CrossSection([_rr(dx, dy, 6)]), b - a).translate([0, 0, a])
-        )
-    if outer_only:  # the outer stage runs the full retracted length; the others slide inside it
-        outer = mf.Manifold.extrude(mf.CrossSection([_rr(*sizes[0], 6)]), top - 10 - zb)
-        return union(brk, outer.translate([0, 0, zb]))
-    plate = box((130, 120, 10), (0, 0, top - 5))
-    return union(brk, *stages, plate)
+    """The desk column's outer profile (bought), on the foot plate, the part that stays on the
+    base (its moving profiles and motor housing are in cad/lite_column.py). `top` and
+    `outer_only` are kept for the renders' callers."""
+    zb = FLOOR_Z + FLOOR_T + FOOT_T
+    outer = mf.Manifold.extrude(mf.CrossSection([_rr(*COL, 6)]), COL_OUTER_LEN)
+    return outer.translate([0, 0, zb])
 
 
 # ---- fasteners ----
@@ -836,7 +872,12 @@ def fastener_parts() -> tuple[list[Part], list[tuple[str, int, str]]]:
         ("6901-2RS bearing 12 x 24 x 6", 4, "pods"),
         ("12 mm steel pin x 50, stub axle (pressed in hub)", 4, "pods"),
         ("M6 stud x 110 + nyloc nut + washer, spring post", 4, "pods"),
-        ("compression spring OD 16, ~2.5 N/mm, free ~45 mm (to size)", 4, "pods"),
+        (
+            f"compression spring, music wire {COIL_WIRE} mm, mean dia {COIL_D:.0f} mm, "
+            f"{COIL_N} active coils, free {COIL_FREE:.0f} mm, ground ends (spring_rates())",
+            4,
+            "pods",
+        ),
         ("urethane bump stop OD 11 x 8", 4, "pods"),
     ]
     sk = []
@@ -846,20 +887,21 @@ def fastener_parts() -> tuple[list[Part], list[tuple[str, int, str]]]:
     for x in (-80, -27, 27, 80):  # foot plate to floor plate
         for y in (-60, 60):
             sk.append(screw((x, y, FLOOR_Z), "z", -1, 5, 16, "low"))
-    for x in (-48, 48):  # column bracket to foot plate
-        for y in (-28, 28):
-            sk.append(
-                screw((x, y, FLOOR_Z + FLOOR_T + FOOT_T + COL_FOOT[2]), "z", 1, 8, 16, "socket")
-            )
-    for x in (-55, 55):  # collar to deck
-        for y in (-38, 0, 38):
+    zf8 = FLOOR_Z + FLOOR_T + 8  # the foot plate's counterbores, 8 deep from its underside
+    for x, y in COL_M6:  # column to foot plate, from below
+        sk.append(screw((x, y, zf8), "z", -1, 6, 20, "socket"))
+    for x, y in COL_M8:
+        sk.append(screw((x, y, zf8), "z", -1, 8, 20, "socket"))
+    for x in (-38, 0, 38):  # collar to deck
+        for y in (-55, 55):
             sk.append(screw((x, y, DECK_Z + DECK_T + 12), "z", 1, 4, 16, "socket"))
-    sk.append(screw((70, 0, DECK_Z + DECK_T + 6), "x", 1, 4, 30, "socket"))  # collar clamp
+    sk.append(screw((38, 20, DECK_Z + DECK_T + 6), "y", 1, 4, 40, "socket"))  # collar clamp
     out.append(Part("screws_frame", LINK, "bought", union(*sk), "bought", mass_g=120.0))
     bom += [
         ("M6 x 12 button head, standoffs", 2 * len(POSTS), "frame"),
         ("M5 x 16 low-head, column foot plate to floor plate", 8, "frame"),
-        ("M8 x 16 socket head, column bracket to foot plate", 4, "frame"),
+        ("M6 x 20 socket head, column to foot plate (from below)", 4, "frame"),
+        ("M8 x 20 socket head, column to foot plate (from below)", 2, "frame"),
         ("M4 x 16 socket head, collar to deck", 6, "frame"),
         ("M4 x 30 socket head + nut, collar clamp", 1, "frame"),
         ("push-in rubber grommet, 8 mm panel hole", 16, "deck: shell pins"),
@@ -900,9 +942,10 @@ def parts() -> list[Part]:
             "bought",
             column_solid(TOP, outer_only=True),
             "bought",
-            mass_g=4500.0,
-            notes="LINAK DL6 three-stage desk column: outer stage, foot bracket and motor (the "
-            "moving stages are in cad/lite_column.py)",
+            mass_g=2500.0,
+            notes="LINAK DL6 three-stage desk column: its outer profile and bottom plate (the "
+            "moving profiles, spindle and motor housing are in cad/lite_column.py; the "
+            "data sheet's 7.5 kg split by estimate)",
         )
     )
     fs, _ = fastener_parts()
@@ -995,6 +1038,19 @@ def main() -> None:
         print(f"{len(bad)} interferences")
         for b in bad:
             print("  " + b)
+        r = spring_rates()
+        print(
+            f"pod spring: {r['rate_tab']:.2f} N/mm at the tab, {r['rate_wheel']:.1f} at the wheel;"
+            f" wheel load {r['wheel_droop']:.0f} / {r['wheel_mid']:.0f} / {r['wheel_bump']:.0f} N"
+            f" (droop / mid / bump; a wheel's share {r['share']:.0f} N) over"
+            f" -{r['travel_wheel'][1]:.1f} / +{r['travel_wheel'][0]:.1f} mm;"
+            f" {r['stress']:.0f} MPa at the bump; {r['length_bump']:.1f} mm long there,"
+            f" solid {r['solid']:.1f}"
+        )
+        if r["length_bump"] < r["solid"] + 2 or r["stress"] > 0.45 * 1850:
+            bad.append("pod spring")
+        if bad:
+            sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -1030,14 +1086,17 @@ def fea_groups(mass: float, mass_above: float, palm) -> list[tuple[str, list, li
       and post bases, held at the four pods' pins and spring posts, loaded at the column's foot
       and the collar: a 2 g kerb drop of everything on the column, and 1.5 x the largest moment
       the floor can put on Lite before it tips, fore-aft and sideways;
-    - column_head: the head plate, waist ring and cage, held on the column's top plate, loaded
+    - floor: the floor plate alone, held at the clevis blocks and post bases, with the base's
+      cases at the column foot's bolts (all of the column's moment through the foot);
+    - column_head: the head plate, cheeks, waist ring and cage, held where the plate bears on
+      the column's motor housing and at the cheeks' M6 holes into its sides, loaded
       at the waist: the hand catch (Max's case: 0.5 x body weight up at the palm, 0.25 x fore-aft,
       0.15 x sideways) and the waist RS03's peak torque."""
     from . import lite_column as lc  # noqa: PLC0415
     from .mounts import ear_face  # noqa: PLC0415
 
     g = 9.81
-    w, w_up = mass * g, (mass_above + 4.5) * g  # and the column's outer stage, on its foot
+    w, w_up = mass * g, (mass_above + 2.5) * g  # and the column's outer profile, on its foot
     share = w / 4
     out = []
 
@@ -1178,11 +1237,45 @@ def fea_groups(mass: float, mass_above: float, palm) -> list[tuple[str, list, li
         )
     )
 
+    # floor plate alone: in the base group above it did not mesh into one solid with the
+    # parts bolted to it at 6 mm, and a finer mesh of that whole group outgrew the machine. Held
+    # where the clevis blocks and post bases bolt on, loaded at the column foot's eight bolts
+    # (the 10 mm foot as one rigid body). The deck and collar take part of the column's moment
+    # in the base; here the foot takes all of it, which is conservative.
+    ifs = [
+        _face_iface("column", (x, y, zf), (0, 0, 1), CLEAR["M5"] / 2, 8.0)
+        for x in (-80, -27, 27, 80)
+        for y in (-60, 60)
+    ]
+    for a in POD_ANG:
+        ifs.append(_face_iface("pods", (*pod_world(a, pu, xi - 10), zf), (0, 0, 1), 0.0, 9.0))
+        ifs.append(_face_iface("pods", (*pod_world(a, su, xp), zf), (0, 0, 1), 3.25, 7.0))
+    floor = _with(
+        made("floor_plate", "floor", *sk["floor_plate"][1::-1], sk["floor_plate"][2]), *ifs
+    )
+    out.append(
+        (
+            "floor",
+            [floor],
+            [(n, h, ld, f, m, foot - [0, 0, FOOT_T]) for n, h, ld, f, m, _ in out[-1][2]],
+        )
+    )
+
     # column head
     heads = {p.name: p for p in lc.parts()}
     plate = heads["column_head_plate"]
-    plate.extra["ifaces"] = [_face_iface("column", (0, 0, 0), (0, 0, 1), 0.0, 55.0)]
+    # it bears on the motor housing's top round the column's axis, and the cheeks bolt to the
+    # housing's sides
+    plate.extra["ifaces"] = [_face_iface("column", (0, 0, 0), (0, 0, 1), 0.0, 40.0)]
     group = [plate, heads["column_head_waist_ring"], heads["column_head_waist_cage"]]
+    for side, sgn in (("l", 1), ("r", -1)):
+        ck = heads[f"column_head_cheek_{side}"]
+        y = sgn * (lc.CHEEK_Y + lc.CHEEK_T / 2)
+        ck.extra["ifaces"] = [
+            _cyl_iface("column", (x, y, lc.SIDE_M6_Z), (0, 1, 0), 3.3, lc.CHEEK_T / 2)
+            for x in lc.SIDE_M6_X
+        ]
+        group.append(ck)
     for p in group:
         p.link = "column_head"
     out.append(

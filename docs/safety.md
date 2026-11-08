@@ -47,7 +47,7 @@ Marvin Bot weighs about 40 kg, runs on a 48 V lithium-ion battery that can deliv
 Lite cannot fall the way a walking robot does, but it can tip over, run into people and pinch.
 The figures are from `sim/mujoco/check_lite.py` ([design/lite.md](design/lite.md)).
 
-- With the column up, a sideways push of about 45 N at the shoulders tips Lite over. Lower the
+- With the column up, a sideways push of about 46 N at the shoulders tips Lite over. Lower the
   column before driving, and whenever people are within reach.
 - The base controller limits deceleration by column height and arm pose (0.8 m/s² with the column
   up and the arms forward), and ramps it. Never drive it with those limits off.
