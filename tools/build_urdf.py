@@ -18,7 +18,11 @@ Model:
   the fasteners and limb harness, spread through their links), the CAD meshes and the motor
   housings;
 - the clip-on covers (cad/covers.py, an optional add-on) go only into a second URDF,
-  marvin_bot_covers.urdf, with their masses; the default model is the bare robot.
+  marvin_bot_covers.urdf, with their masses; the default model is the bare robot;
+- Lite (robot.yaml variants.lite) keeps Max's links from the waist joint up and adds its base,
+  column and wheel links (skeleton.yaml variants.lite) with their CAD parts
+  (cad_model_lite.yaml): marvin_bot_lite.urdf and marvin_bot_lite_covers.urdf. Its base is the
+  floating root; the omni wheels' rollers are not in the URDF (the simulations add them).
 
 Usage:
   python tools/build_urdf.py           # write the URDF and print the mass summary
@@ -37,7 +41,10 @@ ROOT = Path(__file__).resolve().parent.parent
 DESC = ROOT / "description"
 URDF_OUT = DESC / "urdf" / "marvin_bot.urdf"
 URDF_COVERS = DESC / "urdf" / "marvin_bot_covers.urdf"  # with the clip-on covers
+URDF_LITE = DESC / "urdf" / "marvin_bot_lite.urdf"
+URDF_LITE_COVERS = DESC / "urdf" / "marvin_bot_lite_covers.urdf"
 CAD_MODEL = DESC / "cad_model.yaml"  # written by cad/build.py
+CAD_MODEL_LITE = DESC / "cad_model_lite.yaml"
 SIDES = ("left", "right")
 DEFAULT_ENVELOPE_MM = [80, 80, 50]  # for actuators without a measured envelope yet
 MOTOR_COLOURS = {
@@ -172,7 +179,7 @@ def mirrored(items: dict | list, key_is_name: bool):
     return out
 
 
-def motor_placements() -> list[dict]:
+def motor_placements(variant: str | None = None) -> list[dict]:
     """Every motor housing: name, model, the link carrying it, centre and axis in that link's
     frame, envelope (diameter, -, thickness in m), and the joints it drives.
 
@@ -184,8 +191,13 @@ def motor_placements() -> list[dict]:
     skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
     joints = mirrored(skel["joints"], key_is_name=True)
     mounts = mirrored(skel["motor_mounts"], key_is_name=True)
+    motors = expand(robot["motors"])
+    if variant:
+        joints = variant_joints(robot, skel, variant)
+        mounts |= skel["variants"][variant].get("motor_mounts", {})
+        motors = [m for m in motors if all(d in joints for d in m["drives"])]
     out = []
-    for m in expand(robot["motors"]):
+    for m in motors:
         a = acts[m["model"]]
         env = [x / 1000 for x in (a.get("envelope_mm") or DEFAULT_ENVELOPE_MM)]
         j = joints[m["drives"][0]]
@@ -212,6 +224,24 @@ def motor_placements() -> list[dict]:
                 shape=a.get("shape"),
             )
         )
+    return out
+
+
+def variant_joints(robot: dict, skel: dict, variant: str) -> dict:
+    """A variant's joints (skeleton.yaml form): Max's from its keep_from joint's child down,
+    then the variant's own, which replace any of the same name."""
+    joints = mirrored(skel["joints"], key_is_name=True)
+    v = robot["variants"][variant]
+    keep = {joints[v["keep_from"]]["child"]}
+    grew = True
+    while grew:
+        grew = False
+        for j in joints.values():
+            if j["parent"] in keep and j["child"] not in keep:
+                keep.add(j["child"])
+                grew = True
+    out = {n: j for n, j in joints.items() if j["parent"] in keep}
+    out |= skel["variants"][variant]["joints"]
     return out
 
 
@@ -260,13 +290,14 @@ def motor_primitives(m: dict) -> list[dict]:
     ]
 
 
-def build(covers: bool = False) -> tuple[str, dict]:
+def build(covers: bool = False, variant: str | None = None) -> tuple[str, dict]:
     robot = yaml.safe_load((DESC / "robot.yaml").read_text())
     acts = yaml.safe_load((DESC / "actuators.yaml").read_text())
     budget = yaml.safe_load((DESC / "mass_budget.yaml").read_text())["items"]
     skel = yaml.safe_load((DESC / "skeleton.yaml").read_text())
 
     ranges = {j["name"]: j["range"] for j in expand(robot["joints"])}
+    kinds: dict[str, str] = {}
     joints = mirrored(skel["joints"], key_is_name=True)
     cad = yaml.safe_load(CAD_MODEL.read_text()) if CAD_MODEL.exists() else {}
     if not covers:
@@ -276,37 +307,53 @@ def build(covers: bool = False) -> tuple[str, dict]:
         b for b in mirrored(skel["bodies"], key_is_name=False) if b["budget"] not in cad_items
     ]
     collisions = mirrored(skel["collisions"], key_is_name=False)
+    root = "pelvis"
     errors = []
+    if variant:
+        v = robot["variants"][variant]
+        joints = variant_joints(robot, skel, variant)
+        kept = {j["child"] for j in joints.values()} | {j["parent"] for j in joints.values()}
+        root = next(iter(kept - {j["child"] for j in joints.values()}))
+        for e in v["joints"]:
+            kinds[e["name"]] = e["type"]
+            if "range" in e:
+                ranges[e["name"]] = e["range"]
+        ranges = {n: r for n, r in ranges.items() if n in joints}
+        drop = set(v.get("drop_budget", []))
+        bodies = [b for b in bodies if b["link"] in kept and b["budget"] not in drop]
+        collisions = [c for c in collisions if c["link"] in kept]
+        collisions += skel["variants"][variant].get("collisions", [])
+        cad = {k: c for k, c in cad.items() if c["link"] in kept}
+        lite = yaml.safe_load(CAD_MODEL_LITE.read_text()) if CAD_MODEL_LITE.exists() else {}
+        cad |= {k: c for k, c in lite.items() if covers or c["process"] != "cover"}
 
-    # skeleton lengths must match robot.yaml
+    # skeleton lengths must match robot.yaml (Max; a variant keeps Max's arms)
     dims = robot["dimensions"]
-    z = {n: -j["xyz"][2] for n, j in joints.items()}
+    z = {n: -j["xyz"][2] for n, j in mirrored(skel["joints"], key_is_name=True).items()}
     checks = {
         "thigh": z["left_hip_roll"] + z["left_hip_yaw"] + z["left_knee"],
         "shin": z["left_ankle_pitch"],
         "upper_arm": z["left_shoulder_yaw"] + z["left_elbow"],
         "forearm": z["left_wrist_yaw"] + z["left_wrist_pitch"],
-        "shoulder_height": dims["hip_axis_height"]
-        + joints["waist_yaw"]["xyz"][2]
-        + joints["left_shoulder_pitch"]["xyz"][2],
+        "shoulder_height": dims["hip_axis_height"] - z["waist_yaw"] - z["left_shoulder_pitch"],
     }
     for k, v in checks.items():
         if abs(v - dims[k]) > 1e-6:
             errors.append(f"skeleton gives {k} = {v:.3f} m, robot.yaml says {dims[k]:.3f} m")
-    if set(joints) != set(ranges):
+    if set(joints) != set(ranges) | {n for n, k in kinds.items() if k == "continuous"}:
         errors.append(f"joints differ: {sorted(set(joints) ^ set(ranges))}")
 
-    # every budget item fully placed
+    # every budget item fully placed (Max; a variant drops some and adds its CAD)
     placed: dict[str, float] = {}
     for b in [*bodies, *cad.values()]:
         placed[b["budget"]] = placed.get(b["budget"], 0.0) + b["mass"]
-    for k, v in budget.items():
+    for k, v in budget.items() if not variant else ():
         if abs(placed.get(k, 0.0) - v["mass"]) > 5e-4:  # half a gram: budgets are rounded
             errors.append(
                 f"budget {k}: {v['mass']} kg, skeleton places {placed.get(k, 0.0):.3f} kg"
             )
 
-    links: dict[str, list] = {"pelvis": []}
+    links: dict[str, list] = {root: []}
     for j in joints.values():
         links.setdefault(j["parent"], [])
         links.setdefault(j["child"], [])
@@ -334,7 +381,7 @@ def build(covers: bool = False) -> tuple[str, dict]:
     effort: dict[str, float] = {}
     velocity: dict[str, float] = {}
     pairs: dict[tuple, list] = {}
-    for m in motor_placements():
+    for m in motor_placements(variant):
         a = acts[m["model"]]
         env, link, xyz, axis = m["envelope"], m["link"], m["xyz"], m["axis"]
         mass = a["mass"]
@@ -362,6 +409,13 @@ def build(covers: bool = False) -> tuple[str, dict]:
             velocity[m["drives"][0]] = speed
         else:
             pairs.setdefault(tuple(m["drives"]), []).append((a["peak_torque"], speed))
+    for m in robot["variants"][variant]["motors"] if variant else ():
+        a = acts[m["model"]]
+        (j,) = m["drives"]
+        if a.get("kind") == "linear":
+            effort[j], velocity[j] = a["peak_force"], a["speed"]
+        else:
+            effort[j], velocity[j] = a["peak_torque"], a["no_load_speed_rpm"] * 2 * math.pi / 60
     ratios = skel["ankle_linkage"]
     for (pitch, roll), ms in pairs.items():
         torque = sum(t for t, _ in ms)
@@ -377,7 +431,8 @@ def build(covers: bool = False) -> tuple[str, dict]:
         sys.exit(1)
 
     # write
-    out = [f'<robot name="{robot["robot"]["name"]}">']
+    name = robot["robot"]["name"] + (f"_{variant}" if variant else "")
+    out = [f'<robot name="{name}">']
     summary = {}
     for name, parts in links.items():
         if not parts:
@@ -399,13 +454,21 @@ def build(covers: bool = False) -> tuple[str, dict]:
                 )
         out.append("  </link>")
     for name, j in joints.items():
-        lo, hi = (math.radians(x) for x in ranges[name])
+        kind = kinds.get(name, "revolute")
+        rpy = f' rpy="{fmt(j["rpy"])}"' if "rpy" in j else ""
+        if kind == "continuous":
+            limit = f'<limit effort="{effort[name]:.6g}" velocity="{velocity[name]:.6g}"/>'
+        else:
+            lo, hi = ranges[name] if kind == "prismatic" else map(math.radians, ranges[name])
+            limit = (
+                f'<limit lower="{lo:.6g}" upper="{hi:.6g}" effort="{effort[name]:.6g}" '
+                f'velocity="{velocity[name]:.6g}"/>'
+            )
         out += [
-            f'  <joint name="{name}" type="revolute">',
+            f'  <joint name="{name}" type="{kind}">',
             f'    <parent link="{j["parent"]}"/><child link="{j["child"]}"/>',
-            f'    <origin xyz="{fmt(j["xyz"])}"/><axis xyz="{fmt(j["axis"])}"/>',
-            f'    <limit lower="{lo:.6g}" upper="{hi:.6g}" effort="{effort[name]:.6g}" '
-            f'velocity="{velocity[name]:.6g}"/>',
+            f'    <origin xyz="{fmt(j["xyz"])}"{rpy}/><axis xyz="{fmt(j["axis"])}"/>',
+            f"    {limit}",
             "  </joint>",
         ]
     out.append("</robot>")
@@ -421,7 +484,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true", help="fail if the URDF is out of date")
     args = ap.parse_args()
-    outputs = [(URDF_OUT, *build()), (URDF_COVERS, *build(covers=True))]
+    outputs = [
+        (URDF_OUT, *build()),
+        (URDF_COVERS, *build(covers=True)),
+        (URDF_LITE, *build(variant="lite")),
+        (URDF_LITE_COVERS, *build(covers=True, variant="lite")),
+    ]
     if args.check:
         for path, text, _ in outputs:
             if not path.exists() or path.read_text() != text:

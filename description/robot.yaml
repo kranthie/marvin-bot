@@ -102,3 +102,34 @@ can:
     "{side}_arm":   {type: can, rate_hz: 250}
     battery:        {type: can, rate_hz: 10, note: "BMS telemetry, no motors"}
     servo:          {type: serial, note: "Feetech serial bus, 12 V"}
+
+# Variants. Max is everything above (the default). Lite is Max from the waist motor up (the
+# waist joint, torso, arms, hands, neck and head, unchanged) on a bought desk column on a
+# wheeled base (cad/lite_base.py, cad/lite_column.py; decisions 2026-11-07). The tools build it
+# with --variant lite. Its links come from skeleton.yaml's variants.lite; its base and column
+# parts from description/cad_model_lite.yaml. Prismatic ranges are in metres; continuous joints
+# have no range.
+variants:
+  lite:
+    height: [1.25, 1.70]       # floor to the top of the head, column down and up
+    mass_limit_kg: 45.0        # with the shells: the base is heavier than the legs it replaces
+    keep_from: waist_yaw       # this joint and everything it carries
+    drop_budget: [battery, padding]  # the battery moves into the base (two bricks); no leg padding
+    stance: {column_lift: 0.20, shoulder_roll: 8, elbow: 20}
+    joints:
+      - {name: column_lift,         type: prismatic,  range: [0.0, 0.45]}  # DL6, 450 of its 650 mm stroke
+      - {name: wheel_front_left,    type: continuous}
+      - {name: wheel_rear_left,     type: continuous}
+      - {name: wheel_rear_right,    type: continuous}
+      - {name: wheel_front_right,   type: continuous}
+    # in_cad: the motor's mass and shape are in the CAD parts (the base's pods, the column), not
+    # added again from actuators.yaml
+    motors:
+      - {name: column,              model: DL6,  bus: column, drives: [column_lift], in_cad: true}
+      - {name: wheel_front_left,    model: RS00, bus: wheels, drives: [wheel_front_left], in_cad: true}
+      - {name: wheel_rear_left,     model: RS00, bus: wheels, drives: [wheel_rear_left], in_cad: true}
+      - {name: wheel_rear_right,    model: RS00, bus: wheels, drives: [wheel_rear_right], in_cad: true}
+      - {name: wheel_front_right,   model: RS00, bus: wheels, drives: [wheel_front_right], in_cad: true}
+    buses:
+      wheels:  {type: can, rate_hz: 250}
+      column:  {type: pwm, note: "H-bridge and microcontroller on USB: the column's motor and Hall sensor"}

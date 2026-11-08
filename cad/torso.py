@@ -217,26 +217,7 @@ def parts() -> list[Part]:
             bplate(top, "z", (top_z0 + top_z1) / 2, top_t),
         )
     )
-    w_sk = rounded(union2(disc(ring_od("RS03"), (waist_c[0], 0)), w_pads))
-    w_pins, _, _, w_zpads = zero_stop("RS03", waist_c, "z", "waist_yaw", True, *YAW_PIN)
-    w_ring, _ = front_ring("RS03", waist_c, "z", 1, outline=w_sk, bearing=YAW_BRG, keep=w_zpads)
-    wf = waist_c[2] + YAW_RING_FRONT
-    w_ring = w_ring - bprism(w_pins, "z", wf - 6, wf + 1)
-    seat = (waist_c[0], 0.0, waist_c[2] + YAW_RING_FRONT - BEARINGS[YAW_BRG]["B"] / 2)
-    out.append(
-        made(
-            "pelvis_waist_ring",
-            "pelvis",
-            "al7075",
-            w_ring,
-            ifaces=[
-                ear_face("waist_yaw", "RS03", waist_c, "z", 1),
-                bore("waist_yaw", seat, "z", BEARINGS[YAW_BRG]["D"], BEARINGS[YAW_BRG]["B"]),
-            ],
-        )
-    )
-    out.append(made("pelvis_waist_cage", "pelvis", "al7075", w_strips, extra={"fea_solid": w_fea}))
-    out.append(crossed_roller("waist_bearing", "pelvis", "z", seat))
+    out += waist_mount("pelvis", waist_c, w_strips, w_pads, w_fea)
 
     # --- torso: frame on the waist axis, 9 mm above the waist motor's centre (wm); a hub on its
     # output turns in the pelvis's bearing ring, and the flange bolts on the hub
@@ -429,3 +410,34 @@ def parts() -> list[Part]:
         )
     )
     return out
+
+
+def waist_mount(link: str, waist_c, strips, pads, fea, prefix: str | None = None) -> list[Part]:
+    """The waist RS03's mount, shared by Max's pelvis and Lite's column head
+    (cad/lite_column.py): a front ring on its ears seating the crossed-roller bearing under
+    the torso's hub, with the zero and stop pins, and the cage strips (cage()) down to the plate
+    under it. `waist_c` is the motor's centre in `link`'s frame; the parts are named after
+    `prefix` (default: the link)."""
+    prefix = prefix or link
+    w_sk = rounded(union2(disc(ring_od("RS03"), (waist_c[0], waist_c[1])), pads))
+    w_pins, _, _, w_zpads = zero_stop("RS03", waist_c, "z", "waist_yaw", True, *YAW_PIN)
+    w_ring, _ = front_ring("RS03", waist_c, "z", 1, outline=w_sk, bearing=YAW_BRG, keep=w_zpads)
+    wf = waist_c[2] + YAW_RING_FRONT
+    w_ring = w_ring - bprism(w_pins, "z", wf - 6, wf + 1)
+    seat = (waist_c[0], waist_c[1], waist_c[2] + YAW_RING_FRONT - BEARINGS[YAW_BRG]["B"] / 2)
+    return [
+        made(
+            f"{prefix}_waist_ring",
+            link,
+            "al7075",
+            w_ring,
+            ifaces=[
+                ear_face("waist_yaw", "RS03", waist_c, "z", 1),
+                bore("waist_yaw", seat, "z", BEARINGS[YAW_BRG]["D"], BEARINGS[YAW_BRG]["B"]),
+            ],
+        ),
+        made(f"{prefix}_waist_cage", link, "al7075", strips, extra={"fea_solid": fea}),
+        crossed_roller(
+            "waist_bearing" if link == "pelvis" else f"{prefix}_waist_bearing", link, "z", seat
+        ),
+    ]

@@ -124,3 +124,25 @@ collisions:
   - {link: left_forearm_link, xyz: [0, 0, -0.080],     size: [0.07, 0.07, 0.17]}
   - {link: left_wrist_link,   xyz: [0, -0.012, -0.052], size: [0.035, 0.05, 0.05]}  # wrist pitch servo
   - {link: left_palm_link,    xyz: [0.005, 0, -0.101], size: [0.05, 0.11, 0.16]}  # hand
+
+# Variants (robot.yaml variants). Lite keeps Max's links from the waist joint up; its own links:
+#   lite_base: the base frame, on the floor at the base's centre (cad/lite_base.py), the root;
+#   column_link: on the column's top plate, the column retracted at column_lift 0
+#     (cad/lite_column.py); the waist motor on it as on Max's pelvis;
+#   wheel_<corner>_link: at each wheel's centre, x out along its axle (the pods are drawn rigid:
+#     their springs are left out of the model).
+variants:
+  lite:
+    joints:
+      column_lift:        {parent: lite_base, child: column_link,            xyz: [0, 0, 0.614],   axis: [0, 0, 1]}  # cad/lite_base.py TOP
+      waist_yaw:          {parent: column_link, child: torso_link,           xyz: [0, 0, 0.0443],  axis: [0, 0, 1]}  # cad/lite_column.py waist_joint()
+      wheel_front_left:   {parent: lite_base, child: wheel_front_left_link,  xyz: [0.164756, 0.164756, 0.076], rpy: [0, 0, 0.785398], axis: [1, 0, 0]}
+      wheel_rear_left:    {parent: lite_base, child: wheel_rear_left_link,   xyz: [-0.164756, 0.164756, 0.076], rpy: [0, 0, 2.356194], axis: [1, 0, 0]}
+      wheel_rear_right:   {parent: lite_base, child: wheel_rear_right_link,  xyz: [-0.164756, -0.164756, 0.076], rpy: [0, 0, 3.926991], axis: [1, 0, 0]}
+      wheel_front_right:  {parent: lite_base, child: wheel_front_right_link, xyz: [0.164756, -0.164756, 0.076], rpy: [0, 0, 5.497787], axis: [1, 0, 0]}
+    motor_mounts:
+      waist_yaw: {link: column_link, xyz: [0, 0, 0.0353]}
+    collisions:
+      - {link: lite_base,   xyz: [0, 0, 0.105],  size: [0.50, 0.50, 0.16]}  # the shell, as a box inside its round outline
+      - {link: lite_base,   xyz: [0, 0, 0.400],  size: [0.08, 0.05, 0.43]}  # the column's outer stage
+      - {link: column_link, xyz: [0, 0, 0.030],  size: [0.15, 0.15, 0.08]}  # the head plate and waist motor

@@ -27,6 +27,8 @@ Usage:
   python -m cad.fea                  # every link, the worst stress per part and its case
   python -m cad.fea --link left_thigh_link
   python -m cad.fea --check          # exit 1 if any part is below the target safety factor
+  python -m cad.fea --variant lite   # Lite's base, wheel pods and column head
+                                     # (cad/lite_base.py fea_groups: its own load cases)
 
 Needs: pip install -e ".[cad,fea]"
 """
@@ -484,6 +486,97 @@ def owners(model: Model, group: list) -> np.ndarray:
     return np.argmin(dist, axis=0)
 
 
+def check(name: str, group: list, todo: list, args) -> float:
+    """Solve a group's load cases; print each part's worst; return the lowest safety factor."""
+    worst_sf = np.inf
+    if not todo:
+        print(f"{name:30} (no load path: no interfaces recorded)")
+        return worst_sf
+    model = Model(group, size=args.size)
+    own = model.owner
+    patches = {}
+    for p in group:
+        if args.no_idler and p.name.endswith("_yoke"):
+            continue
+        for i in p.extra.get("ifaces", []):
+            kw = {k: i[k] for k in ("r0", "r1", "span", "rigid") if k in i}
+            patches.setdefault(i["joint"], []).append(
+                Patch(i["kind"], i["centre"], i["axis"], **kw)
+            )
+    worst = {}
+    for case, held, loaded, force, moment, about in todo:
+        hp = [x for j in held for x in patches.get(j, [])]
+        lp = [x for j in loaded for x in patches.get(j, [])]
+        if case.startswith("torque"):
+            # the joint's own bearings (its "cyl" patches) carry no torque about its axis: its
+            # motor faces do. Bearings on the held side still hold the link about other axes
+            lp = [x for x in lp if x.kind == "face"]
+            if not lp:
+                continue
+        try:
+            vm, near = model.solve(hp, lp, force, moment, about)
+        except ValueError as e:
+            print(f"{name:30} {case}: skipped ({e})")
+            continue
+        for k, p in enumerate(group):
+            sel = (own == k) & ~near
+            if not sel.any():
+                continue
+            v, r = float(vm[sel].max()), float(model.raw[sel].max())
+            if v > worst.get(p.name, (0,))[0]:
+                at = model.centroids()[np.flatnonzero(sel)[np.argmax(vm[sel])]]
+                worst[p.name] = (v, case, r, at)
+    float_el = getattr(model, "floating", np.zeros(len(own), bool))  # unset if all skipped
+    floating = {group[k].name for k in np.unique(own[float_el])}
+    for p in group:
+        if p.name in floating:
+            print(f"{p.name:30} not attached: joins nothing that carries load yet")
+            continue
+        if p.name not in worst:
+            continue
+        v, case, r, at = worst[p.name]
+        ys = YIELD_MPA[p.material]
+        sf = ys / v
+        worst_sf = min(worst_sf, sf)
+        flag = "  <-- below target" if sf < TARGET else ""
+        where = f"  at ({at[0]:.0f}, {at[1]:.0f}, {at[2]:.0f})" if args.where else ""
+        print(
+            f"{p.name:30} {case:22} {v:7.0f} {ys:6.0f} {sf:5.1f}  {r:7.0f}{flag}{where}",
+            flush=True,
+        )
+    return worst_sf
+
+
+def lite_groups() -> list:
+    """Lite's groups and load cases (cad/lite_base.py fea_groups), with its mass from its URDF."""
+    import re  # noqa: PLC0415
+    import sys  # noqa: PLC0415
+
+    import yaml  # noqa: PLC0415
+
+    from . import lite_base, lite_column  # noqa: PLC0415
+
+    root = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(root / "tools"))
+    import build_urdf  # noqa: PLC0415
+
+    urdf = build_urdf.URDF_LITE.read_text()
+    links = dict(
+        re.findall(r'<link name="([^"]+)">\s*<inertial><origin[^>]*/><mass value="([^"]+)"', urdf)
+    )
+    mass = sum(float(v) for v in links.values())
+    base = sum(float(v) for k, v in links.items() if k == "lite_base" or k.startswith("wheel_"))
+    print(f"Lite {mass:.1f} kg, {mass - base:.1f} kg on the column; target SF {TARGET} on yield")
+    skel = yaml.safe_load((root / "description" / "skeleton.yaml").read_text())["joints"]
+    palm, link = np.zeros(3), "left_palm_link"
+    while link != "torso_link":
+        j = next(v for v in skel.values() if v["child"] == link)
+        palm += np.array(j["xyz"]) * 1000
+        link = j["parent"]
+    palm += np.array([0, 0, -60.0]) + np.array(lite_column.waist_joint())
+    return lite_base.fea_groups(mass, mass - base, palm)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true")
@@ -495,70 +588,25 @@ def main() -> int:
         action="store_true",
         help="the yokes' idler bearings carry nothing (a loose idler): the motor output alone",
     )
+    ap.add_argument("--variant", choices=["lite"], help="check a variant's own parts")
     args = ap.parse_args()
-    mass, peak, joints, origin, parts = _setup()
+    if args.variant:
+        todo = lite_groups()
+        mass = None
+    else:
+        mass, peak, joints, origin, parts = _setup()
+        todo = [
+            (name, group, cases(name, group, mass, peak, joints, origin))
+            for name, group in groups(parts).items()
+        ]
     worst_sf = np.inf
-    print(f"robot {mass:.1f} kg; target SF {TARGET} on yield (smoothed von Mises)")
+    if mass:
+        print(f"robot {mass:.1f} kg; target SF {TARGET} on yield (smoothed von Mises)")
     print(f"{'part':30} {'case':22} {'stress':>7} {'yield':>6} {'SF':>5}  {'corner':>7}")
-    for name, group in groups(parts).items():
+    for name, group, group_cases in todo:
         if args.link and args.link != name:
             continue
-        todo = cases(name, group, mass, peak, joints, origin)
-        if not todo:
-            print(f"{name:30} (no load path: no interfaces recorded)")
-            continue
-        model = Model(group, size=args.size)
-        own = model.owner
-        patches = {}
-        for p in group:
-            if args.no_idler and p.name.endswith("_yoke"):
-                continue
-            for i in p.extra.get("ifaces", []):
-                kw = {k: i[k] for k in ("r0", "r1", "span", "rigid") if k in i}
-                patches.setdefault(i["joint"], []).append(
-                    Patch(i["kind"], i["centre"], i["axis"], **kw)
-                )
-        worst = {}
-        for case, held, loaded, force, moment, about in todo:
-            hp = [x for j in held for x in patches.get(j, [])]
-            lp = [x for j in loaded for x in patches.get(j, [])]
-            if case.startswith("torque"):
-                # the joint's own bearings (its "cyl" patches) carry no torque about its axis: its
-                # motor faces do. Bearings on the held side still hold the link about other axes
-                lp = [x for x in lp if x.kind == "face"]
-                if not lp:
-                    continue
-            try:
-                vm, near = model.solve(hp, lp, force, moment, about)
-            except ValueError as e:
-                print(f"{name:30} {case}: skipped ({e})")
-                continue
-            for k, p in enumerate(group):
-                sel = (own == k) & ~near
-                if not sel.any():
-                    continue
-                v, r = float(vm[sel].max()), float(model.raw[sel].max())
-                if v > worst.get(p.name, (0,))[0]:
-                    at = model.centroids()[np.flatnonzero(sel)[np.argmax(vm[sel])]]
-                    worst[p.name] = (v, case, r, at)
-        float_el = getattr(model, "floating", np.zeros(len(own), bool))  # unset if all skipped
-        floating = {group[k].name for k in np.unique(own[float_el])}
-        for p in group:
-            if p.name in floating:
-                print(f"{p.name:30} not attached: joins nothing that carries load yet")
-                continue
-            if p.name not in worst:
-                continue
-            v, case, r, at = worst[p.name]
-            ys = YIELD_MPA[p.material]
-            sf = ys / v
-            worst_sf = min(worst_sf, sf)
-            flag = "  <-- below target" if sf < TARGET else ""
-            where = f"  at ({at[0]:.0f}, {at[1]:.0f}, {at[2]:.0f})" if args.where else ""
-            print(
-                f"{p.name:30} {case:22} {v:7.0f} {ys:6.0f} {sf:5.1f}  {r:7.0f}{flag}{where}",
-                flush=True,
-            )
+        worst_sf = min(worst_sf, check(name, group, group_cases, args))
     if args.check and worst_sf < TARGET:
         return 1
     return 0

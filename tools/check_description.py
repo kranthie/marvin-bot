@@ -8,7 +8,9 @@ Checks:
 - the total mass (motors from actuators.yaml plus mass_budget.yaml, plus the add-on body shells
   from cad_model.yaml) is under the hard limit (a warning above the target);
 - bom/bom.xlsx lists exactly as many of each motor model as robot.yaml uses (the qty column;
-  spares are a column of their own).
+  spares are a column of their own);
+- Lite (robot.yaml variants.lite): its own joints and motors are consistent, its buses' CAN
+  load is within the maximum, and its URDF with the shells is under its mass limit.
 
 Usage:
   python tools/check_description.py
@@ -56,6 +58,46 @@ def expand_buses(buses: dict) -> dict:
         for side in SIDES if "{side}" in name else (None,):
             out[name.replace("{side}", side) if side else name] = spec
     return out
+
+
+def lite(robot: dict, acts: dict, motors: list[dict], buses: dict, errors: list[str]) -> None:
+    """Lite keeps the motors driving Max's joints from its keep_from joint up and adds its
+    own; the kept joints come from the Lite URDF (tools/build_urdf.py)."""
+    import xml.etree.ElementTree as ET  # noqa: PLC0415
+
+    v = robot["variants"]["lite"]
+    urdf = ET.parse(DESC / "urdf" / "marvin_bot_lite_covers.urdf").getroot()
+    joints = {j.get("name") for j in urdf.iter("joint")}
+    own = {j["name"] for j in v["joints"]}
+    if not own <= joints:
+        errors.append(f"Lite URDF lacks joints {sorted(own - joints)}: run tools/build_urdf.py")
+    kept = [m for m in motors if all(d in joints for d in m["drives"])]
+    lite_motors = kept + v["motors"]
+    lite_buses = {b: buses[b] for b in {m["bus"] for m in kept}} | v["buses"]
+    driven = {d for m in lite_motors for d in m["drives"]}
+    if driven != joints:
+        errors.append(f"Lite: joints without a motor or motors without a joint: {driven ^ joints}")
+    for m in v["motors"]:
+        if m["model"] not in acts:
+            errors.append(f"Lite motor {m['name']}: unknown model {m['model']}")
+        elif acts[m["model"]]["interface"] != lite_buses[m["bus"]]["type"]:
+            errors.append(f"Lite motor {m['name']}: {m['model']} cannot run on bus {m['bus']}")
+    can = robot["can"]
+    per_bus = Counter(m["bus"] for m in lite_motors)
+    print(f"\nLite: {len(joints)} joints, {len(lite_motors)} motors")
+    for name, spec in lite_buses.items():
+        if spec["type"] != "can":
+            continue
+        n = per_bus.get(name, 0)
+        load = n * spec["rate_hz"] * can["frames_per_motor_cycle"] * can["bits_per_frame"]
+        load /= can["bitrate"]
+        print(f"{name:14} {n:6d} {spec['rate_hz']:8d} {load:6.0%}")
+        if load > can["max_load"]:
+            errors.append(f"Lite bus {name}: load {load:.0%} > {can['max_load']:.0%}")
+    mass = sum(float(m.get("value")) for m in urdf.iter("mass"))
+    print(f"Lite with the shells: {mass:.2f} kg, limit {v['mass_limit_kg']:.1f} kg")
+    if mass > v["mass_limit_kg"]:
+        errors.append(f"Lite: {mass:.2f} kg with the shells over its {v['mass_limit_kg']} kg limit")
 
 
 def main() -> int:
@@ -154,6 +196,8 @@ def main() -> int:
     for k in sorted(set(models) | set(in_bom)):
         if models.get(k, 0) != in_bom.get(k, 0):
             errors.append(f"BOM lists {in_bom.get(k, 0)} x {k}, robot.yaml uses {models.get(k, 0)}")
+
+    lite(robot, acts, motors, buses, errors)
 
     for w in warnings:
         print(f"WARNING: {w}")

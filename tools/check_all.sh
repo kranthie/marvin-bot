@@ -19,4 +19,5 @@ python sim/mujoco/check_standing.py
 python sim/mujoco/check_standing.py --pose straight
 python sim/mujoco/check_step_up.py --heights 0.18
 python sim/mujoco/check_symmetry.py
+python sim/mujoco/check_lite.py
 python tools/check_packaging.py

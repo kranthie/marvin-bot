@@ -2,6 +2,33 @@
 
 Newest first. Each entry gives the decision, the reason and the alternatives considered. Re-open a decision only with a new reason, and record the change here.
 
+## 2026-11-07: Lite, a second variant: the upper body on a lifting column on a wheeled base
+
+**Decision.** The repository describes two robots. **Max** is the full humanoid and stays the default everywhere. **Lite** is Max from the waist motor up (waist, torso, arms, hands, neck, head), unchanged, on a bought standing-desk lifting column on a round omnidirectional base. Lite needs no legs, so it can be built and used for manipulation long before the walking robot.
+
+**Base** (`cad/lite_base.py`, design pass 1, not built or tested): 0.55 m across, with four 152 mm double omni wheels in an X (at 45, 135, 225 and 315°, so all four drive forward). Each wheel is driven directly by an RS00 through a hub and carried at its outer face by a 6901 bearing in a second plate (the arm's yoke idea), and each pod is a sprung trailing arm. A 6 mm floor plate and a 4 mm deck plate hold the column at two levels 130 mm apart. The battery is split into two bricks in series at the sides, the electronics sit behind the column, a 2-D lidar in front and an e-stop on the deck. The shell is eight printed segments that snap onto the floor plate and pin into grommets in the deck. The base weighs 24.9 kg with the column; Lite about 39 kg.
+
+**Column at the centre, facing forward.** Turning the torso 180° by default to reach further would cut the tipping margin to about 29 mm, and the waist turns only ±150°. A column set forward of the centre was rejected for the same reason.
+
+**Stability, from `sim/mujoco/check_lite.py`** (Lite on its four wheels with free-turning rollers; 40.2 kg):
+
+| Case | Column | Tipping margin | Braking limit | Sideways push that tips it, at the shoulders |
+|---|---|---|---|---|
+| Arms down | down / up | 163 mm | 2.5 / 1.7 m/s² | 64 / 45 N |
+| Arms forward, 2 kg in each hand | down / up | 88 mm | 1.1 / 0.8 m/s² | 71 / 49 N |
+
+The braking limit is what the base controller allows: 0.6 of the deceleration that would tip Lite statically, ramped in over 0.3 s. At 0.8 of it, the rear wheels unloaded with the column up and the arms forward, because the upper body sways forward on its joints' servos as the base slows. With the column up, Lite tips over at a sideways push of about 45 N at the shoulders, so the column comes down when people are close or Lite drives. Lite crosses a 10 mm bar sideways, an omni wheel's worst direction.
+
+**Column: LINAK DL6.** 560 mm retracted and used over 450 mm of its 650 mm stroke (shoulder 1.01–1.46 m); 50 × 80 mm, 800 N, 38 mm/s, 7.5 kg, about $161, with a published dynamic bending rating of 150 N·m. The worst static moment at its foot is 52 N·m with the arms forward and 2 kg in each hand (SF 2.9), and about 60 N·m while braking at the limit (SF 2.5). It is driven through its own 24 V motor and Hall sensor by an H-bridge and a microcontroller, the way an open mobile-manipulator project drives a desk leg, not through LINAK's control box, whose interface is not public. That is the first thing to bench-test when the column arrives.
+
+Alternatives: the TiMOTION TL18 (250 N·m, raw motor and Hall wiring documented, but 196 × 148 mm, about 12 kg and quote-only); the LINAK LC1 (250 N·m, 140 × 175 mm, about 12 kg); a hobby desk leg (cheap and proven by that project, but with no published section or bending rating). The TL18 is the fallback if the DL6 cannot be driven directly.
+
+**Wheels: four omni wheels in an X.** Three wheels were rejected because a three-wheel base roughly halves the tipping margin at this size; mecanum wheels because they handle thresholds worse. Omni rollers slip, so odometry leans on the IMU and lidar.
+
+**One description, two variants.** `description/robot.yaml` gets a `variants:` section. Lite is Max without the legs and pelvis, plus its base as the floating root, four wheel joints and a sliding column joint. The omni wheels' rollers are not in the URDF: the MuJoCo check adds them, and training can treat the base as ideal planar joints. The tools take `--variant lite` and write their own files next to Max's (`marvin_bot_lite.urdf`), so a change to the torso, arms or head reaches both robots.
+
+**Skills on Lite.** The motion generator (Kimodo) draws people, not robots. For Lite it is used only for the upper body, with standing prompts. The base path and the column height are written directly, as a planner would command them, inside the tipping limits. Retargeting a walking person instead would rock the base with the hips' sway and drive the slow column (38 mm/s) up and down.
+
 ## 2026-11-03: the yoke arm, not the tube upper arm; an RS10P output-bearing bench test
 
 **Decision.** The arm stays as the yoke version (2026-11-02): yokes with idlers at the shoulder roll and the elbow, and the shoulder yaw RS10P held by its output alone.
