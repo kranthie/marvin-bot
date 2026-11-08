@@ -10,7 +10,8 @@ Checks:
 - bom/bom.xlsx lists exactly as many of each motor model as robot.yaml uses (the qty column;
   spares are a column of their own);
 - Lite (robot.yaml variants.lite): its own joints and motors are consistent, its buses' CAN
-  load is within the maximum, and its URDF with the shells is under its mass limit.
+  load is within the maximum, the BOM's Lite qty column lists its motors, and its URDF with the
+  shells is under its mass limit.
 
 Usage:
   python tools/check_description.py
@@ -94,6 +95,14 @@ def lite(robot: dict, acts: dict, motors: list[dict], buses: dict, errors: list[
         print(f"{name:14} {n:6d} {spec['rate_hz']:8d} {load:6.0%}")
         if load > can["max_load"]:
             errors.append(f"Lite bus {name}: load {load:.0%} > {can['max_load']:.0%}")
+    want = Counter(m["model"] for m in lite_motors)
+    in_bom: Counter = Counter()
+    for r in read_book()["lines"]:
+        if r["model"]:
+            in_bom[r["model"]] += int(r.get("lite_qty") or 0)
+    for k in sorted(set(want) | set(in_bom)):
+        if want.get(k, 0) != in_bom.get(k, 0):
+            errors.append(f"BOM lists {in_bom.get(k, 0)} x {k} for Lite, it uses {want.get(k, 0)}")
     mass = sum(float(m.get("value")) for m in urdf.iter("mass"))
     print(f"Lite with the shells: {mass:.2f} kg, limit {v['mass_limit_kg']:.1f} kg")
     if mass > v["mass_limit_kg"]:

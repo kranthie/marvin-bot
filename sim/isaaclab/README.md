@@ -7,7 +7,7 @@ Marvin Bot's Isaac Lab 3.0 package: the articulation config (`marvin_bot/robot_c
 | `marvin_bot/robot_cfg.py` | `MARVIN_BOT_CFG`: USD path, DC motor models from `description/actuators.yaml` (the ankles in joint space through the linkage ratios), training gains, joint order and default stance from `robot.yaml`, IMU mount |
 | `convert_urdf.py` | Converts `description/urdf/marvin_bot.urdf` to `usd/` (git-ignored) with Isaac Sim's URDF importer |
 | `check_robot.py` | Checks mass, joint order and limits, kinematics against MuJoCo, and the default stance |
-| `marvin_bot/tasks/` | `MarvinBot-Velocity-Flat` and `MarvinBot-Velocity-Rough` |
+| `marvin_bot/tasks/` | `MarvinBot-Velocity-Flat` and `MarvinBot-Velocity-Rough`; `MarvinLite-Reach` (Lite, untested) |
 | `../mujoco/check_policy.py` | The MuJoCo cross-check of an exported policy: walk, turn, stop, fast walk or stairs, with posture, sway, heat and gait figures; `--render` saves a video |
 | `export_policy.py` | Exports a checkpoint to `policy.onnx` plus `policy.json` (joint order, default pose, action scale, observation layout, height-map layout) |
 
@@ -92,6 +92,24 @@ config is in the git history at that date. Training from scratch with the curren
 been tried yet. Flat v9 was trained on the current model (39.70 kg bare); rough v9 on the model
 before the hands (39.13 kg). The clips in the README replay them with `check_policy.py --render`
 on the current model.
+
+## Lite's reach task (untested)
+
+[Lite](../../docs/design/lite.md) has its own articulation, `MARVIN_LITE_CFG`. It is converted
+from `description/urdf/marvin_bot_lite.urdf` with its base fixed to the world. Its wheels are
+passive, and `sim/mujoco/check_lite.py` covers the base on its rollers.
+
+`MarvinLite-Reach` builds on Isaac Lab's reach task. The left palm reaches position targets
+around Lite, from table height in front to above the shoulder at the side. The policy moves the
+column, the waist and the left arm's six joints. On top of Isaac Lab's tracking rewards, it is
+penalised for moving the whole robot's centre of mass more than 60 mm off the column's axis.
+
+Both are written but not yet converted or trained:
+
+```bash
+uv run --no-sync python <repo>/sim/isaaclab/convert_urdf.py --variant lite
+uv run --no-sync isaaclab train --rl_library rsl_rl --task MarvinLite-Reach --num_envs 4096 --max_iterations 1500
+```
 
 ## Results
 

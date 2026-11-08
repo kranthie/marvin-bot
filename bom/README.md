@@ -8,7 +8,8 @@ build. It has these sheets:
 - **One sheet per group** (Actuators, Hands, Compute & sensors, Power, Electronics & wiring,
   Structure & materials, Fasteners, Tooling, Safety). Each item has one line: an id, the item, a
   **Status** dropdown (owned or ordered; empty means to buy), the quantity the robot uses,
-  spares, unit price, a line total (formula, quantity plus spares), where the price came from, a
+  spares, the quantity Lite uses (Lite qty), unit price, a line total (formula, quantity plus
+  spares), where the price came from, a
   source link and notes. Every status ships empty: mark what you own or have ordered in your
   copy. Owned lines keep their price, so the total stays the full cost to replicate.
 - **Sourcing**: where each researched item is sold (official store first, then distributors),
@@ -45,10 +46,17 @@ formulas still show the totals; a spreadsheet program recomputes them as you edi
 
 ## Cost
 
-At November 2026 prices the full robot comes to about **$17.7k** (`tools/bom/summary.py`). By group:
+At November 2026 prices the full robot comes to about **$17.6k** (`tools/bom/summary.py`). By group:
 actuators $6.3k, compute and sensors $4.7k (the Jetson AGX Orin 64 GB developer kit alone is
 $3,499, up from $1,999 before NVIDIA's July 2026 price rise), structure and materials $2.6k,
 power $1.6k, and the rest $2.4k. This is the cost of building the robot from nothing.
+
+**Lite** ([docs/design/lite.md](../docs/design/lite.md)) comes to about **$13.4k**: each line's
+Lite qty at its unit price, with no spares, on the Summary sheet and from `tools/bom/summary.py`.
+It drops the legs' actuators, bearings, machining and test gear, and adds the desk column, its
+driver, four omni wheels and RS00s, the base's plates, springs and bearings, and a lidar. Lines
+only Lite needs have a Max qty of 0. `tools/check_description.py` checks that the Lite qty column
+lists Lite's motors.
 
 Not counted:
 - **Desktop GPU for training (optional).** Isaac Lab training and GR00T fine-tuning want an RTX

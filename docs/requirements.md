@@ -55,6 +55,21 @@
 | R52 | Test fixtures | gantry and harness for all early walking | must |
 | R53 | Fall protection | padding at likely impact points | should |
 
+## Lite (the wheeled variant)
+
+Lite shares Max's upper body, so R20–R22 and R40–R43 apply to it unchanged; these are its own
+([design/lite.md](design/lite.md)).
+
+| ID | Requirement | Target | Level |
+|---|---|---|---|
+| R70 | Height range | shoulders from about 1.0 m (a table) to 1.45 m (a shelf), on a lifting column | must |
+| R71 | Footprint | at most 0.6 m across, through a standard doorway | must |
+| R72 | Stability | the centre of mass at least 80 mm inside the wheels with the column up, the arms forward and 2 kg in each hand (`sim/mujoco/check_lite.py`) | must |
+| R73 | Driving | omnidirectional; 0.5 m/s with the column down; deceleration limited by column height and arm pose so it never tips | must |
+| R74 | Thresholds | crosses a 10 mm threshold in any direction | should |
+| R75 | Mass | at most 45 kg with the shells | should |
+| R76 | Safety | the e-stop cuts the wheels', arms' and column's power; the column comes down when people are close | must |
+
 ## Build and openness
 
 | ID | Requirement | Target | Level |

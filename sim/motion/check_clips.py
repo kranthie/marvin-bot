@@ -209,6 +209,16 @@ def tests(name: str, p: dict, dt: float) -> list[tuple[str, bool, str]]:
             n >= 3,
             f"{n} claps, closest {100 * gap.min():.0f} cm",
         )
+    if name == "hold_box":
+        gap = np.linalg.norm(lh - rh, axis=1)
+        front = np.minimum(lh[:, 0], rh[:, 0]) > 0.1 * H
+        height = ((lh[:, 2] + rh[:, 2]) / 2 + (p["pelvis"][:, 2] - floor)) / H
+        held = front & (gap > 0.12 * H) & (gap < 0.45 * H) & (height > 0.45) & (height < 0.8)
+        check("box held in front", held.mean() > 0.7, f"{100 * held.mean():.0f}% of the time")
+    if name == "hand_over":
+        fwd = rh[:, 0] - rs[:, 0]
+        check("right hand held out", fwd.max() > 0.25 * H, f"{100 * fwd.max():.0f} cm ahead")
+        check("then lowered", rh[-1, 2] < rs[-1, 2] - 0.15 * H, "at the end")
     if name == "point":
         reach = np.linalg.norm(rh - rs, axis=1)
         arm = np.percentile(reach, 99)

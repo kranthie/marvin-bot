@@ -82,6 +82,7 @@ const phases = [
   <section class="cards">
     <a class="card" href={u('overview/')}><h3>Design</h3><p>Code-CAD, one description file for every joint and motor, and a decision log with the reasons and the alternatives considered.</p><span>Read the docs →</span></a>
     <a class="card" href={u('simulation/isaac-lab/')}><h3>Simulation</h3><p>Walking and stair policies trained in Isaac Lab and cross-checked in MuJoCo; 25 skills tracked from generated human motion.</p><span>See the results →</span></a>
+    <a class="card" href={u('design/lite/')}><h3>Lite</h3><p>The same upper body on a lifting column and an omni-wheel base: no legs, so it can be built and used for manipulation first.</p><span>See the variant →</span></a>
     <a class="card" href={u('guide/')}><h3>Learn</h3><p>23 interactive playgrounds for newcomers: balance, actuators, batteries, CAN buses, reinforcement learning, sim-to-real and more.</p><span>Open the guide →</span></a>
   </section>
   <section>
@@ -137,7 +138,8 @@ const phases = [
   .phases { list-style:none; padding:0; margin:24px 0 0; display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
   .phases li { border-top:4px solid var(--line); padding-top:8px; font-size:14px; color:var(--muted); display:flex; flex-direction:column; }
   .phases li b { color:var(--text); } .phases li.done { border-color:#4cc38a; } .phases li.now { border-color:var(--accent); color:var(--text); } .phases em { color:var(--accent); font-style:normal; font-size:12px; }
-  .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  @media (max-width: 1100px) { .cards { grid-template-columns:repeat(2,1fr); } }
   .card { border:1px solid var(--line); border-radius:14px; padding:22px; background:linear-gradient(#0d1117,#0a0d11); text-decoration:none; display:flex; flex-direction:column; }
   .card:hover { border-color:#5a4220; } .card h3 { margin:.1em 0; } .card p { color:var(--muted); font-size:15px; flex:1; } .card span { color:var(--accent); font-size:14px; }
   .built { list-style:none; padding:0; display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:20px; }

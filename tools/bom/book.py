@@ -15,7 +15,8 @@ Usage:
   python tools/bom/book.py remove usb-hub
 Each edit normalises the workbook afterwards. `source` dates the row today unless checked= is
 given. Fields are the column names below (id, group, item, model, status, qty, spares, ...).
-Each item has one line: qty is what the robot uses, spares the extra units bought.
+Each item has one line: qty is what the robot (Max) uses, spares the extra units bought, lite_qty
+what Lite uses (robot.yaml variants.lite; its lines only Lite needs have qty 0).
 """
 
 import argparse
@@ -71,6 +72,7 @@ LINE_COLUMNS = [
     ("status", "Status", 9, None),
     ("qty", "Qty", 6, "0"),
     ("spares", "Spares", 7, "0"),
+    ("lite_qty", "Lite qty", 8, "0"),
     ("unit_usd", "Unit USD", 11, USD),
     ("line_usd", "Line USD", 12, USD),
     ("price_basis", "Price basis", 44, None),
@@ -172,8 +174,8 @@ def validate(data: dict) -> list[str]:
             errors.append(f"{i}: unknown group {r.get('group')}")
         if r.get("status") not in (None, *STATUSES):
             errors.append(f"{i}: status must be empty or one of {', '.join(STATUSES)}")
-        if not all(isinstance(r.get(f), int) and r[f] >= 0 for f in ("qty", "spares")):
-            errors.append(f"{i}: qty and spares must be whole numbers (0 or more)")
+        if not all(isinstance(r.get(f), int) and r[f] >= 0 for f in ("qty", "spares", "lite_qty")):
+            errors.append(f"{i}: qty, spares and lite_qty must be whole numbers (0 or more)")
         if not isinstance(r.get("unit_usd"), int | float):
             errors.append(f"{i}: unit_usd must be a number")
         if not r.get("item"):
@@ -242,6 +244,14 @@ def line_value(r: dict) -> float:
     try:
         return (r["qty"] + r["spares"]) * r["unit_usd"]
     except TypeError:
+        return 0
+
+
+def lite_value(r: dict) -> float:
+    """Cost of a line for Lite: its Lite quantity, no spares."""
+    try:
+        return r["lite_qty"] * r["unit_usd"]
+    except (TypeError, KeyError):
         return 0
 
 
@@ -335,6 +345,17 @@ def summary_sheet(ws, sheets: list[tuple[str, int, int]], groups: list[list[dict
     for row in ws.iter_rows(min_row=5, max_row=r, min_col=3, max_col=6):
         for c in row:
             c.number_format = USD0
+    # Lite (robot.yaml variants.lite): each line's Lite qty at its unit price, no spares
+    r += 1
+    ws.cell(row=r, column=1, value="Lite (Lite qty, no spares)")
+    q, u = COL["lite_qty"], COL["unit_usd"]
+    expr = "+".join(
+        f"SUMPRODUCT('{s}'!{q}2:{q}{last},'{s}'!{u}2:{u}{last})" for s, last, _ in sheets
+    )
+    ws.cell(row=r, column=3, value=f"={expr}").number_format = USD0
+    cache[f"C{r}"] = sum(lite_value(x) for rows in groups for x in rows)
+    for c in ws[r][:6]:
+        c.font = BOLD
     r += 2
     ws.cell(row=r, column=1, value=OPTIONAL).alignment = WRAP
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
@@ -521,7 +542,7 @@ def parse_fields(pairs: list[str], columns) -> dict:
         field, sep, value = p.partition("=")
         if not sep or field not in known or field == "line_usd":
             raise SystemExit(f"expected field=value with a field in {sorted(known)}: {p}")
-        if field in ("qty", "spares"):
+        if field in ("qty", "spares", "lite_qty"):
             out[field] = int(value)
         elif field == "unit_usd":
             out[field] = float(value) if "." in value else int(value) if value else None
@@ -558,7 +579,7 @@ def main() -> int:
     elif args.command == "add":
         if args.id in lines:
             raise SystemExit(f"line {args.id} exists: use set")
-        row = {"spares": 0} | parse_fields(args.fields, LINE_COLUMNS)
+        row = {"spares": 0, "lite_qty": 0} | parse_fields(args.fields, LINE_COLUMNS)
         data["lines"].append(dict(row, id=args.id))
     elif args.command == "source":
         if args.id not in lines:

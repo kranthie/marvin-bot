@@ -238,6 +238,34 @@ feet and head are from the reference's, frame by frame.
 (CC-BY-4.0) into keypoints instead (then retarget with `--converted` and skip the Kimodo and
 keypoint-extraction steps); it was the source before Kimodo.
 
+## Lite's clips
+
+[Lite](../../docs/design/lite.md) shares Max's upper body and has no legs. Its clips take the
+upper body (waist, arms, wrists, neck) from the retargeted clips above. A base path and a column
+height are written for each in `lite_clips.py`, as keyframes joined by minimum-jerk curves inside
+the base controller's limits and the column's 38 mm/s, instead of being taken from the hips. The
+`lite` group of `generate_kimodo.py` adds two standing upper bodies for it: holding a box and
+handing something over.
+
+No tracker is trained: Lite does not balance, so `lite_clips.py run` plays each clip on its
+wheels in MuJoCo (`sim/mujoco/check_lite.py`'s model) with the joints' position servos. It scores:
+
+- the hands against the clip;
+- the base's path error;
+- the two lightest wheels' loads;
+- each joint's peak and RMS torque.
+
+It fails if two wheels unload, a joint passes its rating, or the column is asked for more than
+38 mm/s. Results are on the [skills page](../../docs/skills.md#lite).
+
+```bash
+../venvs/kimodo/bin/python $M/sim/motion/generate_kimodo.py $W/npz lite
+# then the Steps above, from convert_soma23_npz_to_proto.py to add_head_motion.py, for these clips
+python $M/sim/motion/lite_clips.py run $W/lite.npz $W/retargeted <the other clips' retargeted/> \
+    --protomotions <ProtoMotions checkout>
+MUJOCO_GL=egl python $M/sim/motion/lite_clips.py render $W/lite.npz $M/docs/media/skills/lite
+```
+
 ## Motion sources compared
 
 The same eight motions from three openly licensed sources, retargeted and tracked the same way

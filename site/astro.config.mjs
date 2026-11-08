@@ -48,7 +48,7 @@ export default defineConfig({
         },
         {
           label: 'Design',
-          items: ['decisions', 'design/concept', 'design/stairs', 'design/assembly-wiring'],
+          items: ['decisions', 'design/lite', 'design/concept', 'design/stairs', 'design/assembly-wiring'],
         },
         {
           label: 'Simulation',

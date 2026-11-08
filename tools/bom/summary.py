@@ -11,7 +11,7 @@ Usage:
 import sys
 from collections import defaultdict
 
-from book import line_value, read_book, validate
+from book import line_value, lite_value, read_book, validate
 
 
 def main() -> int:
@@ -26,9 +26,9 @@ def main() -> int:
         by_status[r["status"] or "to buy"] += cost
 
     total = sum(by_group.values())
-    print(f"{'model':8} {'qty':>4} {'spares':>6}")
+    print(f"{'model':8} {'qty':>4} {'spares':>6} {'Lite':>5}")
     for r in sorted((r for r in rows if r.get("model")), key=lambda r: r["model"]):
-        print(f"{r['model']:8} {r['qty']:4d} {r['spares']:6d}")
+        print(f"{r['model']:8} {r['qty']:4d} {r['spares']:6d} {r.get('lite_qty') or 0:5d}")
     print(f"\n{'group':12} {'USD':>9}")
     for k, v in sorted(by_group.items(), key=lambda kv: -kv[1]):
         print(f"{k:12} {v:9,.0f}")
@@ -37,6 +37,9 @@ def main() -> int:
         f"owned {by_status['owned']:,.0f} USD, ordered {by_status['ordered']:,.0f} USD, "
         f"still to buy {by_status['to buy']:,.0f} USD"
     )
+
+    lite = sum(lite_value(r) for r in rows)
+    print(f"Lite: {lite:,.0f} USD (each line's Lite qty, no spares)")
 
     for e in errors:
         print(f"ERROR: {e}")

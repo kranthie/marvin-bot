@@ -30,6 +30,7 @@ const PAGES = {
   'docs/design/concept.md': { slug: 'design/concept' },
   'docs/design/stairs.md': { slug: 'design/stairs' },
   'docs/design/assembly_wiring.md': { slug: 'design/assembly-wiring' },
+  'docs/design/lite.md': { slug: 'design/lite' },
   'sim/isaaclab/README.md': { slug: 'simulation/isaac-lab', title: 'Walking and stairs in Isaac Lab' },
   'sim/motion/README.md': { slug: 'simulation/motion-tracking', title: 'Motion tracking pipeline' },
   'docs/skills.md': { slug: 'simulation/skills' },

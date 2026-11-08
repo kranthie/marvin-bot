@@ -42,6 +42,23 @@ Marvin Bot weighs about 40 kg, runs on a 48 V lithium-ion battery that can deliv
 - One person operates; one person holds the e-stop and does nothing else.
 - Policies run first in simulation (Isaac Lab and the MuJoCo cross-check) with the same limits, rates and latency as the robot.
 
+## Lite (the wheeled variant)
+
+Lite cannot fall the way a walking robot does, but it can tip over, run into people and pinch.
+The figures are from `sim/mujoco/check_lite.py` ([design/lite.md](design/lite.md)).
+
+- With the column up, a sideways push of about 45 N at the shoulders tips Lite over. Lower the
+  column before driving, and whenever people are within reach.
+- The base controller limits deceleration by column height and arm pose (0.8 m/s² with the column
+  up and the arms forward), and ramps it. Never drive it with those limits off.
+- The column is a pinch point at its stages and under the torso, and it is self-locking: it stays
+  where it is when the power goes. Keep hands off it while it moves.
+- The column's motor is rated for a 10% duty cycle (about 2 minutes on, 18 off). The driver
+  enforces it.
+- The e-stop cuts the wheels', arms' and column's power. Test that the base stops on it before
+  every session, on blocks first with the wheels off the floor.
+- Keep Lite away from stairs and drops: its wheels cross 10 mm thresholds, nothing taller.
+
 ## Software safety layers
 
 - Commands from any high-level model (VLA, teleoperation) are clamped to joint, velocity and torque limits.

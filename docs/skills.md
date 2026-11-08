@@ -68,3 +68,54 @@ peak) and the clap (the left shoulder roll at 78% of its rated torque, RMS).
 |---|---|---|
 | ![point](media/skills/point.webp) | ![reach forward](media/skills/reach_forward.webp) | ![arms raise](media/skills/arms_raise.webp) |
 | hands 3.4 cm, feet 2.9 cm | hands 9.7 cm, feet 4.8 cm | hands 8.8 cm, feet 1.8 cm |
+
+## Lite
+
+[Lite](design/lite.md) has no legs, so its clips keep only the upper body (waist, arms, wrists,
+neck) from the same retargeted clips. Each clip's base path and column height are written as
+keyframes, not taken from the hips, and kept inside the base controller's limits and the
+column's 38 mm/s. Two upper bodies were generated for Lite: holding a box and handing something
+over. `sim/motion/lite_clips.py` plays each clip on Lite's wheels in MuJoCo (rollers, torque
+limits) with the joints' position servos. No learned policy is needed, since Lite does not
+balance.
+
+Under each clip:
+
+- **hands:** how far the hands are from where the clip puts them;
+- **wheels:** the two lightest wheels' lowest loads, as a share of a wheel's static share (both
+  near 0% would mean tipping);
+- **RMS:** the joint working hardest, as RMS torque against its rating.
+
+Every clip stays on all four wheels, and no joint passes 33% of its rating.
+
+| Idle | Look around | Point |
+|---|---|---|
+| ![idle](media/skills/lite/idle.webp) | ![look around](media/skills/lite/look_around.webp) | ![point](media/skills/lite/point.webp) |
+| hands 0.9 cm, wheels 95/97%, RMS 8% | hands 0.6 cm, wheels 92/94%, RMS 9% | hands 1.2 cm, wheels 83/88%, RMS 17% |
+
+| Wave | Wave both | Clap |
+|---|---|---|
+| ![wave](media/skills/lite/wave.webp) | ![wave both](media/skills/lite/wave_both.webp) | ![clap](media/skills/lite/clap.webp) |
+| hands 1.4 cm, wheels 77/85%, RMS 17% | hands 2.5 cm, wheels 70/75%, RMS 20% | hands 1.7 cm, wheels 63/74%, RMS 24% |
+
+| Arms raise | Dance sway | Hand over |
+|---|---|---|
+| ![arms raise](media/skills/lite/arms_raise.webp) | ![dance sway](media/skills/lite/dance_sway.webp) | ![hand over](media/skills/lite/hand_over.webp) |
+| hands 4.5 cm, wheels 93/95%, RMS 33% | hands 1.6 cm, wheels 16/45%, RMS 18% | hands 1.0 cm, wheels 90/92%, RMS 16% |
+
+| Reach forward (column rises 0.10 m) | Carry (1 kg box, 1.2 m) | Turn (180°) |
+|---|---|---|
+| ![reach forward](media/skills/lite/reach_forward.webp) | ![carry](media/skills/lite/carry.webp) | ![turn](media/skills/lite/turn.webp) |
+| hands 1.0 cm, wheels 52/63%, RMS 21% | hands 1.8 cm, wheels 73/74%, RMS 27% | hands 0.9 cm, wheels 92/92%, RMS 8% |
+
+| Sidestep (0.6 m and back) | Wave while driving | Column rise |
+|---|---|---|
+| ![sidestep](media/skills/lite/sidestep.webp) | ![wave drive](media/skills/lite/wave_drive.webp) | ![rise](media/skills/lite/rise.webp) |
+| hands 1.0 cm, wheels 81/84%, RMS 8% | hands 1.5 cm, wheels 70/84%, RMS 17% | hands 1.0 cm, wheels 96/98%, RMS 8% |
+
+The dance sway is the closest to the base's limit: one wheel drops to 16% of its share as the
+torso swings.
+
+The leg clips (walking, jogging, sidesteps, the kick, the march) and the bow have nothing to map
+onto. The squat and pick-up need a reach to the floor, which Lite's hands, at least 0.44 m up,
+cannot make.

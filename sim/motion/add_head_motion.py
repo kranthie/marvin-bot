@@ -52,7 +52,7 @@ def main() -> None:
     robot = yaml.safe_load((DESC / "robot.yaml").read_text())
     ranges = {j["name"]: np.radians(j["range"]) for j in robot["joints"]}
     for path in sorted(a.retargeted.glob("*_retargeted.npz")):
-        clip = re.sub(r"^(soma_)?proto_|_keypoints_retargeted\.npz$", "", path.name)
+        clip = re.sub(r"^(soma_)?(proto_)?|_keypoints_retargeted\.npz$", "", path.name)
         src = a.npz_dir / f"{clip}.npz"
         if not src.is_file():
             print(f"{clip}: no source, neck left at rest")

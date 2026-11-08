@@ -169,13 +169,15 @@ class DelayedDCMotorCfg(DCMotorCfg):
     max_delay: int = 2  # 10 ms at the 5 ms physics step
 
 
-def _actuators() -> dict[str, DelayedDCMotorCfg]:
+def _actuators(order=JOINT_ORDER) -> dict[str, DelayedDCMotorCfg]:
     import re
 
     limits = joint_limits()
     out = {}
     for pattern, (kp, kd, armature, friction) in GAINS.items():
-        joints = [j for j in JOINT_ORDER if re.fullmatch(pattern, j)]
+        joints = [j for j in order if re.fullmatch(pattern, j)]
+        if not joints:  # a variant without these joints
+            continue
         torques = {limits[j] for j in joints}
         if len(torques) != 1:
             raise ValueError(f"{pattern}: joints with different motors {torques}")
@@ -228,4 +230,70 @@ MARVIN_BOT_CFG = ArticulationCfg(
     joint_ordering=JOINT_ORDER,
     soft_joint_pos_limit_factor=0.95,
     actuators=_actuators(),
+)
+
+
+# --- Lite (robot.yaml variants.lite): the upper body on a column on a wheeled base. For training
+# its base is fixed to the world (convert_urdf.py --variant lite): the wheels are left passive,
+# and sim/mujoco/check_lite.py covers the base on its rollers. Untested: not yet converted or run.
+_lite = _robot["variants"]["lite"]
+URDF_LITE_PATH = DESC / "urdf" / "marvin_bot_lite.urdf"
+USD_LITE_PATH = USD_DIR / "marvin_bot_lite" / "marvin_bot_lite" / "marvin_bot_lite.usda"
+_LITE_KEEP = ("waist_yaw", "neck_", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow")
+_LITE_KEEP += ("left_wrist", "right_wrist")
+LITE_ARM_JOINTS = tuple(j for j in JOINT_ORDER if j.startswith(_LITE_KEEP))
+LITE_JOINT_ORDER = ("column_lift", *LITE_ARM_JOINTS) + tuple(
+    j["name"] for j in _lite["joints"] if j["name"].startswith("wheel_")
+)
+
+
+def _lite_actuators() -> dict:
+    from isaaclab.actuators import ImplicitActuatorCfg
+
+    col = _acts["DL6"]
+    wheel = _acts["RS00"]
+    out = _actuators(LITE_ARM_JOINTS)
+    # the column: a stiff, self-locking spindle at the DL6's force and speed
+    out["column"] = ImplicitActuatorCfg(
+        joint_names_expr=["column_lift"],
+        effort_limit_sim=col["peak_force"],
+        velocity_limit_sim=col["speed"],
+        stiffness=2.0e4,
+        damping=2.0e3,
+    )
+    out["wheels"] = ImplicitActuatorCfg(
+        joint_names_expr=["wheel_.*"],
+        effort_limit_sim=wheel["peak_torque"],
+        velocity_limit_sim=wheel["no_load_speed_rpm"] * 2 * math.pi / 60,
+        stiffness=0.0,
+        damping=0.5,
+    )
+    return out
+
+
+def _lite_stance() -> dict[str, float]:
+    out = {j: v for j, v in _stance().items() if j in LITE_ARM_JOINTS}
+    out["column_lift"] = _lite["stance"]["column_lift"]
+    return out
+
+
+MARVIN_LITE_CFG = ArticulationCfg(
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=str(USD_LITE_PATH),
+        activate_contact_sensors=False,
+        articulation_props=[
+            PhysxArticulationCfg(
+                enabled_self_collisions=True,
+                solver_position_iteration_count=8,
+                solver_velocity_iteration_count=4,
+            ),
+            NewtonArticulationCfg(self_collision_enabled=True),
+        ],
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 0.0), joint_pos=_lite_stance(), joint_vel={".*": 0.0}
+    ),
+    joint_ordering=LITE_JOINT_ORDER,
+    soft_joint_pos_limit_factor=0.95,
+    actuators=_lite_actuators(),
 )

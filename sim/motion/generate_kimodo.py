@@ -21,7 +21,7 @@ Output: one Kimodo NPZ per clip (SOMA skeleton, 30 fps), for ProtoMotions'
 convert_soma23_npz_to_proto.py (see README.md).
 
 Usage (in the Kimodo environment, with CHECKPOINT_DIR set if the models are stored locally):
-  python sim/motion/generate_kimodo.py OUT_DIR [locomotion|skills|CLIP ...] [--samples N]
+  python sim/motion/generate_kimodo.py OUT_DIR [locomotion|skills|lite|CLIP ...] [--samples N]
 """
 
 import argparse
@@ -154,7 +154,22 @@ SKILLS = {
         None,
     ),
 }
-CLIPS = {**LOCOMOTION, **SKILLS}
+# Upper bodies for Lite (decisions 2026-11-07): standing prompts only; its base path and column
+# height are written in sim/motion/lite_clips.py, not taken from the hips
+LITE = {
+    "hold_box": (
+        "A person stands still and holds a box in front of their chest with both hands.",
+        *STILL,
+    ),
+    "hand_over": (
+        "A person stands and holds out an object in their right hand to give it to someone, "
+        "then lowers the hand.",
+        *STILL,
+    ),
+    # dropped: "beckon" (two wordings; the hand rose once or not at all in 8 s)
+}
+
+CLIPS = {**LOCOMOTION, **SKILLS, **LITE}
 
 
 def root_path(speed: np.ndarray, rate: np.ndarray, offset: float):
@@ -200,7 +215,7 @@ def main() -> None:
     ap.add_argument("--samples", type=int, default=4, help="samples per clip; the best is kept")
     ap.add_argument("--seed", type=int, default=7)
     args = ap.parse_args()
-    groups = {"locomotion": list(LOCOMOTION), "skills": list(SKILLS)}
+    groups = {"locomotion": list(LOCOMOTION), "skills": list(SKILLS), "lite": list(LITE)}
     names = [c for g in args.clips for c in groups.get(g, [g])]
     args.out.mkdir(parents=True, exist_ok=True)
 

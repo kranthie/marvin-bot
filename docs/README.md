@@ -10,6 +10,7 @@
 | [design/concept.md](design/concept.md) | The v0.2 concept (historical) |
 | [design/stairs.md](design/stairs.md) | Stair climbing: status, open issues and options |
 | [design/assembly_wiring.md](design/assembly_wiring.md) | Modules, assembly order, power and wiring |
+| [design/lite.md](design/lite.md) | Lite: the upper body on a lifting column on an omni-wheel base |
 | [../sim/isaaclab/README.md](../sim/isaaclab/README.md) | Training the walking and stair policies, and every run's results |
 | [../sim/motion/README.md](../sim/motion/README.md) | The motion-tracking pipeline |
 | [../bench/README.md](../bench/README.md) | Actuator bench tests (phase 2) |
@@ -35,4 +36,8 @@
 - **Cross-check:** replaying a policy trained in Isaac Lab in a second simulator (MuJoCo) to catch simulator-specific tricks.
 - **Motion tracking (BeyondMimic):** training a policy to follow a reference motion, such as a retargeted human walk.
 - **Retargeting:** converting a human motion to the robot's body and joints.
+- **Max, Lite:** the two variants: Max is the full humanoid; Lite is its upper body on a lifting column on a wheeled base.
+- **Omni wheel:** a wheel with free-turning rollers round its rim, so it drives along its rolling direction and slides freely along its axle. Four in an X (Lite's base) drive in any direction and turn on the spot.
+- **Lifting column:** a telescoping column with a motor and spindle inside, as in a standing desk; Lite's sets the shoulder height.
+- **Tipping margin:** how far the centre of mass's ground projection is inside the wheels' (or feet's) footprint.
 - **VLA:** vision-language-action model (GR00T N1.7 here), which turns camera images and an instruction into arm motions.

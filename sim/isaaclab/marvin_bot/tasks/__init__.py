@@ -23,3 +23,14 @@ gym.register(
         "default_agent": "rsl_rl",
     },
 )
+
+gym.register(
+    id="MarvinLite-Reach",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.reach_env_cfg:MarvinLiteReachEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{__name__}.agents:MarvinLiteReachPPORunnerCfg",
+        "default_agent": "rsl_rl",
+    },
+)

@@ -1123,9 +1123,9 @@ desk_column:
   process: bought
   budget: lite_base
   mass: 4.5
-  com: [0.0, 0.0, 0.153122]
-  inertia: [0.0214829, 0.0230513, 0.00365992, 0.0, 0.0, 0.0]
-  size_mm: [120.0, 80.0, 224.7]
+  com: [0.0, 0.0, 0.319516]
+  inertia: [0.12206, 0.123553, 0.00344341, 0.0, 0.0, 0.0]
+  size_mm: [120.0, 80.0, 558.0]
 screws_pod_45:
   link: lite_base
   material: bought

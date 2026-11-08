@@ -763,8 +763,9 @@ def column_solid(top: float, outer_only: bool = False) -> mf.Manifold:
         stages.append(
             mf.Manifold.extrude(mf.CrossSection([_rr(dx, dy, 6)]), b - a).translate([0, 0, a])
         )
-    if outer_only:
-        return union(brk, stages[0])
+    if outer_only:  # the outer stage runs the full retracted length; the others slide inside it
+        outer = mf.Manifold.extrude(mf.CrossSection([_rr(*sizes[0], 6)]), top - 10 - zb)
+        return union(brk, outer.translate([0, 0, zb]))
     plate = box((130, 120, 10), (0, 0, top - 5))
     return union(brk, *stages, plate)
 

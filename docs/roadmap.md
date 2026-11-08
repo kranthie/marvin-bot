@@ -68,6 +68,23 @@ Current phase: **1, robot in simulation** (started 2026-10-25). Phases and pass 
 - [ ] Fasteners and connector footprints in the CAD; covers and harness loops in the packaging check (the harness clip points are in, 2026-10-31)
 - [x] Battery cradle, blind-mate connector and electronics bay layout (`cad/electrical.py`)
 
+## Lite (the wheeled variant)
+
+Max's upper body on a desk column on an omni-wheel base ([design/lite.md](design/lite.md),
+decisions 2026-11-07).
+
+- [x] Base and column head in code-CAD, design pass 1 (`cad/lite_base.py`, `cad/lite_column.py`): 0.55 m base, four sprung omni-wheel pods on RS00s, snap-on printed shell, the waist mount shared with the pelvis; 39.70 kg with the shells
+- [x] Lite in the description and its URDF (`robot.yaml` / `skeleton.yaml` `variants.lite`); description check, CAN load and BOM counts (`tools/check_description.py`)
+- [x] On its wheels in MuJoCo, in CI (`sim/mujoco/check_lite.py`): margin 88-163 mm, the base controller's braking limit 0.8-2.5 m/s², a 10 mm bar crossed sideways
+- [x] Stress check of the wheel pod (SF 6.3) and column head (SF 17) (`cad/fea.py --variant lite`)
+- [ ] Stress check of the base frame (plates, collar, clevis blocks)
+- [x] Skills: upper-body clips with written base paths and column heights, played on the wheels (`sim/motion/lite_clips.py`; 15 clips on the [skills page](skills.md#lite))
+- [x] Renders and animation (`tools/render_lite.py`); BOM Lite qty column (about $13.4k)
+- [ ] Isaac Lab: convert Lite's USD (the base fixed) and train `MarvinLite-Reach` (written, untested)
+- [ ] Lite's harness in `electrical/harness.yaml`, and the column's drag chain
+- [ ] Bench: drive the DL6's motor and Hall sensor directly (TiMOTION TL18 the fallback); confirm the column's and wheels' hole patterns; size the pod springs; choose the lidar
+- [ ] Decide whether Lite is built before Max's legs (a phase between 2 and 3)
+
 ## Phase 2 preparation
 
 - [x] Robstride CAN protocol driver from the official manuals, frame encoding unit-tested (`robot/drivers/robstride.py`)
